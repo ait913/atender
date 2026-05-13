@@ -9,8 +9,11 @@ COPY apps/api ./apps/api
 RUN corepack enable && corepack prepare pnpm@9 --activate
 RUN pnpm install --frozen-lockfile
 
+ENV PATH=/app/apps/api/node_modules/.bin:/app/node_modules/.bin:$PATH
+
 WORKDIR /app/apps/api
-RUN pnpm exec prisma generate
+RUN ls -la node_modules/.bin/ | head -10 || true
+RUN prisma generate
 WORKDIR /app
 
 RUN chmod +x apps/api/entrypoint.sh

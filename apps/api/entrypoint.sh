@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
+export PATH=/app/apps/api/node_modules/.bin:/app/node_modules/.bin:$PATH
 cd /app/apps/api
-pnpm exec prisma migrate deploy
-pnpm exec prisma db seed || true
-exec pnpm exec tsx src/index.ts
+prisma migrate deploy
+prisma db seed || true
+exec tsx src/index.ts
