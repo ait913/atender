@@ -6,7 +6,7 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 RUN corepack enable && corepack prepare pnpm@9 --activate
-RUN pnpm install --frozen-lockfile --filter "./apps/api..."
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @atender/shared build
 RUN pnpm --filter @atender/api exec prisma generate
 RUN pnpm --filter @atender/api build
