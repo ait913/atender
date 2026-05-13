@@ -1,0 +1,30 @@
+{
+  "name": "@atender/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@atender/shared": "workspace:*",
+    "@tanstack/react-query": "^5",
+    "@tanstack/react-router": "^1",
+    "dayjs": "^1.11",
+    "react": "^19",
+    "react-dom": "^19",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "tailwindcss": "^4",
+    "tsx": "^4",
+    "typescript": "^5.6",
+    "vite": "^6"
+  }
+}
