@@ -15,22 +15,21 @@ export function useMarkAllPresent(onErrorToast: (message: string) => void) {
   return useMutation({
     mutationFn: (body: MarkAllPresentInput) => api<MarkAllPresentResponse>("/api/attendance/mark-all-present", { method: "POST", body }),
     onMutate: async (body) => {
-      const key = ["today", body.date ?? "current"];
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<TodayResponse>(key);
-      if (previous) {
+      await queryClient.cancelQueries({ queryKey: ["today"] });
+      const queries = queryClient.getQueriesData<TodayResponse>({ queryKey: ["today"] });
+      for (const [key, previous] of queries) {
+        if (!previous) continue;
         queryClient.setQueryData<TodayResponse>(key, {
           ...previous,
           occurrences: previous.occurrences.map((occurrence) => occurrence.status == null ? { ...occurrence, status: "PRESENT" } : occurrence),
         });
       }
-      return { key, previous };
+      return { queries };
     },
     onError: (_error, _body, context) => {
-      if (context?.previous) queryClient.setQueryData(context.key, context.previous);
+      for (const [key, data] of context?.queries ?? []) queryClient.setQueryData(key, data);
       onErrorToast("保存できませんでした、もう一度試してください");
     },
-    onSettled: (_data, _error, body) => queryClient.invalidateQueries({ queryKey: ["today", body.date ?? "current"] }),
   });
 }
 
@@ -57,6 +56,5 @@ export function usePatchAttendance(onErrorToast: (message: string) => void) {
       for (const [key, data] of context?.queries ?? []) queryClient.setQueryData(key, data);
       onErrorToast("保存できませんでした、もう一度試してください");
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["today"] }),
   });
 }

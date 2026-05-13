@@ -1,6 +1,7 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { API_URL, APP_URL } from "@/api/client";
+import { API_URL, api } from "@/api/client";
+import type { MeResponse } from "@/api/hooks/types";
 import { PageTitle, Panel } from "@/components/ui";
 
 export function Verify() {
@@ -17,10 +18,21 @@ export function Verify() {
       setFailed(true);
       return;
     }
-    const url = new URL(`${API_URL}/api/auth/magic-link/verify`);
-    url.searchParams.set("token", search.token);
-    url.searchParams.set("callbackURL", `${APP_URL}/`);
-    window.location.assign(url.toString());
+    let cancelled = false;
+    async function verify() {
+      const url = new URL(`${API_URL}/api/auth/magic-link/verify`);
+      url.searchParams.set("token", search.token!);
+      const response = await fetch(url.toString(), { credentials: "include" });
+      if (!response.ok) throw new Error("verify failed");
+      const me = await api<MeResponse>("/api/me");
+      if (!cancelled) await navigate({ to: me.setupStatus.isComplete ? "/" : "/setup" });
+    }
+    verify().catch(() => {
+      if (!cancelled) setFailed(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [navigate, search.error, search.token]);
 
   return (

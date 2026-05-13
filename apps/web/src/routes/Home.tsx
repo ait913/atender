@@ -1,6 +1,8 @@
+import { useNavigate } from "@tanstack/react-router";
 import dayjs from "dayjs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ATTENDANCE_STATUS, type AttendanceStatus, type OccurrenceDto } from "@atender/shared";
+import { ApiError } from "@/api/client";
 import { useMarkAllPresent, useMe, usePatchAttendance, useTodayOccurrences } from "@/api/hooks";
 import { Button, Mascot, minutesToTime, PageTitle, Panel, statusLabels, Toast } from "@/components/ui";
 
@@ -40,6 +42,7 @@ function OccurrenceCard({ occurrence, onChange }: { occurrence: OccurrenceDto; o
 }
 
 export function Home() {
+  const navigate = useNavigate();
   const [toast, setToast] = useState<string | null>(null);
   const me = useMe();
   const today = useTodayOccurrences();
@@ -48,6 +51,12 @@ export function Home() {
   const occurrences = today.data?.occurrences ?? [];
   const pendingCount = useMemo(() => occurrences.filter((occurrence) => occurrence.status == null).length, [occurrences]);
   const displayDate = today.data?.date ?? dayjs().format("YYYY-MM-DD");
+
+  useEffect(() => {
+    if (today.error instanceof ApiError && today.error.status === 403 && today.error.code === "SETUP_REQUIRED") {
+      void navigate({ to: "/setup" });
+    }
+  }, [navigate, today.error]);
 
   function showToast(message: string) {
     setToast(message);

@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useCopyTemplate, useMe, usePublishTimetable, useSemesters, useTemplates, useUserTimetables } from "@/api/hooks";
 import { Button, Field, PageTitle, Panel, Select } from "@/components/ui";
 
+function authorHandle(template: { author?: { handle?: string | null } | null; authorName?: string | null; authorUserId: string }) {
+  return template.author?.handle ?? template.authorName ?? template.authorUserId;
+}
+
 export function Templates() {
   const me = useMe();
   const semesters = useSemesters();
@@ -34,6 +38,7 @@ export function Templates() {
           <Panel key={template.id} className="space-y-3">
             <div>
               <h2 className="text-xl font-black">{template.title}</h2>
+              <p className="mt-1 text-sm font-bold text-white/70">by @{authorHandle(template)}</p>
               <p className="mt-1 text-sm text-white/55">copy x {template.copyCount}　更新: {template.updatedAt.slice(0, 10)}</p>
               {template.description ? <p className="mt-3 text-sm text-white/70">{template.description}</p> : null}
             </div>

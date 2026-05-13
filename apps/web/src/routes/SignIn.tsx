@@ -1,36 +1,43 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { APP_URL, api, authUrl } from "@/api/client";
 import { Button, Field, PageTitle, Panel } from "@/components/ui";
 
 export function SignIn() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  const [cooldown, setCooldown] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const googleUrl = authUrl("/api/auth/sign-in/social/google", { callbackURL: `${APP_URL}/` });
 
   useEffect(() => {
-    if (cooldown <= 0) return;
-    const id = window.setTimeout(() => setCooldown((value) => value - 1), 1000);
+    if (!cooldown) return;
+    const id = window.setTimeout(() => {
+      if (submitRef.current) submitRef.current.disabled = false;
+    }, 60_000);
     return () => window.clearTimeout(id);
   }, [cooldown]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError(null);
+    setCooldown(true);
     await api<{ ok: boolean }>("/api/auth/sign-in/magic-link", {
       method: "POST",
       body: { email, callbackURL: `${APP_URL}/verify` },
     }).then(
       () => {
         setSent(true);
-        setCooldown(60);
       },
-      () => setError("メールを送信できませんでした"),
+      () => {
+        setCooldown(false);
+        setError("メールを送信できませんでした");
+      },
     );
   }
 
   function googleSignIn() {
-    window.location.assign(authUrl("/api/auth/sign-in/social", { provider: "google", callbackURL: `${APP_URL}/` }));
+    window.location.href = googleUrl;
   }
 
   return (
@@ -42,9 +49,14 @@ export function SignIn() {
             メールアドレス
           </label>
           <Field id="email" type="email" value={email} onChange={(event) => setEmail(event.currentTarget.value)} required autoComplete="email" />
-          <Button className="w-full" type="submit" disabled={cooldown > 0 || !email}>
-            {cooldown > 0 ? `再送まで ${cooldown} 秒` : "ログインリンクを送る"}
-          </Button>
+          <button
+            ref={submitRef}
+            className="min-h-11 w-full rounded-lg border border-white/24 px-4 py-2 text-sm font-bold text-white transition hover:opacity-70 disabled:opacity-40"
+            type="submit"
+            disabled={cooldown || !email}
+          >
+            {sent ? "再送する" : "ログインリンクを送る"}
+          </button>
           {sent ? <p className="text-sm text-emerald-200">メールを送信しました。15 分以内にリンクを開いてください</p> : null}
           {error ? <p className="text-sm text-red-200">{error}</p> : null}
         </form>
@@ -53,9 +65,16 @@ export function SignIn() {
           または
           <span className="h-px flex-1 bg-white/14" />
         </div>
-        <Button className="w-full" type="button" onClick={googleSignIn}>
+        <a
+          className="block min-h-11 w-full rounded-lg border border-white/24 px-4 py-2 text-center text-sm font-bold text-white transition hover:opacity-70"
+          href={googleUrl}
+          onClick={(event) => {
+            event.preventDefault();
+            googleSignIn();
+          }}
+        >
           G　Google でサインイン
-        </Button>
+        </a>
         <p className="mt-8 text-center text-xs font-bold text-white/45">- based in tokyo/chiba -</p>
       </Panel>
     </div>
