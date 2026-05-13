@@ -1,5 +1,5 @@
 #!/bin/sh
 set -e
-node node_modules/prisma/build/index.js migrate deploy
-node node_modules/prisma/build/index.js db seed
-exec node dist/index.js
+pnpm --filter @atender/api exec prisma migrate deploy
+pnpm --filter @atender/api exec prisma db seed || true
+exec pnpm --filter @atender/api exec tsx src/index.ts
