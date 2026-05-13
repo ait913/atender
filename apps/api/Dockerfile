@@ -7,8 +7,9 @@ COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 RUN corepack enable && corepack prepare pnpm@9 --activate
 RUN pnpm install --frozen-lockfile --filter "./apps/api..."
-RUN pnpm -C apps/api prisma generate
-RUN pnpm -C apps/api build
+RUN pnpm --filter @atender/shared build
+RUN pnpm --filter @atender/api exec prisma generate
+RUN pnpm --filter @atender/api build
 
 # ===== runner =====
 FROM node:20-alpine AS runner

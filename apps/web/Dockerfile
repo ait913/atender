@@ -11,6 +11,7 @@ COPY apps/web/package.json apps/web/package.json
 RUN pnpm install --frozen-lockfile
 COPY packages/shared packages/shared
 COPY apps/web apps/web
+RUN pnpm --filter @atender/shared build
 RUN pnpm --filter @atender/web build
 
 FROM nginx:alpine AS runner
