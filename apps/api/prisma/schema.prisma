@@ -1,0 +1,386 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===== better-auth 4 テーブル (CLI 生成形、Atender カスタムを追加) =====
+
+model User {
+  id            String    @id
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Atender 拡張
+  defaultSemesterId String?
+  defaultSemester   Semester? @relation("UserDefaultSemester", fields: [defaultSemesterId], references: [id], onDelete: SetNull)
+  schoolId          String?
+  school            School?   @relation("UserSchool", fields: [schoolId], references: [id], onDelete: SetNull)
+  departmentId      String?
+  department        Department? @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
+
+  accounts        Account[]
+  sessions        Session[]
+  semesters       Semester[]      @relation("UserSemesters")
+  userTimetables  UserTimetable[]
+  attendanceRecords AttendanceRecord[]
+  attendanceRules AttendanceRule[]
+  authoredTemplates TimetableTemplate[] @relation("AuthoredTemplates")
+  createdSchools  School[]        @relation("UserCreatedSchools")
+  createdDepartments Department[] @relation("UserCreatedDepartments")
+
+  @@index([schoolId, departmentId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    // provider's user id
+  providerId            String    // "google" | "credential" | "magic-link"
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?   // (Atender では未使用、better-auth 既定スキーマ準拠)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Verification {
+  id         String   @id
+  identifier String   // email or token id (better-auth が制御)
+  value      String   // token hash
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@index([expiresAt])
+}
+
+// ===== Atender 独自テーブル =====
+
+model School {
+  id          String   @id @default(cuid())
+  mextCode    String?  @unique                     // 文科省 学校コード、ユーザー入力学校は null
+  kind        SchoolKind
+  name        String
+  nameKana    String?
+  prefecture  String?
+  createdByUserId String?
+  createdBy   User?    @relation("UserCreatedSchools", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  departments       Department[]
+  attendanceRules   AttendanceRule[]
+  timetableTemplates TimetableTemplate[]
+  usersBelonging    User[] @relation("UserSchool")
+
+  @@index([name])
+  @@index([prefecture])
+}
+
+enum SchoolKind {
+  UNIVERSITY
+  JUNIOR_COLLEGE        // 短期大学
+  TECHNICAL_COLLEGE     // 高等専門学校
+  VOCATIONAL_SCHOOL     // 専修学校 (専門学校)
+  HIGH_SCHOOL
+  OTHER
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  schoolId    String
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name        String
+  nameKana    String?
+  source      DepartmentSource @default(USER)
+  createdByUserId String?
+  createdBy   User?    @relation("UserCreatedDepartments", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attendanceRules    AttendanceRule[]
+  timetableTemplates TimetableTemplate[]
+  usersBelonging     User[] @relation("UserDepartment")
+
+  @@unique([schoolId, name])
+  @@index([schoolId])
+}
+
+enum DepartmentSource {
+  MEXT    // (将来用、MVP では使われない)
+  USER
+}
+
+model Semester {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation("UserSemesters", fields: [userId], references: [id], onDelete: Cascade)
+  name      String              // "2026 前期" 等、自由文字列
+  startDate DateTime            // 日付 (時刻は 00:00:00 JST)
+  endDate   DateTime            // 日付 (時刻は 23:59:59 JST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userTimetables UserTimetable[]
+  usersAsDefault User[]   @relation("UserDefaultSemester")
+
+  @@index([userId])
+}
+
+// ===== 時間割テンプレ (public 共有) =====
+
+model TimetableTemplate {
+  id           String   @id @default(cuid())
+  authorUserId String
+  author       User     @relation("AuthoredTemplates", fields: [authorUserId], references: [id], onDelete: Cascade)
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  title        String              // "2026 前期 情報処理科 2年" 等
+  description  String?
+  year         Int?                // 学年 (1-4)、null 可
+  term         String?             // "前期" / "後期" / "通年" 等の自由文字列
+  isPublic     Boolean  @default(true)
+  copyCount    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  daySlots TemplateDaySlot[]
+  courses  TemplateCourse[]
+  meetings TemplateMeeting[]
+  copies   UserTimetable[]
+
+  @@index([schoolId, departmentId, updatedAt(sort: Desc)])
+  @@index([authorUserId])
+}
+
+// Template 配下の DaySlot / Course / Meeting は UserTimetable 配下と
+// 完全に同形 (Uniform Shape) で別テーブル。コピー時に行を複製。
+// 別テーブルにする理由: TimetableTemplate と UserTimetable で
+// FK の参照先が異なるため (Prisma が SQLite で polymorphic FK を持てない)。
+
+model TemplateDaySlot {
+  id          String @id @default(cuid())
+  templateId  String
+  template    TimetableTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  periodIndex Int                    // 1, 2, 3, ... (1限 / 2限 / ...)
+  label       String                 // "1限" / "昼休み" 等
+  startMinute Int                    // 0:00 からの分 (例: 9:00 → 540)
+  endMinute   Int
+  isBreak     Boolean @default(false)
+
+  @@unique([templateId, periodIndex])
+  @@index([templateId])
+}
+
+model TemplateCourse {
+  id          String @id @default(cuid())
+  templateId  String
+  template    TimetableTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name        String
+  teacher     String?
+  room        String?
+  color       String?              // "#RRGGBB" 等、UI hint
+  totalSessions Int                // 学期通しの想定総コマ数 (Researcher 例: 15)
+  note        String?
+
+  meetings TemplateMeeting[]
+
+  @@index([templateId])
+}
+
+model TemplateMeeting {
+  id              String @id @default(cuid())
+  templateId      String
+  template        TimetableTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          TemplateCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dayOfWeek       Int               // 0=日 ... 6=土 (JS 標準)
+  startPeriodIndex Int              // 何限から始まるか (TemplateDaySlot.periodIndex 参照)
+  periodCount      Int @default(1)  // 連続コマ数 (1, 2, 3, ...)。slot 多重表現
+
+  @@index([templateId, dayOfWeek])
+  @@index([courseId])
+}
+
+// ===== UserTimetable (ユーザー所有、コピー先) =====
+
+model UserTimetable {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semesterId      String
+  semester        Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  title           String
+  sourceTemplateId String?
+  sourceTemplate  TimetableTemplate? @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  daySlots DaySlot[]
+  courses  Course[]
+  meetings Meeting[]
+
+  @@index([userId, semesterId])
+  @@unique([userId, semesterId])    // 1 user × 1 semester = 1 UserTimetable
+}
+
+model DaySlot {
+  id              String @id @default(cuid())
+  userTimetableId String
+  userTimetable   UserTimetable @relation(fields: [userTimetableId], references: [id], onDelete: Cascade)
+  periodIndex     Int
+  label           String
+  startMinute     Int
+  endMinute       Int
+  isBreak         Boolean @default(false)
+
+  @@unique([userTimetableId, periodIndex])
+  @@index([userTimetableId])
+}
+
+model Course {
+  id              String @id @default(cuid())
+  userTimetableId String
+  userTimetable   UserTimetable @relation(fields: [userTimetableId], references: [id], onDelete: Cascade)
+  name            String
+  teacher         String?
+  room            String?
+  color           String?
+  totalSessions   Int
+  note            String?
+
+  meetings Meeting[]
+  occurrences MeetingOccurrence[] // 経由参照、検索インデックス用
+
+  @@index([userTimetableId])
+}
+
+model Meeting {
+  id              String @id @default(cuid())
+  userTimetableId String
+  userTimetable   UserTimetable @relation(fields: [userTimetableId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dayOfWeek       Int
+  startPeriodIndex Int
+  periodCount     Int @default(1)
+
+  occurrences MeetingOccurrence[]
+
+  @@index([userTimetableId, dayOfWeek])
+  @@index([courseId])
+}
+
+// ===== MeetingOccurrence (絶対日付の出欠記録単位) =====
+
+model MeetingOccurrence {
+  id            String  @id @default(cuid())
+  meetingId     String
+  meeting       Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  courseId      String
+  course        Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date          DateTime          // 開催日 (JST 00:00:00)
+  periodOffset  Int                // 連続コマの何コマ目か (0-indexed)。periodCount=2 なら 2 行生成
+  startMinute   Int                // 当日の絶対開始分 (snapshot、DaySlot 変更耐性のため)
+  endMinute     Int
+
+  attendanceRecord AttendanceRecord?
+
+  @@unique([meetingId, date, periodOffset])
+  @@index([courseId, date])
+  @@index([date])
+}
+
+// ===== 出席記録 =====
+
+enum AttendanceStatus {
+  PRESENT      // 出席
+  ABSENT       // 欠席
+  EXCUSED      // 公欠
+  TARDY        // 遅刻
+  EARLY_LEAVE  // 早退
+  CANCELLED    // 休講
+}
+
+model AttendanceRecord {
+  id           String @id @default(cuid())
+  occurrenceId String @unique
+  occurrence   MeetingOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Cascade)
+  userId       String                  // 検索インデックス用 (非正規化)
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       AttendanceStatus
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId, createdAt])
+}
+
+// ===== 出欠ルール =====
+
+enum RuleStrategy {
+  COUNT_AS_PRESENT     // 出席として 1 カウント (分子+1, 分母+1)
+  COUNT_AS_ABSENT      // 欠席として 0 カウント (分子+0, 分母+1)
+  HALF_PRESENT         // 0.5 出席 (分子+0.5, 分母+1)
+  REDUCE_DENOMINATOR   // 分母から除外 (分子+0, 分母+0)
+  SEPARATE_COUNT       // 別カウント (出席率算出外、表示のみ)
+}
+
+model AttendanceRule {
+  id           String  @id @default(cuid())
+  // scope (school+department default は userId=null、user override は userId 指定)
+  schoolId     String
+  school       School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 6 status のうち PRESENT / ABSENT / CANCELLED は固定 (それぞれ
+  // COUNT_AS_PRESENT, COUNT_AS_ABSENT, REDUCE_DENOMINATOR)。
+  // 設定可能なのは EXCUSED / TARDY / EARLY_LEAVE の 3 つ。
+  excusedStrategy    RuleStrategy @default(REDUCE_DENOMINATOR)
+  tardyStrategy      RuleStrategy @default(HALF_PRESENT)
+  earlyLeaveStrategy RuleStrategy @default(HALF_PRESENT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, departmentId, userId])
+  @@index([schoolId, departmentId])
+  @@index([userId])
+}

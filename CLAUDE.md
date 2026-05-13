@@ -19,13 +19,14 @@
 
 ## 技術スタック
 
-<!-- TODO: Architect が設計 doc で確定したら反映 -->
-
-- Mobile / Frontend: (TBD, Web 先行 → iPhone 後付け)
-- Backend: (TBD, BackendAPI 分離前提)
-- DB: (TBD)
-- 認証: Magic Link + Google OAuth (Resend で送信)
-- ホスティング: Appily (Coolify + Nginx)
+- Runtime: Node 20 LTS / pnpm 9.15.x workspace (monorepo: `apps/api`, `apps/web`, `packages/shared`)
+- Backend (`apps/api`): Hono 4.12.x + @hono/node-server 2.0.x + @hono/zod-validator + better-auth 1.6.x + Prisma 6.19.x + better-sqlite3 + Resend 4.12.x + Zod 3.23.x + dayjs
+- Frontend (`apps/web`): Vite 6 + React 19 + TypeScript 5.6 + TanStack Router + TanStack Query + Tailwind (web 召集時に確定)
+- Shared (`packages/shared`): Zod schemas + TypeScript 型 (型共有のみ)
+- DB: SQLite (Prisma `provider = "sqlite"`、Coolify Volume mount で `/app/data/prod.db`)
+- 認証: Magic Link + Google OAuth (better-auth + Resend 送信、cookie session 30 日、SameSite=Lax)
+- ホスティング: Appily (Coolify + Nginx) 2 service 構成 (`atender-api` / `atender-web`)
+- iPhone (Phase 2): SwiftUI ネイティブ第一案、API は共通
 
 ## 規約・やらないこと
 

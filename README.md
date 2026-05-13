@@ -16,4 +16,23 @@
 
 ## 開発
 
-(scaffold 後にコマンドを追記)
+```sh
+corepack enable
+pnpm install
+pnpm -F @atender/api db:generate
+pnpm -F @atender/api db:migrate dev --name init
+pnpm -F @atender/api db:seed
+pnpm -F @atender/api dev
+```
+
+共有型 package の build:
+
+```sh
+pnpm -F @atender/shared build
+```
+
+API の production build:
+
+```sh
+pnpm -F @atender/api build
+```

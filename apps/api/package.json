@@ -1,0 +1,37 @@
+{
+  "name": "@atender/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate",
+    "db:seed": "tsx scripts/seed-mext-schools.ts"
+  },
+  "prisma": {
+    "seed": "tsx scripts/seed-mext-schools.ts"
+  },
+  "dependencies": {
+    "@atender/shared": "workspace:*",
+    "@hono/node-server": "2.0.2",
+    "@hono/zod-validator": "^0.5.0",
+    "@prisma/client": "6.19.3",
+    "better-auth": "1.6.11",
+    "better-sqlite3": "^11.7.0",
+    "dayjs": "^1.11.13",
+    "hono": "4.12.18",
+    "resend": "^6.12.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.4.22",
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^20.17.0",
+    "prisma": "6.19.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "atender",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build"
+  }
+}
