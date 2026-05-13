@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SCHOOL_KIND } from "../enums";
+import { SCHOOL_KIND } from "../enums.js";
 
 export const SchoolDto = z.object({
   id: z.string(),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RULE_STRATEGY } from "../enums";
+import { RULE_STRATEGY } from "../enums.js";
 
 export const AttendanceRuleDto = z.object({
   id: z.string(),

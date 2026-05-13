@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ATTENDANCE_STATUS } from "../enums";
+import { ATTENDANCE_STATUS } from "../enums.js";
 
 export const OccurrenceDto = z.object({
   id: z.string(),

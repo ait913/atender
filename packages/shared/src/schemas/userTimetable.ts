@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DaySlotDto, MeetingDto, CourseDto, TemplateCreateInput } from "./template";
+import { DaySlotDto, MeetingDto, CourseDto, TemplateCreateInput } from "./template.js";
 
 export const UserTimetableDto = z.object({
   id: z.string(),

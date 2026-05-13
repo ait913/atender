@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 RUN apk add --no-cache python3 make g++
 WORKDIR /repo
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 RUN corepack enable && corepack prepare pnpm@9 --activate
