@@ -8,9 +8,12 @@ COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 RUN corepack enable && corepack prepare pnpm@9 --activate
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @atender/api exec prisma generate
-RUN chmod +x apps/api/entrypoint.sh
 
+WORKDIR /app/apps/api
+RUN pnpm exec prisma generate
+WORKDIR /app
+
+RUN chmod +x apps/api/entrypoint.sh
 RUN mkdir -p /app/data
 VOLUME ["/app/data"]
 
