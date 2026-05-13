@@ -30,8 +30,10 @@
     "@better-auth/cli": "^1.4.22",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^20.17.0",
+    "@vitest/coverage-v8": "^2",
     "prisma": "6.19.3",
     "tsx": "^4.19.2",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2"
   }
 }
