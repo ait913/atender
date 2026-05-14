@@ -1,4 +1,4 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, type Auth, type BetterAuthOptions } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { magicLink } from "better-auth/plugins";
 import { Resend } from "resend";
@@ -7,7 +7,7 @@ import { env, trustedOrigins } from "./env";
 
 const resend = new Resend(env.RESEND_API_KEY);
 
-export const auth = betterAuth({
+const authOptions: BetterAuthOptions = {
   database: prismaAdapter(prisma, { provider: "sqlite" }),
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
@@ -70,4 +70,6 @@ export const auth = betterAuth({
     },
   },
   trustedOrigins,
-});
+};
+
+export const auth: Auth = betterAuth(authOptions);

@@ -16,6 +16,8 @@ export function registerTodayRoutes(app: Hono) {
     const day = query.date ? dateStringToJstDay(query.date) : today();
     const timetable = await findActiveUserTimetable(user.id);
     if (!timetable) return c.json({ date: day.isoDate, occurrences: [] });
+    const daySlots = await prisma.daySlot.findMany({ where: { userTimetableId: timetable.id } });
+    const periodLabelByIndex = new Map(daySlots.map((slot) => [slot.periodIndex, slot.label]));
     const occurrences = await prisma.meetingOccurrence.findMany({
       where: {
         date: day.startOfDay,
@@ -30,21 +32,25 @@ export function registerTodayRoutes(app: Hono) {
     });
     return c.json({
       date: day.isoDate,
-      occurrences: occurrences.map((occurrence) => ({
-        id: occurrence.id,
-        meetingId: occurrence.meetingId,
-        courseId: occurrence.courseId,
-        courseName: occurrence.course.name,
-        teacher: occurrence.course.teacher,
-        room: occurrence.course.room,
-        color: occurrence.course.color,
-        date: toIsoDate(occurrence.date),
-        periodIndex: occurrence.meeting.startPeriodIndex + occurrence.periodOffset,
-        periodOffset: occurrence.periodOffset,
-        startMinute: occurrence.startMinute,
-        endMinute: occurrence.endMinute,
-        status: occurrence.attendanceRecord?.status ?? null,
-      })),
+      occurrences: occurrences.map((occurrence) => {
+        const periodIndex = occurrence.meeting.startPeriodIndex + occurrence.periodOffset;
+        return {
+          id: occurrence.id,
+          meetingId: occurrence.meetingId,
+          courseId: occurrence.courseId,
+          courseName: occurrence.course.name,
+          teacher: occurrence.course.teacher,
+          room: occurrence.course.room,
+          color: occurrence.course.color,
+          date: toIsoDate(occurrence.date),
+          periodIndex,
+          periodLabel: periodLabelByIndex.get(periodIndex) ?? `${periodIndex}限`,
+          periodOffset: occurrence.periodOffset,
+          startMinute: occurrence.startMinute,
+          endMinute: occurrence.endMinute,
+          status: occurrence.attendanceRecord?.status ?? null,
+        };
+      }),
     });
   });
 }

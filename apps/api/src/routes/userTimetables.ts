@@ -19,7 +19,14 @@ const PublishInput = z.object({
 });
 
 async function getOwnedTimetable(id: string, userId: string) {
-  const timetable = await prisma.userTimetable.findUnique({ where: { id }, include: { daySlots: true, courses: true, meetings: true } });
+  const timetable = await prisma.userTimetable.findUnique({
+    where: { id },
+    include: {
+      daySlots: { orderBy: { periodIndex: "asc" } },
+      courses: true,
+      meetings: true,
+    },
+  });
   if (!timetable) throw new AppError(404, "NOT_FOUND", "UserTimetable not found");
   if (timetable.userId !== userId) throw new AppError(403, "FORBIDDEN", "Forbidden");
   return timetable;

@@ -1,30 +1,11 @@
 import { z } from "zod";
+import { DaySlotDto } from "./daySlot.js";
+import { CourseDto } from "./course.js";
+import { MeetingDto } from "./meeting.js";
 
-export const DaySlotDto = z.object({
-  periodIndex: z.number().int().min(1).max(20),
-  label: z.string().max(20),
-  startMinute: z.number().int().min(0).max(1440),
-  endMinute: z.number().int().min(0).max(1440),
-  isBreak: z.boolean().default(false),
-});
-
-export const CourseDto = z.object({
-  id: z.string(),
-  name: z.string().max(100),
-  teacher: z.string().max(50).nullable(),
-  room: z.string().max(30).nullable(),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable(),
-  totalSessions: z.number().int().min(1).max(60),
-  note: z.string().max(500).nullable(),
-});
-
-export const MeetingDto = z.object({
-  id: z.string(),
-  courseId: z.string(),
-  dayOfWeek: z.number().int().min(0).max(6),
-  startPeriodIndex: z.number().int().min(1).max(20),
-  periodCount: z.number().int().min(1).max(8).default(1),
-});
+export { DaySlotDto } from "./daySlot.js";
+export { CourseDto } from "./course.js";
+export { MeetingDto } from "./meeting.js";
 
 export const TemplateDto = z.object({
   id: z.string(),
@@ -83,9 +64,6 @@ export const TemplateCopyInput = z.object({
   title: z.string().min(1).max(100).optional(),
 });
 
-export type DaySlotDto = z.infer<typeof DaySlotDto>;
-export type CourseDto = z.infer<typeof CourseDto>;
-export type MeetingDto = z.infer<typeof MeetingDto>;
 export type TemplateDto = z.infer<typeof TemplateDto>;
 export type TemplateSearchQuery = z.infer<typeof TemplateSearchQuery>;
 export type TemplateCreateInput = z.infer<typeof TemplateCreateInput>;
