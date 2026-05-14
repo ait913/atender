@@ -1,66 +1,56 @@
-import { useState } from "react";
-import { useCopyTemplate, useMe, usePublishTimetable, useSemesters, useTemplates, useUserTimetables } from "@/api/hooks";
-import { Button, Field, PageTitle, Panel, Select } from "@/components/ui";
-
-function authorHandle(template: { author?: { handle?: string | null } | null; authorName?: string | null; authorUserId: string }) {
-  return template.author?.handle ?? template.authorName ?? template.authorUserId;
-}
+import { Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import type { DepartmentDto, SchoolDto, TemplateDto } from "@atender/shared";
+import { useDepartments, useInfiniteTemplates, useMe, useSemesters, useUserTimetable } from "@/api/hooks";
+import { TemplateCard } from "@/components/templates/TemplateCard";
+import { TemplateCopySheet } from "@/components/templates/TemplateCopySheet";
+import { TemplatePublishSheet } from "@/components/templates/TemplatePublishSheet";
+import { SchoolSearch } from "@/components/templates/SchoolSearch";
+import { Button, EmptyState, Field, IconButton, Page, Select, Skeleton } from "@/components/ui";
 
 export function Templates() {
   const me = useMe();
   const semesters = useSemesters();
-  const timetables = useUserTimetables();
-  const [schoolId, setSchoolId] = useState(me.data?.user.schoolId ?? "");
-  const [departmentId, setDepartmentId] = useState(me.data?.user.departmentId ?? "");
-  const [query, setQuery] = useState("");
-  const [semesterId, setSemesterId] = useState(me.data?.user.defaultSemesterId ?? "");
-  const templates = useTemplates({ schoolId: schoolId || me.data?.user.schoolId, departmentId: departmentId || me.data?.user.departmentId, q: query || undefined });
-  const copy = useCopyTemplate();
-  const current = timetables.data?.userTimetables.find((item) => item.semesterId === (semesterId || me.data?.user.defaultSemesterId));
-  const publish = usePublishTimetable(current?.id);
+  const defaultTimetable = useUserTimetable(me.data?.user.defaultSemesterId);
+  const [school, setSchool] = useState<SchoolDto | null>(null);
+  const [departmentId, setDepartmentId] = useState("");
+  const [copyTarget, setCopyTarget] = useState<TemplateDto | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const departments = useDepartments(school?.id);
+  const templates = useInfiniteTemplates({ schoolId: school?.id, departmentId: departmentId || undefined });
+  const result = useMemo(() => templates.data?.pages.flatMap((page) => page.templates) ?? [], [templates.data]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120 && templates.hasNextPage && !templates.isFetchingNextPage) void templates.fetchNextPage();
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [templates]);
 
   return (
-    <div>
-      <PageTitle title="Templates::">共有テンプレ検索</PageTitle>
-      <div className="mb-5 grid gap-3 md:grid-cols-4">
-        <Field placeholder="学校 ID" value={(schoolId || me.data?.user.schoolId) ?? ""} onChange={(event) => setSchoolId(event.currentTarget.value)} />
-        <Field placeholder="学科 ID" value={(departmentId || me.data?.user.departmentId) ?? ""} onChange={(event) => setDepartmentId(event.currentTarget.value)} />
-        <Field placeholder="検索" value={query} onChange={(event) => setQuery(event.currentTarget.value)} />
-        <Select value={(semesterId || me.data?.user.defaultSemesterId) ?? ""} onChange={(event) => setSemesterId(event.currentTarget.value)}>
-          {(semesters.data?.semesters ?? []).map((semester) => <option key={semester.id} value={semester.id}>{semester.name}</option>)}
+    <Page className="grid gap-4">
+      <div className="flex justify-end">
+        <IconButton label="公開" icon={<Plus className="h-5 w-5" />} variant="filled" onClick={() => setPublishOpen(true)} />
+      </div>
+      <SchoolSearch value={school} onChange={(value) => { setSchool(value); setDepartmentId(""); }} />
+      <Field label="学科">
+        <Select value={departmentId} disabled={!school} onChange={(event) => setDepartmentId(event.target.value)}>
+          <option value="">選択してください</option>
+          {departments.data?.departments.map((department: DepartmentDto) => <option key={department.id} value={department.id}>{department.name}</option>)}
         </Select>
-      </div>
-      <div className="mb-5">
-        <Button type="button" disabled={!current || publish.isPending} onClick={() => current && publish.mutate({ title: current.title })}>自分の時間割を公開</Button>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {(templates.data?.templates ?? []).map((template) => (
-          <Panel key={template.id} className="space-y-3">
-            <div>
-              <h2 className="text-xl font-black">{template.title}</h2>
-              <p className="mt-1 text-sm font-bold text-white/70">by @{authorHandle(template)}</p>
-              <p className="mt-1 text-sm text-white/55">copy x {template.copyCount}　更新: {template.updatedAt.slice(0, 10)}</p>
-              {template.description ? <p className="mt-3 text-sm text-white/70">{template.description}</p> : null}
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs text-white/58">
-              <span>{template.courses.length} courses</span>
-              <span>{template.meetings.length} meetings</span>
-            </div>
-            <div className="flex gap-3">
-              <Button type="button">詳細を見る</Button>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={!semesterId && !me.data?.user.defaultSemesterId}
-                onClick={() => copy.mutate({ templateId: template.id, input: { semesterId: semesterId || me.data!.user.defaultSemesterId! } })}
-              >
-                コピー
-              </Button>
-            </div>
-            {copy.isError ? <p className="text-sm text-red-100">既に時間割があります。別 semester を選び直すか既存削除してください</p> : null}
-          </Panel>
-        ))}
-      </div>
-    </div>
+      </Field>
+      {templates.isLoading ? <Skeleton className="h-36" /> : null}
+      {!templates.isLoading && result.length === 0 ? (
+        <EmptyState title="該当の時間割が見つかりません" action={<Button>自分で作る</Button>} />
+      ) : (
+        <div className="grid gap-3">
+          <p className="text-sm font-semibold text-fg-secondary">{result.length} 件</p>
+          {result.map((template) => <TemplateCard key={template.id} template={template} onCopy={() => setCopyTarget(template)} />)}
+        </div>
+      )}
+      <TemplateCopySheet open={copyTarget != null} onClose={() => setCopyTarget(null)} template={copyTarget} semesters={semesters.data?.semesters ?? []} />
+      <TemplatePublishSheet open={publishOpen} onClose={() => setPublishOpen(false)} userTimetableId={defaultTimetable.data?.userTimetable?.id} />
+    </Page>
   );
 }

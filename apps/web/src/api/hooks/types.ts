@@ -1,16 +1,20 @@
 import type {
   AttendanceRuleDto,
+  CourseDto,
+  DaySlotDto,
   DepartmentDto,
   EffectiveRuleResponse,
   MarkAllPresentInput,
   MarkAllPresentResponse,
   MarkAttendanceInput,
   MeUpdateInput,
+  MeetingDto,
   OccurrenceDto,
   SchoolDto,
   SchoolSearchQuery,
   SemesterCreateInput,
   SemesterDto,
+  SemesterUpdateInput,
   StatsResponse,
   TemplateCopyInput,
   TemplateCreateInput,
@@ -38,8 +42,13 @@ export type TemplatesResponse = { templates: TemplateDto[]; nextCursor: string |
 export type TemplateResponse = { template: TemplateDto };
 export type UserTimetablesResponse = { userTimetables: UserTimetableDto[] };
 export type UserTimetableResponse = { userTimetable: UserTimetableDto };
+export type MeetingResponse = { meeting: MeetingDto };
+export type CourseResponse = { course: CourseDto };
+export type DaySlotResponse = { daySlot: DaySlotDto };
+export type DaySlotsResponse = { daySlots: DaySlotDto[] };
 export type AttendanceRecordResponse = { record: { occurrenceId: string; status: OccurrenceDto["status"]; note: string | null; updatedAt: string } };
 export type RuleResponse = { rule: AttendanceRuleDto };
+export type OkResponse = { ok: true };
 
 export type {
   EffectiveRuleResponse,
@@ -49,6 +58,7 @@ export type {
   MeUpdateInput,
   SchoolSearchQuery,
   SemesterCreateInput,
+  SemesterUpdateInput,
   StatsResponse,
   TemplateCopyInput,
   TemplateCreateInput,

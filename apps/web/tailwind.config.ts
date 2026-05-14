@@ -5,14 +5,52 @@ export default {
   theme: {
     extend: {
       colors: {
-        app: {
-          deep: "#02040a",
-          fg: "#f0f0f0",
-          muted: "#a9b4c7",
-          line: "rgba(240, 240, 240, 0.16)",
-          accent: "#f4f1e8",
-          cta: "#10b981",
+        bg: {
+          base: "var(--color-bg-base)",
+          muted: "var(--color-bg-muted)",
+          elevated: "var(--color-bg-elevated)",
+          overlay: "var(--color-bg-overlay)",
         },
+        fg: {
+          primary: "var(--color-text-primary)",
+          secondary: "var(--color-text-secondary)",
+          tertiary: "var(--color-text-tertiary)",
+          "on-accent": "var(--color-text-on-accent)",
+          "on-danger": "var(--color-text-on-danger)",
+        },
+        border: {
+          subtle: "var(--color-border-subtle)",
+          default: "var(--color-border-default)",
+          emphasis: "var(--color-border-emphasis)",
+        },
+        accent: {
+          50: "var(--color-accent-50)",
+          100: "var(--color-accent-100)",
+          500: "var(--color-accent-500)",
+          600: "var(--color-accent-600)",
+          700: "var(--color-accent-700)",
+        },
+        status: {
+          present: "var(--color-status-present)",
+          absent: "var(--color-status-absent)",
+          excused: "var(--color-status-excused)",
+          tardy: "var(--color-status-tardy)",
+          early: "var(--color-status-early)",
+          cancelled: "var(--color-status-cancelled)",
+          none: "var(--color-status-none)",
+        },
+      },
+      borderRadius: {
+        sm: "var(--radius-sm)",
+        md: "var(--radius-md)",
+        lg: "var(--radius-lg)",
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        sheet: "var(--shadow-sheet)",
+      },
+      fontFamily: {
+        sans: "var(--font-sans)",
       },
     },
   },

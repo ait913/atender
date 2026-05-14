@@ -1,18 +1,28 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { SemesterCreateInput, SemesterResponse, SemestersResponse } from "./types";
+import { QK, QP } from "@/api/queryKeys";
+import type { SemesterCreateInput, SemesterResponse, SemestersResponse, SemesterUpdateInput, OkResponse } from "./types";
+import { useApiMutation } from "./useApiMutation";
 
 export function useSemesters() {
   return useQuery({
-    queryKey: ["semesters"],
+    queryKey: QK.semesters(),
     queryFn: () => api<SemestersResponse>("/api/semesters"),
   });
 }
 
 export function useCreateSemester() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: SemesterCreateInput) => api<SemesterResponse>("/api/semesters", { method: "POST", body }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["semesters"] }),
-  });
+  return useApiMutation<SemesterCreateInput, SemesterResponse>((body) => api<SemesterResponse>("/api/semesters", { method: "POST", body }), [QK.semesters()]);
+}
+
+export function useUpdateSemester(id?: string) {
+  return useApiMutation<SemesterUpdateInput, SemesterResponse>((body) => api<SemesterResponse>(`/api/semesters/${id}`, { method: "PATCH", body }), [
+    QK.semesters(),
+    ...(id ? [QK.semester(id), QK.stats(id)] : []),
+    QK.userTimetables(),
+  ]);
+}
+
+export function useDeleteSemester(id?: string) {
+  return useApiMutation<void, OkResponse>(() => api<OkResponse>(`/api/semesters/${id}`, { method: "DELETE" }), [QK.semesters(), QK.userTimetables(), { predicate: QP.stats }]);
 }
