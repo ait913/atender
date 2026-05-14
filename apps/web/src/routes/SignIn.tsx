@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { APP_URL, api, authUrl } from "@/api/client";
+import { API_URL, APP_URL, api } from "@/api/client";
 import { Button, Field, PageTitle, Panel } from "@/components/ui";
 
 export function SignIn() {
@@ -8,7 +8,6 @@ export function SignIn() {
   const [cooldown, setCooldown] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submitRef = useRef<HTMLButtonElement>(null);
-  const googleUrl = authUrl("/api/auth/sign-in/social/google", { callbackURL: `${APP_URL}/` });
 
   useEffect(() => {
     if (!cooldown) return;
@@ -24,7 +23,7 @@ export function SignIn() {
     setCooldown(true);
     await api<{ ok: boolean }>("/api/auth/sign-in/magic-link", {
       method: "POST",
-      body: { email, callbackURL: `${APP_URL}/verify` },
+      body: { email, callbackURL: `${APP_URL}/` },
     }).then(
       () => {
         setSent(true);
@@ -36,8 +35,25 @@ export function SignIn() {
     );
   }
 
-  function googleSignIn() {
-    window.location.href = googleUrl;
+  async function googleSignIn() {
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/sign-in/social`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider: "google", callbackURL: `${APP_URL}/` }),
+      });
+      if (!res.ok) throw new Error("social sign-in failed");
+      const data = (await res.json()) as { url?: string; redirect?: boolean };
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("no redirect url");
+      }
+    } catch {
+      setError("Google ログインを開始できませんでした");
+    }
   }
 
   return (
@@ -65,16 +81,13 @@ export function SignIn() {
           または
           <span className="h-px flex-1 bg-white/14" />
         </div>
-        <a
+        <button
+          type="button"
           className="block min-h-11 w-full rounded-lg border border-white/24 px-4 py-2 text-center text-sm font-bold text-white transition hover:opacity-70"
-          href={googleUrl}
-          onClick={(event) => {
-            event.preventDefault();
-            googleSignIn();
-          }}
+          onClick={() => { void googleSignIn(); }}
         >
           G　Google でサインイン
-        </a>
+        </button>
         <p className="mt-8 text-center text-xs font-bold text-white/45">- based in tokyo/chiba -</p>
       </Panel>
     </div>
