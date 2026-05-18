@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
-:root {
+@theme {
   --color-bg-base: #FFFFFF;
   --color-bg-muted: #F7F7F5;
   --color-bg-elevated: #FFFFFF;
   --color-bg-overlay: rgba(0, 0, 0, 0.45);
+  --color-fg-primary: #1C1B1F;
+  --color-fg-secondary: #5F5E64;
+  --color-fg-tertiary: #9CA3AF;
+  --color-fg-on-accent: #FFFFFF;
+  --color-fg-on-danger: #FFFFFF;
   --color-text-primary: #1C1B1F;
   --color-text-secondary: #5F5E64;
   --color-text-tertiary: #9CA3AF;
@@ -25,17 +30,16 @@
   --color-status-early: #A855F7;
   --color-status-cancelled: #9CA3AF;
   --color-status-none: #D1D5DB;
+  --font-sans: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
+  --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.10);
+}
+
+:root {
   --focus-ring-color: var(--color-accent-500);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-full: 9999px;
-  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
-  --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.10);
-  --font-sans: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
 }
 
 * {

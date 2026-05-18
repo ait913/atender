@@ -13,10 +13,10 @@ function formatTime(minutes: number) {
 
 export function PeriodLabel({ periodIndex, startMinute, endMinute, style }: Props) {
   return (
-    <div className="bg-bg-muted border-r border-b border-border-subtle grid place-items-center gap-0.5 px-1" style={style}>
-      <span className="text-base font-semibold text-fg-primary leading-none">{periodIndex}限</span>
-      <span className="text-[10px] font-normal text-fg-tertiary leading-none tabular-nums">
-        {formatTime(startMinute)}-{formatTime(endMinute)}
+    <div className="bg-bg-muted border-r border-b border-border-subtle flex flex-col items-center justify-center gap-1 px-0.5 py-2 overflow-hidden" style={style}>
+      <span className="text-sm font-bold text-fg-primary leading-none">{periodIndex}限</span>
+      <span className="text-[9px] font-normal text-fg-tertiary leading-tight tabular-nums tracking-tight text-center whitespace-nowrap">
+        {formatTime(startMinute)}<br />-<br />{formatTime(endMinute)}
       </span>
     </div>
   );
