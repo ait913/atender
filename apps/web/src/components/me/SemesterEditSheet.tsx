@@ -8,6 +8,7 @@ export function SemesterEditSheet({ open, semester, onClose }: { open: boolean; 
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const update = useUpdateSemester(semester?.id);
   useEffect(() => {
     if (semester) {
@@ -17,12 +18,13 @@ export function SemesterEditSheet({ open, semester, onClose }: { open: boolean; 
     }
   }, [semester]);
   return (
-    <BottomSheet open={open} onClose={onClose} title="学期を編集">
-      <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); update.mutate({ name, startDate, endDate }, { onSuccess: onClose }); }}>
-        <Field label="学期名"><Input value={name} onChange={(event) => setName(event.target.value)} required /></Field>
-        <Field label="開始日"><Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} required /></Field>
-        <Field label="終了日"><Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} required /></Field>
-        <Button type="submit">保存</Button>
+    <BottomSheet open={open} onClose={onClose} title="学期を編集" closeDisabled={update.isPending}>
+      <form className="grid gap-3" onSubmit={(event) => { event.preventDefault(); setError(null); update.mutate({ name, startDate, endDate }, { onSuccess: onClose, onError: () => setError("保存できませんでした") }); }}>
+        {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-status-absent">{error}</p> : null}
+        <Field label="学期名"><Input value={name} onChange={(event) => setName(event.target.value)} required disabled={update.isPending} /></Field>
+        <Field label="開始日"><Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} required disabled={update.isPending} /></Field>
+        <Field label="終了日"><Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} required disabled={update.isPending} /></Field>
+        <Button type="submit" disabled={update.isPending}>{update.isPending ? "保存中..." : "保存"}</Button>
       </form>
     </BottomSheet>
   );

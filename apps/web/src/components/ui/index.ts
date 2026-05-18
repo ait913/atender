@@ -1,6 +1,7 @@
 export * from "./Button";
 export * from "./IconButton";
 export * from "./Input";
+export * from "./NumberStepper";
 export * from "./Select";
 export * from "./Textarea";
 export * from "./Field";

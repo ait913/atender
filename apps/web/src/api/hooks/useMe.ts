@@ -18,6 +18,8 @@ export function usePatchMe() {
   return useApiMutation<MeUpdateInput, MeResponse>((body) => api<MeResponse>("/api/me", { method: "PATCH", body }), [
     QK.me(),
     QK.session(),
+    { predicate: QP.userTimetables },
+    { predicate: QP.today },
     { predicate: QP.templates },
   ]);
 }

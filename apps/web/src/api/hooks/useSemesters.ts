@@ -12,17 +12,29 @@ export function useSemesters() {
 }
 
 export function useCreateSemester() {
-  return useApiMutation<SemesterCreateInput, SemesterResponse>((body) => api<SemesterResponse>("/api/semesters", { method: "POST", body }), [QK.semesters()]);
+  return useApiMutation<SemesterCreateInput, SemesterResponse>((body) => api<SemesterResponse>("/api/semesters", { method: "POST", body }), [
+    QK.semesters(),
+    { predicate: QP.userTimetables },
+    { predicate: QP.today },
+    { predicate: QP.stats },
+  ]);
 }
 
 export function useUpdateSemester(id?: string) {
   return useApiMutation<SemesterUpdateInput, SemesterResponse>((body) => api<SemesterResponse>(`/api/semesters/${id}`, { method: "PATCH", body }), [
     QK.semesters(),
     ...(id ? [QK.semester(id), QK.stats(id)] : []),
-    QK.userTimetables(),
+    { predicate: QP.userTimetables },
+    { predicate: QP.today },
+    { predicate: QP.stats },
   ]);
 }
 
 export function useDeleteSemester(id?: string) {
-  return useApiMutation<void, OkResponse>(() => api<OkResponse>(`/api/semesters/${id}`, { method: "DELETE" }), [QK.semesters(), QK.userTimetables(), { predicate: QP.stats }]);
+  return useApiMutation<void, OkResponse>(() => api<OkResponse>(`/api/semesters/${id}`, { method: "DELETE" }), [
+    QK.semesters(),
+    { predicate: QP.userTimetables },
+    { predicate: QP.today },
+    { predicate: QP.stats },
+  ]);
 }

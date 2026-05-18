@@ -31,7 +31,7 @@ export function useInfiniteTemplates(query: TemplateQuery) {
 export function useCopyTemplate() {
   return useApiMutation<{ templateId: string; input: TemplateCopyInput }, UserTimetableResponse>(
     ({ templateId, input }) => api<UserTimetableResponse>(`/api/timetable-templates/${templateId}/copy`, { method: "POST", body: input }),
-    [QK.userTimetables(), { predicate: QP.templates }],
+    [{ predicate: QP.userTimetables }, { predicate: QP.today }, { predicate: QP.stats }, { predicate: QP.templates }],
   );
 }
 

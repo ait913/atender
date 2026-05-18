@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 import type { PointerEvent, ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconButton } from "@/components/ui/IconButton";
 
 export function BottomSheet({
@@ -9,29 +9,34 @@ export function BottomSheet({
   title,
   children,
   maxHeight = "85dvh",
+  closeDisabled = false,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
   maxHeight?: string;
+  closeDisabled?: boolean;
 }) {
   const [offset, setOffset] = useState(0);
   const startY = useRef<number | null>(null);
+  const close = useCallback(() => {
+    if (!closeDisabled) onClose();
+  }, [closeDisabled, onClose]);
 
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") close();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [onClose, open]);
+  }, [close, open]);
 
   if (!open) return null;
 
@@ -46,14 +51,14 @@ export function BottomSheet({
   }
 
   function onPointerUp() {
-    if (offset > 80) onClose();
+    if (offset > 80) close();
     startY.current = null;
     setOffset(0);
   }
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-bg-overlay" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={close} />
       <section
         role="dialog"
         aria-modal="true"
@@ -66,7 +71,7 @@ export function BottomSheet({
         </div>
         <header className="flex min-h-12 items-center justify-between px-4">
           <h2 className="text-base font-semibold">{title}</h2>
-          <IconButton label="閉じる" icon={<X className="h-5 w-5" />} onClick={onClose} />
+          <IconButton label="閉じる" icon={<X className="h-5 w-5" />} onClick={close} disabled={closeDisabled} />
         </header>
         <div className="safe-pb max-h-[calc(85dvh-4rem)] overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
       </section>

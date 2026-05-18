@@ -32,7 +32,7 @@ export function useUserTimetables() {
 
 export function useUserTimetable(semesterId?: string | null) {
   return useQuery({
-    queryKey: ["user-timetable-by-semester", semesterId ?? "default"],
+    queryKey: QK.userTimetableBySemester(semesterId),
     queryFn: async () => {
       const response = await api<UserTimetablesResponse>("/api/user-timetables");
       return { userTimetable: response.userTimetables.find((item) => (semesterId ? item.semesterId === semesterId : true)) ?? null };
@@ -46,14 +46,14 @@ export const useCourses = useUserTimetable;
 export function useCreateUserTimetable() {
   return useApiMutation<UserTimetableCreateInput, UserTimetableResponse>(
     (body) => api<UserTimetableResponse>("/api/user-timetables", { method: "POST", body }),
-    [QK.userTimetables(), QK.me()],
+    [{ predicate: QP.userTimetables }, QK.me(), { predicate: QP.today }, { predicate: QP.stats }],
   );
 }
 
 export function useUpdateUserTimetable(id?: string) {
   return useApiMutation<UserTimetablePatchInput, UserTimetableResponse>(
     (body) => api<UserTimetableResponse>(`/api/user-timetables/${id}`, { method: "PATCH", body }),
-    id ? [QK.userTimetable(id), { predicate: QP.today }, { predicate: QP.stats }] : [{ predicate: QP.today }, { predicate: QP.stats }],
+    id ? [QK.userTimetable(id), { predicate: QP.userTimetables }, { predicate: QP.today }, { predicate: QP.stats }] : [{ predicate: QP.userTimetables }, { predicate: QP.today }, { predicate: QP.stats }],
   );
 }
 
@@ -62,7 +62,7 @@ export const usePatchUserTimetable = useUpdateUserTimetable;
 export function useDeleteUserTimetable(id?: string) {
   return useApiMutation<void, OkResponse>(
     () => api<OkResponse>(`/api/user-timetables/${id}`, { method: "DELETE" }),
-    [QK.userTimetables(), { predicate: QP.today }, { predicate: QP.stats }, QK.me()],
+    [{ predicate: QP.userTimetables }, { predicate: QP.today }, { predicate: QP.stats }, QK.me()],
   );
 }
 
@@ -76,6 +76,21 @@ export function usePublishTimetable(id?: string) {
 function timetableInvalidate(userTimetableId?: string, semesterId?: string | null) {
   return [
     ...(userTimetableId ? [QK.userTimetable(userTimetableId)] : [QK.userTimetables()]),
+    ...(semesterId ? [QK.userTimetableBySemester(semesterId)] : []),
+    { predicate: QP.userTimetables },
+    QK.meetings(),
+    { predicate: QP.today },
+    ...(semesterId ? [QK.stats(semesterId)] : [{ predicate: QP.stats }]),
+  ];
+}
+
+function courseInvalidate(userTimetableId?: string, semesterId?: string | null) {
+  return [
+    QK.courses(),
+    QK.meetings(),
+    ...(userTimetableId ? [QK.userTimetable(userTimetableId)] : [QK.userTimetables()]),
+    ...(semesterId ? [QK.userTimetableBySemester(semesterId)] : []),
+    { predicate: QP.userTimetables },
     { predicate: QP.today },
     ...(semesterId ? [QK.stats(semesterId)] : [{ predicate: QP.stats }]),
   ];
@@ -105,34 +120,44 @@ export function useDeleteMeeting(id?: string, userTimetableId?: string, semester
 export function useCreateCourse(userTimetableId?: string) {
   return useApiMutation<CourseCreateInput, CourseResponse>(
     (body) => api<CourseResponse>("/api/courses", { method: "POST", body }),
-    userTimetableId ? [QK.userTimetable(userTimetableId)] : [QK.userTimetables()],
+    courseInvalidate(userTimetableId),
   );
 }
 
 export function useUpdateCourse(id?: string, userTimetableId?: string, semesterId?: string | null) {
   return useApiMutation<CourseUpdateInput, CourseResponse>(
     (body) => api<CourseResponse>(`/api/courses/${id}`, { method: "PATCH", body }),
-    timetableInvalidate(userTimetableId, semesterId),
+    courseInvalidate(userTimetableId, semesterId),
   );
 }
 
 export function useDeleteCourse(id?: string, userTimetableId?: string, semesterId?: string | null, cascade = false) {
   return useApiMutation<void, OkResponse>(
     () => api<OkResponse>(`/api/courses/${id}`, { method: "DELETE", query: { cascade: cascade ? "true" : undefined } }),
-    timetableInvalidate(userTimetableId, semesterId),
+    courseInvalidate(userTimetableId, semesterId),
   );
 }
 
-export function useUpdateDaySlot(id?: string, userTimetableId?: string) {
+export function useUpdateDaySlot(id?: string, userTimetableId?: string, semesterId?: string | null) {
   return useApiMutation<DaySlotUpdateInput, DaySlotResponse>(
     (body) => api<DaySlotResponse>(`/api/day-slots/${id}`, { method: "PATCH", body }),
-    userTimetableId ? [QK.userTimetable(userTimetableId)] : [QK.userTimetables()],
+    [
+      ...(userTimetableId ? [QK.userTimetable(userTimetableId)] : [QK.userTimetables()]),
+      ...(semesterId ? [QK.userTimetableBySemester(semesterId)] : []),
+      { predicate: QP.userTimetables },
+      { predicate: QP.today },
+    ],
   );
 }
 
-export function useBulkReplaceDaySlots(userTimetableId?: string) {
+export function useBulkReplaceDaySlots(userTimetableId?: string, semesterId?: string | null) {
   return useApiMutation<DaySlotBulkReplaceInput, DaySlotsResponse>(
     (body) => api<DaySlotsResponse>(`/api/user-timetables/${userTimetableId}/day-slots/bulk-replace`, { method: "POST", body }),
-    userTimetableId ? [QK.userTimetable(userTimetableId), { predicate: QP.today }] : [{ predicate: QP.today }],
+    [
+      ...(userTimetableId ? [QK.userTimetable(userTimetableId)] : [QK.userTimetables()]),
+      ...(semesterId ? [QK.userTimetableBySemester(semesterId)] : []),
+      { predicate: QP.userTimetables },
+      { predicate: QP.today },
+    ],
   );
 }

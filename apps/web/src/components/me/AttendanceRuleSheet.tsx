@@ -16,14 +16,16 @@ export function AttendanceRuleSheet({ open, onClose, schoolId, departmentId, typ
   const [excusedStrategy, setExcused] = useState<RuleStrategy>("REDUCE_DENOMINATOR");
   const [tardyStrategy, setTardy] = useState<RuleStrategy>("HALF_PRESENT");
   const [earlyLeaveStrategy, setEarly] = useState<RuleStrategy>("HALF_PRESENT");
+  const [error, setError] = useState<string | null>(null);
   const patch = usePatchAttendanceRule({ schoolId, departmentId }, type);
   return (
-    <BottomSheet open={open} onClose={onClose} title={type === "default" ? "学校・学科のデフォルト" : "自分の上書き"}>
+    <BottomSheet open={open} onClose={onClose} title={type === "default" ? "学校・学科のデフォルト" : "自分の上書き"} closeDisabled={patch.isPending}>
       <div className="grid gap-3">
-        <Field label="公欠"><Select value={excusedStrategy} onChange={(event) => setExcused(event.target.value as RuleStrategy)}>{RULE_STRATEGY.map((item) => <option key={item} value={item}>{labels[item]}</option>)}</Select></Field>
-        <Field label="遅刻"><Select value={tardyStrategy} onChange={(event) => setTardy(event.target.value as RuleStrategy)}>{RULE_STRATEGY.map((item) => <option key={item} value={item}>{labels[item]}</option>)}</Select></Field>
-        <Field label="早退"><Select value={earlyLeaveStrategy} onChange={(event) => setEarly(event.target.value as RuleStrategy)}>{RULE_STRATEGY.map((item) => <option key={item} value={item}>{labels[item]}</option>)}</Select></Field>
-        <Button onClick={() => patch.mutate({ excusedStrategy, tardyStrategy, earlyLeaveStrategy }, { onSuccess: onClose })}>保存</Button>
+        {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-status-absent">{error}</p> : null}
+        <Field label="公欠"><Select value={excusedStrategy} disabled={patch.isPending} onChange={(event) => setExcused(event.target.value as RuleStrategy)}>{RULE_STRATEGY.map((item) => <option key={item} value={item}>{labels[item]}</option>)}</Select></Field>
+        <Field label="遅刻"><Select value={tardyStrategy} disabled={patch.isPending} onChange={(event) => setTardy(event.target.value as RuleStrategy)}>{RULE_STRATEGY.map((item) => <option key={item} value={item}>{labels[item]}</option>)}</Select></Field>
+        <Field label="早退"><Select value={earlyLeaveStrategy} disabled={patch.isPending} onChange={(event) => setEarly(event.target.value as RuleStrategy)}>{RULE_STRATEGY.map((item) => <option key={item} value={item}>{labels[item]}</option>)}</Select></Field>
+        <Button disabled={patch.isPending} onClick={() => { setError(null); patch.mutate({ excusedStrategy, tardyStrategy, earlyLeaveStrategy }, { onSuccess: onClose, onError: () => setError("保存できませんでした") }); }}>{patch.isPending ? "保存中..." : "保存"}</Button>
       </div>
     </BottomSheet>
   );
