@@ -21,6 +21,7 @@ const authOptions: BetterAuthOptions = {
     magicLink({
       expiresIn: 60 * 15,
       sendMagicLink: async ({ email, url }) => {
+        console.log("[Magic Link] sending to", email);
         const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -44,13 +45,18 @@ const authOptions: BetterAuthOptions = {
 </body>
 </html>`;
         const text = `Atender にログインする\n\n下記のリンクを開くとログインできます (有効期限 15 分):\n${url}\n\n心当たりがなければそのまま閉じてください。\n\n-- \nAtender :: attendance, one tap.\nbased in tokyo/chiba`;
-        await resend.emails.send({
+        const { data, error } = await resend.emails.send({
           from: env.RESEND_FROM,
           to: email,
           subject: "Atender にログインする",
           html,
           text,
         });
+        if (error) {
+          console.error("[Magic Link] Resend error:", error);
+          throw new Error(`Resend send failed: ${error.message}`);
+        }
+        console.log("[Magic Link] sent id=", data?.id);
       },
     }),
   ],
