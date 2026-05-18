@@ -21,9 +21,9 @@ export function NumberStepper({
   const increase = Math.min(max, normalized + step);
 
   return (
-    <div className="grid min-h-11 grid-cols-[44px_minmax(64px,1fr)_44px] overflow-hidden rounded-md border border-border-default bg-bg-elevated">
+    <div className="grid min-h-12 grid-cols-[44px_minmax(64px,1fr)_44px] overflow-hidden rounded-md border border-border-default bg-bg-elevated">
       <IconButton label="減らす" icon={<Minus className="h-4 w-4" />} className="rounded-none" disabled={disabled || normalized <= min} onClick={() => onChange(decrease)} />
-      <output className="flex min-w-0 items-center justify-center px-3 text-base font-semibold text-fg-primary">{normalized}</output>
+      <output className="flex min-w-0 items-center justify-center px-3 text-lg font-bold text-fg-primary">{normalized}</output>
       <IconButton label="増やす" icon={<Plus className="h-4 w-4" />} className="rounded-none" disabled={disabled || normalized >= max} onClick={() => onChange(increase)} />
     </div>
   );

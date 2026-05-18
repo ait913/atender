@@ -16,7 +16,7 @@ export function DepartmentPickerSheet({ open, schoolId, onSelect, onClose }: { o
         <Field label="学科名"><Input value={name} onChange={(event) => setName(event.target.value)} disabled={create.isPending} /></Field>
         <div className="grid gap-1">
           {departments.data?.departments.map((department) => (
-            <button key={department.id} type="button" className="min-h-11 rounded-md px-3 text-left hover:bg-bg-muted disabled:opacity-50" disabled={create.isPending} onClick={() => { onSelect(department); onClose(); }}>
+            <button key={department.id} type="button" className="min-h-11 rounded-md px-3 text-left hover:bg-bg-muted disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500" disabled={create.isPending} onClick={() => { onSelect(department); onClose(); }}>
               {department.name}
             </button>
           ))}

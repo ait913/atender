@@ -29,7 +29,7 @@ export function CourseEditorSheet({ open, onClose, userTimetableId, semesterId, 
   return (
     <BottomSheet open={open} onClose={onClose} title={course ? "科目を編集" : "科目を追加"} closeDisabled={pending}>
       <form
-        className="grid gap-3"
+        className="space-y-5"
         onSubmit={(event) => {
           event.preventDefault();
           setError(null);
@@ -39,13 +39,21 @@ export function CourseEditorSheet({ open, onClose, userTimetableId, semesterId, 
         }}
       >
         {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-status-absent">{error}</p> : null}
-        <Field label="科目名"><Input value={name} onChange={(event) => setName(event.target.value)} required disabled={pending} /></Field>
-        <Field label="教師"><Input value={teacher} onChange={(event) => setTeacher(event.target.value)} disabled={pending} /></Field>
-        <Field label="教室"><Input value={room} onChange={(event) => setRoom(event.target.value)} disabled={pending} /></Field>
-        <Field label="色"><Select value={color} onChange={(event) => setColor(event.target.value)} disabled={pending}>{coursePalette.map((item) => <option key={item} value={item}>{item}</option>)}</Select></Field>
-        <Field label="総授業回数"><NumberStepper value={totalSessions} min={1} max={60} onChange={setTotalSessions} disabled={pending} /></Field>
-        <Field label="メモ"><Textarea value={note} onChange={(event) => setNote(event.target.value)} disabled={pending} /></Field>
-        <Button type="submit" disabled={pending}>{pending ? "保存中..." : "保存"}</Button>
+        <section className="space-y-4">
+          <Field label="科目名" required><Input value={name} onChange={(event) => setName(event.target.value)} required disabled={pending} /></Field>
+          <Field label="教師"><Input value={teacher} onChange={(event) => setTeacher(event.target.value)} disabled={pending} /></Field>
+          <Field label="教室"><Input value={room} onChange={(event) => setRoom(event.target.value)} disabled={pending} /></Field>
+        </section>
+        <section className="space-y-4 pt-5 border-t border-border-subtle">
+          <Field label="色"><Select value={color} onChange={(event) => setColor(event.target.value)} disabled={pending}>{coursePalette.map((item) => <option key={item} value={item}>{item}</option>)}</Select></Field>
+          <Field label="総授業回数" required><NumberStepper value={totalSessions} min={1} max={60} onChange={setTotalSessions} disabled={pending} /></Field>
+          <Field label="メモ"><Textarea value={note} onChange={(event) => setNote(event.target.value)} disabled={pending} /></Field>
+        </section>
+        <footer className="sticky bottom-0 -mx-5 px-5 py-3 border-t border-border-subtle bg-bg-elevated" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
+          <div className="flex gap-3">
+            <Button className="flex-1" type="submit" disabled={pending}>{pending ? "保存中..." : "保存"}</Button>
+          </div>
+        </footer>
       </form>
     </BottomSheet>
   );

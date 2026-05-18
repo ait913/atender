@@ -15,7 +15,7 @@ export function CourseStatsCard({ course, danger, onClick }: { course: CourseSta
     ["休", course.counts.cancelled],
   ] as const;
   return (
-    <button type="button" className={`w-full rounded-md border bg-bg-elevated p-4 text-left shadow-card ${danger ? "border-status-absent" : "border-border-subtle"}`} onClick={onClick}>
+    <button type="button" className={`w-full rounded-md border bg-bg-elevated p-4 text-left shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 ${danger ? "border-status-absent focus-visible:outline-status-absent" : "border-border-subtle focus-visible:outline-accent-500"}`} onClick={onClick}>
       <h3 className="font-semibold">{course.courseName}</h3>
       <p className="mt-1 text-sm font-semibold text-fg-secondary">{course.effectiveNumerator} / {course.effectiveDenominator} = {pct(course)}</p>
       <div className="mt-3 grid grid-cols-12 gap-0.5">

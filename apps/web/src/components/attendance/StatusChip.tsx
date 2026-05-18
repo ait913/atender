@@ -36,7 +36,7 @@ export function StatusChip({
     "inline-flex items-center justify-center rounded-full font-semibold",
     size === "sm" ? "min-h-7 px-2 text-xs" : "min-h-9 px-3 text-sm",
     styles[status ?? "NONE"],
-    onTap && "cursor-pointer",
+    onTap && "cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
   );
   if (!onTap) return <span className={className}>{body}</span>;
   return (

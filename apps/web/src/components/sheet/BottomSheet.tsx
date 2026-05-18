@@ -1,7 +1,6 @@
 import { X } from "lucide-react";
 import type { PointerEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { IconButton } from "@/components/ui/IconButton";
 
 export function BottomSheet({
   open,
@@ -66,14 +65,22 @@ export function BottomSheet({
         className="fixed inset-x-0 bottom-0 z-50 rounded-t-lg bg-bg-elevated shadow-sheet"
         style={{ maxHeight, transform: `translateY(${offset}px)` }}
       >
-        <div className="cursor-grab touch-none px-4 pt-3" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
-          <div className="mx-auto h-1 w-6 rounded-full bg-border-emphasis" />
+        <div className="cursor-grab touch-none px-4 pt-3 pb-2" onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp}>
+          <div className="mx-auto h-1 w-8 rounded-full bg-border-emphasis" />
         </div>
-        <header className="flex min-h-12 items-center justify-between px-4">
-          <h2 className="text-base font-semibold">{title}</h2>
-          <IconButton label="閉じる" icon={<X className="h-5 w-5" />} onClick={close} disabled={closeDisabled} />
+        <header className="flex items-center justify-between min-h-14 px-5 border-b border-border-subtle">
+          <h2 className="text-lg font-semibold text-fg-primary">{title}</h2>
+          <button
+            type="button"
+            onClick={close}
+            disabled={closeDisabled}
+            className="min-w-11 min-h-11 -mr-2 inline-flex items-center justify-center text-fg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 disabled:opacity-50"
+            aria-label="閉じる"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
         </header>
-        <div className="safe-pb max-h-[calc(85dvh-4rem)] overflow-y-auto overscroll-contain px-4 pb-4">{children}</div>
+        <div className="safe-pb max-h-[calc(85dvh-4rem)] overflow-y-auto overscroll-contain px-5 pb-6 pt-1">{children}</div>
       </section>
     </>
   );

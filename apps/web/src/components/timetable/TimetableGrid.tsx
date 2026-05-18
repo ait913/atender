@@ -2,6 +2,7 @@ import type { UserTimetableDto } from "@atender/shared";
 import { Fragment } from "react";
 import { EmptyCell } from "./EmptyCell";
 import { MeetingBlock } from "./MeetingBlock";
+import { PeriodLabel } from "./PeriodLabel";
 import { weekdays } from "./helpers";
 
 export function TimetableGrid({
@@ -19,27 +20,23 @@ export function TimetableGrid({
 
   return (
     <div
-      className="grid gap-1 overflow-x-auto"
-      style={{ gridTemplateColumns: "48px repeat(5, minmax(88px, 1fr))", gridTemplateRows: `32px repeat(${daySlots.length}, minmax(64px, 64px))` }}
+      className="grid grid-cols-[56px_repeat(5,minmax(0,1fr))] gap-0 border-t border-l border-border-subtle rounded-md overflow-hidden bg-bg-base"
+      style={{ gridTemplateRows: `32px repeat(${daySlots.length}, minmax(72px, 72px))` }}
     >
-      <div style={{ gridColumn: 1, gridRow: 1 }} />
-      {weekdays.map((day) => <div key={day.value} className="flex items-center justify-center text-sm font-semibold text-fg-secondary" style={{ gridColumn: day.value + 1, gridRow: 1 }}>{day.label}</div>)}
+      <div className="border-r border-b border-border-subtle bg-bg-muted" style={{ gridColumn: 1, gridRow: 1 }} />
+      {weekdays.map((day) => <div key={day.value} className="flex items-center justify-center border-r border-b border-border-subtle bg-bg-muted text-sm font-medium text-fg-secondary" style={{ gridColumn: day.value + 1, gridRow: 1 }}>{day.label}</div>)}
       {daySlots.map((slot) => (
         <Fragment key={slot.periodIndex}>
-          <div key={`label-${slot.periodIndex}`} className="flex min-h-0 items-center justify-center rounded-md bg-bg-muted text-sm font-semibold text-fg-secondary" style={{ gridColumn: 1, gridRow: slot.periodIndex + 1 }}>{slot.label}</div>
+          <PeriodLabel key={`label-${slot.periodIndex}`} periodIndex={slot.periodIndex} startMinute={slot.startMinute} endMinute={slot.endMinute} style={{ gridColumn: 1, gridRow: slot.periodIndex + 1 }} />
           {weekdays.map((day) => {
             const key = `${day.value}-${slot.periodIndex}`;
             if (occupied.has(key)) return null;
             const meeting = userTimetable.meetings.find((item) => item.dayOfWeek === day.value && item.startPeriodIndex === slot.periodIndex);
             if (meeting) {
               const course = userTimetable.courses.find((item) => item.id === meeting.courseId);
-              return (
-                <div key={key} className="min-h-0" style={{ gridColumn: day.value + 1, gridRow: `${meeting.startPeriodIndex + 1} / span ${meeting.periodCount}` }}>
-                  <MeetingBlock meeting={meeting} course={course} daySlots={daySlots} onClick={() => onCellTap(day.value, slot.periodIndex, meeting.id)} />
-                </div>
-              );
+              return <MeetingBlock key={key} meeting={meeting} course={course} daySlots={daySlots} onClick={() => onCellTap(day.value, slot.periodIndex, meeting.id)} style={{ gridColumn: day.value + 1, gridRow: `${meeting.startPeriodIndex + 1} / span ${meeting.periodCount}` }} />;
             }
-            return <div key={key} className="min-h-0" style={{ gridColumn: day.value + 1, gridRow: slot.periodIndex + 1 }}><EmptyCell onClick={() => onCellTap(day.value, slot.periodIndex)} /></div>;
+            return <EmptyCell key={key} day={day.label} periodIndex={slot.periodIndex} onClick={() => onCellTap(day.value, slot.periodIndex)} style={{ gridColumn: day.value + 1, gridRow: slot.periodIndex + 1 }} />;
           })}
         </Fragment>
       ))}

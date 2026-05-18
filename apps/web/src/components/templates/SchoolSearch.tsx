@@ -102,14 +102,14 @@ export function SchoolSearch({ value, onChange }: { value: SchoolDto | null; onC
           ) : (
             results.slice(0, 10).map((school) => (
               <li key={school.id}>
-                <button type="button" className="min-h-11 w-full px-3 text-left text-sm hover:bg-bg-muted" onClick={() => onChange(school)}>
+                <button type="button" className="min-h-11 w-full px-3 text-left text-sm hover:bg-bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500" onClick={() => onChange(school)}>
                   {school.name}<span className="ml-2 text-fg-tertiary">{school.prefecture}</span>
                 </button>
               </li>
             ))
           )}
           <li className="border-t border-border-subtle">
-            <button type="button" className="min-h-11 w-full px-3 text-left text-sm font-semibold text-accent-700 hover:bg-bg-muted" onClick={startCreate}>
+            <button type="button" className="min-h-11 w-full px-3 text-left text-sm font-semibold text-accent-700 hover:bg-bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500" onClick={startCreate}>
               + 「{input}」を新しく追加
             </button>
           </li>

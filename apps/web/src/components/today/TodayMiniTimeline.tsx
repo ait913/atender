@@ -13,7 +13,7 @@ export function TodayMiniTimeline({ occurrences, date }: { occurrences: Occurren
   return (
     <button
       type="button"
-      className="w-full rounded-md border border-border-subtle bg-bg-elevated p-4 text-left shadow-card"
+      className="w-full rounded-md border border-border-subtle bg-bg-elevated p-4 text-left shadow-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       onClick={() => {
         void navigate({ to: "/timetable" });
         window.history.replaceState(null, "", `/timetable?day=${day}`);

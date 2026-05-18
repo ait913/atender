@@ -36,16 +36,20 @@ export function MeetingDetailSheet({ open, onClose, userTimetable, meeting }: { 
             }}
           />
         ) : (
-          <div className="grid gap-4">
-            <div>
+          <div className="space-y-5">
+            <section className="space-y-4">
               <h2 className="text-lg font-semibold">{course?.name ?? "授業"}</h2>
               <p className="mt-1 text-sm text-fg-secondary">{course?.teacher ?? "-"} / {course?.room ?? "-"}</p>
               {start && end ? <p className="mt-2 text-sm text-fg-secondary">{minutesToTime(start.startMinute)} - {minutesToTime(end.endMinute)}</p> : null}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" disabled={pending} onClick={() => setEditing(true)}>編集</Button>
-              <Button variant="destructive" disabled={pending} onClick={() => setConfirm(true)} icon={pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : undefined}>削除</Button>
-            </div>
+            </section>
+            <footer className="sticky bottom-0 -mx-5 px-5 py-3 border-t border-border-subtle bg-bg-elevated" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
+              <div className="flex gap-3">
+                <Button className="flex-1" variant="secondary" disabled={pending} onClick={() => setEditing(true)}>編集</Button>
+              </div>
+            </footer>
+            <section className="space-y-4 pt-5 border-t border-border-subtle">
+              <Button className="w-full" variant="destructive" disabled={pending} onClick={() => setConfirm(true)} icon={pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : undefined}>削除</Button>
+            </section>
           </div>
         )}
       </BottomSheet>

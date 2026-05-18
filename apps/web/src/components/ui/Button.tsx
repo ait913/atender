@@ -7,7 +7,7 @@ type ButtonSize = "sm" | "md" | "lg";
 const variants: Record<ButtonVariant, string> = {
   primary: "bg-accent-500 text-fg-on-accent hover:bg-accent-600",
   secondary: "border border-border-default bg-bg-elevated text-fg-primary hover:bg-bg-muted",
-  destructive: "bg-status-absent text-fg-on-danger hover:opacity-90",
+  destructive: "bg-status-absent text-fg-on-danger hover:opacity-90 focus-visible:outline-status-absent",
   ghost: "bg-transparent text-fg-secondary hover:bg-bg-muted",
 };
 
@@ -29,6 +29,7 @@ export function Button({ className, variant = "primary", size = "md", icon, chil
       type={type}
       className={cx(
         "inline-flex items-center justify-center gap-2 rounded-md font-semibold transition disabled:opacity-50",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500",
         variants[variant],
         sizes[size],
         className,

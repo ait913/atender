@@ -34,14 +34,14 @@ export function MeetingCreateSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose} title="授業を追加" closeDisabled={pending}>
-      <div className="grid gap-4">
+      <div className="space-y-5">
         {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm font-semibold text-status-absent">{error}</p> : null}
         <Button variant={createCourse ? "secondary" : "primary"} icon={!createCourse ? <Plus className="h-4 w-4" /> : undefined} disabled={pending} onClick={() => setCreateCourse((value) => !value)}>
           {createCourse ? "既存科目を選ぶ" : "新規 Course を作成"}
         </Button>
         {createCourse ? (
           <form
-            className="grid gap-3"
+            className="space-y-5"
             onSubmit={(event) => {
               event.preventDefault();
               setError(null);
@@ -59,15 +59,23 @@ export function MeetingCreateSheet({
               );
             }}
           >
-            <Field label="科目名"><Input value={courseName} onChange={(event) => setCourseName(event.target.value)} required disabled={pending} /></Field>
-            <Field label="教師"><Input value={teacher} onChange={(event) => setTeacher(event.target.value)} disabled={pending} /></Field>
-            <Field label="教室"><Input value={room} onChange={(event) => setRoom(event.target.value)} disabled={pending} /></Field>
-            <Field label="色">
-              <Select value={color} onChange={(event) => setColor(event.target.value)} disabled={pending}>
-                {coursePalette.map((item) => <option key={item} value={item}>{item}</option>)}
-              </Select>
-            </Field>
-            <Button type="submit" disabled={pending} icon={pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : undefined}>{pending ? "保存中..." : "保存"}</Button>
+            <section className="space-y-4">
+              <Field label="科目名" required><Input value={courseName} onChange={(event) => setCourseName(event.target.value)} required disabled={pending} /></Field>
+              <Field label="教師"><Input value={teacher} onChange={(event) => setTeacher(event.target.value)} disabled={pending} /></Field>
+              <Field label="教室"><Input value={room} onChange={(event) => setRoom(event.target.value)} disabled={pending} /></Field>
+            </section>
+            <section className="space-y-4 pt-5 border-t border-border-subtle">
+              <Field label="色">
+                <Select value={color} onChange={(event) => setColor(event.target.value)} disabled={pending}>
+                  {coursePalette.map((item) => <option key={item} value={item}>{item}</option>)}
+                </Select>
+              </Field>
+            </section>
+            <footer className="sticky bottom-0 -mx-5 px-5 py-3 border-t border-border-subtle bg-bg-elevated" style={{ paddingBottom: "max(env(safe-area-inset-bottom), 12px)" }}>
+              <div className="flex gap-3">
+                <Button className="flex-1" type="submit" disabled={pending} icon={pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : undefined}>{pending ? "保存中..." : "保存"}</Button>
+              </div>
+            </footer>
           </form>
         ) : (
           <MeetingEditForm

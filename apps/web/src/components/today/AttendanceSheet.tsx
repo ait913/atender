@@ -37,16 +37,20 @@ export function AttendanceSheet({
 
   return (
     <BottomSheet open={open} onClose={onClose} title="出欠を記録">
-      <div className="grid gap-3">
-        <div className="grid grid-cols-2 gap-2">
-          {ATTENDANCE_STATUS.map((status) => (
-            <Button key={status} variant={currentStatus === status ? "primary" : "secondary"} onClick={() => save(status)}>
-              {statusLabels[status]}
-            </Button>
-          ))}
-        </div>
-        <Textarea placeholder="メモ" value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />
-        <Button variant="ghost" onClick={clear}>記録を消す</Button>
+      <div className="space-y-5">
+        <section className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {ATTENDANCE_STATUS.map((status) => (
+              <Button key={status} variant={currentStatus === status ? "primary" : "secondary"} onClick={() => save(status)}>
+                {statusLabels[status]}
+              </Button>
+            ))}
+          </div>
+          <Textarea placeholder="メモ" value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />
+        </section>
+        <section className="space-y-4 pt-5 border-t border-border-subtle">
+          <Button className="w-full" variant="ghost" onClick={clear}>記録を消す</Button>
+        </section>
       </div>
     </BottomSheet>
   );

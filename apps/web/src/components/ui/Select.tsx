@@ -1,10 +1,18 @@
 import type { SelectHTMLAttributes } from "react";
 import { cx } from "./cx";
 
-export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+  error?: boolean;
+};
+
+export function Select({ className, error = false, ...props }: SelectProps) {
   return (
     <select
-      className={cx("min-h-11 w-full rounded-sm border border-border-default bg-bg-elevated px-3 text-base text-fg-primary outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-100", className)}
+      className={cx(
+        "min-h-12 w-full rounded-[10px] border border-border-default bg-bg-elevated px-4 text-base font-medium text-fg-primary placeholder:text-fg-tertiary placeholder:font-normal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 focus-visible:border-accent-500 disabled:opacity-50 disabled:cursor-not-allowed",
+        error ? "border-status-absent focus-visible:outline-status-absent focus-visible:border-status-absent" : null,
+        className,
+      )}
       {...props}
     />
   );
