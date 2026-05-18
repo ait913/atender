@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zJson, zParam, zQuery } from "../lib/zv";
 import { prisma } from "../db";
 import { dateStringToJstDay, toIsoDate, today } from "../lib/tz";
 import { sessionMiddleware } from "../middleware/session";
@@ -10,7 +10,7 @@ import { findActiveUserTimetable } from "../services/activeTimetable";
 const TodayQuery = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
 
 export function registerTodayRoutes(app: Hono) {
-  app.get("/api/today", sessionMiddleware, setupGuard, zValidator("query", TodayQuery), async (c) => {
+  app.get("/api/today", sessionMiddleware, setupGuard, zQuery(TodayQuery), async (c) => {
     const user = c.get("user");
     const query = c.req.valid("query");
     const day = query.date ? dateStringToJstDay(query.date) : today();

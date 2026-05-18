@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zJson, zParam, zQuery } from "../lib/zv";
 import { AttendanceRuleUpsertInput } from "@atender/shared";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
@@ -30,7 +30,7 @@ async function ensureSchoolDepartment(schoolId: string, departmentId: string) {
 }
 
 export function registerRuleRoutes(app: Hono) {
-  app.get("/api/attendance-rules", sessionMiddleware, setupGuard, zValidator("query", RuleScope), async (c) => {
+  app.get("/api/attendance-rules", sessionMiddleware, setupGuard, zQuery(RuleScope), async (c) => {
     const user = c.get("user");
     const scope = c.req.valid("query");
     await ensureSchoolDepartment(scope.schoolId, scope.departmentId);
@@ -42,7 +42,7 @@ export function registerRuleRoutes(app: Hono) {
     });
   });
 
-  app.patch("/api/attendance-rules/default", sessionMiddleware, zValidator("json", RuleBody), async (c) => {
+  app.patch("/api/attendance-rules/default", sessionMiddleware, zJson(RuleBody), async (c) => {
     const input = c.req.valid("json");
     await ensureSchoolDepartment(input.schoolId, input.departmentId);
     const existing = await prisma.attendanceRule.findFirst({ where: { schoolId: input.schoolId, departmentId: input.departmentId, userId: null } });
@@ -52,7 +52,7 @@ export function registerRuleRoutes(app: Hono) {
     return c.json({ rule: ruleDto(rule) });
   });
 
-  app.patch("/api/attendance-rules/user", sessionMiddleware, zValidator("json", RuleBody), async (c) => {
+  app.patch("/api/attendance-rules/user", sessionMiddleware, zJson(RuleBody), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     await ensureSchoolDepartment(input.schoolId, input.departmentId);
@@ -71,7 +71,7 @@ export function registerRuleRoutes(app: Hono) {
     }
   });
 
-  app.delete("/api/attendance-rules/user", sessionMiddleware, zValidator("query", RuleScope), async (c) => {
+  app.delete("/api/attendance-rules/user", sessionMiddleware, zQuery(RuleScope), async (c) => {
     const user = c.get("user");
     const scope = c.req.valid("query");
     const rule = await prisma.attendanceRule.findUnique({ where: { schoolId_departmentId_userId: { ...scope, userId: user.id } } });

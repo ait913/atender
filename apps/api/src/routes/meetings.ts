@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zJson, zParam, zQuery } from "../lib/zv";
 import { MeetingCreateInput, MeetingUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -44,7 +44,7 @@ function assertMeetingInDaySlotRange(daySlotCount: number, startPeriodIndex: num
 }
 
 export function registerMeetingRoutes(app: Hono) {
-  app.post("/api/meetings", sessionMiddleware, setupGuard, zValidator("json", MeetingCreateInput), async (c) => {
+  app.post("/api/meetings", sessionMiddleware, setupGuard, zJson(MeetingCreateInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const timetable = await getOwnedTimetable(input.userTimetableId, user.id);
@@ -69,7 +69,7 @@ export function registerMeetingRoutes(app: Hono) {
     return c.json({ meeting: meetingDto(meeting) }, 201);
   });
 
-  app.patch("/api/meetings/:id", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", MeetingUpdateInput), async (c) => {
+  app.patch("/api/meetings/:id", sessionMiddleware, setupGuard, zParam(IdParam), zJson(MeetingUpdateInput), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
@@ -116,7 +116,7 @@ export function registerMeetingRoutes(app: Hono) {
     return c.json({ meeting: meetingDto(meeting) });
   });
 
-  app.delete("/api/meetings/:id", sessionMiddleware, setupGuard, zValidator("param", IdParam), async (c) => {
+  app.delete("/api/meetings/:id", sessionMiddleware, setupGuard, zParam(IdParam), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     await getOwnedMeeting(id, user.id);

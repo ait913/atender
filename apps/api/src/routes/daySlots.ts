@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zJson, zParam, zQuery } from "../lib/zv";
 import { DaySlotBulkReplaceInput, DaySlotUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -31,7 +31,7 @@ async function getOwnedTimetable(id: string, userId: string) {
 }
 
 export function registerDaySlotRoutes(app: Hono) {
-  app.patch("/api/day-slots/:id", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", DaySlotUpdateInput), async (c) => {
+  app.patch("/api/day-slots/:id", sessionMiddleware, setupGuard, zParam(IdParam), zJson(DaySlotUpdateInput), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
@@ -48,7 +48,7 @@ export function registerDaySlotRoutes(app: Hono) {
     return c.json({ daySlot: daySlotDto(daySlot) });
   });
 
-  app.post("/api/user-timetables/:id/day-slots/bulk-replace", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", DaySlotBulkReplaceInput), async (c) => {
+  app.post("/api/user-timetables/:id/day-slots/bulk-replace", sessionMiddleware, setupGuard, zParam(IdParam), zJson(DaySlotBulkReplaceInput), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
