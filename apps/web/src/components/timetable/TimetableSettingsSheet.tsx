@@ -45,14 +45,35 @@ export function TimetableSettingsSheet({ open, onClose, userTimetable }: { open:
             <Button className="flex-1" variant="secondary" disabled={bulk.isPending} onClick={() => resize(5)}>標準時刻に戻す</Button>
             <Button
               className="flex-1"
-              disabled={bulk.isPending}
+              disabled={bulk.isPending || !userTimetable || slots.length === 0}
               onClick={() => {
                 setError(null);
+                if (!userTimetable) {
+                  setError("時間割が選択されていません");
+                  return;
+                }
+                if (slots.length === 0) {
+                  setError("時限数を 1 以上にしてください");
+                  return;
+                }
                 bulk.mutate(
                   { daySlots: slots },
                   {
                     onSuccess: onClose,
-                    onError: (err) => setError(err instanceof ApiError && err.status === 409 ? "6 限以降の授業を削除してから減らしてください" : "保存できませんでした"),
+                    onError: (err) => {
+                      if (err instanceof ApiError) {
+                        if (err.status === 409 && err.code === "CONFLICT") {
+                          setError("時限数を超える授業があります。先に該当の授業を削除してください");
+                        } else if (err.status === 400) {
+                          setError(`入力に誤り: ${err.message}`);
+                        } else {
+                          setError(`保存できませんでした (${err.status}): ${err.message}`);
+                        }
+                      } else {
+                        setError("保存できませんでした (通信エラー)");
+                      }
+                      console.error("[TimetableSettings] save error", err);
+                    },
                   },
                 );
               }}
