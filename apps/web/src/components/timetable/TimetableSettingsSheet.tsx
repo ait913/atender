@@ -65,7 +65,13 @@ export function TimetableSettingsSheet({ open, onClose, userTimetable }: { open:
                         if (err.status === 409 && err.code === "CONFLICT") {
                           setError("時限数を超える授業があります。先に該当の授業を削除してください");
                         } else if (err.status === 400) {
-                          setError(`入力に誤り: ${err.message}`);
+                          const d = err.details as { fieldErrors?: Record<string, string[]>; formErrors?: string[] } | undefined;
+                          const fields = Object.entries(d?.fieldErrors ?? {})
+                            .map(([k, v]) => `${k}: ${(v ?? []).join(", ")}`)
+                            .join("; ");
+                          const forms = (d?.formErrors ?? []).join("; ");
+                          const detail = [fields, forms].filter(Boolean).join(" / ");
+                          setError(`入力に誤り: ${detail || err.message}`);
                         } else {
                           setError(`保存できませんでした (${err.status}): ${err.message}`);
                         }
