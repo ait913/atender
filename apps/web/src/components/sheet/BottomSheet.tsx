@@ -5,7 +5,7 @@ export function BottomSheet({
   onClose,
   title,
   children,
-  maxHeight = "85dvh",
+  maxHeight = "92dvh",
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,19 +30,35 @@ export function BottomSheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      <button type="button" aria-label="閉じる" className="absolute inset-0 bg-bg-overlay" onClick={onClose} />
-      <section className="absolute inset-x-0 bottom-0 rounded-t-lg bg-bg-elevated shadow-sheet" style={{ maxHeight }}>
-        <div className="flex justify-center py-3">
-          <span className="h-1 w-8 rounded-full bg-border-default" />
+    <div className="fixed inset-0 z-[1100]">
+      <button
+        type="button"
+        aria-label="閉じる"
+        className="absolute inset-0 overlay-fade-in bg-black/70 backdrop-blur-md"
+        onClick={onClose}
+      />
+      <section
+        className="absolute inset-x-0 bottom-0 sheet-slide-up rounded-t-[28px] bg-bg-elevated shadow-sheet z-[1110]"
+        style={{ maxHeight }}
+      >
+        <div className="flex justify-center pt-3 pb-2">
+          <span className="h-1.5 w-12 rounded-full bg-white/20" />
         </div>
-        <header className="flex min-h-14 items-center justify-between border-b border-border-subtle px-5">
-          <h2 className="text-lg font-semibold">{title}</h2>
-          <button type="button" className="grid h-10 w-10 place-items-center rounded-full text-xl text-fg-secondary hover:bg-bg-muted" onClick={onClose}>
-            x
+        <header className="flex min-h-14 items-center justify-between px-6 pt-2 pb-3">
+          <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+          <button
+            type="button"
+            className="grid h-11 w-11 place-items-center rounded-full bg-bg-muted text-lg text-fg-secondary hover:bg-white/10 active:scale-95 transition"
+            onClick={onClose}
+            aria-label="閉じる"
+          >
+            ✕
           </button>
         </header>
-        <div className="max-h-[calc(85dvh-88px)] space-y-5 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4 overscroll-contain">
+        <div
+          className="space-y-5 overflow-y-auto px-6 pb-[calc(32px+env(safe-area-inset-bottom))] pt-2 overscroll-contain"
+          style={{ maxHeight: "calc(92dvh - 96px)" }}
+        >
           {children}
         </div>
       </section>

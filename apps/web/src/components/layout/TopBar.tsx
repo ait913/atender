@@ -4,14 +4,17 @@ import { AvatarMenu } from "@/components/avatar/AvatarMenu";
 
 export function TopBar({ leading, title }: { leading?: ReactNode; title?: string }) {
   return (
-    <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border-subtle bg-bg-muted/95 px-4 backdrop-blur md:h-14 md:px-6">
+    <header
+      className="sticky top-0 z-30 flex h-14 items-center justify-between bg-bg-base/70 px-5 backdrop-blur-xl md:h-16 md:px-8"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <div className="flex min-w-0 items-center gap-3">
         {leading ?? (
-          <Link to="/" className="text-lg font-semibold text-fg-primary md:hidden">
-            Atender
+          <Link to="/" className="text-xl font-black tracking-tight text-fg-primary md:hidden">
+            atender
           </Link>
         )}
-        {title ? <h1 className="truncate text-base font-semibold text-fg-primary">{title}</h1> : null}
+        {title ? <h1 className="truncate text-lg font-bold text-fg-primary">{title}</h1> : null}
       </div>
       <AvatarMenu />
     </header>

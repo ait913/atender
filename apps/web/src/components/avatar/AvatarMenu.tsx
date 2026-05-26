@@ -32,40 +32,48 @@ export function AvatarMenu() {
   const trigger = (
     <button
       type="button"
-      className="relative grid h-10 w-10 place-items-center overflow-hidden rounded-full bg-accent-100 text-sm font-semibold text-accent-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      className="relative grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-accent-500 text-base font-black text-fg-on-accent shadow-glow-soft active:scale-95 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       onClick={() => (mobile ? setSheet("menu") : setOpen((value) => !value))}
       aria-label="アカウントメニュー"
     >
       {user?.image ? <img src={user.image} alt="" className="h-full w-full object-cover" /> : initial}
-      {(pending.data ?? 0) > 0 ? <span className="absolute right-0 top-0 h-4 w-4 rounded-full border-2 border-bg-muted bg-accent-500" /> : null}
+      {(pending.data ?? 0) > 0 ? <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-bg-base bg-status-tardy" /> : null}
     </button>
   );
 
   const menu = (
-    <div className="min-w-72 space-y-1 rounded-md border border-border-subtle bg-bg-elevated p-2 shadow-popover">
-      <div className="border-b border-border-subtle px-3 py-3">
-        <p className="font-semibold">{user?.name ?? "No name"}</p>
+    <div className="min-w-72 space-y-1 rounded-3xl bg-bg-elevated p-3 shadow-popover">
+      <div className="px-4 py-3">
+        <p className="text-lg font-bold tracking-tight">{user?.name ?? "No name"}</p>
         <p className="text-xs text-fg-secondary">{user?.email}</p>
       </div>
       <MenuButton onClick={() => setSheet("profile")}>プロフィール</MenuButton>
       <MenuButton onClick={() => setSheet("school")}>学校・学科</MenuButton>
       <MenuButton onClick={() => setSheet("rules")}>出欠ルール</MenuButton>
       <MenuButton onClick={() => setSheet("semesters")}>学期管理</MenuButton>
-      <div className="border-t border-border-subtle pt-1">
-        <MenuButton onClick={() => void navigate({ to: "/stats" })}>出席率を見る</MenuButton>
-        <MenuButton onClick={() => void navigate({ to: "/templates" })}>みんなの時間割</MenuButton>
-      </div>
-      <div className="border-t border-border-subtle pt-1">
-        <MenuButton danger onClick={() => void signOut()}>ログアウト</MenuButton>
-      </div>
+      <div className="my-1 h-px bg-white/8" />
+      <MenuButton onClick={() => void navigate({ to: "/stats" })}>出席率を見る</MenuButton>
+      <MenuButton onClick={() => void navigate({ to: "/templates" })}>みんなの時間割</MenuButton>
+      <div className="my-1 h-px bg-white/8" />
+      <MenuButton danger onClick={() => void signOut()}>ログアウト</MenuButton>
     </div>
   );
 
   return (
     <div className="relative">
       {trigger}
-      {!mobile && open ? <div className="absolute right-0 top-12 z-50">{menu}</div> : null}
-      <BottomSheet open={sheet === "menu"} onClose={() => setSheet(null)}>{menu}</BottomSheet>
+      {!mobile && open ? (
+        <>
+          <button
+            type="button"
+            aria-label="閉じる"
+            className="fixed inset-0 z-[1100]"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-14 z-[1110]">{menu}</div>
+        </>
+      ) : null}
+      <BottomSheet open={sheet === "menu"} onClose={() => setSheet(null)} title="アカウント">{menu}</BottomSheet>
       <ProfileEditSheet open={sheet === "profile"} onClose={() => setSheet(null)} />
       <SchoolDeptEditSheet open={sheet === "school"} onClose={() => setSheet(null)} />
       <AttendanceRuleSheet open={sheet === "rules"} onClose={() => setSheet(null)} />
@@ -76,7 +84,13 @@ export function AvatarMenu() {
 
 function MenuButton({ children, onClick, danger = false }: { children: string; onClick: () => void; danger?: boolean }) {
   return (
-    <button type="button" className={`block w-full rounded-sm px-3 py-2 text-left text-sm font-medium hover:bg-bg-muted ${danger ? "text-status-absent" : "text-fg-primary"}`} onClick={onClick}>
+    <button
+      type="button"
+      className={`block w-full rounded-2xl px-4 py-3 text-left text-base font-bold transition active:scale-[0.98] hover:bg-white/6 ${
+        danger ? "text-status-absent" : "text-fg-primary"
+      }`}
+      onClick={onClick}
+    >
       {children}
     </button>
   );

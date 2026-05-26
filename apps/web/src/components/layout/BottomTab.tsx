@@ -7,14 +7,35 @@ export function BottomTab() {
   const keyboardOpen = useIsKeyboardOpen();
   if (keyboardOpen) return null;
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border-subtle bg-bg-muted pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-around bg-bg-elevated/85 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] backdrop-blur-xl border-t border-border-subtle md:hidden"
+      style={{ boxShadow: "0 -8px 32px rgba(0,0,0,0.55)" }}
+    >
       {navItems.map((item) => {
         const active = isActivePath(pathname, item.to);
         return (
-          <Link key={item.to} to={item.to} className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium ${active ? "text-accent-600" : "text-fg-secondary"}`}>
-            {active ? <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-accent-500" /> : null}
-            <span className="text-lg leading-none">{item.icon}</span>
-            <span>{item.label}</span>
+          <Link
+            key={item.to}
+            to={item.to}
+            className="group flex flex-1 flex-col items-center justify-end gap-1 py-1.5"
+            aria-current={active ? "page" : undefined}
+          >
+            <span
+              className={`grid h-12 w-12 place-items-center rounded-2xl text-2xl leading-none transition-all duration-200 ${
+                active
+                  ? "bg-accent-500 text-fg-on-accent scale-105 shadow-glow"
+                  : "bg-transparent text-fg-secondary group-hover:bg-white/5 group-active:scale-95"
+              }`}
+            >
+              {item.icon}
+            </span>
+            <span
+              className={`text-[11px] font-bold leading-none transition-opacity ${
+                active ? "text-accent-500 opacity-100" : "text-fg-tertiary opacity-70"
+              }`}
+            >
+              {item.label}
+            </span>
           </Link>
         );
       })}

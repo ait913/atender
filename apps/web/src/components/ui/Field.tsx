@@ -8,7 +8,7 @@ export function Field(props: FieldWrapperProps | InputHTMLAttributes<HTMLInputEl
   const { label, required, children, hint, className = "" } = props as FieldWrapperProps;
   return (
     <label className={`block space-y-2 ${className}`}>
-      <span className="text-sm font-medium text-fg-secondary">
+      <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">
         {label}
         {required ? <span className="ml-1 text-status-absent">*</span> : null}
       </span>
