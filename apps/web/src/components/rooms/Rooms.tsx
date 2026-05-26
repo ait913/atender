@@ -1,0 +1,33 @@
+import { useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { useRooms } from "@/api/hooks";
+import { Button, EmptyState } from "@/components/ui";
+import { JoinByCodeSheet } from "./JoinByCodeSheet";
+import { RoomCard } from "./RoomCard";
+import { RoomCreateSheet } from "./RoomCreateSheet";
+
+export function Rooms() {
+  const navigate = useNavigate();
+  const rooms = useRooms();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const list = rooms.data?.rooms ?? [];
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">ルーム</h1>
+        <div className="flex gap-2">
+          <Button type="button" onClick={() => setJoinOpen(true)}>リンクで参加</Button>
+          <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>ルームを作成</Button>
+        </div>
+      </div>
+      {list.length === 0 && !rooms.isLoading ? (
+        <EmptyState title="まだルームに参加していません" action={<Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>ルームを作成</Button>}>友達の時間割と予定をまとめて見られます。</EmptyState>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">{list.map((room) => <RoomCard key={room.id} room={room} onClick={() => void navigate({ to: "/rooms/$id", params: { id: room.id } })} />)}</div>
+      )}
+      <RoomCreateSheet open={createOpen} onClose={() => setCreateOpen(false)} />
+      <JoinByCodeSheet open={joinOpen} onClose={() => setJoinOpen(false)} />
+    </div>
+  );
+}

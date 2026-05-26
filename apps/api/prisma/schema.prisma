@@ -25,6 +25,8 @@ model User {
   school            School?   @relation("UserSchool", fields: [schoolId], references: [id], onDelete: SetNull)
   departmentId      String?
   department        Department? @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
+  handle            String? @unique
+  inviteCode        String  @unique @default(cuid())
 
   accounts        Account[]
   sessions        Session[]
@@ -35,6 +37,11 @@ model User {
   authoredTemplates TimetableTemplate[] @relation("AuthoredTemplates")
   createdSchools  School[]        @relation("UserCreatedSchools")
   createdDepartments Department[] @relation("UserCreatedDepartments")
+  sentFriendships     Friendship[]     @relation("FriendshipSender")
+  receivedFriendships Friendship[]     @relation("FriendshipReceiver")
+  createdRooms        Room[]           @relation("RoomCreatedBy")
+  roomMemberships     RoomMembership[]
+  authoredRoomEvents  RoomEvent[]      @relation("RoomEventAuthor")
 
   @@index([schoolId, departmentId])
 }
@@ -334,6 +341,84 @@ enum AttendanceStatus {
   TARDY        // 遅刻
   EARLY_LEAVE  // 早退
   CANCELLED    // 休講
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+}
+
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String
+  sender     User             @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User             @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  acceptedAt DateTime?
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId, status])
+  @@index([senderId, status])
+}
+
+enum RoomRole {
+  OWNER
+  MEMBER
+}
+
+model Room {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  inviteCode      String   @unique @default(cuid())
+  inviteExpiresAt DateTime?
+  createdByUserId String
+  createdBy       User     @relation("RoomCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  memberships RoomMembership[]
+  events      RoomEvent[]
+
+  @@index([createdByUserId])
+}
+
+model RoomMembership {
+  id       String   @id @default(cuid())
+  roomId   String
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     RoomRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+  @@index([roomId])
+}
+
+model RoomEvent {
+  id          String   @id @default(cuid())
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User     @relation("RoomEventAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  isAllDay    Boolean  @default(false)
+  color       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([roomId, start])
+  @@index([authorId])
 }
 
 model AttendanceRecord {

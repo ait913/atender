@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import type { Meeting } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -9,14 +10,20 @@ import { APP_TZ } from "../lib/tz";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export async function generateOccurrencesForUserTimetable(args: {
-  userTimetableId: string;
-  fromDate?: Date;
-  toDate?: Date;
-}): Promise<{ created: number; skipped: number }> {
-  const timetable = await prisma.userTimetable.findUnique({
+type OccurrenceClient = typeof prisma | Prisma.TransactionClient;
+
+async function generateOccurrencesForMeetings(
+  client: OccurrenceClient,
+  args: {
+    userTimetableId: string;
+    meetings: Meeting[];
+    fromDate?: Date;
+    toDate?: Date;
+  },
+): Promise<{ created: number; skipped: number }> {
+  const timetable = await client.userTimetable.findUnique({
     where: { id: args.userTimetableId },
-    include: { semester: true, daySlots: true, meetings: true },
+    include: { semester: true, daySlots: true },
   });
   if (!timetable) {
     throw new AppError(404, "NOT_FOUND", "UserTimetable not found");
@@ -28,7 +35,7 @@ export async function generateOccurrencesForUserTimetable(args: {
   let created = 0;
   let skipped = 0;
 
-  for (const meeting of timetable.meetings) {
+  for (const meeting of args.meetings) {
     for (let offset = 0; offset < meeting.periodCount; offset += 1) {
       const slot = slotMap.get(meeting.startPeriodIndex + offset);
       if (!slot) {
@@ -44,7 +51,7 @@ export async function generateOccurrencesForUserTimetable(args: {
           throw new AppError(400, "VALIDATION_ERROR", "Day slot not found", { reason: "DAY_SLOT_NOT_FOUND" });
         }
         try {
-          await prisma.meetingOccurrence.create({
+          await client.meetingOccurrence.create({
             data: {
               meetingId: meeting.id,
               courseId: meeting.courseId,
@@ -66,4 +73,27 @@ export async function generateOccurrencesForUserTimetable(args: {
   }
 
   return { created, skipped };
+}
+
+export async function generateOccurrencesForUserTimetable(args: {
+  userTimetableId: string;
+  fromDate?: Date;
+  toDate?: Date;
+}): Promise<{ created: number; skipped: number }> {
+  const timetable = await prisma.userTimetable.findUnique({
+    where: { id: args.userTimetableId },
+    include: { meetings: true },
+  });
+  if (!timetable) {
+    throw new AppError(404, "NOT_FOUND", "UserTimetable not found");
+  }
+
+  return generateOccurrencesForMeetings(prisma, { ...args, meetings: timetable.meetings });
+}
+
+export async function generateOccurrencesForMeeting(tx: Prisma.TransactionClient, meeting: Meeting) {
+  return generateOccurrencesForMeetings(tx, {
+    userTimetableId: meeting.userTimetableId,
+    meetings: [meeting],
+  });
 }

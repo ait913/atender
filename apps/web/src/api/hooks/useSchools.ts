@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { QK } from "@/api/queryKeys";
 import type { DepartmentCreateInput, SchoolCreateInput, SchoolDto } from "@atender/shared";
 import type { DepartmentsResponse, SchoolsResponse, SchoolSearchQuery } from "./types";
 
 export function useSchools(query: Partial<SchoolSearchQuery>) {
   return useQuery({
-    queryKey: ["schools", query],
+    queryKey: QK.schools(query),
     queryFn: () => api<SchoolsResponse>("/api/schools", { query }),
   });
 }
@@ -20,7 +21,7 @@ export function useCreateSchool() {
 
 export function useDepartments(schoolId?: string, q?: string) {
   return useQuery({
-    queryKey: ["departments", schoolId, q],
+    queryKey: QK.departments(schoolId, q),
     enabled: Boolean(schoolId),
     queryFn: () => api<DepartmentsResponse>(`/api/schools/${schoolId}/departments`, { query: { q, limit: 50 } }),
   });

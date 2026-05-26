@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { QK } from "@/api/queryKeys";
 import type { AttendanceRuleUpsertInput } from "@atender/shared";
 import type { EffectiveRuleResponse, RuleResponse } from "./types";
 
@@ -7,7 +8,7 @@ type Scope = { schoolId?: string | null; departmentId?: string | null };
 
 export function useAttendanceRules(scope: Scope) {
   return useQuery({
-    queryKey: ["attendance-rules", scope],
+    queryKey: QK.rules(scope),
     enabled: Boolean(scope.schoolId && scope.departmentId),
     queryFn: () => api<EffectiveRuleResponse>("/api/attendance-rules", { query: scope }),
   });

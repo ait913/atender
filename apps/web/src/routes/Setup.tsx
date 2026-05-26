@@ -53,7 +53,7 @@ export function Setup() {
 
   return (
     <div className="mx-auto max-w-3xl py-6">
-      <PageTitle title="Setup::">{title}</PageTitle>
+      <PageTitle title="セットアップ">{title}</PageTitle>
       <Panel>
         {step === 1 ? (
           <div className="space-y-4">
@@ -65,7 +65,7 @@ export function Setup() {
             </div>
             <div className="space-y-2">
               {(schools.data?.schools ?? []).map((item) => (
-                <button key={item.id} className="block w-full rounded-lg border border-white/12 px-3 py-3 text-left hover:bg-white/8" onClick={() => { setSchool(item); setStep(2); }}>
+                <button key={item.id} className="block w-full rounded-md border border-border-subtle px-3 py-3 text-left hover:bg-bg-muted" onClick={() => { setSchool(item); setStep(2); }}>
                   ○ {item.name}
                 </button>
               ))}
@@ -78,7 +78,7 @@ export function Setup() {
             <Field placeholder={`${school.name} の学科名で検索`} value={departmentQuery} onChange={(event) => setDepartmentQuery(event.currentTarget.value)} />
             <div className="space-y-2">
               {(departments.data?.departments ?? []).map((item) => (
-                <button key={item.id} className={`block w-full rounded-lg border px-3 py-3 text-left ${department?.id === item.id ? "border-emerald-400 bg-emerald-500/10" : "border-white/12 hover:bg-white/8"}`} onClick={() => setDepartment(item)}>
+                <button key={item.id} className={`block w-full rounded-md border px-3 py-3 text-left ${department?.id === item.id ? "border-accent-500 bg-accent-50" : "border-border-subtle hover:bg-bg-muted"}`} onClick={() => setDepartment(item)}>
                   ○ {item.name}
                 </button>
               ))}

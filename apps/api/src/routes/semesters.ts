@@ -26,12 +26,15 @@ export function registerSemesterRoutes(app: Hono) {
   app.post("/api/semesters", sessionMiddleware, zValidator("json", SemesterCreateInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
+    const startDate = semesterDateStart(input.startDate);
+    const endDate = semesterDateEnd(input.endDate);
+    if (startDate > endDate) throw new AppError(400, "VALIDATION_ERROR", "startDate must be <= endDate");
     const semester = await prisma.semester.create({
       data: {
         userId: user.id,
         name: input.name,
-        startDate: semesterDateStart(input.startDate),
-        endDate: semesterDateEnd(input.endDate),
+        startDate,
+        endDate,
       },
     });
     const timetableCount = await prisma.userTimetable.count({ where: { userId: user.id } });

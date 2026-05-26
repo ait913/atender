@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AttendanceStatus, TodayResponse } from "@atender/shared";
 import { api } from "@/api/client";
+import { QK } from "@/api/queryKeys";
 import type { AttendanceRecordResponse, MarkAllPresentInput, MarkAllPresentResponse, MarkAttendanceInput } from "./types";
 
 export function useTodayOccurrences(date?: string) {
   return useQuery({
-    queryKey: ["today", date ?? "current"],
+    queryKey: QK.today(date),
     queryFn: () => api<TodayResponse>("/api/today", { query: { date } }),
   });
 }

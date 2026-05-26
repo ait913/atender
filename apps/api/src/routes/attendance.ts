@@ -31,7 +31,7 @@ export function registerAttendanceRoutes(app: Hono) {
     if (!timetable) throw new AppError(403, "SETUP_REQUIRED", "User must complete setup");
     const result = await prisma.$transaction(async (tx) => {
       const occurrences = await tx.meetingOccurrence.findMany({
-        where: { date: day.startOfDay, meeting: { userTimetableId: timetable.id } },
+        where: { date: { gte: day.startOfDay, lte: day.endOfDay }, meeting: { userTimetableId: timetable.id } },
         include: { attendanceRecord: true },
       });
       let markedCount = 0;

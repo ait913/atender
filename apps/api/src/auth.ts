@@ -2,26 +2,36 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { magicLink } from "better-auth/plugins";
 import { Resend } from "resend";
-import { prisma } from "./db";
+import { getPrisma } from "./db";
 import { env, trustedOrigins } from "./env";
 
 const resend = new Resend(env.RESEND_API_KEY);
 
-export const auth = betterAuth({
-  database: prismaAdapter(prisma, { provider: "sqlite" }),
-  secret: env.BETTER_AUTH_SECRET,
-  baseURL: env.BETTER_AUTH_URL,
-  socialProviders: {
-    google: {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-    },
-  },
-  plugins: [
-    magicLink({
-      expiresIn: 60 * 15,
-      sendMagicLink: async ({ email, url }) => {
-        const html = `<!DOCTYPE html>
+type Auth = ReturnType<typeof betterAuth>;
+
+let authInstance: Auth | null = null;
+
+export function resetAuth() {
+  authInstance = null;
+}
+
+export function getAuth(): Auth {
+  if (!authInstance) {
+    const created = betterAuth({
+      database: prismaAdapter(getPrisma(), { provider: "sqlite" }),
+      secret: env.BETTER_AUTH_SECRET,
+      baseURL: env.BETTER_AUTH_URL,
+      socialProviders: {
+        google: {
+          clientId: env.GOOGLE_CLIENT_ID,
+          clientSecret: env.GOOGLE_CLIENT_SECRET,
+        },
+      },
+      plugins: [
+        magicLink({
+          expiresIn: 60 * 15,
+          sendMagicLink: async ({ email, url }) => {
+            const html = `<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8" />
@@ -43,31 +53,45 @@ export const auth = betterAuth({
 </table>
 </body>
 </html>`;
-        const text = `Atender にログインする\n\n下記のリンクを開くとログインできます (有効期限 15 分):\n${url}\n\n心当たりがなければそのまま閉じてください。\n\n-- \nAtender :: attendance, one tap.\nbased in tokyo/chiba`;
-        await resend.emails.send({
-          from: env.RESEND_FROM,
-          to: email,
-          subject: "Atender にログインする",
-          html,
-          text,
-        });
+            const text = `Atender にログインする\n\n下記のリンクを開くとログインできます (有効期限 15 分):\n${url}\n\n心当たりがなければそのまま閉じてください。\n\n-- \nAtender :: attendance, one tap.\nbased in tokyo/chiba`;
+            await resend.emails.send({
+              from: env.RESEND_FROM,
+              to: email,
+              subject: "Atender にログインする",
+              html,
+              text,
+            });
+          },
+        }),
+      ],
+      session: {
+        expiresIn: 60 * 60 * 24 * 30,
+        updateAge: 60 * 60 * 24,
       },
-    }),
-  ],
-  session: {
-    expiresIn: 60 * 60 * 24 * 30,
-    updateAge: 60 * 60 * 24,
+      advanced: {
+        defaultCookieAttributes: {
+          sameSite: "lax",
+          secure: true,
+          httpOnly: true,
+        },
+        crossSubDomainCookies: {
+          enabled: true,
+          domain: env.BETTER_AUTH_COOKIE_DOMAIN,
+        },
+      },
+      trustedOrigins,
+    });
+    authInstance = created as unknown as Auth;
+  }
+
+  return authInstance as Auth;
+}
+
+export const auth = new Proxy({} as Auth, {
+  get(_target, property, receiver) {
+    return Reflect.get(getAuth(), property, receiver);
   },
-  advanced: {
-    defaultCookieAttributes: {
-      sameSite: "lax",
-      secure: true,
-      httpOnly: true,
-    },
-    crossSubDomainCookies: {
-      enabled: true,
-      domain: env.BETTER_AUTH_COOKIE_DOMAIN,
-    },
+  set(_target, property, value, receiver) {
+    return Reflect.set(getAuth(), property, value, receiver);
   },
-  trustedOrigins,
-});
+}) as Auth;

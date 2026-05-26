@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, vi } from "vitest";
-import { createTestDb, disposeTestDb, enableForeignKeys, ensureTemplateDb } from "./helpers/db";
+import { createTestDb, disposeTestDb, enableForeignKeys, ensureTemplateDb, installTestPrisma } from "./helpers/db";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -33,6 +33,8 @@ process.env.GOOGLE_CLIENT_ID ??= "test-google-client-id";
 process.env.GOOGLE_CLIENT_SECRET ??= "test-google-client-secret";
 process.env.PORT ??= "3000";
 
+installTestPrisma();
+
 globalThis.__resendSendMock = vi.fn().mockResolvedValue({
   data: { id: "test-email-id" },
   error: null,
@@ -54,7 +56,7 @@ beforeAll(() => {
 
 beforeEach(async () => {
   globalThis.__resendSendMock.mockClear();
-  const db = createTestDb();
+  const db = await createTestDb();
   await enableForeignKeys(db.prisma);
 });
 
