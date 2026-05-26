@@ -25,7 +25,7 @@ async function getMeResponse(user: MeUser) {
     hasDepartment: user.departmentId != null,
     hasSemester: user.defaultSemesterId != null,
     hasUserTimetable,
-    isComplete: user.schoolId != null && user.departmentId != null && user.defaultSemesterId != null && hasUserTimetable,
+    isComplete: user.schoolId != null && user.departmentId != null && user.defaultSemesterId != null,
   };
   return {
     user: {
