@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zJson, zParam, zQuery } from "../lib/zv";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { sessionMiddleware } from "../middleware/session";
@@ -10,7 +10,7 @@ import { computeCourseStats } from "../services/attendanceStats";
 const StatsQuery = z.object({ semesterId: z.string() });
 
 export function registerStatsRoutes(app: Hono) {
-  app.get("/api/stats", sessionMiddleware, setupGuard, zValidator("query", StatsQuery), async (c) => {
+  app.get("/api/stats", sessionMiddleware, setupGuard, zQuery(StatsQuery), async (c) => {
     const user = c.get("user");
     const { semesterId } = c.req.valid("query");
     const semester = await prisma.semester.findUnique({ where: { id: semesterId } });

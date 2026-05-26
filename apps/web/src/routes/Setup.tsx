@@ -1,54 +1,42 @@
+import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { FormEvent, useMemo, useState } from "react";
-import type { DepartmentDto, SchoolDto } from "@atender/shared";
-import { useCreateDepartment, useCreateSchool, useCreateSemester, useDepartments, usePatchMe, useSchools } from "@/api/hooks";
-import { Button, Field, PageTitle, Panel, Select } from "@/components/ui";
-
-const prefectures = ["", "北海道", "東京都", "千葉県", "神奈川県", "埼玉県", "大阪府", "京都府", "愛知県", "福岡県"];
+import type { SchoolDto, DepartmentDto } from "@atender/shared";
+import { useCreateSemester, useCreateUserTimetable, usePatchMe } from "@/api/hooks";
+import { DepartmentPickerSheet } from "@/components/me/DepartmentPickerSheet";
+import { SchoolSearch } from "@/components/templates/SchoolSearch";
+import { Button, Field, Input } from "@/components/ui";
+import { defaultDaySlots } from "@/components/timetable/helpers";
 
 export function Setup() {
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [schoolQuery, setSchoolQuery] = useState("");
-  const [prefecture, setPrefecture] = useState("");
-  const [departmentQuery, setDepartmentQuery] = useState("");
   const [school, setSchool] = useState<SchoolDto | null>(null);
   const [department, setDepartment] = useState<DepartmentDto | null>(null);
-  const [semester, setSemester] = useState({ name: "2026 前期", startDate: "2026-04-01", endDate: "2026-09-30" });
-  const schools = useSchools({ q: schoolQuery || undefined, prefecture: prefecture || undefined, limit: 20 });
-  const departments = useDepartments(school?.id, departmentQuery || undefined);
-  const createSchool = useCreateSchool();
-  const createDepartment = useCreateDepartment(school?.id);
-  const createSemester = useCreateSemester();
+  const [departmentOpen, setDepartmentOpen] = useState(false);
+  const [semesterName, setSemesterName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const navigate = useNavigate();
   const patchMe = usePatchMe();
-  const busy = createSchool.isPending || createDepartment.isPending || createSemester.isPending || patchMe.isPending;
-  const title = useMemo(() => `Step ${step}/3: ${step === 1 ? "学校を選ぶ" : step === 2 ? "学科を選ぶ" : "学期を作る"}`, [step]);
+  const createSemester = useCreateSemester();
+  const createTimetable = useCreateUserTimetable();
 
-  async function addSchool() {
-    if (!schoolQuery) return;
-    const result = await createSchool.mutateAsync({ name: schoolQuery, kind: "OTHER", prefecture: prefecture || undefined });
-    setSchool(result.school);
-    setStep(2);
-  }
-
-  async function addDepartment() {
-    if (!departmentQuery || !school) return;
-    const result = await createDepartment.mutateAsync({ name: departmentQuery });
-    setDepartment(result.department);
-  }
-
-  async function submitDepartment() {
+  function finish() {
     if (!school || !department) return;
-    await patchMe.mutateAsync({ schoolId: school.id, departmentId: department.id });
-    setStep(3);
-  }
-
-  async function submitSemester(event: FormEvent) {
-    event.preventDefault();
-    if (!school || !department) return;
-    const result = await createSemester.mutateAsync(semester);
-    await patchMe.mutateAsync({ defaultSemesterId: result.semester.id });
-    navigate({ to: "/timetable" });
+    createSemester.mutate(
+      { name: semesterName, startDate, endDate },
+      {
+        onSuccess: ({ semester }) => {
+          patchMe.mutate({ schoolId: school.id, departmentId: department.id, defaultSemesterId: semester.id });
+          createTimetable.mutate({
+            semesterId: semester.id,
+            title: semester.name,
+            daySlots: defaultDaySlots(5),
+            courses: [],
+            meetings: [],
+          }, { onSuccess: () => void navigate({ to: "/" }) });
+        },
+      },
+    );
   }
 
   return (

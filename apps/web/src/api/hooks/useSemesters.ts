@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { QK } from "@/api/queryKeys";
 import type { SemesterCreateInput, SemesterResponse, SemestersResponse } from "./types";

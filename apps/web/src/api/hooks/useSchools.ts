@@ -1,10 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { QK } from "@/api/queryKeys";
 import type { DepartmentCreateInput, SchoolCreateInput, SchoolDto } from "@atender/shared";
 import type { DepartmentsResponse, SchoolsResponse, SchoolSearchQuery } from "./types";
+import { useApiMutation } from "./useApiMutation";
 
 export function useSchools(query: Partial<SchoolSearchQuery>) {
+  const q = { q: query.q, prefecture: query.prefecture, kind: query.kind };
   return useQuery({
     queryKey: QK.schools(query),
     queryFn: () => api<SchoolsResponse>("/api/schools", { query }),
@@ -12,14 +14,12 @@ export function useSchools(query: Partial<SchoolSearchQuery>) {
 }
 
 export function useCreateSchool() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: SchoolCreateInput) => api<{ school: SchoolDto }>("/api/schools", { method: "POST", body }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schools"] }),
-  });
+  return useApiMutation<SchoolCreateInput, { school: SchoolDto }>((body) => api<{ school: SchoolDto }>("/api/schools", { method: "POST", body }), [
+    { predicate: QP.schools },
+  ]);
 }
 
-export function useDepartments(schoolId?: string, q?: string) {
+export function useDepartments(schoolId?: string | null, q?: string) {
   return useQuery({
     queryKey: QK.departments(schoolId, q),
     enabled: Boolean(schoolId),
@@ -27,10 +27,9 @@ export function useDepartments(schoolId?: string, q?: string) {
   });
 }
 
-export function useCreateDepartment(schoolId?: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (body: DepartmentCreateInput) => api<{ department: DepartmentsResponse["departments"][number] }>(`/api/schools/${schoolId}/departments`, { method: "POST", body }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["departments", schoolId] }),
-  });
+export function useCreateDepartment(schoolId?: string | null) {
+  return useApiMutation<DepartmentCreateInput, DepartmentsResponse["departments"][number] | { department: DepartmentsResponse["departments"][number] }>(
+    (body) => api<{ department: DepartmentsResponse["departments"][number] }>(`/api/schools/${schoolId}/departments`, { method: "POST", body }),
+    schoolId ? [QK.departments(schoolId)] : [],
+  );
 }

@@ -9,15 +9,22 @@ function authorHandle(template: { author?: { handle?: string | null } | null; au
 export function Templates() {
   const me = useMe();
   const semesters = useSemesters();
-  const timetables = useUserTimetables();
-  const [schoolId, setSchoolId] = useState(me.data?.user.schoolId ?? "");
-  const [departmentId, setDepartmentId] = useState(me.data?.user.departmentId ?? "");
-  const [query, setQuery] = useState("");
-  const [semesterId, setSemesterId] = useState(me.data?.user.defaultSemesterId ?? "");
-  const templates = useTemplates({ schoolId: schoolId || me.data?.user.schoolId, departmentId: departmentId || me.data?.user.departmentId, q: query || undefined });
-  const copy = useCopyTemplate();
-  const current = timetables.data?.userTimetables.find((item) => item.semesterId === (semesterId || me.data?.user.defaultSemesterId));
-  const publish = usePublishTimetable(current?.id);
+  const defaultTimetable = useUserTimetable(me.data?.user.defaultSemesterId);
+  const [school, setSchool] = useState<SchoolDto | null>(null);
+  const [departmentId, setDepartmentId] = useState("");
+  const [copyTarget, setCopyTarget] = useState<TemplateDto | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
+  const departments = useDepartments(school?.id);
+  const templates = useInfiniteTemplates({ schoolId: school?.id, departmentId: departmentId || undefined });
+  const result = useMemo(() => templates.data?.pages.flatMap((page) => page.templates) ?? [], [templates.data]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 120 && templates.hasNextPage && !templates.isFetchingNextPage) void templates.fetchNextPage();
+    };
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [templates]);
 
   return (
     <div>

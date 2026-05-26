@@ -11,6 +11,7 @@ export const OccurrenceDto = z.object({
   color: z.string().nullable(),
   date: z.string(),
   periodIndex: z.number().int(),
+  periodLabel: z.string(),
   periodOffset: z.number().int(),
   startMinute: z.number().int(),
   endMinute: z.number().int(),

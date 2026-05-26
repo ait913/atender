@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zJson, zParam, zQuery } from "../lib/zv";
 import { prisma } from "../db";
 import { dateStringToJstDay, toIsoDate, today } from "../lib/tz";
 import { sessionMiddleware } from "../middleware/session";
@@ -10,12 +10,14 @@ import { findActiveUserTimetable } from "../services/activeTimetable";
 const TodayQuery = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
 
 export function registerTodayRoutes(app: Hono) {
-  app.get("/api/today", sessionMiddleware, setupGuard, zValidator("query", TodayQuery), async (c) => {
+  app.get("/api/today", sessionMiddleware, setupGuard, zQuery(TodayQuery), async (c) => {
     const user = c.get("user");
     const query = c.req.valid("query");
     const day = query.date ? dateStringToJstDay(query.date) : today();
     const timetable = await findActiveUserTimetable(user.id);
     if (!timetable) return c.json({ date: day.isoDate, occurrences: [] });
+    const daySlots = await prisma.daySlot.findMany({ where: { userTimetableId: timetable.id } });
+    const periodLabelByIndex = new Map(daySlots.map((slot) => [slot.periodIndex, slot.label]));
     const occurrences = await prisma.meetingOccurrence.findMany({
       where: {
         date: { gte: day.startOfDay, lte: day.endOfDay },
@@ -30,21 +32,25 @@ export function registerTodayRoutes(app: Hono) {
     });
     return c.json({
       date: day.isoDate,
-      occurrences: occurrences.map((occurrence) => ({
-        id: occurrence.id,
-        meetingId: occurrence.meetingId,
-        courseId: occurrence.courseId,
-        courseName: occurrence.course.name,
-        teacher: occurrence.course.teacher,
-        room: occurrence.course.room,
-        color: occurrence.course.color,
-        date: toIsoDate(occurrence.date),
-        periodIndex: occurrence.meeting.startPeriodIndex + occurrence.periodOffset,
-        periodOffset: occurrence.periodOffset,
-        startMinute: occurrence.startMinute,
-        endMinute: occurrence.endMinute,
-        status: occurrence.attendanceRecord?.status ?? null,
-      })),
+      occurrences: occurrences.map((occurrence) => {
+        const periodIndex = occurrence.meeting.startPeriodIndex + occurrence.periodOffset;
+        return {
+          id: occurrence.id,
+          meetingId: occurrence.meetingId,
+          courseId: occurrence.courseId,
+          courseName: occurrence.course.name,
+          teacher: occurrence.course.teacher,
+          room: occurrence.course.room,
+          color: occurrence.course.color,
+          date: toIsoDate(occurrence.date),
+          periodIndex,
+          periodLabel: periodLabelByIndex.get(periodIndex) ?? `${periodIndex}限`,
+          periodOffset: occurrence.periodOffset,
+          startMinute: occurrence.startMinute,
+          endMinute: occurrence.endMinute,
+          status: occurrence.attendanceRecord?.status ?? null,
+        };
+      }),
     });
   });
 }
