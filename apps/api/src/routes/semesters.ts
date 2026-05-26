@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zJson, zParam, zQuery } from "../lib/zv";
+import { zValidator } from "@hono/zod-validator";
 import { SemesterCreateInput, SemesterUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -23,7 +23,7 @@ export function registerSemesterRoutes(app: Hono) {
     return c.json({ semesters: semesters.map(semesterDto) });
   });
 
-  app.post("/api/semesters", sessionMiddleware, zJson(SemesterCreateInput), async (c) => {
+  app.post("/api/semesters", sessionMiddleware, zValidator("json", SemesterCreateInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const startDate = semesterDateStart(input.startDate);
@@ -44,14 +44,14 @@ export function registerSemesterRoutes(app: Hono) {
     return c.json({ semester: semesterDto(semester) }, 201);
   });
 
-  app.get("/api/semesters/:id", sessionMiddleware, zParam(IdParam), async (c) => {
+  app.get("/api/semesters/:id", sessionMiddleware, zValidator("param", IdParam), async (c) => {
     const user = c.get("user");
     const semester = await findSemesterOrThrow(c.req.valid("param").id);
     if (semester.userId !== user.id) throw new AppError(403, "FORBIDDEN", "Forbidden");
     return c.json({ semester: semesterDto(semester) });
   });
 
-  app.patch("/api/semesters/:id", sessionMiddleware, zParam(IdParam), zJson(SemesterUpdateInput), async (c) => {
+  app.patch("/api/semesters/:id", sessionMiddleware, zValidator("param", IdParam), zValidator("json", SemesterUpdateInput), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
@@ -71,7 +71,7 @@ export function registerSemesterRoutes(app: Hono) {
     return c.json({ semester: semesterDto(updated) });
   });
 
-  app.delete("/api/semesters/:id", sessionMiddleware, zParam(IdParam), async (c) => {
+  app.delete("/api/semesters/:id", sessionMiddleware, zValidator("param", IdParam), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const semester = await findSemesterOrThrow(id);

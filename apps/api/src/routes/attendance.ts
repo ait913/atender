@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zJson, zParam, zQuery } from "../lib/zv";
+import { zValidator } from "@hono/zod-validator";
 import { MarkAllPresentInput, MarkAttendanceInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -23,7 +23,7 @@ async function findOwnedOccurrence(occurrenceId: string, userId: string) {
 }
 
 export function registerAttendanceRoutes(app: Hono) {
-  app.post("/api/attendance/mark-all-present", sessionMiddleware, setupGuard, zJson(MarkAllPresentInput), async (c) => {
+  app.post("/api/attendance/mark-all-present", sessionMiddleware, setupGuard, zValidator("json", MarkAllPresentInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const day = input.date ? dateStringToJstDay(input.date) : today();
@@ -49,7 +49,7 @@ export function registerAttendanceRoutes(app: Hono) {
     return c.json({ date: day.isoDate, markedCount: result.markedCount, skippedCount: result.skippedCount });
   });
 
-  app.post("/api/attendance/:occurrenceId", sessionMiddleware, setupGuard, zParam(OccurrenceParam), zJson(MarkAttendanceInput), async (c) => {
+  app.post("/api/attendance/:occurrenceId", sessionMiddleware, setupGuard, zValidator("param", OccurrenceParam), zValidator("json", MarkAttendanceInput), async (c) => {
     const user = c.get("user");
     const { occurrenceId } = c.req.valid("param");
     const input = c.req.valid("json");
@@ -62,7 +62,7 @@ export function registerAttendanceRoutes(app: Hono) {
     return c.json({ record: { occurrenceId: record.occurrenceId, status: record.status, note: record.note, updatedAt: record.updatedAt.toISOString() } });
   });
 
-  app.delete("/api/attendance/:occurrenceId", sessionMiddleware, setupGuard, zParam(OccurrenceParam), async (c) => {
+  app.delete("/api/attendance/:occurrenceId", sessionMiddleware, setupGuard, zValidator("param", OccurrenceParam), async (c) => {
     const user = c.get("user");
     const { occurrenceId } = c.req.valid("param");
     await findOwnedOccurrence(occurrenceId, user.id);

@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zJson, zParam, zQuery } from "../lib/zv";
+import { zValidator } from "@hono/zod-validator";
 import { TemplateCopyInput, TemplateCreateInput, TemplateSearchQuery } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -20,7 +20,7 @@ const templateInclude = {
 };
 
 export function registerTemplateRoutes(app: Hono) {
-  app.get("/api/timetable-templates", sessionMiddleware, zQuery(TemplateSearchQuery), async (c) => {
+  app.get("/api/timetable-templates", sessionMiddleware, zValidator("query", TemplateSearchQuery), async (c) => {
     const query = c.req.valid("query");
     const cursor = query.cursor ? decodeCursor(query.cursor) : null;
     const rows = await prisma.timetableTemplate.findMany({
@@ -48,7 +48,7 @@ export function registerTemplateRoutes(app: Hono) {
     });
   });
 
-  app.get("/api/timetable-templates/:id", sessionMiddleware, zParam(IdParam), async (c) => {
+  app.get("/api/timetable-templates/:id", sessionMiddleware, zValidator("param", IdParam), async (c) => {
     const template = await prisma.timetableTemplate.findFirst({
       where: { id: c.req.valid("param").id, isPublic: true },
       include: templateInclude,
@@ -57,7 +57,7 @@ export function registerTemplateRoutes(app: Hono) {
     return c.json({ template: templateDto(template) });
   });
 
-  app.post("/api/timetable-templates", sessionMiddleware, zJson(TemplateCreateInput), async (c) => {
+  app.post("/api/timetable-templates", sessionMiddleware, zValidator("json", TemplateCreateInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const [school, department] = await Promise.all([
@@ -106,7 +106,7 @@ export function registerTemplateRoutes(app: Hono) {
     return c.json({ template: templateDto(template) }, 201);
   });
 
-  app.post("/api/timetable-templates/:id/copy", sessionMiddleware, zParam(IdParam), zJson(TemplateCopyInput), async (c) => {
+  app.post("/api/timetable-templates/:id/copy", sessionMiddleware, zValidator("param", IdParam), zValidator("json", TemplateCopyInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const semester = await prisma.semester.findUnique({ where: { id: input.semesterId } });
@@ -118,7 +118,7 @@ export function registerTemplateRoutes(app: Hono) {
     return c.json({ userTimetable: userTimetableDto(full) }, 201);
   });
 
-  app.patch("/api/timetable-templates/:id", sessionMiddleware, zParam(IdParam), zJson(TemplatePatchInput), async (c) => {
+  app.patch("/api/timetable-templates/:id", sessionMiddleware, zValidator("param", IdParam), zValidator("json", TemplatePatchInput), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
@@ -161,7 +161,7 @@ export function registerTemplateRoutes(app: Hono) {
     return c.json({ template: templateDto(template) });
   });
 
-  app.delete("/api/timetable-templates/:id", sessionMiddleware, zParam(IdParam), async (c) => {
+  app.delete("/api/timetable-templates/:id", sessionMiddleware, zValidator("param", IdParam), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const template = await prisma.timetableTemplate.findUnique({ where: { id } });

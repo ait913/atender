@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zJson, zParam, zQuery } from "../lib/zv";
+import { zValidator } from "@hono/zod-validator";
 import { UserTimetableCreateInput, UserTimetablePatchInput } from "@atender/shared";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
@@ -19,14 +19,7 @@ const PublishInput = z.object({
 });
 
 async function getOwnedTimetable(id: string, userId: string) {
-  const timetable = await prisma.userTimetable.findUnique({
-    where: { id },
-    include: {
-      daySlots: { orderBy: { periodIndex: "asc" } },
-      courses: true,
-      meetings: true,
-    },
-  });
+  const timetable = await prisma.userTimetable.findUnique({ where: { id }, include: { daySlots: true, courses: true, meetings: true } });
   if (!timetable) throw new AppError(404, "NOT_FOUND", "UserTimetable not found");
   if (timetable.userId !== userId) throw new AppError(403, "FORBIDDEN", "Forbidden");
   return timetable;
@@ -68,12 +61,12 @@ export function registerUserTimetableRoutes(app: Hono) {
     return c.json({ userTimetables: rows.map(userTimetableDto) });
   });
 
-  app.get("/api/user-timetables/:id", sessionMiddleware, setupGuard, zParam(IdParam), async (c) => {
+  app.get("/api/user-timetables/:id", sessionMiddleware, setupGuard, zValidator("param", IdParam), async (c) => {
     const timetable = await getOwnedTimetable(c.req.valid("param").id, c.get("user").id);
     return c.json({ userTimetable: userTimetableDto(timetable) });
   });
 
-  app.post("/api/user-timetables", sessionMiddleware, zJson(UserTimetableCreateInput), async (c) => {
+  app.post("/api/user-timetables", sessionMiddleware, zValidator("json", UserTimetableCreateInput), async (c) => {
     const user = c.get("user");
     const timetable = await createTimetableFromInput(user.id, c.req.valid("json"));
     await prisma.user.update({ where: { id: user.id }, data: { defaultSemesterId: timetable.semesterId } });
@@ -82,7 +75,7 @@ export function registerUserTimetableRoutes(app: Hono) {
     return c.json({ userTimetable: userTimetableDto(full) }, 201);
   });
 
-  app.patch("/api/user-timetables/:id", sessionMiddleware, zParam(IdParam), zJson(UserTimetablePatchInput), async (c) => {
+  app.patch("/api/user-timetables/:id", sessionMiddleware, zValidator("param", IdParam), zValidator("json", UserTimetablePatchInput), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     const input = c.req.valid("json");
@@ -114,7 +107,7 @@ export function registerUserTimetableRoutes(app: Hono) {
     return c.json({ userTimetable: userTimetableDto(timetable) });
   });
 
-  app.delete("/api/user-timetables/:id", sessionMiddleware, zParam(IdParam), async (c) => {
+  app.delete("/api/user-timetables/:id", sessionMiddleware, zValidator("param", IdParam), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
     await getOwnedTimetable(id, user.id);
@@ -122,7 +115,7 @@ export function registerUserTimetableRoutes(app: Hono) {
     return c.json({ ok: true });
   });
 
-  app.post("/api/user-timetables/:id/publish-as-template", sessionMiddleware, setupGuard, zParam(IdParam), zJson(PublishInput), async (c) => {
+  app.post("/api/user-timetables/:id/publish-as-template", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", PublishInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const timetable = await getOwnedTimetable(c.req.valid("param").id, user.id);

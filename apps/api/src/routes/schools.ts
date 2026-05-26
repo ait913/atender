@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zJson, zParam, zQuery } from "../lib/zv";
+import { zValidator } from "@hono/zod-validator";
 import { DepartmentCreateInput, SchoolCreateInput, SchoolSearchQuery } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
@@ -14,7 +14,7 @@ const DepartmentSearchQuery = z.object({
 const SchoolParam = z.object({ schoolId: z.string() });
 
 export function registerSchoolRoutes(app: Hono) {
-  app.get("/api/schools", sessionMiddleware, zQuery(SchoolSearchQuery), async (c) => {
+  app.get("/api/schools", sessionMiddleware, zValidator("query", SchoolSearchQuery), async (c) => {
     const query = c.req.valid("query");
     const schools = await prisma.school.findMany({
       where: {
@@ -33,7 +33,7 @@ export function registerSchoolRoutes(app: Hono) {
     return c.json({ schools: schools.map(schoolDto) });
   });
 
-  app.post("/api/schools", sessionMiddleware, zJson(SchoolCreateInput), async (c) => {
+  app.post("/api/schools", sessionMiddleware, zValidator("json", SchoolCreateInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
     const existing = await prisma.school.findFirst({
@@ -58,7 +58,7 @@ export function registerSchoolRoutes(app: Hono) {
     return c.json({ school: schoolDto(school) }, 201);
   });
 
-  app.get("/api/schools/:schoolId/departments", sessionMiddleware, zParam(SchoolParam), zQuery(DepartmentSearchQuery), async (c) => {
+  app.get("/api/schools/:schoolId/departments", sessionMiddleware, zValidator("param", SchoolParam), zValidator("query", DepartmentSearchQuery), async (c) => {
     const { schoolId } = c.req.valid("param");
     const query = c.req.valid("query");
     const school = await prisma.school.findUnique({ where: { id: schoolId } });
@@ -74,7 +74,7 @@ export function registerSchoolRoutes(app: Hono) {
     return c.json({ departments: departments.map(departmentDto) });
   });
 
-  app.post("/api/schools/:schoolId/departments", sessionMiddleware, zParam(SchoolParam), zJson(DepartmentCreateInput), async (c) => {
+  app.post("/api/schools/:schoolId/departments", sessionMiddleware, zValidator("param", SchoolParam), zValidator("json", DepartmentCreateInput), async (c) => {
     const user = c.get("user");
     const { schoolId } = c.req.valid("param");
     const input = c.req.valid("json");

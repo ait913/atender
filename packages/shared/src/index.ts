@@ -10,13 +10,5 @@ export * from "./schemas/room.js";
 export * from "./schemas/school.js";
 export * from "./schemas/semester.js";
 export * from "./schemas/stats.js";
-export * from "./schemas/meeting.js";
-export * from "./schemas/course.js";
-export * from "./schemas/daySlot.js";
-export {
-  TemplateDto,
-  TemplateSearchQuery,
-  TemplateCreateInput,
-  TemplateCopyInput,
-} from "./schemas/template.js";
+export * from "./schemas/template.js";
 export * from "./schemas/userTimetable.js";

@@ -1,8 +1,7 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { QK } from "@/api/queryKeys";
 import type { MeResponse, MeUpdateInput } from "./types";
-import { useApiMutation } from "./useApiMutation";
 
 export const meQueryOptions = queryOptions({
   queryKey: QK.me(),

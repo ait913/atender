@@ -1,41 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  --color-bg-base: #FFFFFF;
-  --color-bg-muted: #F7F7F5;
-  --color-bg-elevated: #FFFFFF;
-  --color-bg-overlay: rgba(0, 0, 0, 0.45);
-  --color-fg-primary: #1C1B1F;
-  --color-fg-secondary: #5F5E64;
-  --color-fg-tertiary: #9CA3AF;
-  --color-fg-on-accent: #FFFFFF;
-  --color-fg-on-danger: #FFFFFF;
-  --color-text-primary: #1C1B1F;
-  --color-text-secondary: #5F5E64;
-  --color-text-tertiary: #9CA3AF;
-  --color-text-on-accent: #FFFFFF;
-  --color-text-on-danger: #FFFFFF;
-  --color-border-subtle: #E7E5E0;
-  --color-border-default: #D1D5DB;
-  --color-border-emphasis: #9CA3AF;
-  --color-accent-50: #ECFDF5;
-  --color-accent-100: #D1FAE5;
-  --color-accent-500: #10B981;
-  --color-accent-600: #059669;
-  --color-accent-700: #047857;
-  --color-status-present: #10B981;
-  --color-status-absent: #E5535B;
-  --color-status-excused: #3B82F6;
-  --color-status-tardy: #F59E0B;
-  --color-status-early: #A855F7;
-  --color-status-cancelled: #9CA3AF;
-  --color-status-none: #D1D5DB;
-  --font-sans: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
-  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.06);
-  --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.10);
-}
-
 :root {
   --color-bg-base: #FFFFFF;
   --color-bg-muted: #F7F7F5;
@@ -119,7 +83,6 @@ textarea {
 
 button {
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 
 button:disabled {

@@ -8,7 +8,6 @@ import { registerAuthRoutes } from "./routes/auth";
 import { registerCourseRoutes } from "./routes/courses";
 import { registerFriendshipRoutes } from "./routes/friendships";
 import { registerHealthRoutes } from "./routes/health";
-import { registerMeetingRoutes } from "./routes/meetings";
 import { registerMeRoutes } from "./routes/me";
 import { registerMeetingRoutes } from "./routes/meetings";
 import { registerRuleRoutes } from "./routes/rules";

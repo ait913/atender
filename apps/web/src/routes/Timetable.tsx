@@ -19,8 +19,6 @@ function activeTimetable(timetables: UserTimetableDto[] | undefined, semesterId?
 }
 
 export function Timetable() {
-  const params = new URLSearchParams(window.location.search);
-  const urlSemesterId = params.get("semesterId");
   const me = useMe();
   const semesters = useSemesters();
   const timetables = useUserTimetables();

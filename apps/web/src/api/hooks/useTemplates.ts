@@ -1,60 +1,30 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { QK, QP } from "@/api/queryKeys";
-import type { TemplateCopyInput, TemplateCreateInput, TemplateResponse, TemplatesResponse, UserTimetableResponse, OkResponse } from "./types";
-import { useApiMutation } from "./useApiMutation";
+import type { TemplateCopyInput, TemplateCreateInput, TemplateResponse, TemplatesResponse, UserTimetableResponse } from "./types";
 
-export type TemplateQuery = { schoolId?: string | null; departmentId?: string | null; q?: string; limit?: number };
-
-function cleanQuery(query: TemplateQuery) {
-  return { schoolId: query.schoolId ?? undefined, departmentId: query.departmentId ?? undefined, q: query.q, limit: query.limit ?? 20 };
-}
-
-export function useTemplates(query: TemplateQuery) {
-  const q = cleanQuery(query);
+export function useTemplates(query: { schoolId?: string | null; departmentId?: string | null; q?: string; limit?: number }) {
   return useQuery({
-    queryKey: QK.templates({ schoolId: q.schoolId, departmentId: q.departmentId, q: q.q }),
-    queryFn: () => api<TemplatesResponse>("/api/timetable-templates", { query: q }),
-  });
-}
-
-export function useInfiniteTemplates(query: TemplateQuery) {
-  const q = cleanQuery(query);
-  return useInfiniteQuery({
-    queryKey: ["templates", q],
-    initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) => api<TemplatesResponse>("/api/timetable-templates", { query: { ...q, cursor: pageParam } }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    queryKey: ["templates", query],
+    queryFn: () => api<TemplatesResponse>("/api/timetable-templates", { query: { ...query, schoolId: query.schoolId, departmentId: query.departmentId, limit: query.limit ?? 20 } }),
   });
 }
 
 export function useCopyTemplate() {
-  return useApiMutation<{ templateId: string; input: TemplateCopyInput }, UserTimetableResponse>(
-    ({ templateId, input }) => api<UserTimetableResponse>(`/api/timetable-templates/${templateId}/copy`, { method: "POST", body: input }),
-    [{ predicate: QP.userTimetables }, { predicate: QP.today }, { predicate: QP.stats }, { predicate: QP.templates }],
-  );
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ templateId, input }: { templateId: string; input: TemplateCopyInput }) =>
+      api<UserTimetableResponse>(`/api/timetable-templates/${templateId}/copy`, { method: "POST", body: input }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
 }
 
 export function useCreateTemplate() {
-  return useApiMutation<TemplateCreateInput, TemplateResponse>((body) => api<TemplateResponse>("/api/timetable-templates", { method: "POST", body }), [
-    { predicate: QP.templates },
-  ]);
-}
-
-export function usePublishTemplate(userTimetableId?: string) {
-  return useApiMutation<{ title: string; description?: string; year?: number; term?: string }, TemplateResponse>(
-    (body) => api<TemplateResponse>(`/api/user-timetables/${userTimetableId}/publish-as-template`, { method: "POST", body }),
-    [{ predicate: QP.templates }],
-  );
-}
-
-export function useUpdateTemplate(id?: string) {
-  return useApiMutation<Partial<TemplateCreateInput>, TemplateResponse>((body) => api<TemplateResponse>(`/api/timetable-templates/${id}`, { method: "PATCH", body }), [
-    ...(id ? [QK.template(id)] : []),
-    { predicate: QP.templates },
-  ]);
-}
-
-export function useDeleteTemplate(id?: string) {
-  return useApiMutation<void, OkResponse>(() => api<OkResponse>(`/api/timetable-templates/${id}`, { method: "DELETE" }), [{ predicate: QP.templates }]);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TemplateCreateInput) => api<TemplateResponse>("/api/timetable-templates", { method: "POST", body }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["templates"] }),
+  });
 }

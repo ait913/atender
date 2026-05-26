@@ -1,22 +1,40 @@
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { API_URL } from "@/api/client";
-import { Button } from "@/components/ui";
+import { API_URL, api } from "@/api/client";
+import type { MeResponse } from "@/api/hooks/types";
+import { PageTitle, Panel } from "@/components/ui";
 
 export function Verify() {
+  const search = useSearch({ strict: false }) as { token?: string; error?: string };
   const navigate = useNavigate();
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token");
-    if (!token) {
+    if (search.error) {
       setFailed(true);
       return;
     }
-    window.location.href = `${API_URL}/api/auth/magic-link/verify?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent(window.location.origin)}`;
-  }, [navigate]);
+    if (!search.token) {
+      setFailed(true);
+      return;
+    }
+    let cancelled = false;
+    async function verify() {
+      const url = new URL(`${API_URL}/api/auth/magic-link/verify`);
+      url.searchParams.set("token", search.token!);
+      const response = await fetch(url.toString(), { credentials: "include" });
+      if (!response.ok) throw new Error("verify failed");
+      const me = await api<MeResponse>("/api/me");
+      if (!cancelled) await navigate({ to: me.setupStatus.isComplete ? "/" : "/setup" });
+    }
+    verify().catch(() => {
+      if (!cancelled) setFailed(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, search.error, search.token]);
 
-  if (!failed) return <p className="text-center text-sm text-fg-secondary">ログインを確認しています</p>;
   return (
     <div className="mx-auto max-w-md py-20">
       <PageTitle title="認証中">ログインリンクを確認しています</PageTitle>

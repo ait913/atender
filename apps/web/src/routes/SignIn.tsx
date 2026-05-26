@@ -1,11 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { API_URL, APP_URL, api } from "@/api/client";
-import { Mascot } from "@/components/mascot/Mascot";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Field, PageTitle, Panel } from "@/components/ui";
 
 export function SignIn() {
   const [email, setEmail] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,17 +18,20 @@ export function SignIn() {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    setLoading(true);
-    setMessage(null);
     setError(null);
-    try {
-      await api("/api/auth/sign-in/magic-link", { method: "POST", body: { email, callbackURL: `${APP_URL}/` } });
-      setMessage("メールを送信しました");
-    } catch {
-      setError("メールを送信できませんでした");
-    } finally {
-      setLoading(false);
-    }
+    setCooldown(true);
+    await api<{ ok: boolean }>("/api/auth/sign-in/magic-link", {
+      method: "POST",
+      body: { email, callbackURL: `${APP_URL}/` },
+    }).then(
+      () => {
+        setSent(true);
+      },
+      () => {
+        setCooldown(false);
+        setError("メールを送信できませんでした");
+      },
+    );
   }
 
   async function googleSignIn() {
@@ -41,7 +44,7 @@ export function SignIn() {
         body: JSON.stringify({ provider: "google", callbackURL: `${APP_URL}/` }),
       });
       if (!res.ok) throw new Error("social sign-in failed");
-      const data = (await res.json()) as { url?: string };
+      const data = (await res.json()) as { url?: string; redirect?: boolean };
       if (data.url) {
         window.location.href = data.url;
       } else {

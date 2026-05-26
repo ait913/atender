@@ -1,5 +1,3 @@
-import { useMemo, useState } from "react";
-import type { CourseStatsDto } from "@atender/shared";
 import { useMe, useSemesters, useStats } from "@/api/hooks";
 import { PageTitle, Panel, statusLongLabels } from "@/components/ui";
 
@@ -8,25 +6,10 @@ function rateText(rate: number | null) {
 }
 
 export function Stats() {
-  const params = new URLSearchParams(window.location.search);
   const me = useMe();
   const semesters = useSemesters();
-  const [selectedCourse, setSelectedCourse] = useState<CourseStatsDto | null>(null);
-  const selectedSemesterId = params.get("semesterId") ?? me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id ?? null;
-  const stats = useStats(selectedSemesterId);
-  const courses = stats.data?.courses ?? [];
-  const danger = courses.filter((course) => course.attendanceRate != null && course.attendanceRate < 0.7);
-  const total = useMemo(() => {
-    const numerator = courses.reduce((sum, course) => sum + course.effectiveNumerator, 0);
-    const denominator = courses.reduce((sum, course) => sum + course.effectiveDenominator, 0);
-    return { numerator, denominator, rate: denominator === 0 ? null : numerator / denominator };
-  }, [courses]);
-
-  function selectSemester(value: string) {
-    const search = new URLSearchParams(window.location.search);
-    search.set("semesterId", value);
-    window.history.replaceState(null, "", `${window.location.pathname}?${search.toString()}`);
-  }
+  const stats = useStats(me.data?.user.defaultSemesterId);
+  const semester = semesters.data?.semesters.find((item) => item.id === me.data?.user.defaultSemesterId);
 
   return (
     <div>
