@@ -9,6 +9,8 @@ type MeUser = {
   email: string;
   name: string | null;
   image: string | null;
+  handle: string | null;
+  inviteCode: string | null;
   defaultSemesterId: string | null;
   schoolId: string | null;
   departmentId: string | null;
@@ -31,6 +33,8 @@ async function getMeResponse(user: MeUser) {
       email: user.email,
       name: user.name,
       image: user.image,
+      handle: user.handle,
+      inviteCode: user.inviteCode,
       defaultSemesterId: user.defaultSemesterId,
       schoolId: user.schoolId,
       departmentId: user.departmentId,
@@ -100,6 +104,7 @@ export function registerMeRoutes(app: Hono) {
         ...(hasDepartmentId ? { departmentId: requestedDepartmentId } : {}),
         ...(input.defaultSemesterId !== undefined ? { defaultSemesterId: input.defaultSemesterId } : {}),
         ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.handle !== undefined ? { handle: input.handle.toLowerCase() } : {}),
       },
     });
     return c.json(await getMeResponse(user));

@@ -103,6 +103,15 @@ export async function createUserTimetable(
       { userTimetableId: userTimetable.id, periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630 },
       { userTimetableId: userTimetable.id, periodIndex: 2, label: "2限", startMinute: 640, endMinute: 730 },
       { userTimetableId: userTimetable.id, periodIndex: 3, label: "3限", startMinute: 780, endMinute: 870 },
+      { userTimetableId: userTimetable.id, periodIndex: 4, label: "4限", startMinute: 880, endMinute: 970 },
+      { userTimetableId: userTimetable.id, periodIndex: 5, label: "5限", startMinute: 980, endMinute: 1070 },
+      { userTimetableId: userTimetable.id, periodIndex: 6, label: "6限", startMinute: 1080, endMinute: 1125 },
+      { userTimetableId: userTimetable.id, periodIndex: 7, label: "7限", startMinute: 1130, endMinute: 1175 },
+      { userTimetableId: userTimetable.id, periodIndex: 8, label: "8限", startMinute: 1180, endMinute: 1225 },
+      { userTimetableId: userTimetable.id, periodIndex: 9, label: "9限", startMinute: 1230, endMinute: 1275 },
+      { userTimetableId: userTimetable.id, periodIndex: 10, label: "10限", startMinute: 1280, endMinute: 1325 },
+      { userTimetableId: userTimetable.id, periodIndex: 11, label: "11限", startMinute: 1330, endMinute: 1375 },
+      { userTimetableId: userTimetable.id, periodIndex: 12, label: "12限", startMinute: 1380, endMinute: 1425 },
     ],
   });
 

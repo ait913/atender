@@ -2,14 +2,18 @@ import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, createRoute, createRouter, redirect } from "@tanstack/react-router";
 import { ApiError } from "@/api/client";
 import { meQueryOptions } from "@/api/hooks";
+import { AddFriendByInviteCode } from "@/components/friends/AddFriendByInviteCode";
+import { Friends } from "@/components/friends/Friends";
+import { JoinRoom } from "@/components/rooms/JoinRoom";
+import { RoomDetail } from "@/components/rooms/RoomDetail";
+import { Rooms } from "@/components/rooms/Rooms";
 import { RootLayout } from "@/routes/_root";
-import { Home } from "@/routes/Home";
-import { Settings } from "@/routes/Settings";
 import { Setup } from "@/routes/Setup";
 import { SignIn } from "@/routes/SignIn";
 import { Stats } from "@/routes/Stats";
 import { Templates } from "@/routes/Templates";
 import { Timetable } from "@/routes/Timetable";
+import { Today } from "@/routes/Today";
 import { Verify } from "@/routes/Verify";
 
 type RouterContext = { queryClient: QueryClient };
@@ -34,69 +38,40 @@ async function requireCompleteSetup(queryClient: QueryClient) {
   return me;
 }
 
-const signInRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/signin",
-  component: SignIn,
-});
+const signInRoute = createRoute({ getParentRoute: () => rootRoute, path: "/signin", component: SignIn });
+const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", beforeLoad: () => { throw redirect({ to: "/signin" }); } });
+const verifyRoute = createRoute({ getParentRoute: () => rootRoute, path: "/verify", component: Verify });
+const setupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/setup", beforeLoad: ({ context }) => requireAuth(context.queryClient), component: Setup });
+const meRoute = createRoute({ getParentRoute: () => rootRoute, path: "/me", beforeLoad: () => { throw redirect({ to: "/" }); } });
+const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", beforeLoad: () => { throw redirect({ to: "/" }); } });
 
-const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/login",
-  beforeLoad: () => {
-    throw redirect({ to: "/signin" });
-  },
-});
+const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Today });
+const timetableRoute = createRoute({ getParentRoute: () => rootRoute, path: "/timetable", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Timetable });
+const templatesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/templates", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Templates });
+const statsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/stats", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Stats });
+const roomsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Rooms });
+const roomDetailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms/$id", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: RoomDetail });
+const roomJoinRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms/join/$inviteCode", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: JoinRoom });
+const friendsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/friends", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Friends });
+const friendAddRoute = createRoute({ getParentRoute: () => rootRoute, path: "/friends/add/$inviteCode", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: AddFriendByInviteCode });
 
-const verifyRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/verify",
-  component: Verify,
-});
-
-const setupRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/setup",
-  beforeLoad: ({ context }) => requireAuth(context.queryClient),
-  component: Setup,
-});
-
-const homeRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient),
-  component: Home,
-});
-
-const timetableRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/timetable",
-  beforeLoad: ({ context }) => requireAuth(context.queryClient),
-  component: Timetable,
-});
-
-const templatesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/templates",
-  beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient),
-  component: Templates,
-});
-
-const statsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/stats",
-  beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient),
-  component: Stats,
-});
-
-const settingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/settings",
-  beforeLoad: ({ context }) => requireAuth(context.queryClient),
-  component: Settings,
-});
-
-const routeTree = rootRoute.addChildren([signInRoute, loginRoute, verifyRoute, setupRoute, homeRoute, timetableRoute, templatesRoute, statsRoute, settingsRoute]);
+const routeTree = rootRoute.addChildren([
+  signInRoute,
+  loginRoute,
+  verifyRoute,
+  setupRoute,
+  meRoute,
+  settingsRoute,
+  homeRoute,
+  timetableRoute,
+  templatesRoute,
+  statsRoute,
+  roomsRoute,
+  roomDetailRoute,
+  roomJoinRoute,
+  friendsRoute,
+  friendAddRoute,
+]);
 
 export function createAppRouter(queryClient: QueryClient) {
   return createRouter({ routeTree, context: { queryClient } });

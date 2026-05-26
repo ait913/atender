@@ -18,7 +18,7 @@ export function registerTodayRoutes(app: Hono) {
     if (!timetable) return c.json({ date: day.isoDate, occurrences: [] });
     const occurrences = await prisma.meetingOccurrence.findMany({
       where: {
-        date: day.startOfDay,
+        date: { gte: day.startOfDay, lte: day.endOfDay },
         meeting: { userTimetableId: timetable.id },
       },
       orderBy: { startMinute: "asc" },

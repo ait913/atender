@@ -13,6 +13,8 @@ export const UserDto = z.object({
   email: z.string().email(),
   name: z.string().nullable(),
   image: z.string().nullable(),
+  handle: z.string().nullable(),
+  inviteCode: z.string().nullable(),
   defaultSemesterId: z.string().nullable(),
   schoolId: z.string().nullable(),
   departmentId: z.string().nullable(),

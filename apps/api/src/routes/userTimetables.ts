@@ -143,6 +143,6 @@ export function registerUserTimetableRoutes(app: Hono) {
       }
       return tx.timetableTemplate.findUniqueOrThrow({ where: { id: created.id }, include: { daySlots: true, courses: true, meetings: true } });
     });
-    return c.json({ template: templateDto(template) });
+    return c.json({ template: templateDto(template) }, 201);
   });
 }
