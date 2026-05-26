@@ -43,7 +43,11 @@
 
 ## デプロイ / 外部リソース
 
-- URL: (TBD; appily.* のサブドメイン or 独自ドメイン)
-- Coolify app uuid: (TBD)
+- Web URL: https://atender.appily.run
+- API URL: https://atender-api.appily.run (health: `GET /healthz`)
+- Coolify app uuid:
+  - atender-api: `tq2lgr4eh6t80r3tkqjbpu7o`
+  - atender-web: `y1acaktqgsx66sj81qsxn5m3`
+- Coolify deploy トリガー: `curl "$COOLIFY_API_BASE/deploy?uuid=<uuid>" -H "Authorization: Bearer $COOLIFY_API_TOKEN"`
 - 関連 SKILL: `appily`
-- Resend: メール送信。API key は設計 doc 承認後に Touri が発行
+- Resend: API key は `.tmp/atender/secrets.env` (gitignore 済) 参照
