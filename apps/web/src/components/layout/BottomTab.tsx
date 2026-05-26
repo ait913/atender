@@ -8,8 +8,13 @@ export function BottomTab() {
   if (keyboardOpen) return null;
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 flex justify-around bg-bg-elevated/85 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] backdrop-blur-xl border-t border-border-subtle md:hidden"
-      style={{ boxShadow: "0 -8px 32px rgba(0,0,0,0.55)" }}
+      className="fixed inset-x-0 bottom-0 z-40 flex justify-around bg-bg-elevated/85 backdrop-blur-xl border-t border-border-subtle md:hidden"
+      style={{
+        height: "var(--tab-bar-height)",
+        paddingTop: 8,
+        paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+        boxShadow: "0 -8px 32px rgba(0,0,0,0.55)",
+      }}
     >
       {navItems.map((item) => {
         const active = isActivePath(pathname, item.to);

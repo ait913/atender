@@ -42,10 +42,10 @@ export function BottomSheet({
         style={{ maxHeight }}
       >
         <div className="flex justify-center pt-3 pb-2">
-          <span className="h-1.5 w-12 rounded-full bg-white/20" />
+          <span className="h-1 w-9 rounded-full bg-white/20" />
         </div>
-        <header className="flex min-h-14 items-center justify-between px-6 pt-2 pb-3">
-          <h2 className="text-xl font-bold tracking-tight">{title}</h2>
+        <header className="flex min-h-14 items-center justify-between px-5 pt-2 pb-3">
+          <h2 className="text-lg font-bold tracking-tight">{title}</h2>
           <button
             type="button"
             className="grid h-11 w-11 place-items-center rounded-full bg-bg-muted text-lg text-fg-secondary hover:bg-white/10 active:scale-95 transition"
@@ -56,7 +56,7 @@ export function BottomSheet({
           </button>
         </header>
         <div
-          className="space-y-5 overflow-y-auto px-6 pb-[calc(32px+env(safe-area-inset-bottom))] pt-2 overscroll-contain"
+          className="space-y-5 overflow-y-auto px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-2 overscroll-contain"
           style={{ maxHeight: "calc(92dvh - 96px)" }}
         >
           {children}

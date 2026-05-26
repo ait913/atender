@@ -13,12 +13,12 @@ export function Rooms() {
   const [joinOpen, setJoinOpen] = useState(false);
   const list = rooms.data?.rooms ?? [];
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <h1 className="text-2xl font-bold">ルーム</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button type="button" onClick={() => setJoinOpen(true)}>リンクで参加</Button>
-          <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>ルームを作成</Button>
+          <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>作成</Button>
         </div>
       </div>
       {list.length === 0 && !rooms.isLoading ? (

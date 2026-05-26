@@ -38,12 +38,13 @@ export function Today() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-32 md:pb-0">
       <TodayGreeting me={me.data} date={date} />
       {occurrences.length === 0 ? (
         <EmptyState title="今日は授業がありません" action={<Button type="button" onClick={() => void navigate({ to: "/timetable" })}>時間割を見る</Button>} />
       ) : (
         <>
+          <TimetableScroll occurrences={occurrences} />
           <MainAttendanceCTA
             occurrences={occurrences}
             expanded={expanded}
@@ -52,7 +53,6 @@ export function Today() {
             onChangeStatus={changeStatus}
             pending={markAll.isPending}
           />
-          <TimetableScroll occurrences={occurrences} />
         </>
       )}
       <Toast message={toast} />

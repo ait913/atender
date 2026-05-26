@@ -21,7 +21,7 @@ export function Friends() {
   const accepted = rows.filter((item) => item.status === "ACCEPTED");
   const blocked = rows.filter((item) => item.status === "BLOCKED" && item.sender.id === meId);
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">友達</h1>
         <Button type="button" variant="primary" onClick={() => setAddOpen(true)}>友達を追加</Button>

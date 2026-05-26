@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import type { MeetingDto } from "@atender/shared";
 import type { UserTimetableDto } from "@atender/shared";
 import { useCreateUserTimetable, useMe, usePatchUserTimetable, usePublishTimetable, useSemesters, useUserTimetables } from "@/api/hooks";
+import { DayList } from "@/components/timetable/DayList";
+import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingCreateSheet } from "@/components/timetable/MeetingCreateSheet";
 import { TimetableGrid } from "@/components/timetable/TimetableGrid";
 import { Button, Field, Input, PageTitle, Panel } from "@/components/ui";
@@ -29,6 +31,9 @@ export function Timetable() {
   const [sheet, setSheet] = useState<{ dayOfWeek: number; period: number } | null>(null);
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
   const [publishTitle, setPublishTitle] = useState("");
+  const today = useMemo(() => getTodayDayOfWeek(), []);
+  const [activeDay, setActiveDay] = useState<number>(today);
+  const [viewMode, setViewMode] = useState<"day" | "week">("day");
   const emptyTimetable = useMemo<UserTimetableDto | null>(() => {
     const semesterId = me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id;
     if (!semesterId) return null;
@@ -57,22 +62,44 @@ export function Timetable() {
     });
   }
 
+  async function handleEmptyCellClick(dayOfWeek: number, period: number) {
+    const tt = await ensureTimetable();
+    if (tt) setSheet({ dayOfWeek, period });
+  }
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageTitle title="時間割">セルをタップして授業を追加できます。</PageTitle>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <Field label="公開タイトル" className="max-w-72"><Input value={publishTitle} onChange={(event) => setPublishTitle(event.currentTarget.value)} /></Field>
-        <Button type="button" onClick={() => selected && publishTitle && publish.mutate({ title: publishTitle })} disabled={!selected || !publishTitle}>テンプレ公開</Button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Field label="公開タイトル" className="max-w-72">
+          <Input value={publishTitle} onChange={(event) => setPublishTitle(event.currentTarget.value)} />
+        </Field>
+        <Button type="button" onClick={() => selected && publishTitle && publish.mutate({ title: publishTitle })} disabled={!selected || !publishTitle}>
+          テンプレ公開
+        </Button>
       </div>
       {display ? (
-        <TimetableGrid
-          timetable={display}
-          onMeetingClick={(meeting) => void removeMeeting(meeting)}
-          onEmptyCellClick={async (dayOfWeek, period) => {
-            const timetable = await ensureTimetable();
-            if (timetable) setSheet({ dayOfWeek, period });
-          }}
-        />
+        <>
+          <div className="md:hidden">
+            <DayList
+              timetable={display}
+              activeDay={activeDay}
+              today={today}
+              viewMode={viewMode}
+              onChangeDay={setActiveDay}
+              onToggleViewMode={() => setViewMode((m) => (m === "day" ? "week" : "day"))}
+              onMeetingClick={(meeting) => void removeMeeting(meeting)}
+              onEmptyCellClick={handleEmptyCellClick}
+            />
+          </div>
+          <div className="hidden md:block">
+            <TimetableGrid
+              timetable={display}
+              onMeetingClick={(meeting) => void removeMeeting(meeting)}
+              onEmptyCellClick={handleEmptyCellClick}
+            />
+          </div>
+        </>
       ) : (
         <Panel>先に学期を作成してください。</Panel>
       )}
@@ -80,7 +107,7 @@ export function Timetable() {
         open={sheet != null}
         onClose={() => setSheet(null)}
         timetable={selected ?? createdTimetable}
-        initialDayOfWeek={sheet?.dayOfWeek ?? 1}
+        initialDayOfWeek={sheet?.dayOfWeek ?? activeDay}
         initialPeriod={sheet?.period ?? 1}
       />
     </div>

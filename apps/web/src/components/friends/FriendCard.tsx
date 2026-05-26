@@ -34,7 +34,7 @@ export function FriendCard({
   const user = otherUser(friendship, meId);
   const initial = (user.name ?? user.handle ?? "?").slice(0, 1).toUpperCase();
   return (
-    <article className="rounded-3xl bg-bg-elevated p-4 shadow-card">
+    <article className="rounded-3xl bg-bg-elevated p-5 shadow-card">
       <div className="flex items-center gap-4">
         <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${avatarColor(user.id)} text-xl font-black text-bg-base`}>
           {initial}
@@ -45,7 +45,7 @@ export function FriendCard({
         </div>
       </div>
       {variant !== "accepted" || onBlock || onDelete ? (
-        <div className="mt-3 flex flex-wrap justify-end gap-2">
+        <div className="mt-3 flex flex-wrap justify-end gap-3">
           {variant === "received" ? (
             <>
               <Button size="sm" variant="primary" onClick={onAccept}>承認</Button>
