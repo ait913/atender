@@ -30,7 +30,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           return (
             <div
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-              className="absolute overflow-hidden rounded-[12px] border border-white/10"
+              className="absolute overflow-hidden rounded-[12px]"
               style={{
                 top: `${top}%`,
                 height: `${height}%`,

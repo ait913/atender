@@ -39,7 +39,7 @@ export function CalendarWeek({
                   return (
                     <li
                       key={eventKey(event)}
-                      className="relative overflow-hidden rounded-[12px] border border-white/10"
+                      className="relative overflow-hidden rounded-[12px]"
                       style={{ background: tint }}
                     >
                       <span

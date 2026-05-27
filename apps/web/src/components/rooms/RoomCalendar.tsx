@@ -100,7 +100,7 @@ function DayEventList({ date, events }: { date: string; events: CalendarEvent[] 
             return (
               <li
                 key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-                className="relative overflow-hidden rounded-[12px] border border-white/10"
+                className="relative overflow-hidden rounded-[12px]"
                 style={{ background: tint }}
               >
                 <span

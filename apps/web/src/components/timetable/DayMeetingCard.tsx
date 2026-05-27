@@ -25,7 +25,7 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
     <button
       type="button"
       onClick={onClick}
-      className="relative block w-full overflow-hidden rounded-[14px] border border-white/10 text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      className="relative block w-full overflow-hidden rounded-[14px] text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       style={{
         background: tint,
         minHeight,

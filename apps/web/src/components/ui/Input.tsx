@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
 const controlClass =
-  "min-h-14 w-full rounded-2xl bg-white/6 px-5 py-3 text-base font-medium text-fg-primary outline-none transition placeholder:text-fg-tertiary focus:bg-white/10 focus:shadow-glow-soft disabled:opacity-50";
+  "min-h-14 w-full rounded-2xl border border-border-default bg-bg-muted px-5 py-3 text-base font-medium text-fg-primary outline-none transition placeholder:text-fg-tertiary focus:border-accent-500 focus:shadow-glow-soft disabled:opacity-50";
 
 export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`${controlClass} ${className}`} {...props} />;

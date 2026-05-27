@@ -7,7 +7,7 @@ export function MeetingBlock({ course, onClick }: { course: CourseDto; onClick?:
   return (
     <button
       type="button"
-      className="relative h-full w-full overflow-hidden rounded-[12px] border border-white/10 text-left transition active:scale-[0.99]"
+      className="relative h-full w-full overflow-hidden rounded-[12px] text-left transition active:scale-[0.99]"
       style={{ background: tint }}
       onClick={onClick}
     >

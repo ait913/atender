@@ -94,7 +94,7 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
         return (
           <div
             key={`${event.userId}:${event.courseId}:${event.dayOfWeek}:${event.startMinute}:${event.lane}`}
-            className="absolute overflow-hidden rounded-[12px] border border-white/10"
+            className="absolute overflow-hidden rounded-[12px]"
             style={{
               top: `${topPercent(event.startMinute, range)}%`,
               height: `${heightPercent(event.startMinute, event.endMinute, range)}%`,
