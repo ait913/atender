@@ -8,8 +8,14 @@ export type DayMeetingCardProps = {
   onClick: () => void;
 };
 
+function hexWithAlpha(hex: string, alphaHex: string) {
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return `${hex}${alphaHex}`;
+  return hex;
+}
+
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
   const color = course.color ?? "#10EB99";
+  const chipBg = hexWithAlpha(color, "33"); // 20%
   const first = slots[0];
   const last = slots[slots.length - 1];
   if (!first || !last) return null;
@@ -28,26 +34,25 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
       aria-label={`${course.name} ${periodRange} ${timeRange}`}
     >
       <div className="mb-2 flex items-center gap-2 text-xs text-fg-tertiary">
-        <span className="font-semibold text-fg-secondary">{periodRange}</span>
+        <span className="font-semibold" style={{ color }}>{periodRange}</span>
         <span aria-hidden>·</span>
         <span>{timeRange}</span>
       </div>
-      <h3 className="line-clamp-2 text-base font-semibold leading-snug text-fg-primary">
+      <h3 className="line-clamp-2 text-lg font-bold leading-snug text-fg-primary">
         {course.name}
       </h3>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fg-secondary">
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
         {course.room ? (
           <span
-            className="inline-flex items-center rounded-full px-2 py-0.5 font-semibold"
-            style={{
-              background: `color-mix(in srgb, ${color} 20%, transparent)`,
-              color,
-            }}
+            className="inline-flex items-center rounded-full px-2.5 py-1 font-bold"
+            style={{ background: chipBg, color }}
           >
             {course.room}
           </span>
         ) : null}
-        {course.teacher ? <span className="truncate">{course.teacher}</span> : null}
+        {course.teacher ? (
+          <span className="truncate text-fg-secondary">{course.teacher}</span>
+        ) : null}
       </div>
     </button>
   );

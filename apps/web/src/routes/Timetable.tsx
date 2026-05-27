@@ -5,6 +5,7 @@ import { useCreateUserTimetable, useMe, usePatchUserTimetable, usePublishTimetab
 import { DayList } from "@/components/timetable/DayList";
 import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingCreateSheet } from "@/components/timetable/MeetingCreateSheet";
+import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { TimetableGrid } from "@/components/timetable/TimetableGrid";
 import { Button, Field, Input, PageTitle, Panel } from "@/components/ui";
 
@@ -29,6 +30,7 @@ export function Timetable() {
   const patchTimetable = usePatchUserTimetable(selected?.id);
   const publish = usePublishTimetable(selected?.id);
   const [sheet, setSheet] = useState<{ dayOfWeek: number; period: number } | null>(null);
+  const [detailMeeting, setDetailMeeting] = useState<MeetingDto | null>(null);
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
   const [publishTitle, setPublishTitle] = useState("");
   const today = useMemo(() => getTodayDayOfWeek(), []);
@@ -62,6 +64,17 @@ export function Timetable() {
     });
   }
 
+  const detailCourse = detailMeeting && display
+    ? display.courses.find((c) => c.id === detailMeeting.courseId) ?? null
+    : null;
+  const detailSlots = detailMeeting && display
+    ? display.daySlots.filter(
+        (s) =>
+          s.periodIndex >= detailMeeting.startPeriodIndex &&
+          s.periodIndex < detailMeeting.startPeriodIndex + detailMeeting.periodCount,
+      )
+    : [];
+
   async function handleEmptyCellClick(dayOfWeek: number, period: number) {
     const tt = await ensureTimetable();
     if (tt) setSheet({ dayOfWeek, period });
@@ -88,14 +101,14 @@ export function Timetable() {
               viewMode={viewMode}
               onChangeDay={setActiveDay}
               onToggleViewMode={() => setViewMode((m) => (m === "day" ? "week" : "day"))}
-              onMeetingClick={(meeting) => void removeMeeting(meeting)}
+              onMeetingClick={(meeting) => setDetailMeeting(meeting)}
               onEmptyCellClick={handleEmptyCellClick}
             />
           </div>
           <div className="hidden md:block">
             <TimetableGrid
               timetable={display}
-              onMeetingClick={(meeting) => void removeMeeting(meeting)}
+              onMeetingClick={(meeting) => setDetailMeeting(meeting)}
               onEmptyCellClick={handleEmptyCellClick}
             />
           </div>
@@ -109,6 +122,19 @@ export function Timetable() {
         timetable={selected ?? createdTimetable}
         initialDayOfWeek={sheet?.dayOfWeek ?? activeDay}
         initialPeriod={sheet?.period ?? 1}
+      />
+      <MeetingDetailSheet
+        open={detailMeeting != null}
+        onClose={() => setDetailMeeting(null)}
+        meeting={detailMeeting}
+        course={detailCourse}
+        slots={detailSlots}
+        pending={patchTimetable.isPending}
+        onDelete={async () => {
+          if (!detailMeeting) return;
+          await removeMeeting(detailMeeting);
+          setDetailMeeting(null);
+        }}
       />
     </div>
   );
