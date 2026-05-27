@@ -38,7 +38,22 @@ async function requireCompleteSetup(queryClient: QueryClient) {
   return me;
 }
 
-const signInRoute = createRoute({ getParentRoute: () => rootRoute, path: "/signin", component: SignIn });
+async function redirectIfSignedIn(queryClient: QueryClient) {
+  try {
+    const me = await queryClient.fetchQuery(meQueryOptions);
+    if (me) throw redirect({ to: "/" });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 401) return;
+    throw error;
+  }
+}
+
+const signInRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/signin",
+  beforeLoad: ({ context }) => redirectIfSignedIn(context.queryClient),
+  component: SignIn,
+});
 const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: "/login", beforeLoad: () => { throw redirect({ to: "/signin" }); } });
 const verifyRoute = createRoute({ getParentRoute: () => rootRoute, path: "/verify", component: Verify });
 const setupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/setup", beforeLoad: ({ context }) => requireAuth(context.queryClient), component: Setup });
