@@ -96,18 +96,14 @@ function DayEventList({ date, events }: { date: string; events: CalendarEvent[] 
           {events.map((event) => {
             const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
             const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-            const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
+            const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}26` : "rgba(255,255,255,0.08)";
             return (
               <li
                 key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-                className="relative overflow-hidden rounded-[12px]"
-                style={{ background: tint }}
+                className="relative overflow-hidden rounded-xl"
+                style={{ background: tint, borderLeft: `3px solid ${color}` }}
               >
-                <span
-                  className="absolute left-0 top-1 bottom-1 w-1 rounded-full"
-                  style={{ background: color, boxShadow: `0 0 8px ${color}` }}
-                />
-                <div className="flex items-baseline gap-2 pl-3 pr-2 py-1.5 text-[12px]">
+                <div className="flex items-baseline gap-2 pl-2 pr-2 py-1.5 text-[12px]">
                   <span className="shrink-0 font-bold tabular-nums" style={{ color: subColor }}>{formatMinute(event.startMinute)}</span>
                   <span className="min-w-0 flex-1 truncate font-semibold text-fg-primary">{event.kind === "meeting" ? event.courseName : event.title}</span>
                   <span className="shrink-0 text-[10px]" style={{ color: subColor }}>{event.kind === "meeting" ? event.memberName : event.authorName}</span>

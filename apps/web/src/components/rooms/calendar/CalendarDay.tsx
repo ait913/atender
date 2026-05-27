@@ -26,25 +26,22 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
 
           const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-          const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
+          const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}26` : "rgba(255,255,255,0.08)";
           return (
             <div
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-              className="absolute overflow-hidden rounded-[12px]"
+              className="absolute overflow-hidden rounded-xl"
               style={{
                 top: `${top}%`,
                 height: `${height}%`,
                 left: `${12 + event.lane * laneWidth}%`,
                 width: `calc(${laneWidth}% - 2px)`,
                 background: tint,
+                borderLeft: `3px solid ${color}`,
               }}
               title={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
             >
-              <span
-                className="absolute left-0 top-1 bottom-1 w-1.5 rounded-full"
-                style={{ background: color, boxShadow: `0 0 12px ${color}, inset 0 0 4px rgba(255,255,255,0.4)` }}
-              />
-              <div className="flex h-full flex-col gap-0.5 pl-3.5 pr-2 py-1.5">
+              <div className="flex h-full flex-col gap-0.5 pl-2 pr-2 py-1.5">
                 <p className="truncate text-[12px] font-semibold leading-snug text-fg-primary">
                   {event.kind === "meeting" ? event.courseName : event.title}
                 </p>
