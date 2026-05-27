@@ -34,6 +34,20 @@ export function useUpdateRoom(id?: string) {
   });
 }
 
+export function useRemoveRoomMember(id?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api<{ ok: true }>(`/api/rooms/${id}/members/${userId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QK.rooms() });
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: QK.roomMembers(id) });
+        queryClient.invalidateQueries({ queryKey: QK.room(id) });
+      }
+    },
+  });
+}
+
 export function useJoinRoom() {
   const queryClient = useQueryClient();
   return useMutation({

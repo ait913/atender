@@ -14,7 +14,7 @@ function hexWithAlpha(hex: string, alphaHex: string) {
 }
 
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
-  const color = course.color ?? "#10EB99";
+  const color = course.color ?? "#10B981";
   const cardBg = hexWithAlpha(color, "1f"); // 12% on dark
   const first = slots[0];
   const last = slots[slots.length - 1];

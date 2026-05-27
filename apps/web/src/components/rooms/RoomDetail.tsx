@@ -1,53 +1,47 @@
 import { useParams } from "@tanstack/react-router";
-import dayjs from "dayjs";
 import { useState } from "react";
-import { APP_URL } from "@/api/client";
-import { useRegenerateRoomInvite, useRoom, useRoomMembers, useRoomWeek } from "@/api/hooks";
-import { Button, Panel } from "@/components/ui";
-import { RoomAvailabilityHeatmap } from "./RoomAvailabilityHeatmap";
-import { RoomEventCreateSheet } from "./RoomEventCreateSheet";
-import { RoomWeekView } from "./RoomWeekView";
+import { useRoom } from "@/api/hooks";
+import { RoomSettingsSheet } from "@/components/sheet/RoomSettingsSheet";
+import { RoomCalendar } from "./RoomCalendar";
+import { RoomTimetable } from "./RoomTimetable";
 
 export function RoomDetail() {
   const { id } = useParams({ from: "/rooms/$id" });
-  const [tab, setTab] = useState<"week" | "availability" | "members">("week");
-  const [eventOpen, setEventOpen] = useState(false);
-  const [weekStart, setWeekStart] = useState(dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD"));
+  const [tab, setTab] = useState<"calendar" | "timetable">("calendar");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const room = useRoom(id);
-  const week = useRoomWeek(id, weekStart);
-  const members = useRoomMembers(id);
-  const invite = useRegenerateRoomInvite(id);
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold">{room.data?.room.name ?? "ルーム"}</h1>
-          <p className="text-sm text-fg-secondary">{room.data?.room.description}</p>
+          {room.data?.room.description ? <p className="text-sm text-fg-secondary">{room.data.room.description}</p> : null}
         </div>
-        <Button type="button" variant="primary" onClick={() => setEventOpen(true)}>予定を追加</Button>
+        <button
+          type="button"
+          aria-label="ルームの設定"
+          onClick={() => setSettingsOpen(true)}
+          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-white/8 text-xl text-fg-secondary transition hover:bg-white/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+        >
+          ⚙
+        </button>
       </div>
-      <div className="flex rounded-md bg-bg-muted p-1">
-        {(["week", "availability", "members"] as const).map((item) => <button key={item} type="button" className={`flex-1 rounded-sm px-3 py-2 text-sm font-semibold ${tab === item ? "bg-bg-elevated shadow-card" : "text-fg-secondary"}`} onClick={() => setTab(item)}>{item === "week" ? "今週" : item === "availability" ? "みんなの空き" : "メンバー"}</button>)}
+      <div className="flex rounded-full bg-bg-muted p-1">
+        {(["calendar", "timetable"] as const).map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={`flex-1 rounded-full px-4 py-2 text-sm font-bold transition ${
+              tab === item ? "bg-accent-500 text-fg-on-accent shadow-glow-soft" : "text-fg-secondary hover:bg-white/6"
+            }`}
+            onClick={() => setTab(item)}
+          >
+            {item === "calendar" ? "カレンダー" : "時間割"}
+          </button>
+        ))}
       </div>
-      {tab !== "members" ? (
-        <div className="flex items-center justify-between gap-3">
-          <Button type="button" onClick={() => setWeekStart(dayjs(weekStart).subtract(1, "week").format("YYYY-MM-DD"))}>前週</Button>
-          <p className="text-sm font-semibold">{weekStart} 週</p>
-          <Button type="button" onClick={() => setWeekStart(dayjs(weekStart).add(1, "week").format("YYYY-MM-DD"))}>次週</Button>
-        </div>
-      ) : null}
-      {tab === "week" && week.data ? <RoomWeekView week={week.data} /> : null}
-      {tab === "availability" && week.data ? <RoomAvailabilityHeatmap week={week.data} /> : null}
-      {tab === "members" ? (
-        <Panel className="space-y-3">
-          {(members.data?.members ?? []).map((member) => <div key={member.userId} className="flex items-center justify-between border-b border-border-subtle py-2 last:border-b-0"><span>{member.name ?? member.handle ?? member.userId}</span><span className="text-xs text-fg-secondary">{member.role}</span></div>)}
-          <div className="flex flex-wrap gap-2 pt-3">
-            <Button type="button" onClick={() => navigator.clipboard?.writeText(`${APP_URL}/rooms/join/${room.data?.room.inviteCode ?? ""}`)}>招待リンクをコピー</Button>
-            <Button type="button" onClick={() => invite.mutate()}>再発行</Button>
-          </div>
-        </Panel>
-      ) : null}
-      <RoomEventCreateSheet roomId={id} open={eventOpen} onClose={() => setEventOpen(false)} />
+      {tab === "calendar" ? <RoomCalendar roomId={id} /> : <RoomTimetable roomId={id} />}
+      <RoomSettingsSheet roomId={id} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

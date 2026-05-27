@@ -8,6 +8,7 @@ import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
 import { SemesterListSheet } from "@/components/sheet/SemesterListSheet";
 import { Button, Field, Input } from "@/components/ui";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 
 type Sheet = "profile" | "school" | "rules" | "semesters" | null;
 
@@ -18,6 +19,7 @@ export function AvatarMenu() {
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
+  const { matches: mobile, mounted } = useMediaQuery("(max-width: 767px)");
   const user = me.data?.user;
   const initial = (user?.name ?? user?.email ?? "A").slice(0, 1).toUpperCase();
 
@@ -36,7 +38,10 @@ export function AvatarMenu() {
     <button
       type="button"
       className="relative grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-accent-500 text-base font-black text-fg-on-accent shadow-glow-soft active:scale-95 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-      onClick={() => setMenuOpen((v) => !v)}
+      onClick={() => {
+        if (!mounted) return;
+        setMenuOpen((v) => !v);
+      }}
       aria-label="アカウントメニュー"
       aria-expanded={menuOpen}
     >
@@ -46,7 +51,7 @@ export function AvatarMenu() {
   );
 
   const menu = (
-    <div className="space-y-1 rounded-3xl bg-bg-elevated p-3 shadow-popover">
+    <div className="w-full space-y-1 rounded-3xl bg-bg-elevated p-3 shadow-popover md:min-w-72">
       <div className="px-4 py-3">
         <p className="text-lg font-bold tracking-tight">{user?.name ?? "No name"}</p>
         <p className="text-xs text-fg-secondary">{user?.email}</p>
@@ -66,7 +71,7 @@ export function AvatarMenu() {
     <div className="relative">
       {trigger}
       {/* PC: dropdown */}
-      {menuOpen ? (
+      {!mobile && menuOpen ? (
         <>
           <button
             type="button"
@@ -74,14 +79,14 @@ export function AvatarMenu() {
             className="fixed inset-0 z-[1100] hidden md:block"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute right-0 top-14 z-[1110] hidden w-72 max-w-[calc(100vw-32px)] md:block">
+          <div className="absolute right-0 top-12 z-[1120] hidden max-w-[calc(100vw-32px)] md:block">
             {menu}
           </div>
         </>
       ) : null}
       {/* Mobile: BottomSheet (CSS で PC 非表示) */}
       <div className="md:hidden">
-        <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="アカウント">
+        <BottomSheet open={mobile && menuOpen} onClose={() => setMenuOpen(false)} title="アカウント">
           {menu}
         </BottomSheet>
       </div>

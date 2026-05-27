@@ -3,6 +3,7 @@ export * from "./useFriendships";
 export * from "./useMe";
 export * from "./useRooms";
 export * from "./useRoomEvents";
+export * from "./useRoomMonth";
 export * from "./useRoomWeek";
 export * from "./useSchools";
 export * from "./useSemesters";

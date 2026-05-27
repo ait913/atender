@@ -41,6 +41,7 @@ function roomDto(room: {
   id: string;
   name: string;
   description: string | null;
+  showMemberTimetables: boolean;
   inviteCode: string;
   inviteExpiresAt: Date | null;
   createdAt: Date;
@@ -53,6 +54,7 @@ function roomDto(room: {
     id: room.id,
     name: room.name,
     description: room.description,
+    showMemberTimetables: room.showMemberTimetables,
     memberCount: room.memberships.length,
     myRole,
     upcomingEvent: upcoming ? { id: upcoming.id, title: upcoming.title, start: upcoming.start.toISOString() } : null,
@@ -63,15 +65,15 @@ function roomDto(room: {
 }
 
 async function assertMember(roomId: string, userId: string) {
-  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true } });
+  const room = await prisma.room.findUnique({ where: { id: roomId }, select: { id: true, showMemberTimetables: true } });
   if (!room) throw new AppError(404, "NOT_FOUND", "Room not found");
   const membership = await prisma.roomMembership.findUnique({ where: { roomId_userId: { roomId, userId } } });
   if (!membership) throw new AppError(403, "NOT_MEMBER", "Room member only");
-  return membership;
+  return { membership, room };
 }
 
 async function assertOwner(roomId: string, userId: string) {
-  const membership = await assertMember(roomId, userId);
+  const { membership } = await assertMember(roomId, userId);
   if (membership.role !== "OWNER") throw new AppError(403, "NOT_OWNER", "Room owner only");
   return membership;
 }
@@ -91,6 +93,7 @@ export async function createRoom(userId: string, input: CreateRoomInput, now = n
       data: {
         name: input.name,
         description: input.description ?? null,
+        showMemberTimetables: input.showMemberTimetables ?? true,
         createdByUserId: userId,
         inviteExpiresAt: dayjs(now).add(7, "day").toDate(),
       },
@@ -112,7 +115,11 @@ export async function updateRoom(userId: string, roomId: string, input: UpdateRo
   await assertOwner(roomId, userId);
   const room = await prisma.room.update({
     where: { id: roomId },
-    data: { ...(input.name !== undefined ? { name: input.name } : {}), ...(input.description !== undefined ? { description: input.description } : {}) },
+    data: {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.showMemberTimetables !== undefined ? { showMemberTimetables: input.showMemberTimetables } : {}),
+    },
     include: roomInclude,
   });
   return roomDto(room, userId);
@@ -124,7 +131,7 @@ export async function deleteRoom(userId: string, roomId: string) {
 }
 
 export async function leaveRoom(userId: string, roomId: string) {
-  const membership = await assertMember(roomId, userId);
+  const { membership } = await assertMember(roomId, userId);
   if (membership.role === "OWNER") throw new AppError(409, "OWNER_CANNOT_LEAVE", "Owner cannot leave the room");
   await prisma.roomMembership.delete({ where: { roomId_userId: { roomId, userId } } });
 }
@@ -229,7 +236,7 @@ export async function deleteRoomEvent(userId: string, roomId: string, eventId: s
 }
 
 export async function getRoomWeek(userId: string, roomId: string, weekStart: Date) {
-  await assertMember(roomId, userId);
+  const { room } = await assertMember(roomId, userId);
   const weekEnd = dayjs(weekStart).add(7, "day").subtract(1, "millisecond").toDate();
   const members = await prisma.roomMembership.findMany({
     where: { roomId },
@@ -240,7 +247,7 @@ export async function getRoomWeek(userId: string, roomId: string, weekStart: Dat
   const occurrences = await prisma.meetingOccurrence.findMany({
     where: {
       date: { gte: weekStart, lte: weekEnd },
-      meeting: { userTimetable: { userId: { in: memberIds } } },
+      meeting: { userTimetable: { userId: room.showMemberTimetables ? { in: memberIds } : userId } },
     },
     include: { meeting: { include: { userTimetable: true } }, course: true },
     orderBy: [{ date: "asc" }, { startMinute: "asc" }],

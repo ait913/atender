@@ -47,6 +47,8 @@
   --color-friendship-blocked: #FF5C7A;
   --color-room-event: #C685FF;
   --color-room-availability-empty: rgba(16, 235, 153, 0.16);
+  --room-tt-chrome-top: 200px;
+  --room-tt-chrome-bottom: 80px;
 
   /* 角丸 (Snap 風で大型化) */
   --radius-sm: 10px;

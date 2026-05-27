@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import type { MeetingDto } from "@atender/shared";
 import type { UserTimetableDto } from "@atender/shared";
-import { useCreateUserTimetable, useMe, usePatchUserTimetable, usePublishTimetable, useSemesters, useUserTimetables } from "@/api/hooks";
+import { useCreateUserTimetable, useMe, usePatchUserTimetable, useSemesters, useUserTimetables } from "@/api/hooks";
+import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
 import { DayList } from "@/components/timetable/DayList";
 import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingCreateSheet } from "@/components/timetable/MeetingCreateSheet";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { TimetableGrid } from "@/components/timetable/TimetableGrid";
-import { Button, Field, Input, PageTitle, Panel } from "@/components/ui";
+import { PageTitle, Panel } from "@/components/ui";
 
 const defaultSlots = [
   { periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false },
@@ -28,11 +29,10 @@ export function Timetable() {
   const selected = activeTimetable(timetables.data?.userTimetables, me.data?.user.defaultSemesterId);
   const createTimetable = useCreateUserTimetable();
   const patchTimetable = usePatchUserTimetable(selected?.id);
-  const publish = usePublishTimetable(selected?.id);
   const [sheet, setSheet] = useState<{ dayOfWeek: number; period: number } | null>(null);
   const [detailMeeting, setDetailMeeting] = useState<MeetingDto | null>(null);
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
-  const [publishTitle, setPublishTitle] = useState("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const today = useMemo(() => getTodayDayOfWeek(), []);
   const [activeDay, setActiveDay] = useState<number>(today);
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
@@ -82,14 +82,16 @@ export function Timetable() {
 
   return (
     <div className="space-y-6">
-      <PageTitle title="時間割">セルをタップして授業を追加できます。</PageTitle>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <Field label="公開タイトル" className="max-w-72">
-          <Input value={publishTitle} onChange={(event) => setPublishTitle(event.currentTarget.value)} />
-        </Field>
-        <Button type="button" onClick={() => selected && publishTitle && publish.mutate({ title: publishTitle })} disabled={!selected || !publishTitle}>
-          テンプレ公開
-        </Button>
+      <div className="flex items-start justify-between gap-3">
+        <PageTitle title="時間割">セルをタップして授業を追加できます。</PageTitle>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="時間割の設定"
+          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-white/8 text-xl text-fg-secondary transition hover:bg-white/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+        >
+          ⚙
+        </button>
       </div>
       {display ? (
         <>
@@ -136,6 +138,7 @@ export function Timetable() {
           setDetailMeeting(null);
         }}
       />
+      <TimetableSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} timetable={selected ?? createdTimetable} />
     </div>
   );
 }
