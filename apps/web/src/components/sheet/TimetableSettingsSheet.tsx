@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { UserTimetableDto } from "@atender/shared";
-import { usePatchUserTimetable, usePublishTimetable, useSemesters } from "@/api/hooks";
+import { useCopyTemplate, useMe, usePatchUserTimetable, usePublishTimetable, useSemesters, useTemplates } from "@/api/hooks";
 import { Button, Field, Input, Toggle } from "@/components/ui";
 import { BottomSheet } from "./BottomSheet";
 
@@ -26,12 +26,22 @@ export function TimetableSettingsSheet({
   const patch = usePatchUserTimetable(timetable?.id);
   const publish = usePublishTimetable(timetable?.id);
   const semesters = useSemesters();
+  const me = useMe();
+  const copy = useCopyTemplate();
   const semester = useMemo(() => semesters.data?.semesters.find((s) => s.id === timetable?.semesterId) ?? null, [semesters.data, timetable?.semesterId]);
   const [name, setName] = useState("");
   const [publishEnabled, setPublishEnabled] = useState(true);
   const [publishTitle, setPublishTitle] = useState("");
   const [slots, setSlots] = useState<SlotInput[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const templates = useTemplates({
+    schoolId: searchOpen ? me.data?.user.schoolId ?? undefined : undefined,
+    departmentId: searchOpen ? me.data?.user.departmentId ?? undefined : undefined,
+    q: searchQuery || undefined,
+    limit: 20,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -187,6 +197,62 @@ export function TimetableSettingsSheet({
             <Field label="公開タイトル">
               <Input value={publishTitle} disabled={!timetable} onChange={(event) => setPublishTitle(event.currentTarget.value)} />
             </Field>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="border-t border-white/8 pt-5">
+        <button
+          type="button"
+          onClick={() => setSearchOpen((v) => !v)}
+          className="flex w-full items-center justify-between rounded-2xl bg-white/4 px-4 py-3 text-left text-sm font-bold text-fg-primary transition hover:bg-white/8 active:scale-[0.99]"
+        >
+          <span>同じ学校の公開時間割から持ってくる</span>
+          <span className="text-fg-tertiary">{searchOpen ? "▴" : "▾"}</span>
+        </button>
+        {searchOpen ? (
+          <div className="mt-3 space-y-3">
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              placeholder="タイトル / 学年 / 学期で検索"
+            />
+            {!me.data?.user.schoolId || !me.data?.user.departmentId ? (
+              <p className="rounded-2xl bg-status-tardy/15 px-4 py-3 text-sm text-status-tardy">
+                先にプロフィールで学校・学科を設定してください
+              </p>
+            ) : templates.isLoading ? (
+              <p className="text-xs text-fg-tertiary">検索中…</p>
+            ) : (templates.data?.templates ?? []).length === 0 ? (
+              <p className="text-xs text-fg-tertiary">公開時間割が見つかりません</p>
+            ) : (
+              <ul className="space-y-2">
+                {(templates.data?.templates ?? []).map((t) => (
+                  <li key={t.id} className="flex items-center gap-3 rounded-2xl bg-white/4 p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-fg-primary">{t.title}</p>
+                      <p className="truncate text-xs text-fg-tertiary">
+                        {[t.year ? `${t.year}年` : null, t.term].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={!timetable || copy.isPending}
+                      onClick={() => {
+                        if (!timetable) return;
+                        copy.mutate(
+                          { templateId: t.id, input: { semesterId: timetable.semesterId } },
+                          { onSuccess: () => { setMessage(`「${t.title}」を取り込みました`); setSearchOpen(false); } },
+                        );
+                      }}
+                    >
+                      取り込む
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ) : null}
       </div>

@@ -131,6 +131,7 @@ export function Timetable() {
         meeting={detailMeeting}
         course={detailCourse}
         slots={detailSlots}
+        timetable={display}
         pending={patchTimetable.isPending}
         onDelete={async () => {
           if (!detailMeeting) return;

@@ -71,8 +71,20 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
 }
 
 function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange }) {
+  const hourLines = useMemo(() => {
+    const start = Math.floor(range.minMinute / 60);
+    const end = Math.ceil(range.maxMinute / 60);
+    return Array.from({ length: end - start + 1 }, (_, index) => (start + index) * 60);
+  }, [range]);
   return (
     <div className="relative border-l border-white/8">
+      {hourLines.map((minute) => (
+        <div
+          key={`grid-${minute}`}
+          className="pointer-events-none absolute left-0 right-0 h-px bg-white/5"
+          style={{ top: `${topPercent(minute, range)}%` }}
+        />
+      ))}
       {events.map((event) => {
         const width = 100 / event.laneCount;
         return (
