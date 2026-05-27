@@ -106,10 +106,10 @@ function DayEventList({ date, events }: { date: string; events: CalendarEvent[] 
                   className="absolute left-0 top-1 bottom-1 w-1 rounded-full"
                   style={{ background: color, boxShadow: `0 0 8px ${color}` }}
                 />
-                <div className="flex items-baseline gap-2 pl-3 pr-2 py-1.5 text-[12px]">
+                <div className="flex items-baseline gap-2 pl-3 pr-2 py-2 text-[12px]">
                   <span className="shrink-0 font-bold tabular-nums" style={{ color: subColor }}>{formatMinute(event.startMinute)}</span>
                   <span className="min-w-0 flex-1 truncate font-semibold text-fg-primary">{event.kind === "meeting" ? event.courseName : event.title}</span>
-                  <span className="shrink-0 text-[10px]" style={{ color: subColor }}>{event.kind === "meeting" ? event.memberName : event.authorName}</span>
+                  <span className="shrink-0 text-[11px]" style={{ color: subColor }}>{event.kind === "meeting" ? event.memberName : event.authorName}</span>
                 </div>
               </li>
             );

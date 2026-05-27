@@ -109,9 +109,9 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
               className="absolute left-0 top-1 bottom-1 w-1.5 rounded-full"
               style={{ background: color, boxShadow: `0 0 8px ${color}, inset 0 0 3px rgba(255,255,255,0.4)` }}
             />
-            <div className="flex h-full flex-col gap-0.5 pl-2.5 pr-1 py-1">
-              <p className="truncate text-[11px] font-semibold leading-snug text-fg-primary">{event.courseName}</p>
-              <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>{event.memberName}</p>
+            <div className="flex h-full flex-col gap-0.5 pl-3 pr-1.5 py-1.5">
+              <p className="truncate text-[12px] font-semibold leading-snug text-fg-primary">{event.courseName}</p>
+              <p className="truncate text-[11px] leading-tight" style={{ color: subColor }}>{event.memberName}</p>
             </div>
           </div>
         );

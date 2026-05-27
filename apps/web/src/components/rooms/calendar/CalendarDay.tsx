@@ -49,7 +49,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
                 <p className="truncate text-[12px] font-semibold leading-snug text-fg-primary">
                   {event.kind === "meeting" ? event.courseName : event.title}
                 </p>
-                <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>
+                <p className="truncate text-[11px] leading-tight" style={{ color: subColor }}>
                   {event.kind === "meeting" ? event.memberName : event.authorName} · {formatMinute(event.startMinute)}
                 </p>
               </div>
