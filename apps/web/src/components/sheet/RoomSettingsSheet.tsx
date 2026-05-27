@@ -107,6 +107,11 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
         />
       </div>
       <section className="border-t border-fg-primary/8 pt-5">
+        <Button type="button" variant="secondary" className="w-full" onClick={() => void navigate({ to: "/settings/calendar" })}>
+          カレンダー取り込み設定
+        </Button>
+      </section>
+      <section className="border-t border-fg-primary/8 pt-5">
         <h3 className="mb-3 text-sm font-black text-fg-primary">メンバー ({members.data?.members.length ?? 0})</h3>
         <ul className="space-y-2">
           {(members.data?.members ?? []).map((member) => (

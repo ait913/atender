@@ -22,6 +22,7 @@ export type RoomEventEvent = {
   authorName: string;
   authorColor: string;
   title: string;
+  occurrenceDate?: string;
   date: string;
   startMinute: number;
   endMinute: number;
@@ -63,7 +64,7 @@ export function buildCalendarEvents(weeks: RoomWeekDto[]): CalendarEvent[] {
     }
 
     for (const roomEvent of week.roomEvents) {
-      const key = `e:${roomEvent.id}`;
+      const key = `e:${roomEvent.seriesId}:${roomEvent.occurrenceDate}`;
       if (seen.has(key)) continue;
       seen.add(key);
       const author = members.get(roomEvent.authorId);
@@ -76,6 +77,7 @@ export function buildCalendarEvents(weeks: RoomWeekDto[]): CalendarEvent[] {
         authorName: author?.name ?? author?.handle ?? "No name",
         authorColor: author?.color ?? fallbackMemberColor(roomEvent.authorId),
         title: roomEvent.title,
+        occurrenceDate: roomEvent.occurrenceDate,
         date: start.format("YYYY-MM-DD"),
         startMinute: start.hour() * 60 + start.minute(),
         endMinute: end.hour() * 60 + end.minute(),

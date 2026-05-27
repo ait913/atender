@@ -1,8 +1,12 @@
 import type { Hono } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { MeUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { sessionMiddleware } from "../middleware/session";
+import { setupGuard } from "../middleware/setupGuard";
+import { createRule, deleteRule, listRules, patchRule } from "../services/icsTitleRule.service";
 
 type MeUser = {
   id: string;
@@ -46,6 +50,16 @@ async function getMeResponse(user: MeUser) {
 function departmentSchoolMismatch() {
   return new AppError(400, "VALIDATION_ERROR", "Department does not belong to school", { reason: "DEPARTMENT_SCHOOL_MISMATCH" });
 }
+
+const RuleId = z.object({ ruleId: z.string() });
+const CreateRuleInput = z.object({
+  matchType: z.enum(["EQUALS", "CONTAINS", "REGEX"]),
+  pattern: z.string().min(1).max(500),
+  replaceWith: z.string().max(120).nullable().optional(),
+  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).optional(),
+  priority: z.number().int().min(0).max(9998).optional(),
+});
+const PatchRuleInput = CreateRuleInput.partial();
 
 export function registerMeRoutes(app: Hono) {
   app.get("/api/me", sessionMiddleware, async (c) => {
@@ -108,5 +122,22 @@ export function registerMeRoutes(app: Hono) {
       },
     });
     return c.json(await getMeResponse(user));
+  });
+
+  app.get("/api/me/ics-title-rules", sessionMiddleware, setupGuard, async (c) => {
+    return c.json({ rules: await listRules(c.get("user").id) });
+  });
+
+  app.post("/api/me/ics-title-rules", sessionMiddleware, setupGuard, zValidator("json", CreateRuleInput), async (c) => {
+    return c.json({ rule: await createRule(c.get("user").id, c.req.valid("json")) }, 201);
+  });
+
+  app.patch("/api/me/ics-title-rules/:ruleId", sessionMiddleware, setupGuard, zValidator("param", RuleId), zValidator("json", PatchRuleInput), async (c) => {
+    return c.json({ rule: await patchRule(c.get("user").id, c.req.valid("param").ruleId, c.req.valid("json")) });
+  });
+
+  app.delete("/api/me/ics-title-rules/:ruleId", sessionMiddleware, setupGuard, zValidator("param", RuleId), async (c) => {
+    await deleteRule(c.get("user").id, c.req.valid("param").ruleId);
+    return c.json({ ok: true });
   });
 }

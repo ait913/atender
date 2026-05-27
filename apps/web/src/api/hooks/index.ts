@@ -1,5 +1,7 @@
 export * from "./useAttendanceRules";
 export * from "./useFriendships";
+export * from "./useIcsImports";
+export * from "./useIcsTitleRules";
 export * from "./useMe";
 export * from "./useRooms";
 export * from "./useRoomEvents";

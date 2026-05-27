@@ -8,6 +8,10 @@ import type {
   DepartmentDto,
   EffectiveRuleResponse,
   FriendshipDto,
+  IcsImportCommitResult,
+  IcsImportDto,
+  IcsImportPreview,
+  IcsTitleRuleDto,
   MarkAllPresentInput,
   MarkAllPresentResponse,
   MarkAttendanceInput,
@@ -65,6 +69,9 @@ export type RoomMembersResponse = { members: RoomMemberDto[] };
 export type RoomEventsResponse = { events: RoomEventDto[] };
 export type RoomEventResponse = { event: RoomEventDto };
 export type RoomInviteResponse = { inviteCode: string; inviteExpiresAt: string };
+export type IcsImportsResponse = { imports: IcsImportDto[] };
+export type IcsTitleRulesResponse = { rules: IcsTitleRuleDto[] };
+export type IcsTitleRuleResponse = { rule: IcsTitleRuleDto };
 
 export type {
   EffectiveRuleResponse,
@@ -77,6 +84,9 @@ export type {
   CreateFriendshipInput,
   CreateRoomInput,
   CreateRoomEventInput,
+  IcsImportCommitResult,
+  IcsImportPreview,
+  IcsTitleRuleDto,
   UpdateRoomInput,
   UpdateRoomEventInput,
   RoomWeekDto,

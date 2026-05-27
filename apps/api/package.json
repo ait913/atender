@@ -23,7 +23,11 @@
     "better-sqlite3": "^11.7.0",
     "dayjs": "^1.11.13",
     "hono": "4.12.18",
+    "iconv-lite": "^0.6.3",
+    "jschardet": "^3.1.4",
+    "node-ical": "^0.20.1",
     "resend": "^6.12.3",
+    "rrule": "^2.8.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

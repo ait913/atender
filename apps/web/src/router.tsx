@@ -9,6 +9,7 @@ import { RoomDetail } from "@/components/rooms/RoomDetail";
 import { Rooms } from "@/components/rooms/Rooms";
 import { RootLayout } from "@/routes/_root";
 import { Setup } from "@/routes/Setup";
+import { SettingsCalendar } from "@/routes/SettingsCalendar";
 import { SignIn } from "@/routes/SignIn";
 import { Stats } from "@/routes/Stats";
 import { Templates } from "@/routes/Templates";
@@ -59,6 +60,7 @@ const verifyRoute = createRoute({ getParentRoute: () => rootRoute, path: "/verif
 const setupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/setup", beforeLoad: ({ context }) => requireAuth(context.queryClient), component: Setup });
 const meRoute = createRoute({ getParentRoute: () => rootRoute, path: "/me", beforeLoad: () => { throw redirect({ to: "/" }); } });
 const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", beforeLoad: () => { throw redirect({ to: "/" }); } });
+const settingsCalendarRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/calendar", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: SettingsCalendar });
 
 const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Today });
 const timetableRoute = createRoute({ getParentRoute: () => rootRoute, path: "/timetable", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Timetable });
@@ -77,6 +79,7 @@ const routeTree = rootRoute.addChildren([
   setupRoute,
   meRoute,
   settingsRoute,
+  settingsCalendarRoute,
   homeRoute,
   timetableRoute,
   templatesRoute,

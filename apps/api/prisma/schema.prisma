@@ -42,6 +42,8 @@ model User {
   createdRooms        Room[]           @relation("RoomCreatedBy")
   roomMemberships     RoomMembership[]
   authoredRoomEvents  RoomEvent[]      @relation("RoomEventAuthor")
+  icsImports          IcsImport[]
+  icsTitleRules       IcsTitleRule[]
 
   @@index([schoolId, departmentId])
 }
@@ -385,6 +387,7 @@ model Room {
 
   memberships RoomMembership[]
   events      RoomEvent[]
+  icsImports  IcsImport[]
 
   @@index([createdByUserId])
 }
@@ -418,8 +421,110 @@ model RoomEvent {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  rawTitle             String?
+  recurrenceRule       String?
+  exDates              String?
+  rDates               String?
+  source               RoomEventSource @default(MANUAL)
+  externalUid          String?
+  externalSeq          Int?
+  externalLastModified DateTime?
+  importId             String?
+  import               IcsImport?      @relation(fields: [importId], references: [id], onDelete: SetNull)
+  visibilityMode       EventVisibility @default(NORMAL)
+
+  overrides RoomEventOverride[]
+
   @@index([roomId, start])
   @@index([authorId])
+  @@unique([roomId, externalUid])
+}
+
+model RoomEventOverride {
+  id             String    @id @default(cuid())
+  seriesId       String
+  series         RoomEvent @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  originalDate   DateTime
+  isCancelled    Boolean   @default(false)
+  newStart       DateTime?
+  newEnd         DateTime?
+  newTitle       String?
+  newDescription String?
+  newColor       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([seriesId, originalDate])
+  @@index([seriesId])
+}
+
+model IcsImport {
+  id                  String          @id @default(cuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId              String
+  room                Room            @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  source              RoomEventSource
+  filename            String?
+  url                 String?
+  contentHash         String
+  rawText             String
+  status              IcsImportStatus @default(PENDING)
+  parsedEventCount    Int             @default(0)
+  committedEventCount Int             @default(0)
+  skippedEventCount   Int             @default(0)
+  errorMessage        String?
+  committedAt         DateTime?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  events RoomEvent[]
+
+  @@index([userId])
+  @@index([roomId])
+}
+
+model IcsTitleRule {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchType      TitleMatchType
+  pattern        String
+  replaceWith    String?
+  visibilityMode EventVisibility @default(TITLE_MAPPED)
+  priority       Int             @default(0)
+  isDefault      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([userId, priority])
+}
+
+enum RoomEventSource {
+  MANUAL
+  ICS_FILE
+  ICS_URL
+  GOOGLE_OAUTH
+}
+
+enum EventVisibility {
+  NORMAL
+  TITLE_MAPPED
+  BUSY_ONLY
+}
+
+enum IcsImportStatus {
+  PENDING
+  PARSED
+  SUCCESS
+  PARTIAL_ERROR
+  FAILED
+}
+
+enum TitleMatchType {
+  EQUALS
+  CONTAINS
+  REGEX
 }
 
 model AttendanceRecord {

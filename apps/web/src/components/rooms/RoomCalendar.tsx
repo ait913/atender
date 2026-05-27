@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import type { RoomWeekDto } from "@atender/shared";
 import { useRoomMonth } from "@/api/hooks";
+import { IcsImportWizard } from "@/components/ics-import/IcsImportWizard";
 import { Panel } from "@/components/ui";
 import { weekStartsFor, type CalendarViewMode } from "@/lib/calendarRange";
 import { buildCalendarEvents, eventsByDate, type CalendarEvent } from "@/lib/meetingExpansion";
@@ -19,6 +20,7 @@ export function RoomCalendar({ roomId }: { roomId: string }) {
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format("YYYY-MM-DD"));
   const [expanded, setExpanded] = useState(false);
   const [eventOpen, setEventOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const weekStarts = useMemo(() => weekStartsFor(viewMode, anchor), [anchor, viewMode]);
   const weekQueries = useRoomMonth(roomId, weekStarts);
 
@@ -74,15 +76,26 @@ export function RoomCalendar({ roomId }: { roomId: string }) {
         )
       ) : null}
       {viewMode !== "month" ? (
+        <div className="fixed bottom-24 right-5 z-20 flex flex-col items-end gap-2">
+          <button
+            type="button"
+            className="grid h-12 w-12 place-items-center rounded-full bg-bg-elevated text-lg font-black text-fg-primary shadow-card transition active:scale-95"
+            onClick={() => setImportOpen(true)}
+            aria-label="カレンダー取り込み"
+          >
+            ↓
+          </button>
         <button
           type="button"
-          className="fixed bottom-24 right-5 z-20 rounded-full bg-accent-500 px-5 py-3 text-sm font-black text-fg-on-accent shadow-glow-soft transition active:scale-95"
+          className="rounded-full bg-accent-500 px-5 py-3 text-sm font-black text-fg-on-accent shadow-glow-soft transition active:scale-95"
           onClick={() => setEventOpen(true)}
         >
           + 予定を追加
         </button>
+        </div>
       ) : null}
-      <RoomEventCreateSheet roomId={roomId} open={eventOpen} onClose={() => setEventOpen(false)} />
+      <RoomEventCreateSheet roomId={roomId} open={eventOpen} onClose={() => setEventOpen(false)} defaultDate={selectedDate} />
+      <IcsImportWizard roomId={roomId} open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
@@ -99,7 +112,7 @@ function DayEventList({ date, events }: { date: string; events: CalendarEvent[] 
             const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
             return (
               <li
-                key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
+                key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}:${event.occurrenceDate ?? event.date}`}
                 className="relative overflow-hidden rounded-[12px]"
                 style={{ background: tint }}
               >

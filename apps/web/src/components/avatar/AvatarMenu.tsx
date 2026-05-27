@@ -61,6 +61,7 @@ export function AvatarMenu() {
       <MenuButton onClick={() => openSheet("school")}>学校・学科</MenuButton>
       <MenuButton onClick={() => openSheet("rules")}>出欠ルール</MenuButton>
       <MenuButton onClick={() => openSheet("semesters")}>学期管理</MenuButton>
+      <MenuButton onClick={() => { setMenuOpen(false); void navigate({ to: "/settings/calendar" }); }}>カレンダー設定</MenuButton>
       <div className="my-1 h-px bg-border-subtle" />
       <MenuButton onClick={() => { setMenuOpen(false); void navigate({ to: "/stats" }); }}>出席率を見る</MenuButton>
       <div className="my-1 h-px bg-border-subtle" />

@@ -4,7 +4,9 @@ import type { CreateRoomEventInput, CreateRoomInput, UpdateRoomEventInput, Updat
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { cuidToHsl } from "../lib/cuidToHsl";
+import { toIcsDate, validateRRule } from "../lib/rruleExpand";
 import { toIsoDate } from "../lib/tz";
+import { applyEditScope, expandRoomEvents, type ExpandedOccurrence } from "./recurrence.service";
 
 const roomInclude = {
   memberships: true,
@@ -21,18 +23,32 @@ function eventDto(event: {
   end: Date;
   isAllDay: boolean;
   color: string | null;
+  rawTitle?: string | null;
+  recurrenceRule?: string | null;
+  source?: string;
+  visibilityMode?: string;
+  overrideId?: string | null;
+  occurrenceDate?: Date;
   createdAt: Date;
 }) {
   return {
     id: event.id,
+    seriesId: event.id,
     roomId: event.roomId,
     authorId: event.authorId,
     title: event.title,
+    rawTitle: event.rawTitle ?? null,
     description: event.description,
     start: event.start.toISOString(),
     end: event.end.toISOString(),
     isAllDay: event.isAllDay,
     color: event.color,
+    source: event.source ?? "MANUAL",
+    visibilityMode: event.visibilityMode ?? "NORMAL",
+    isRecurringOccurrence: event.recurrenceRule != null,
+    recurrenceRule: event.recurrenceRule ?? null,
+    occurrenceDate: (event.occurrenceDate ?? event.start).toISOString(),
+    overrideId: event.overrideId ?? null,
     createdAt: event.createdAt.toISOString(),
   };
 }
@@ -195,6 +211,7 @@ export async function listRoomEvents(userId: string, roomId: string, range: { fr
 
 export async function createRoomEvent(userId: string, roomId: string, input: CreateRoomEventInput) {
   await assertMember(roomId, userId);
+  if (input.recurrence?.rrule) validateRRule(input.recurrence.rrule, new Date(input.start));
   const event = await prisma.roomEvent.create({
     data: {
       roomId,
@@ -205,6 +222,10 @@ export async function createRoomEvent(userId: string, roomId: string, input: Cre
       end: new Date(input.end),
       isAllDay: input.isAllDay,
       color: input.color ?? null,
+      recurrenceRule: input.recurrence?.rrule ?? null,
+      exDates: input.recurrence?.exDates?.length ? input.recurrence.exDates.map((value) => toIcsDate(new Date(value))).join(",") : null,
+      rDates: input.recurrence?.rDates?.length ? input.recurrence.rDates.map((value) => toIcsDate(new Date(value))).join(",") : null,
+      visibilityMode: input.visibilityMode,
     },
   });
   return eventDto(event);
@@ -214,25 +235,45 @@ export async function updateRoomEvent(userId: string, roomId: string, eventId: s
   const exists = await prisma.roomEvent.findUnique({ where: { id: eventId } });
   if (!exists || exists.roomId !== roomId) throw new AppError(404, "NOT_FOUND", "Room event not found");
   await assertMember(roomId, userId);
-  const event = await prisma.roomEvent.update({
-    where: { id: eventId },
-    data: {
+  if (exists.authorId !== userId) throw new AppError(403, "NOT_AUTHOR", "Event author only");
+  if (input.recurrence?.rrule) validateRRule(input.recurrence.rrule, input.start ? new Date(input.start) : exists.start);
+  await applyEditScope({
+    seriesId: eventId,
+    originalDate: input.originalDate ? new Date(input.originalDate) : exists.start,
+    scope: input.editScope,
+    patch: {
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.start !== undefined ? { start: new Date(input.start) } : {}),
       ...(input.end !== undefined ? { end: new Date(input.end) } : {}),
       ...(input.isAllDay !== undefined ? { isAllDay: input.isAllDay } : {}),
       ...(input.color !== undefined ? { color: input.color } : {}),
+      ...(input.visibilityMode !== undefined ? { visibilityMode: input.visibilityMode } : {}),
+      ...(input.recurrence !== undefined ? { recurrence: input.recurrence } : {}),
     },
+  });
+  const event = await prisma.roomEvent.findUniqueOrThrow({
+    where: { id: eventId },
   });
   return eventDto(event);
 }
 
-export async function deleteRoomEvent(userId: string, roomId: string, eventId: string) {
+export async function deleteRoomEvent(userId: string, roomId: string, eventId: string, input: { scope?: "single" | "future" | "all"; originalDate?: string } = {}) {
   const event = await prisma.roomEvent.findUnique({ where: { id: eventId } });
   if (!event || event.roomId !== roomId) throw new AppError(404, "NOT_FOUND", "Room event not found");
   await assertMember(roomId, userId);
-  await prisma.roomEvent.delete({ where: { id: eventId } });
+  if (event.authorId !== userId) throw new AppError(403, "NOT_AUTHOR", "Event author only");
+  const scope = input.scope ?? "all";
+  if (scope === "all") {
+    await prisma.roomEvent.delete({ where: { id: eventId } });
+    return;
+  }
+  await applyEditScope({
+    seriesId: eventId,
+    originalDate: input.originalDate ? new Date(input.originalDate) : event.start,
+    scope,
+    patch: { isCancelled: true },
+  });
 }
 
 export async function getRoomWeek(userId: string, roomId: string, weekStart: Date) {
@@ -252,17 +293,7 @@ export async function getRoomWeek(userId: string, roomId: string, weekStart: Dat
     include: { meeting: { include: { userTimetable: true } }, course: true },
     orderBy: [{ date: "asc" }, { startMinute: "asc" }],
   });
-  const roomEvents = await prisma.roomEvent.findMany({
-    where: {
-      roomId,
-      OR: [
-        { start: { gte: weekStart, lte: weekEnd } },
-        { end: { gte: weekStart, lte: weekEnd } },
-        { AND: [{ start: { lte: weekStart } }, { end: { gte: weekEnd } }] },
-      ],
-    },
-    orderBy: { start: "asc" },
-  });
+  const roomEvents = await expandRoomEvents(roomId, weekStart, weekEnd);
   return {
     weekStart: weekStart.toISOString(),
     weekEnd: weekEnd.toISOString(),
@@ -283,6 +314,31 @@ export async function getRoomWeek(userId: string, roomId: string, weekStart: Dat
       startMinute: occurrence.startMinute,
       endMinute: occurrence.endMinute,
     })),
-    roomEvents: roomEvents.map(eventDto),
+    roomEvents: roomEvents.map((event) => visibleOccurrenceDto(event, userId)),
+  };
+}
+
+function visibleOccurrenceDto(event: ExpandedOccurrence, viewerId: string) {
+  const isAuthor = event.authorId === viewerId;
+  const busyOnly = event.visibilityMode === "BUSY_ONLY" && !isAuthor;
+  return {
+    id: event.seriesId,
+    seriesId: event.seriesId,
+    roomId: event.roomId,
+    authorId: event.authorId,
+    title: busyOnly ? "予定あり" : event.title,
+    rawTitle: isAuthor ? event.rawTitle : null,
+    description: busyOnly ? null : event.description,
+    start: event.start.toISOString(),
+    end: event.end.toISOString(),
+    isAllDay: event.isAllDay,
+    color: event.color,
+    source: event.source,
+    visibilityMode: event.visibilityMode,
+    isRecurringOccurrence: event.isRecurringOccurrence,
+    recurrenceRule: isAuthor ? event.recurrenceRule : null,
+    occurrenceDate: event.occurrenceDate.toISOString(),
+    overrideId: event.overrideId,
+    createdAt: event.createdAt.toISOString(),
   };
 }

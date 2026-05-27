@@ -17,4 +17,7 @@ export const QK = {
   roomMembers: (id: string) => ["rooms", id, "members"] as const,
   roomWeek: (id: string, weekStart: string) => ["rooms", id, "week", weekStart] as const,
   roomEvents: (id: string, range: { from?: string; to?: string }) => ["rooms", id, "events", range] as const,
+  icsImports: (id: string) => ["rooms", id, "ics-imports"] as const,
+  icsImportPreview: (id: string, importId: string) => ["rooms", id, "ics-imports", importId, "preview"] as const,
+  icsTitleRules: () => ["me", "ics-title-rules"] as const,
 } as const;
