@@ -8,17 +8,15 @@ import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
 import { SemesterListSheet } from "@/components/sheet/SemesterListSheet";
 import { Button, Field, Input } from "@/components/ui";
-import { useMediaQuery } from "@/lib/useMediaQuery";
 
-type Sheet = "menu" | "profile" | "school" | "rules" | "semesters" | null;
+type Sheet = "profile" | "school" | "rules" | "semesters" | null;
 
 export function AvatarMenu() {
   const me = useMe();
   const pending = usePendingFriendshipCount();
-  const mobile = useMediaQuery("(max-width: 767px)");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [sheet, setSheet] = useState<Sheet>(null);
   const user = me.data?.user;
   const initial = (user?.name ?? user?.email ?? "A").slice(0, 1).toUpperCase();
@@ -29,12 +27,18 @@ export function AvatarMenu() {
     await navigate({ to: "/signin" });
   }
 
+  function openSheet(next: Sheet) {
+    setMenuOpen(false);
+    setSheet(next);
+  }
+
   const trigger = (
     <button
       type="button"
       className="relative grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-accent-500 text-base font-black text-fg-on-accent shadow-glow-soft active:scale-95 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-      onClick={() => (mobile ? setSheet("menu") : setOpen((value) => !value))}
+      onClick={() => setMenuOpen((v) => !v)}
       aria-label="アカウントメニュー"
+      aria-expanded={menuOpen}
     >
       {user?.image ? <img src={user.image} alt="" className="h-full w-full object-cover" /> : initial}
       {(pending.data ?? 0) > 0 ? <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-bg-base bg-status-tardy" /> : null}
@@ -42,18 +46,17 @@ export function AvatarMenu() {
   );
 
   const menu = (
-    <div className="min-w-72 space-y-1 rounded-3xl bg-bg-elevated p-3 shadow-popover">
+    <div className="space-y-1 rounded-3xl bg-bg-elevated p-3 shadow-popover">
       <div className="px-4 py-3">
         <p className="text-lg font-bold tracking-tight">{user?.name ?? "No name"}</p>
         <p className="text-xs text-fg-secondary">{user?.email}</p>
       </div>
-      <MenuButton onClick={() => setSheet("profile")}>プロフィール</MenuButton>
-      <MenuButton onClick={() => setSheet("school")}>学校・学科</MenuButton>
-      <MenuButton onClick={() => setSheet("rules")}>出欠ルール</MenuButton>
-      <MenuButton onClick={() => setSheet("semesters")}>学期管理</MenuButton>
+      <MenuButton onClick={() => openSheet("profile")}>プロフィール</MenuButton>
+      <MenuButton onClick={() => openSheet("school")}>学校・学科</MenuButton>
+      <MenuButton onClick={() => openSheet("rules")}>出欠ルール</MenuButton>
+      <MenuButton onClick={() => openSheet("semesters")}>学期管理</MenuButton>
       <div className="my-1 h-px bg-white/8" />
-      <MenuButton onClick={() => void navigate({ to: "/stats" })}>出席率を見る</MenuButton>
-      <MenuButton onClick={() => void navigate({ to: "/templates" })}>みんなの時間割</MenuButton>
+      <MenuButton onClick={() => { setMenuOpen(false); void navigate({ to: "/stats" }); }}>出席率を見る</MenuButton>
       <div className="my-1 h-px bg-white/8" />
       <MenuButton danger onClick={() => void signOut()}>ログアウト</MenuButton>
     </div>
@@ -62,18 +65,26 @@ export function AvatarMenu() {
   return (
     <div className="relative">
       {trigger}
-      {!mobile && open ? (
+      {/* PC: dropdown */}
+      {menuOpen ? (
         <>
           <button
             type="button"
             aria-label="閉じる"
-            className="fixed inset-0 z-[1100]"
-            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-[1100] hidden md:block"
+            onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute right-0 top-14 z-[1110]">{menu}</div>
+          <div className="absolute right-0 top-14 z-[1110] hidden w-72 max-w-[calc(100vw-32px)] md:block">
+            {menu}
+          </div>
         </>
       ) : null}
-      <BottomSheet open={sheet === "menu"} onClose={() => setSheet(null)} title="アカウント">{menu}</BottomSheet>
+      {/* Mobile: BottomSheet (CSS で PC 非表示) */}
+      <div className="md:hidden">
+        <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)} title="アカウント">
+          {menu}
+        </BottomSheet>
+      </div>
       <ProfileEditSheet open={sheet === "profile"} onClose={() => setSheet(null)} />
       <SchoolDeptEditSheet open={sheet === "school"} onClose={() => setSheet(null)} />
       <AttendanceRuleSheet open={sheet === "rules"} onClose={() => setSheet(null)} />

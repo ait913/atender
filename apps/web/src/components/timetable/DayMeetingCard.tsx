@@ -9,7 +9,7 @@ export type DayMeetingCardProps = {
 };
 
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
-  const color = course.color ?? "var(--color-accent-500)";
+  const color = course.color ?? "#10EB99";
   const first = slots[0];
   const last = slots[slots.length - 1];
   if (!first || !last) return null;
