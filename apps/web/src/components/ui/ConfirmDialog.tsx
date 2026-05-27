@@ -19,12 +19,19 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <BottomSheet open={open} onClose={onCancel} title={title} maxHeight="60dvh">
+    <BottomSheet
+      open={open}
+      onClose={onCancel}
+      title={title}
+      maxHeight="60dvh"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onCancel}>キャンセル</Button>
+          <Button type="button" variant={confirmVariant} onClick={onConfirm}>{confirmLabel}</Button>
+        </div>
+      }
+    >
       <p className="text-sm leading-6 text-fg-secondary">{body}</p>
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={onCancel}>キャンセル</Button>
-        <Button type="button" variant={confirmVariant} onClick={onConfirm}>{confirmLabel}</Button>
-      </div>
     </BottomSheet>
   );
 }

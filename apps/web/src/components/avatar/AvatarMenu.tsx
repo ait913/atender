@@ -118,13 +118,19 @@ function ProfileEditSheet({ open, onClose }: { open: boolean; onClose: () => voi
   const [name, setName] = useState(me.data?.user.name ?? "");
   const [handle, setHandle] = useState(me.data?.user.handle ?? "");
   return (
-    <BottomSheet open={open} onClose={onClose} title="プロフィール">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="プロフィール"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button type="button" variant="primary" onClick={() => patch.mutate({ name, handle }, { onSuccess: onClose })}>保存</Button>
+        </div>
+      }
+    >
       <Field label="名前"><Input value={name} onChange={(event) => setName(event.currentTarget.value)} /></Field>
       <Field label="ハンドル"><Input value={handle} onChange={(event) => setHandle(event.currentTarget.value.replace(/^@/, ""))} /></Field>
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
-        <Button type="button" variant="primary" onClick={() => patch.mutate({ name, handle }, { onSuccess: onClose })}>保存</Button>
-      </div>
     </BottomSheet>
   );
 }

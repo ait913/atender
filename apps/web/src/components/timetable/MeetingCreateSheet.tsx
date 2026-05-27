@@ -61,7 +61,24 @@ export function MeetingCreateSheet({
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="授業を追加">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="授業を追加"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button
+            type="button"
+            variant="primary"
+            disabled={!timetable || (isNewCourse && !form.name) || form.periods.length === 0 || isPending}
+            onClick={handleSubmit}
+          >
+            保存
+          </Button>
+        </div>
+      }
+    >
       <Field label="授業">
         <Select value={form.courseId} onChange={(event) => setForm({ ...form, courseId: event.currentTarget.value })}>
           <option value={NEW_COURSE_VALUE}>新規作成</option>
@@ -86,17 +103,6 @@ export function MeetingCreateSheet({
         <PeriodChips value={form.periods} onChange={(periods) => setForm({ ...form, periods })} periodCount={periodCount} />
       </Field>
       <PeriodChipsPreview periods={form.periods} />
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
-        <Button
-          type="button"
-          variant="primary"
-          disabled={!timetable || (isNewCourse && !form.name) || form.periods.length === 0 || isPending}
-          onClick={handleSubmit}
-        >
-          保存
-        </Button>
-      </div>
     </BottomSheet>
   );
 }

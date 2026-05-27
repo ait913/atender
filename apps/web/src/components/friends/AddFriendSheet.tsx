@@ -21,7 +21,17 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
   const search = useUserSearch(handle);
   const myLink = `${APP_URL}/friends/add/${me.data?.user.inviteCode ?? ""}`;
   return (
-    <BottomSheet open={open} onClose={onClose} title="友達を追加">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="友達を追加"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>閉じる</Button>
+          <Button type="button" variant="primary" disabled={!invite} onClick={() => create.mutate({ receiverInviteCode: parseInviteCode(invite) }, { onSuccess: onClose })}>追加</Button>
+        </div>
+      }
+    >
       <Field label="ハンドル検索"><Input value={rawHandle} onChange={(event) => setRawHandle(event.currentTarget.value)} placeholder="@touri" /></Field>
       <div className="space-y-2">
         {(search.data?.users ?? []).map((user) => (
@@ -37,10 +47,6 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
         <Button type="button" className="mt-2" onClick={() => navigator.clipboard?.writeText(myLink)}>リンクをコピー</Button>
       </div>
       <Field label="招待リンクで追加"><Input value={invite} onChange={(event) => setInvite(event.currentTarget.value)} /></Field>
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={onClose}>閉じる</Button>
-        <Button type="button" variant="primary" disabled={!invite} onClick={() => create.mutate({ receiverInviteCode: parseInviteCode(invite) }, { onSuccess: onClose })}>追加</Button>
-      </div>
     </BottomSheet>
   );
 }

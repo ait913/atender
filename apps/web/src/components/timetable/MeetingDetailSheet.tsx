@@ -36,7 +36,19 @@ export function MeetingDetailSheet({
       ? String(first.periodIndex)
       : "";
   return (
-    <BottomSheet open={open} onClose={onClose} title="授業の詳細">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="授業の詳細"
+      footer={
+        course && meeting ? (
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={onClose}>閉じる</Button>
+            <Button type="button" variant="destructive" disabled={pending} onClick={onDelete}>削除</Button>
+          </div>
+        ) : undefined
+      }
+    >
       {course && meeting && first && last ? (
         <div className="space-y-5">
           <div className="rounded-3xl p-5" style={{ background: bg }}>
@@ -73,12 +85,6 @@ export function MeetingDetailSheet({
             <Row label="先生" value={course.teacher} />
             <Row label="メモ" value={course.note} />
           </dl>
-          <div className="-mx-5 border-t border-border-subtle bg-bg-elevated px-5 py-3 sticky bottom-0">
-            <div className="flex justify-end gap-3">
-              <Button type="button" variant="ghost" onClick={onClose}>閉じる</Button>
-              <Button type="button" variant="destructive" disabled={pending} onClick={onDelete}>削除</Button>
-            </div>
-          </div>
         </div>
       ) : null}
     </BottomSheet>

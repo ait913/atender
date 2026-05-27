@@ -23,7 +23,17 @@ export function AttendanceRuleSheet({ open, onClose }: { open: boolean; onClose:
     });
   }, [rules.data?.effective, open]);
   return (
-    <BottomSheet open={open} onClose={onClose} title="出欠ルール">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="出欠ルール"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button type="button" variant="primary" onClick={() => upsert.mutate(rule, { onSuccess: onClose })}>保存</Button>
+        </div>
+      }
+    >
       {(["excusedStrategy", "tardyStrategy", "earlyLeaveStrategy"] as const).map((key) => (
         <Field key={key} label={{ excusedStrategy: "公欠", tardyStrategy: "遅刻", earlyLeaveStrategy: "早退" }[key]}>
           <Select value={rule[key]} onChange={(event) => setRule({ ...rule, [key]: event.currentTarget.value as RuleStrategy })}>
@@ -31,10 +41,6 @@ export function AttendanceRuleSheet({ open, onClose }: { open: boolean; onClose:
           </Select>
         </Field>
       ))}
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
-        <Button type="button" variant="primary" onClick={() => upsert.mutate(rule, { onSuccess: onClose })}>保存</Button>
-      </div>
     </BottomSheet>
   );
 }

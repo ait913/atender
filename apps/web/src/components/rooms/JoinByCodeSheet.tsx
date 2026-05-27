@@ -11,12 +11,18 @@ export function JoinByCodeSheet({ open, onClose }: { open: boolean; onClose: () 
   const join = useJoinRoom();
   const [code, setCode] = useState("");
   return (
-    <BottomSheet open={open} onClose={onClose} title="リンクで参加">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="リンクで参加"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button type="button" variant="primary" disabled={!code || join.isPending} onClick={() => join.mutate(parseCode(code), { onSuccess: onClose })}>参加</Button>
+        </div>
+      }
+    >
       <Field label="招待リンクまたはコード"><Input value={code} onChange={(event) => setCode(event.currentTarget.value)} /></Field>
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
-        <Button type="button" variant="primary" disabled={!code || join.isPending} onClick={() => join.mutate(parseCode(code), { onSuccess: onClose })}>参加</Button>
-      </div>
     </BottomSheet>
   );
 }

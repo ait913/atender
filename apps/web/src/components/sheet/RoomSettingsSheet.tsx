@@ -62,7 +62,18 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
   const pendingMember = members.data?.members.find((member) => member.userId === pendingRemove);
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="ルームの設定">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="ルームの設定"
+      footer={
+        isOwner ? (
+          <Button type="button" variant="destructive" className="w-full" onClick={() => setPendingDelete(true)}>ルームを削除</Button>
+        ) : (
+          <Button type="button" variant="ghost" className="w-full" onClick={() => setPendingLeave(true)}>退出する</Button>
+        )
+      }
+    >
       <Field label="ルーム名">
         <Input
           value={name}
@@ -138,13 +149,6 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           </div>
         </section>
       ) : null}
-      <div className="sticky bottom-0 -mx-5 flex gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        {isOwner ? (
-          <Button type="button" variant="destructive" className="flex-1" onClick={() => setPendingDelete(true)}>ルームを削除</Button>
-        ) : (
-          <Button type="button" variant="ghost" className="flex-1" onClick={() => setPendingLeave(true)}>退出する</Button>
-        )}
-      </div>
       <ConfirmDialog
         open={pendingRemove != null}
         title="メンバーを追放しますか？"

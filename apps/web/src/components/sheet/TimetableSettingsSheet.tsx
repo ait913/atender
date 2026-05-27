@@ -108,7 +108,17 @@ export function TimetableSettingsSheet({
   const disabled = !timetable || patch.isPending || publish.isPending;
 
   return (
-    <BottomSheet open={open} onClose={handleCancel} title="時間割の設定">
+    <BottomSheet
+      open={open}
+      onClose={handleCancel}
+      title="時間割の設定"
+      footer={
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="ghost" onClick={handleCancel}>キャンセル</Button>
+          <Button type="button" variant="primary" disabled={disabled} onClick={() => void handleSave()}>保存</Button>
+        </div>
+      }
+    >
       {!timetable ? (
         <p className="rounded-2xl bg-white/6 p-4 text-sm text-fg-secondary">先に学期を作成してください。</p>
       ) : null}
@@ -181,10 +191,6 @@ export function TimetableSettingsSheet({
         ) : null}
       </div>
       {message ? <p className="rounded-2xl bg-status-tardy/15 px-4 py-3 text-sm font-bold text-status-tardy">{message}</p> : null}
-      <div className="sticky bottom-0 -mx-5 flex justify-end gap-3 border-t border-border-subtle bg-bg-elevated px-5 py-3">
-        <Button type="button" variant="ghost" onClick={handleCancel}>キャンセル</Button>
-        <Button type="button" variant="primary" disabled={disabled} onClick={() => void handleSave()}>保存</Button>
-      </div>
     </BottomSheet>
   );
 }
