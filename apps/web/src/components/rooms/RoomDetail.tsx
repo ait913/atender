@@ -11,8 +11,8 @@ export function RoomDetail() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const room = useRoom(id);
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold">{room.data?.room.name ?? "ルーム"}</h1>
           {room.data?.room.description ? <p className="text-sm text-fg-secondary">{room.data.room.description}</p> : null}

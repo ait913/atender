@@ -9,7 +9,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
   const laneEvents = assignLanes(events);
 
   return (
-    <div className="relative rounded-3xl bg-bg-elevated p-4 shadow-card">
+    <div className="relative rounded-2xl bg-bg-elevated p-3 shadow-card">
       <div className="relative" style={{ height: `${(endHour - startHour) * 60}px` }}>
         {hours.map((hour) => (
           <div key={hour} className="absolute left-0 right-0 border-t border-white/8" style={{ top: `${((hour - startHour) / (endHour - startHour)) * 100}%` }}>

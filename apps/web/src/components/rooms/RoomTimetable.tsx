@@ -39,9 +39,10 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
 
   return (
     <div
-      className="grid overflow-hidden rounded-3xl bg-bg-elevated shadow-card"
+      className="grid overflow-hidden rounded-2xl bg-bg-elevated shadow-card"
       style={{
         gridTemplateColumns: `40px repeat(${days.length}, minmax(0, 1fr))`,
+        gridTemplateRows: "auto 1fr",
         height: "calc(100dvh - var(--room-tt-chrome-top) - var(--room-tt-chrome-bottom) - env(safe-area-inset-bottom, 0px))",
         minHeight: "320px",
       }}

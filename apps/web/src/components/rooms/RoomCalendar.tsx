@@ -42,8 +42,8 @@ export function RoomCalendar({ roomId }: { roomId: string }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <PeriodNav viewMode={viewMode} anchor={anchor} onChange={(next) => {
           setAnchor(next);
           if (viewMode === "day") setSelectedDate(next.format("YYYY-MM-DD"));
@@ -89,20 +89,34 @@ export function RoomCalendar({ roomId }: { roomId: string }) {
 
 function DayEventList({ date, events }: { date: string; events: CalendarEvent[] }) {
   return (
-    <section className="rounded-3xl bg-bg-elevated p-5 shadow-card">
-      <h3 className="mb-3 text-sm font-black text-fg-primary">{dayjs(date).format("M/D")} の予定</h3>
+    <section className="rounded-2xl bg-bg-elevated p-3 shadow-card">
+      <h3 className="mb-2 text-xs font-bold text-fg-tertiary">{dayjs(date).format("M/D")} の予定</h3>
       {events.length > 0 ? (
-        <ul className="space-y-2">
-          {events.map((event) => (
-            <li key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`} className="flex min-w-0 items-center gap-2 text-sm">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: event.kind === "meeting" ? event.memberColor : event.authorColor }} />
-              <span className="shrink-0 font-bold tabular-nums text-fg-secondary">{formatMinute(event.startMinute)}</span>
-              <span className="truncate text-fg-primary">{event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}</span>
-            </li>
-          ))}
+        <ul className="space-y-1.5">
+          {events.map((event) => {
+            const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
+            const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+            return (
+              <li
+                key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
+                className="relative overflow-hidden rounded-lg border border-white/10"
+                style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(16px) saturate(140%)", WebkitBackdropFilter: "blur(16px) saturate(140%)" }}
+              >
+                <span
+                  className="absolute left-0 top-1 bottom-1 w-1 rounded-full"
+                  style={{ background: color, boxShadow: `0 0 8px ${color}` }}
+                />
+                <div className="flex items-baseline gap-2 pl-3 pr-2 py-1.5 text-[12px]">
+                  <span className="shrink-0 font-bold tabular-nums" style={{ color: subColor }}>{formatMinute(event.startMinute)}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-fg-primary">{event.kind === "meeting" ? event.courseName : event.title}</span>
+                  <span className="shrink-0 text-[10px]" style={{ color: subColor }}>{event.kind === "meeting" ? event.memberName : event.authorName}</span>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       ) : (
-        <p className="text-sm text-fg-tertiary">予定なし</p>
+        <p className="text-xs text-fg-tertiary">予定なし</p>
       )}
     </section>
   );

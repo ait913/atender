@@ -15,16 +15,16 @@ export function CalendarWeek({
   const dates = Array.from({ length: 7 }, (_, index) => dayjs(weekStart).add(index, "day").format("YYYY-MM-DD"));
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {dates.map((dateString) => {
         const events = eventsByDateMap.get(dateString) ?? [];
         const selected = dateString === selectedDate;
         return (
           <section
             key={dateString}
-            className={`rounded-3xl bg-bg-elevated p-4 shadow-card transition ${selected ? "ring-2 ring-accent-500" : ""}`}
+            className={`rounded-2xl bg-bg-elevated p-3 shadow-card transition ${selected ? "ring-2 ring-accent-500" : ""}`}
           >
-            <header className="mb-2 flex items-center justify-between gap-3">
+            <header className="mb-2 flex items-center justify-between gap-2">
               <button type="button" onClick={() => onSelectDate(dateString)} className="text-sm font-black text-fg-primary">
                 {dayjs(dateString).format("M/D")}
               </button>

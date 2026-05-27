@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import type { CourseDto, DaySlotDto, MeetingDto, UserTimetableDto } from "@atender/shared";
 import { usePatchUserTimetable } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
-import { Button, Field, Input, Textarea, minutesToTime } from "@/components/ui";
+import { Button, Field, Input, Select, Textarea, minutesToTime } from "@/components/ui";
+import { PeriodChips } from "./PeriodChips";
 
 const dayLabels = ["日", "月", "火", "水", "木", "金", "土"];
 const colors = ["#10b981", "#60a5fa", "#f472b6", "#8b5cf6", "#f59e0b"];
@@ -33,20 +34,25 @@ export function MeetingDetailSheet({
 }) {
   const patch = usePatchUserTimetable(timetable?.id);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: "", teacher: "", room: "", color: colors[0]!, note: "" });
+  const [form, setForm] = useState({ name: "", teacher: "", room: "", color: colors[0]!, note: "", dayOfWeek: 1, periods: [1] as number[] });
 
   useEffect(() => {
     if (!open) setEditing(false);
-    if (course) {
+    if (course && meeting) {
+      const startP = meeting.startPeriodIndex;
+      const periods: number[] = [];
+      for (let i = 0; i < meeting.periodCount; i++) periods.push(startP + i);
       setForm({
         name: course.name,
         teacher: course.teacher ?? "",
         room: course.room ?? "",
         color: course.color ?? colors[0]!,
         note: course.note ?? "",
+        dayOfWeek: meeting.dayOfWeek,
+        periods,
       });
     }
-  }, [open, course]);
+  }, [open, course, meeting]);
 
   const first = slots[0];
   const last = slots[slots.length - 1];
@@ -59,8 +65,8 @@ export function MeetingDetailSheet({
       : "";
 
   async function handleSave() {
-    if (!timetable || !course) return;
-    const next = timetable.courses.map((c) =>
+    if (!timetable || !course || !meeting) return;
+    const nextCourses = timetable.courses.map((c) =>
       c.id === course.id
         ? {
             id: c.id,
@@ -73,7 +79,20 @@ export function MeetingDetailSheet({
           }
         : { ...c, teacher: c.teacher ?? undefined, room: c.room ?? undefined, color: c.color ?? undefined, note: c.note ?? undefined },
     );
-    await patch.mutateAsync({ courses: next });
+
+    const sortedPeriods = [...form.periods].sort((a, b) => a - b);
+    const newStart = sortedPeriods[0] ?? meeting.startPeriodIndex;
+    let newCount = 1;
+    for (let i = 1; i < sortedPeriods.length; i++) {
+      if (sortedPeriods[i] === sortedPeriods[i - 1]! + 1) newCount++;
+      else break;
+    }
+    const nextMeetings = timetable.meetings.map((m) =>
+      m.id === meeting.id
+        ? { id: m.id, courseId: m.courseId, dayOfWeek: form.dayOfWeek, startPeriodIndex: newStart, periodCount: newCount }
+        : { id: m.id, courseId: m.courseId, dayOfWeek: m.dayOfWeek, startPeriodIndex: m.startPeriodIndex, periodCount: m.periodCount },
+    );
+    await patch.mutateAsync({ courses: nextCourses, meetings: nextMeetings });
     setEditing(false);
   }
 
@@ -109,6 +128,14 @@ export function MeetingDetailSheet({
               <Field label="先生"><Input value={form.teacher} onChange={(e) => setForm({ ...form, teacher: e.currentTarget.value })} /></Field>
               <Field label="教室"><Input value={form.room} onChange={(e) => setForm({ ...form, room: e.currentTarget.value })} /></Field>
             </div>
+            <Field label="曜日">
+              <Select value={form.dayOfWeek} onChange={(e) => setForm({ ...form, dayOfWeek: Number(e.currentTarget.value) })}>
+                {["日", "月", "火", "水", "木", "金", "土"].map((day, index) => <option key={day} value={index}>{day}</option>)}
+              </Select>
+            </Field>
+            <Field label="時限 (複数選択で連続コマ)">
+              <PeriodChips value={form.periods} onChange={(periods) => setForm({ ...form, periods })} periodCount={timetable?.daySlots.length ?? 5} />
+            </Field>
             <Field label="色">
               <div className="flex flex-wrap gap-2">
                 {colors.map((c) => (
@@ -124,9 +151,6 @@ export function MeetingDetailSheet({
               </div>
             </Field>
             <Field label="メモ"><Textarea value={form.note} onChange={(e) => setForm({ ...form, note: e.currentTarget.value })} /></Field>
-            <p className="rounded-2xl bg-white/4 px-4 py-3 text-xs text-fg-tertiary">
-              {dayLabels[meeting.dayOfWeek]}曜日 {periodLabel}限 ({minutesToTime(first.startMinute)} – {minutesToTime(last.endMinute)})
-            </p>
           </div>
         ) : (
           <div className="space-y-5">
