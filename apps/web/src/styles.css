@@ -298,31 +298,7 @@ body {
     var(--color-bg-base);
 }
 
-/* light mode: bg-white/N (半透明 white) は背景白に同化するので、暗色半透明 overlay に置換 */
-:root[data-theme="light"] .bg-white\/4,
-:root[data-theme="light"] [class~="bg-white/4"] { background-color: rgba(15, 23, 42, 0.04); }
-:root[data-theme="light"] [class~="bg-white/5"] { background-color: rgba(15, 23, 42, 0.05); }
-:root[data-theme="light"] [class~="bg-white/6"] { background-color: rgba(15, 23, 42, 0.06); }
-:root[data-theme="light"] [class~="bg-white/8"] { background-color: rgba(15, 23, 42, 0.08); }
-:root[data-theme="light"] [class~="bg-white/10"] { background-color: rgba(15, 23, 42, 0.10); }
-:root[data-theme="light"] [class~="bg-white/12"] { background-color: rgba(15, 23, 42, 0.10); }
-:root[data-theme="light"] [class~="bg-white/14"] { background-color: rgba(15, 23, 42, 0.12); }
-:root[data-theme="light"] [class~="border-white/8"] { border-color: rgba(15, 23, 42, 0.08); }
-:root[data-theme="light"] [class~="border-white/10"] { border-color: rgba(15, 23, 42, 0.10); }
-:root[data-theme="light"] [class~="border-white/12"] { border-color: rgba(15, 23, 42, 0.12); }
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) [class~="bg-white/4"] { background-color: rgba(15, 23, 42, 0.04); }
-  :root:not([data-theme="dark"]) [class~="bg-white/5"] { background-color: rgba(15, 23, 42, 0.05); }
-  :root:not([data-theme="dark"]) [class~="bg-white/6"] { background-color: rgba(15, 23, 42, 0.06); }
-  :root:not([data-theme="dark"]) [class~="bg-white/8"] { background-color: rgba(15, 23, 42, 0.08); }
-  :root:not([data-theme="dark"]) [class~="bg-white/10"] { background-color: rgba(15, 23, 42, 0.10); }
-  :root:not([data-theme="dark"]) [class~="bg-white/12"] { background-color: rgba(15, 23, 42, 0.10); }
-  :root:not([data-theme="dark"]) [class~="bg-white/14"] { background-color: rgba(15, 23, 42, 0.12); }
-  :root:not([data-theme="dark"]) [class~="border-white/8"] { border-color: rgba(15, 23, 42, 0.08); }
-  :root:not([data-theme="dark"]) [class~="border-white/10"] { border-color: rgba(15, 23, 42, 0.10); }
-  :root:not([data-theme="dark"]) [class~="border-white/12"] { border-color: rgba(15, 23, 42, 0.12); }
-}
+/* light mode: bg-white/N の置換は component 側で対応 (CSS escape 制約のため) */
   color: var(--color-text-primary);
   font-family: var(--font-sans);
   font-size: var(--text-base);
