@@ -89,7 +89,7 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
       {events.map((event) => {
         const width = 100 / event.laneCount;
         const color = event.memberColor;
-        const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+        const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
         const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
         return (
           <div

@@ -34,7 +34,7 @@ export function CalendarWeek({
               <ul className="space-y-2">
                 {events.map((event) => {
                   const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
-                  const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+                  const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
                   const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
                   return (
                     <li
