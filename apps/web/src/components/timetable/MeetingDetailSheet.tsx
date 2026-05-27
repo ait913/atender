@@ -182,7 +182,7 @@ export function MeetingDetailSheet({
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/4 px-4 py-3">
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-fg-primary/4 px-4 py-3">
       <dt className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">{label}</dt>
       <dd className="text-base font-medium text-fg-primary">{value ?? "—"}</dd>
     </div>

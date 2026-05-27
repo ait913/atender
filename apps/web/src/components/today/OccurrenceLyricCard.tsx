@@ -3,16 +3,16 @@ import { minutesToTime, statusLongLabels } from "@/components/ui";
 
 export function OccurrenceLyricCard({ occurrence, state }: { occurrence: OccurrenceDto; state: "past" | "current" | "future" | "next" }) {
   const stateClass = {
-    past: "opacity-25 scale-95 -translate-y-2 bg-white/4",
+    past: "opacity-25 scale-95 -translate-y-2 bg-fg-primary/4",
     current: "opacity-100 bg-bg-elevated shadow-glow-soft ring-2 ring-accent-500/50",
     next: "opacity-95 bg-bg-elevated shadow-card",
-    future: "opacity-60 bg-white/5",
+    future: "opacity-60 bg-fg-primary/5",
   }[state];
   const dotColor = {
-    past: "bg-white/20",
+    past: "bg-fg-primary/20",
     current: "bg-accent-500",
     next: "bg-accent-500/70",
-    future: "bg-white/30",
+    future: "bg-fg-primary/30",
   }[state];
   return (
     <li className="snap-center px-1 py-3 transition-all duration-500 ease-out">

@@ -55,7 +55,7 @@ export function AvailabilityBar({
           aria-label={expanded ? "メンバー別を閉じる" : "メンバー別を開く"}
           aria-expanded={expanded}
           onClick={onToggle}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/8 text-fg-primary transition hover:bg-white/12 active:scale-95"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/12 active:scale-95"
         >
           {expanded ? "▴" : "▾"}
         </button>
@@ -93,7 +93,7 @@ function BarRow({
   return (
     <div className="mb-1 grid grid-cols-[44px_1fr] items-center gap-2 last:mb-0">
       <span className="truncate text-xs font-bold text-fg-secondary">{label}</span>
-      <div className="flex h-5 overflow-hidden rounded-full bg-white/4">
+      <div className="flex h-5 overflow-hidden rounded-full bg-fg-primary/4">
         {slots.map((slot, index) => {
           const ratio = slot.total === 0 ? 0 : slot.busy / slot.total;
           const background = ratio === 0

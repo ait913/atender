@@ -29,7 +29,7 @@ export function BottomTab() {
               className={`grid h-12 w-12 place-items-center rounded-2xl text-2xl leading-none transition-all duration-200 ${
                 active
                   ? "bg-accent-500 text-fg-on-accent scale-105 shadow-glow"
-                  : "bg-transparent text-fg-secondary group-hover:bg-white/5 group-active:scale-95"
+                  : "bg-transparent text-fg-secondary group-hover:bg-fg-primary/5 group-active:scale-95"
               }`}
             >
               {item.icon}

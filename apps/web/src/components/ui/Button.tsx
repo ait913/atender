@@ -12,10 +12,10 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size; children?: ReactNode }) {
   const variants: Record<Variant, string> = {
     primary: "bg-accent-500 text-fg-on-accent shadow-glow-soft hover:bg-accent-600 hover:shadow-glow active:scale-[0.97]",
-    secondary: "bg-white/8 text-fg-primary hover:bg-white/12 active:scale-[0.97]",
+    secondary: "bg-fg-primary/8 text-fg-primary hover:bg-fg-primary/12 active:scale-[0.97]",
     destructive: "bg-status-absent text-white hover:opacity-90 active:scale-[0.97] focus-visible:outline-status-absent",
     danger: "bg-status-absent text-white hover:opacity-90 active:scale-[0.97] focus-visible:outline-status-absent",
-    ghost: "bg-transparent text-fg-secondary hover:bg-white/6 hover:text-fg-primary active:scale-[0.97]",
+    ghost: "bg-transparent text-fg-secondary hover:bg-fg-primary/6 hover:text-fg-primary active:scale-[0.97]",
   };
   const sizes: Record<Size, string> = {
     sm: "min-h-10 px-4 text-sm",

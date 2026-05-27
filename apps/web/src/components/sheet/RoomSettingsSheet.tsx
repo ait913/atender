@@ -106,11 +106,11 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           label="反映する"
         />
       </div>
-      <section className="border-t border-white/8 pt-5">
+      <section className="border-t border-fg-primary/8 pt-5">
         <h3 className="mb-3 text-sm font-black text-fg-primary">メンバー ({members.data?.members.length ?? 0})</h3>
         <ul className="space-y-2">
           {(members.data?.members ?? []).map((member) => (
-            <li key={member.userId} className="flex items-center gap-3 rounded-2xl bg-white/4 p-3">
+            <li key={member.userId} className="flex items-center gap-3 rounded-2xl bg-fg-primary/4 p-3">
               <span
                 className="grid h-9 w-9 place-items-center rounded-full text-xs font-black text-white"
                 style={{ background: memberColor(member.userId) }}
@@ -126,7 +126,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
                 <button
                   type="button"
                   aria-label={`${member.name ?? "メンバー"} を追放`}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-white/8 text-status-absent transition hover:bg-status-absent/20 active:scale-95"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-fg-primary/8 text-status-absent transition hover:bg-status-absent/20 active:scale-95"
                   onClick={() => setPendingRemove(member.userId)}
                 >
                   ✕
@@ -137,9 +137,9 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
         </ul>
       </section>
       {isOwner ? (
-        <section className="space-y-3 border-t border-white/8 pt-5">
+        <section className="space-y-3 border-t border-fg-primary/8 pt-5">
           <h3 className="text-sm font-black text-fg-primary">招待リンク</h3>
-          <p className="break-all rounded-2xl bg-white/4 p-3 text-xs text-fg-secondary">
+          <p className="break-all rounded-2xl bg-fg-primary/4 p-3 text-xs text-fg-secondary">
             {APP_URL}/rooms/join/{room.data?.room.inviteCode ?? ""}
           </p>
           {copyMessage ? <p className="text-xs font-bold text-accent-500">{copyMessage}</p> : null}

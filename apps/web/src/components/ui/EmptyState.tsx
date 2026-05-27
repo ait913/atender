@@ -25,7 +25,7 @@ export function Mascot({ className = "" }: { className?: string }) {
 
 export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex min-h-64 flex-col items-center justify-center rounded-3xl bg-white/4 px-6 py-12 text-center">
+    <div className="flex min-h-64 flex-col items-center justify-center rounded-3xl bg-fg-primary/4 px-6 py-12 text-center">
       <Mascot className="h-32 w-32 opacity-90" />
       <p className="mt-4 text-xl font-bold text-fg-primary">{title}</p>
       {children ? <p className="mt-2 max-w-sm text-sm text-fg-secondary">{children}</p> : null}

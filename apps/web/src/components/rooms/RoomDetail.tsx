@@ -21,7 +21,7 @@ export function RoomDetail() {
           type="button"
           aria-label="ルームの設定"
           onClick={() => setSettingsOpen(true)}
-          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-white/8 text-xl text-fg-secondary transition hover:bg-white/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-fg-primary/8 text-xl text-fg-secondary transition hover:bg-fg-primary/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
         >
           ⚙
         </button>
@@ -32,7 +32,7 @@ export function RoomDetail() {
             key={item}
             type="button"
             className={`flex-1 rounded-full px-4 py-2 text-sm font-bold transition ${
-              tab === item ? "bg-accent-500 text-fg-on-accent shadow-glow-soft" : "text-fg-secondary hover:bg-white/6"
+              tab === item ? "bg-accent-500 text-fg-on-accent shadow-glow-soft" : "text-fg-secondary hover:bg-fg-primary/6"
             }`}
             onClick={() => setTab(item)}
           >

@@ -30,7 +30,7 @@ export function PeriodNav({
         type="button"
         onClick={() => onChange(anchor.subtract(1, step))}
         aria-label="前へ"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/8 text-fg-primary transition hover:bg-white/12 active:scale-95"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/12 active:scale-95"
       >
         ＜
       </button>
@@ -39,7 +39,7 @@ export function PeriodNav({
         type="button"
         onClick={() => onChange(anchor.add(1, step))}
         aria-label="次へ"
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/8 text-fg-primary transition hover:bg-white/12 active:scale-95"
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/12 active:scale-95"
       >
         ＞
       </button>

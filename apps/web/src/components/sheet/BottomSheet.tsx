@@ -30,14 +30,14 @@ export function BottomSheet({
           style={{ maxHeight: "min(92dvh, 760px)" }}
         >
           <div className="flex flex-shrink-0 justify-center pt-3 pb-2 md:hidden">
-            <span className="h-1 w-9 rounded-full bg-white/20" />
+            <span className="h-1 w-9 rounded-full bg-fg-primary/20" />
           </div>
           <div className="flex min-h-14 flex-shrink-0 items-center justify-between gap-3 px-5 pt-2 pb-3 md:pt-5">
             <Dialog.Title className="text-lg font-bold tracking-tight">{title}</Dialog.Title>
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="grid h-11 w-11 place-items-center rounded-full bg-bg-muted text-lg text-fg-secondary transition hover:bg-white/10 active:scale-95"
+                className="grid h-11 w-11 place-items-center rounded-full bg-bg-muted text-lg text-fg-secondary transition hover:bg-fg-primary/10 active:scale-95"
                 aria-label="閉じる"
               >
                 ✕

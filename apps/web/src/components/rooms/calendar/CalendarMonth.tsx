@@ -51,7 +51,7 @@ export function CalendarMonth({
               isSelected
                 ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
                 : inMonth
-                  ? "text-fg-primary hover:bg-white/6"
+                  ? "text-fg-primary hover:bg-fg-primary/6"
                   : "text-fg-tertiary"
             } ${isToday && !isSelected ? "ring-2 ring-accent-500/40" : ""}`}
             aria-label={date.format("M月D日")}

@@ -12,7 +12,7 @@ export function Toggle({
   return (
     <label className={`inline-flex items-center gap-3 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
       <span
-        className={`relative h-6 w-10 rounded-full transition ${checked ? "bg-accent-500" : "bg-white/14"}`}
+        className={`relative h-6 w-10 rounded-full transition ${checked ? "bg-accent-500" : "bg-fg-primary/14"}`}
         role="switch"
         aria-checked={checked}
       >

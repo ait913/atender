@@ -12,7 +12,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
     <div className="relative rounded-2xl bg-bg-elevated p-3 shadow-card">
       <div className="relative" style={{ height: `${(endHour - startHour) * 60}px` }}>
         {hours.map((hour) => (
-          <div key={hour} className="absolute left-0 right-0 border-t border-white/8" style={{ top: `${((hour - startHour) / (endHour - startHour)) * 100}%` }}>
+          <div key={hour} className="absolute left-0 right-0 border-t border-fg-primary/8" style={{ top: `${((hour - startHour) / (endHour - startHour)) * 100}%` }}>
             <span className="absolute -top-2 left-0 w-10 text-xs font-bold text-fg-tertiary tabular-nums">{String(hour).padStart(2, "0")}</span>
           </div>
         ))}

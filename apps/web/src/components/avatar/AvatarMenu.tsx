@@ -135,7 +135,7 @@ function MenuButton({ children, onClick, danger = false }: { children: string; o
   return (
     <button
       type="button"
-      className={`block w-full rounded-2xl px-4 py-3 text-left text-base font-bold transition active:scale-[0.98] hover:bg-white/6 ${
+      className={`block w-full rounded-2xl px-4 py-3 text-left text-base font-bold transition active:scale-[0.98] hover:bg-fg-primary/6 ${
         danger ? "text-status-absent" : "text-fg-primary"
       }`}
       onClick={onClick}

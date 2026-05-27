@@ -38,7 +38,7 @@ export function DayChipNav({ activeDay, today, viewMode, onChangeDay, onToggleVi
               className={`relative flex h-10 flex-1 items-center justify-center rounded-full text-sm font-semibold transition-all duration-150 active:scale-[0.97] ${
                 active
                   ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
-                  : "bg-white/8 text-fg-secondary hover:bg-white/12"
+                  : "bg-fg-primary/8 text-fg-secondary hover:bg-fg-primary/12"
               }`}
             >
               {d.label}
@@ -62,7 +62,7 @@ export function DayChipNav({ activeDay, today, viewMode, onChangeDay, onToggleVi
         className={`flex h-10 items-center justify-center rounded-full px-4 text-xs font-semibold transition-all duration-150 active:scale-[0.97] ${
           viewMode === "week"
             ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
-            : "bg-white/8 text-fg-secondary hover:bg-white/12"
+            : "bg-fg-primary/8 text-fg-secondary hover:bg-fg-primary/12"
         }`}
       >
         週

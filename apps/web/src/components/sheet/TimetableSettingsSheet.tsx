@@ -130,42 +130,42 @@ export function TimetableSettingsSheet({
       }
     >
       {!timetable ? (
-        <p className="rounded-2xl bg-white/6 p-4 text-sm text-fg-secondary">先に学期を作成してください。</p>
+        <p className="rounded-2xl bg-fg-primary/6 p-4 text-sm text-fg-secondary">先に学期を作成してください。</p>
       ) : null}
       <Field label="名前">
         <Input value={name} disabled={!timetable} onChange={(event) => setName(event.currentTarget.value)} />
       </Field>
 
-      <div className="space-y-3 border-t border-white/8 pt-5">
+      <div className="space-y-3 border-t border-fg-primary/8 pt-5">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">時限 ({slots.length} 限)</span>
           <button
             type="button"
             onClick={addSlot}
             disabled={!timetable}
-            className="rounded-full bg-white/8 px-3 py-1.5 text-xs font-bold text-fg-primary transition active:scale-95 hover:bg-white/14 disabled:opacity-40"
+            className="rounded-full bg-fg-primary/8 px-3 py-1.5 text-xs font-bold text-fg-primary transition active:scale-95 hover:bg-fg-primary/14 disabled:opacity-40"
           >
             + コマを追加
           </button>
         </div>
         {slots.length === 0 ? (
-          <p className="rounded-2xl bg-white/4 px-4 py-3 text-xs text-fg-tertiary">コマを追加してください</p>
+          <p className="rounded-2xl bg-fg-primary/4 px-4 py-3 text-xs text-fg-tertiary">コマを追加してください</p>
         ) : (
           <ul className="space-y-2">
             {slots.map((slot, i) => (
-              <li key={i} className="flex items-center gap-2 rounded-2xl bg-white/4 p-3">
+              <li key={i} className="flex items-center gap-2 rounded-2xl bg-fg-primary/4 p-3">
                 <input
                   type="text"
                   value={slot.label}
                   onChange={(e) => updateSlot(i, { label: e.currentTarget.value })}
-                  className="w-14 rounded-xl bg-white/6 px-2 py-2 text-sm font-bold text-fg-primary outline-none focus:bg-white/10"
+                  className="w-14 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm font-bold text-fg-primary outline-none focus:bg-fg-primary/10"
                   aria-label={`${slot.periodIndex}限ラベル`}
                 />
                 <input
                   type="time"
                   value={minutesToHHMM(slot.startMinute)}
                   onChange={(e) => updateSlot(i, { startMinute: hhmmToMinutes(e.currentTarget.value) })}
-                  className="flex-1 rounded-xl bg-white/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-white/10"
+                  className="flex-1 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-fg-primary/10"
                   aria-label="開始時刻"
                 />
                 <span className="text-fg-tertiary">–</span>
@@ -173,13 +173,13 @@ export function TimetableSettingsSheet({
                   type="time"
                   value={minutesToHHMM(slot.endMinute)}
                   onChange={(e) => updateSlot(i, { endMinute: hhmmToMinutes(e.currentTarget.value) })}
-                  className="flex-1 rounded-xl bg-white/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-white/10"
+                  className="flex-1 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-fg-primary/10"
                   aria-label="終了時刻"
                 />
                 <button
                   type="button"
                   onClick={() => removeSlot(i)}
-                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-white/6 text-fg-secondary transition active:scale-95 hover:bg-status-absent/20 hover:text-status-absent"
+                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-fg-primary/6 text-fg-secondary transition active:scale-95 hover:bg-status-absent/20 hover:text-status-absent"
                   aria-label={`${slot.periodIndex}限を削除`}
                 >
                   ✕
@@ -190,7 +190,7 @@ export function TimetableSettingsSheet({
         )}
       </div>
 
-      <div className="border-t border-white/8 pt-5">
+      <div className="border-t border-fg-primary/8 pt-5">
         <Toggle checked={publishEnabled} disabled={!timetable} onChange={setPublishEnabled} label="みんなの時間割で公開" />
         {publishEnabled ? (
           <div className="mt-5">
@@ -201,11 +201,11 @@ export function TimetableSettingsSheet({
         ) : null}
       </div>
 
-      <div className="border-t border-white/8 pt-5">
+      <div className="border-t border-fg-primary/8 pt-5">
         <button
           type="button"
           onClick={() => setSearchOpen((v) => !v)}
-          className="flex w-full items-center justify-between rounded-2xl bg-white/4 px-4 py-3 text-left text-sm font-bold text-fg-primary transition hover:bg-white/8 active:scale-[0.99]"
+          className="flex w-full items-center justify-between rounded-2xl bg-fg-primary/4 px-4 py-3 text-left text-sm font-bold text-fg-primary transition hover:bg-fg-primary/8 active:scale-[0.99]"
         >
           <span>同じ学校の公開時間割から持ってくる</span>
           <span className="text-fg-tertiary">{searchOpen ? "▴" : "▾"}</span>
@@ -228,7 +228,7 @@ export function TimetableSettingsSheet({
             ) : (
               <ul className="space-y-2">
                 {(templates.data?.templates ?? []).map((t) => (
-                  <li key={t.id} className="flex items-center gap-3 rounded-2xl bg-white/4 p-3">
+                  <li key={t.id} className="flex items-center gap-3 rounded-2xl bg-fg-primary/4 p-3">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-fg-primary">{t.title}</p>
                       <p className="truncate text-xs text-fg-tertiary">

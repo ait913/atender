@@ -18,7 +18,7 @@ export function MainAttendanceCTA(props: Props) {
       {/* Mobile: fixed bottom (BottomTab の上) */}
       {keyboardOpen ? null : (
         <section
-          className="fixed inset-x-0 z-40 bg-bg-base/85 backdrop-blur-xl border-t border-white/8 md:hidden"
+          className="fixed inset-x-0 z-40 bg-bg-base/85 backdrop-blur-xl border-t border-fg-primary/8 md:hidden"
           style={{ bottom: "var(--tab-bar-height)", paddingTop: 12, paddingBottom: 12 }}
         >
           <div className="mx-auto w-full max-w-[960px] px-5">
@@ -65,7 +65,7 @@ function CTABody({
                   className={`min-h-12 min-w-12 rounded-full px-4 text-sm font-bold transition active:scale-95 ${
                     selected
                       ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
-                      : "bg-white/8 text-fg-primary hover:bg-white/12"
+                      : "bg-fg-primary/8 text-fg-primary hover:bg-fg-primary/12"
                   }`}
                   onClick={() => onChangeStatus(occurrence.id, status)}
                 >
@@ -93,7 +93,7 @@ function CTABody({
       </Button>
       <button
         type="button"
-        className="grid h-14 w-14 place-items-center rounded-full bg-white/8 text-xl font-bold text-fg-primary transition hover:bg-white/14 active:scale-95"
+        className="grid h-14 w-14 place-items-center rounded-full bg-fg-primary/8 text-xl font-bold text-fg-primary transition hover:bg-fg-primary/14 active:scale-95"
         onClick={onToggle}
         aria-label={expanded ? "個別修正を閉じる" : "個別修正を開く"}
         aria-expanded={expanded}
