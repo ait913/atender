@@ -87,21 +87,31 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
       ))}
       {events.map((event) => {
         const width = 100 / event.laneCount;
+        const color = event.memberColor;
+        const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
         return (
           <div
             key={`${event.userId}:${event.courseId}:${event.dayOfWeek}:${event.startMinute}:${event.lane}`}
-            className="absolute overflow-hidden rounded-lg px-1 py-0.5 text-[10px] font-bold leading-tight text-white"
+            className="absolute overflow-hidden rounded-lg border border-white/10"
             style={{
               top: `${topPercent(event.startMinute, range)}%`,
               height: `${heightPercent(event.startMinute, event.endMinute, range)}%`,
               left: `${event.lane * width}%`,
               width: `calc(${width}% - 2px)`,
-              background: event.memberColor,
+              background: "rgba(255,255,255,0.06)",
+              backdropFilter: "blur(16px) saturate(140%)",
+              WebkitBackdropFilter: "blur(16px) saturate(140%)",
             }}
             title={`${event.memberName}: ${event.courseName}`}
           >
-            <div className="truncate">{event.memberName}</div>
-            <div className="truncate opacity-85">{event.courseName}</div>
+            <span
+              className="absolute left-0 top-1 bottom-1 w-1.5 rounded-full"
+              style={{ background: color, boxShadow: `0 0 8px ${color}, inset 0 0 3px rgba(255,255,255,0.4)` }}
+            />
+            <div className="flex h-full flex-col gap-0.5 pl-2.5 pr-1 py-1">
+              <p className="truncate text-[11px] font-semibold leading-snug text-fg-primary">{event.courseName}</p>
+              <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>{event.memberName}</p>
+            </div>
           </div>
         );
       })}

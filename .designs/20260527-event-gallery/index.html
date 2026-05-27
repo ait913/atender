@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Atender — Event Element Design Gallery (2026-05-27)</title>
+<script src="https://cdn.tailwindcss.com?plugins=line-clamp"></script>
+<style>
+  /* ============================================================
+     Atender Design Tokens (apps/web/src/styles.css から転載)
+     v4 Snap 風 + v5 8pt grid + Major Third
+     ============================================================ */
+  :root {
+    color-scheme: dark;
+
+    --color-bg-base:     #0B0E14;
+    --color-bg-muted:    #14181F;
+    --color-bg-elevated: #1A1F2A;
+    --color-bg-overlay:  rgba(0,0,0,0.72);
+
+    --color-text-primary:   #F5F6F8;
+    --color-text-secondary: rgba(245,246,248,0.66);
+    --color-text-tertiary:  rgba(245,246,248,0.42);
+
+    --color-border-subtle:   rgba(255,255,255,0.06);
+    --color-border-default:  rgba(255,255,255,0.12);
+    --color-border-emphasis: rgba(255,255,255,0.28);
+
+    --color-accent-50:  rgba(16,235,153,0.12);
+    --color-accent-100: rgba(16,235,153,0.20);
+    --color-accent-500: #10EB99;
+
+    /* Major Third / 8pt grid */
+    --space-2: 8px;  --space-3: 12px; --space-4: 16px; --space-5: 20px;
+    --radius-sm: 10px; --radius-md: 18px; --radius-lg: 24px;
+
+    --shadow-card:  0 8px 24px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.30);
+    --shadow-glow:  0 0 24px rgba(16,235,153,0.45), 0 0 48px rgba(16,235,153,0.20);
+    --shadow-glow-soft: 0 0 16px rgba(16,235,153,0.28);
+
+    --font-sans: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body {
+    min-height: 100dvh;
+    margin: 0;
+    background:
+      radial-gradient(1200px 700px at 50% -10%, rgba(16,235,153,0.10), transparent 60%),
+      radial-gradient(900px 600px at 90% 110%, rgba(198,133,255,0.06), transparent 60%),
+      var(--color-bg-base);
+    background-attachment: fixed;
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: inherit; }
+
+  /* ============================================================
+     Cluster Column Split (Google Cal 風) 共通レイアウト
+     ============================================================ */
+  .timegrid {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    /* 9:00 - 16:00 = 7時間 = 60px/h で 420px */
+    height: 420px;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        var(--color-border-subtle) 0 1px,
+        transparent 1px 60px
+      );
+    border-radius: var(--radius-md);
+  }
+  .timegrid .axis {
+    position: relative;
+    border-right: 1px solid var(--color-border-subtle);
+  }
+  .timegrid .axis span {
+    position: absolute;
+    left: 8px;
+    font-size: 10px;
+    color: var(--color-text-tertiary);
+    transform: translateY(-50%);
+  }
+  .timegrid .lane {
+    position: relative;
+  }
+  .ev { /* event block 共通 */
+    position: absolute;
+    overflow: hidden;
+    min-height: 28px;
+    box-sizing: border-box;
+  }
+
+  /* ============================================================
+     Demo データ用ヘルパ
+       - 同時刻被り含む 7 件のシナリオで全案を render
+       - 9:00-16:00 帯で配置
+     ============================================================ */
+
+  /* hue ベースのメンバー色 (CSS variable で 1 か所定義) */
+  :root {
+    --m-touri:  #10EB99;  /* 緑 (アクセント本体) */
+    --m-ami:    #60A5FA;  /* 青 */
+    --m-bmi:    #F472B6;  /* ピンク */
+    --m-cmi:    #C685FF;  /* 紫 */
+    --m-dmi:    #FFC93C;  /* 黄 (やや危険、要視認確認) */
+    --m-emi:    #FF8C5C;  /* オレンジ */
+  }
+
+  /* index 用ナビ */
+  .ix {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(11,14,20,0.88); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .ix a {
+    display: inline-block;
+    padding: 6px 12px;
+    margin: 0 4px;
+    border-radius: 9999px;
+    background: rgba(255,255,255,0.05);
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .ix a:hover {
+    background: rgba(16,235,153,0.18);
+    color: var(--color-text-primary);
+  }
+</style>
+</head>
+<body class="font-sans">
+
+<!-- ===========================================================
+     ヘッダ + 目次
+     =========================================================== -->
+<nav class="ix">
+  <div class="mx-auto max-w-6xl px-5 py-3 flex flex-wrap items-center gap-2">
+    <span class="text-xs uppercase tracking-wider text-[color:var(--color-text-tertiary)] mr-3">Gallery</span>
+    <a href="#p1">01 Tint+Bar</a>
+    <a href="#p2">02 Notion Cal</a>
+    <a href="#p3">03 Linear Mono</a>
+    <a href="#p4">04 Apple Glass</a>
+    <a href="#p5">05 Snap Pop</a>
+    <a href="#p6">06 Things Min</a>
+    <a href="#cmp" class="ml-auto">Compare</a>
+  </div>
+</nav>
+
+<header class="mx-auto max-w-6xl px-5 pt-10 pb-6">
+  <p class="text-xs uppercase tracking-[0.18em] text-[color:var(--color-text-tertiary)]">
+    Atender · Event element design gallery
+  </p>
+  <h1 class="mt-2 text-4xl font-black tracking-tight">
+    予定 1 件の要素デザイン — 6 案
+  </h1>
+  <p class="mt-3 max-w-3xl text-sm leading-relaxed text-[color:var(--color-text-secondary)]">
+    RoomCalendar (週/日/月) と RoomTimetable で適用する「1 件の予定」要素を 6 案比較。
+    現状: 純色背景でごちゃつく + padding 過多 という Touri フィードバックに対し、
+    各案で「左 color label + 落ち着いた背景 + 8pt 準拠 padding」をベースに、
+    塗り方・余白・タイポを変えて検証する。
+    全案で同じシナリオ (5-7 件混在 + 重なり) を render。
+  </p>
+
+  <!-- メンバー凡例 -->
+  <div class="mt-5 flex flex-wrap gap-3 text-xs text-[color:var(--color-text-secondary)]">
+    <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:var(--m-touri)"></span>Touri (自分)</span>
+    <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:var(--m-ami)"></span>A友</span>
+    <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:var(--m-bmi)"></span>B友</span>
+    <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:var(--m-cmi)"></span>C友</span>
+    <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:var(--m-dmi)"></span>D友</span>
+    <span class="inline-flex items-center gap-2"><span class="h-3 w-3 rounded-full" style="background:var(--m-emi)"></span>E友</span>
+  </div>
+</header>
+
+<!-- ===========================================================
+     共通: 各案のセクションを生成するため、まず Demo シナリオの DOM を CSS だけで作る
+     全 6 案は同じ data を異なる class で描き分ける
+     - Lane システム: top/height は inline style で px 指定 (60px = 60分)
+     - Cluster: lane-1/2, lane-1/3 (n/d = n 番目 / d 分割) で左右配置
+     - 連続コマ: 60-120px の高さで represent
+     =========================================================== -->
+
+<!-- ============================================================
+     PROPOSAL 01 — Tint + Bar (Google Cal Material 3 / TimeTree 折衷)
+     ============================================================ -->
+<section id="p1" class="mx-auto max-w-6xl px-5 pt-10 pb-8 border-t border-[color:var(--color-border-subtle)]">
+  <header class="mb-5 flex items-baseline gap-3 flex-wrap">
+    <span class="text-xs font-mono px-2 py-0.5 rounded bg-[color:var(--color-accent-50)] text-[color:var(--color-accent-500)]">01</span>
+    <h2 class="text-2xl font-bold">Tint + Left Bar</h2>
+    <p class="text-sm text-[color:var(--color-text-secondary)]">
+      Google Cal (Material 3) と TimeTree の折衷。塗り = 20% tint、左 4px の濃いバー。最も安全 / 学生に馴染む。
+    </p>
+  </header>
+
+  <div class="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+    <!-- 単体サンプル -->
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">Single element</p>
+      <div class="space-y-3">
+        <!-- 1コマ -->
+        <div class="p1-ev relative w-full rounded-lg overflow-hidden" style="--c: var(--m-touri); background: color-mix(in srgb, var(--c) 16%, transparent); height: 56px;">
+          <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background: var(--c);"></span>
+          <div class="pl-3 pr-2 py-2">
+            <p class="text-[11px] font-semibold leading-tight" style="color: var(--c);">Touri</p>
+            <p class="text-[13px] font-semibold leading-snug truncate">オペレーティングシステム</p>
+          </div>
+        </div>
+        <!-- 連続コマ -->
+        <div class="p1-ev relative w-full rounded-lg overflow-hidden" style="--c: var(--m-ami); background: color-mix(in srgb, var(--c) 16%, transparent); height: 112px;">
+          <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background: var(--c);"></span>
+          <div class="pl-3 pr-2 py-2">
+            <p class="text-[11px] font-semibold leading-tight" style="color: var(--c);">A友</p>
+            <p class="text-[13px] font-semibold leading-snug">基礎演習Ⅰ・Ⅱ</p>
+            <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-0.5">連続 2 コマ</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="mt-4 text-[10px] text-[color:var(--color-text-tertiary)] leading-relaxed">
+        padding: 8px 8px 8px 12px (8pt grid) / 左 bar 4px / font 11-13 / 角丸 10
+      </p>
+    </div>
+
+    <!-- 重なりシナリオ (timegrid) -->
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">RoomCalendar — Day view (5-7 件、重なりあり)</p>
+      <div class="timegrid">
+        <div class="axis">
+          <span style="top:  0px">9</span>
+          <span style="top: 60px">10</span>
+          <span style="top:120px">11</span>
+          <span style="top:180px">12</span>
+          <span style="top:240px">13</span>
+          <span style="top:300px">14</span>
+          <span style="top:360px">15</span>
+          <span style="top:420px">16</span>
+        </div>
+        <div class="lane">
+          <!-- Touri OS 9:00-10:00 (single) -->
+          <div class="ev rounded-lg" style="top:0;height:60px;left:0;width:100%;--c:var(--m-touri);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-3 pr-2 py-1.5">
+              <p class="text-[10px] font-semibold leading-tight" style="color:var(--c);">Touri</p>
+              <p class="text-[12px] font-semibold leading-snug truncate">OS</p>
+            </div>
+          </div>
+          <!-- A友 演習 10:00-12:00 (cluster lane 1/2) -->
+          <div class="ev rounded-lg" style="top:60px;height:120px;left:0;width:calc(50% - 2px);--c:var(--m-ami);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-3 pr-1.5 py-1.5">
+              <p class="text-[10px] font-semibold leading-tight" style="color:var(--c);">A友</p>
+              <p class="text-[12px] font-semibold leading-snug truncate">基礎演習</p>
+            </div>
+          </div>
+          <!-- B友 線形代数 10:30-11:30 (cluster lane 2/2) -->
+          <div class="ev rounded-lg" style="top:90px;height:60px;left:calc(50% + 2px);width:calc(50% - 2px);--c:var(--m-bmi);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-3 pr-1.5 py-1.5">
+              <p class="text-[10px] font-semibold leading-tight" style="color:var(--c);">B友</p>
+              <p class="text-[12px] font-semibold leading-snug truncate">線形代数</p>
+            </div>
+          </div>
+          <!-- C友 ゼミ 12:00-13:00 -->
+          <div class="ev rounded-lg" style="top:180px;height:60px;left:0;width:100%;--c:var(--m-cmi);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-3 pr-2 py-1.5">
+              <p class="text-[10px] font-semibold leading-tight" style="color:var(--c);">C友</p>
+              <p class="text-[12px] font-semibold leading-snug truncate">プロジェクト演習</p>
+            </div>
+          </div>
+          <!-- 3 重 13:00-14:30 lane 1/3 -->
+          <div class="ev rounded-lg" style="top:240px;height:90px;left:0;width:calc(33.33% - 2px);--c:var(--m-touri);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[9px] font-semibold leading-tight" style="color:var(--c);">Touri</p>
+              <p class="text-[11px] font-semibold leading-snug truncate">DB</p>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:240px;height:90px;left:calc(33.33% + 1px);width:calc(33.33% - 2px);--c:var(--m-dmi);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[9px] font-semibold leading-tight" style="color:var(--c);">D友</p>
+              <p class="text-[11px] font-semibold leading-snug truncate">統計</p>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:240px;height:90px;left:calc(66.66% + 2px);width:calc(33.33% - 2px);--c:var(--m-emi);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[9px] font-semibold leading-tight" style="color:var(--c);">E友</p>
+              <p class="text-[11px] font-semibold leading-snug truncate">英語</p>
+            </div>
+          </div>
+          <!-- 14:30 - 16:00 ゼミ (Touri 単独) -->
+          <div class="ev rounded-lg" style="top:330px;height:90px;left:0;width:100%;--c:var(--m-touri);background:color-mix(in srgb,var(--c) 16%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1 rounded-l" style="background:var(--c);"></span>
+            <div class="pl-3 pr-2 py-1.5">
+              <p class="text-[10px] font-semibold leading-tight" style="color:var(--c);">Touri</p>
+              <p class="text-[12px] font-semibold leading-snug truncate">研究ゼミ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-[10px] text-[color:var(--color-text-tertiary)]">
+        Bar が色情報を担当 → 本体は tint で目に優しい。塗りが 16% mix なので 5+ 件あっても眩しくならない。
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     PROPOSAL 02 — Notion Calendar (透明 + 細線 + 余白広め)
+     ============================================================ -->
+<section id="p2" class="mx-auto max-w-6xl px-5 py-8 border-t border-[color:var(--color-border-subtle)]">
+  <header class="mb-5 flex items-baseline gap-3 flex-wrap">
+    <span class="text-xs font-mono px-2 py-0.5 rounded bg-[color:var(--color-accent-50)] text-[color:var(--color-accent-500)]">02</span>
+    <h2 class="text-2xl font-bold">Notion Calendar — Quoted Block</h2>
+    <p class="text-sm text-[color:var(--color-text-secondary)]">
+      Notion Calendar (旧 Cron) 流: 背景 = 8% tint or 透明、左 2px の細線。情報の「呼吸」を優先、5+ 件でも喧嘩しない。
+    </p>
+  </header>
+
+  <div class="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">Single element</p>
+      <div class="space-y-3">
+        <div class="relative w-full overflow-hidden" style="--c: var(--m-touri); background: color-mix(in srgb, var(--c) 8%, transparent); border-left: 2px solid var(--c); border-radius: 0 6px 6px 0; height: 56px;">
+          <div class="pl-3 pr-3 py-2">
+            <p class="text-[13px] font-semibold leading-snug truncate text-[color:var(--color-text-primary)]">オペレーティングシステム</p>
+            <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-0.5">Touri</p>
+          </div>
+        </div>
+        <div class="relative w-full overflow-hidden" style="--c: var(--m-ami); background: color-mix(in srgb, var(--c) 8%, transparent); border-left: 2px solid var(--c); border-radius: 0 6px 6px 0; height: 112px;">
+          <div class="pl-3 pr-3 py-2">
+            <p class="text-[13px] font-semibold leading-snug">基礎演習Ⅰ・Ⅱ</p>
+            <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-0.5">A友 · 連続 2 コマ</p>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-[10px] text-[color:var(--color-text-tertiary)] leading-relaxed">
+        padding: 8px 12px / 左線 2px / font 11-13 / 角丸 6 (右側のみ) / 背景 8% mix
+      </p>
+    </div>
+
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">RoomCalendar — Day view</p>
+      <div class="timegrid">
+        <div class="axis">
+          <span style="top:  0px">9</span>
+          <span style="top: 60px">10</span>
+          <span style="top:120px">11</span>
+          <span style="top:180px">12</span>
+          <span style="top:240px">13</span>
+          <span style="top:300px">14</span>
+          <span style="top:360px">15</span>
+          <span style="top:420px">16</span>
+        </div>
+        <div class="lane">
+          <div class="ev" style="top:0;height:60px;left:0;width:100%;--c:var(--m-touri);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-3 pr-2 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">OS</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">Touri</p>
+            </div>
+          </div>
+          <div class="ev" style="top:60px;height:120px;left:0;width:calc(50% - 3px);--c:var(--m-ami);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-3 pr-1.5 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">基礎演習</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">A友</p>
+            </div>
+          </div>
+          <div class="ev" style="top:90px;height:60px;left:calc(50% + 3px);width:calc(50% - 3px);--c:var(--m-bmi);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-3 pr-1.5 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">線形代数</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">B友</p>
+            </div>
+          </div>
+          <div class="ev" style="top:180px;height:60px;left:0;width:100%;--c:var(--m-cmi);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-3 pr-2 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">プロジェクト演習</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">C友</p>
+            </div>
+          </div>
+          <div class="ev" style="top:240px;height:90px;left:0;width:calc(33.33% - 2px);--c:var(--m-touri);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">DB</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">Touri</p>
+            </div>
+          </div>
+          <div class="ev" style="top:240px;height:90px;left:calc(33.33% + 1px);width:calc(33.33% - 2px);--c:var(--m-dmi);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">統計</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">D友</p>
+            </div>
+          </div>
+          <div class="ev" style="top:240px;height:90px;left:calc(66.66% + 2px);width:calc(33.33% - 2px);--c:var(--m-emi);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">英語</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">E友</p>
+            </div>
+          </div>
+          <div class="ev" style="top:330px;height:90px;left:0;width:100%;--c:var(--m-touri);background:color-mix(in srgb,var(--c) 8%,transparent);border-left:2px solid var(--c);border-radius:0 6px 6px 0;">
+            <div class="pl-3 pr-2 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">研究ゼミ</p>
+              <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">Touri</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-[10px] text-[color:var(--color-text-tertiary)]">
+        色を「ほぼ消す」設計。タイトルが第一情報、メンバー名はサブテキスト扱い。情報密度が低くて落ち着く。
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     PROPOSAL 03 — Linear Mono Chip (ニュートラル背景 + dot)
+     ============================================================ -->
+<section id="p3" class="mx-auto max-w-6xl px-5 py-8 border-t border-[color:var(--color-border-subtle)]">
+  <header class="mb-5 flex items-baseline gap-3 flex-wrap">
+    <span class="text-xs font-mono px-2 py-0.5 rounded bg-[color:var(--color-accent-50)] text-[color:var(--color-accent-500)]">03</span>
+    <h2 class="text-2xl font-bold">Linear Mono — Dot + Neutral fill</h2>
+    <p class="text-sm text-[color:var(--color-text-secondary)]">
+      Linear Cycle / GitHub Project 流: 本体は灰色 (bg-elevated に近い)。色情報は左の小さな丸 (6×6 dot)。最も予定量が増えても眩しくない。
+    </p>
+  </header>
+
+  <div class="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">Single element</p>
+      <div class="space-y-3">
+        <div class="relative w-full overflow-hidden rounded-lg" style="--c: var(--m-touri); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); height: 56px;">
+          <div class="flex items-start gap-2 px-3 py-2">
+            <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--c);"></span>
+            <div class="min-w-0 flex-1">
+              <p class="text-[13px] font-semibold leading-snug truncate">オペレーティングシステム</p>
+              <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-0.5">Touri</p>
+            </div>
+          </div>
+        </div>
+        <div class="relative w-full overflow-hidden rounded-lg" style="--c: var(--m-ami); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); height: 112px;">
+          <div class="flex items-start gap-2 px-3 py-2">
+            <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--c);"></span>
+            <div class="min-w-0 flex-1">
+              <p class="text-[13px] font-semibold leading-snug">基礎演習Ⅰ・Ⅱ</p>
+              <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-0.5">A友 · 連続 2 コマ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-[10px] text-[color:var(--color-text-tertiary)] leading-relaxed">
+        padding: 8px 12px / dot 8px / 背景は中立 (white/4%) / 角丸 10 / border 1px subtle
+      </p>
+    </div>
+
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">RoomCalendar — Day view</p>
+      <div class="timegrid">
+        <div class="axis">
+          <span style="top:  0px">9</span>
+          <span style="top: 60px">10</span>
+          <span style="top:120px">11</span>
+          <span style="top:180px">12</span>
+          <span style="top:240px">13</span>
+          <span style="top:300px">14</span>
+          <span style="top:360px">15</span>
+          <span style="top:420px">16</span>
+        </div>
+        <div class="lane">
+          <!-- 全て同じ neutral fill + dot 違い -->
+          <div class="ev rounded-lg" style="top:0;height:60px;left:0;width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-2 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-touri);"></span>
+              <div class="min-w-0">
+                <p class="text-[12px] font-semibold leading-snug truncate">OS</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">Touri</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:60px;height:120px;left:0;width:calc(50% - 3px);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-1.5 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-ami);"></span>
+              <div class="min-w-0">
+                <p class="text-[12px] font-semibold leading-snug truncate">基礎演習</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">A友</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:90px;height:60px;left:calc(50% + 3px);width:calc(50% - 3px);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-1.5 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-bmi);"></span>
+              <div class="min-w-0">
+                <p class="text-[12px] font-semibold leading-snug truncate">線形代数</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">B友</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:180px;height:60px;left:0;width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-2 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-cmi);"></span>
+              <div class="min-w-0">
+                <p class="text-[12px] font-semibold leading-snug truncate">プロジェクト演習</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">C友</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:240px;height:90px;left:0;width:calc(33.33% - 2px);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-1 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-touri);"></span>
+              <div class="min-w-0">
+                <p class="text-[11px] font-semibold leading-snug truncate">DB</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">Touri</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:240px;height:90px;left:calc(33.33% + 1px);width:calc(33.33% - 2px);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-1 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-dmi);"></span>
+              <div class="min-w-0">
+                <p class="text-[11px] font-semibold leading-snug truncate">統計</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">D友</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:240px;height:90px;left:calc(66.66% + 2px);width:calc(33.33% - 2px);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-1 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-emi);"></span>
+              <div class="min-w-0">
+                <p class="text-[11px] font-semibold leading-snug truncate">英語</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">E友</p>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-lg" style="top:330px;height:90px;left:0;width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+            <div class="flex items-start gap-2 pl-2 pr-2 py-1.5">
+              <span class="mt-1 h-2 w-2 rounded-full flex-shrink-0" style="background: var(--m-touri);"></span>
+              <div class="min-w-0">
+                <p class="text-[12px] font-semibold leading-snug truncate">研究ゼミ</p>
+                <p class="text-[10px] text-[color:var(--color-text-tertiary)] leading-tight">Touri</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-[10px] text-[color:var(--color-text-tertiary)]">
+        全予定が同じ neutral 背景なので、視線は dot の「色」と「タイトル」だけに集中する。
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     PROPOSAL 04 — Apple Liquid Glass (frosted + 厚い左端)
+     ============================================================ -->
+<section id="p4" class="mx-auto max-w-6xl px-5 py-8 border-t border-[color:var(--color-border-subtle)]">
+  <header class="mb-5 flex items-baseline gap-3 flex-wrap">
+    <span class="text-xs font-mono px-2 py-0.5 rounded bg-[color:var(--color-accent-50)] text-[color:var(--color-accent-500)]">04</span>
+    <h2 class="text-2xl font-bold">Apple Liquid Glass — Edge Glow</h2>
+    <p class="text-sm text-[color:var(--color-text-secondary)]">
+      iOS 26 Liquid Glass 流: backdrop-filter blur + 左端の厚いグロー (6px、内側に滲む)。Snap 風 token と親和性高。
+    </p>
+  </header>
+
+  <div class="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">Single element</p>
+      <div class="space-y-3">
+        <div class="relative w-full overflow-hidden rounded-xl" style="--c: var(--m-touri); background: rgba(255,255,255,0.06); backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%); border: 1px solid rgba(255,255,255,0.10); height: 56px;">
+          <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--c); box-shadow: 0 0 12px var(--c), inset 0 0 4px rgba(255,255,255,0.4);"></span>
+          <div class="pl-4 pr-3 py-2">
+            <p class="text-[13px] font-semibold leading-snug truncate">オペレーティングシステム</p>
+            <p class="text-[11px] leading-tight mt-0.5" style="color: color-mix(in srgb, var(--c) 70%, white 30%);">Touri</p>
+          </div>
+        </div>
+        <div class="relative w-full overflow-hidden rounded-xl" style="--c: var(--m-ami); background: rgba(255,255,255,0.06); backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%); border: 1px solid rgba(255,255,255,0.10); height: 112px;">
+          <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--c); box-shadow: 0 0 12px var(--c), inset 0 0 4px rgba(255,255,255,0.4);"></span>
+          <div class="pl-4 pr-3 py-2">
+            <p class="text-[13px] font-semibold leading-snug">基礎演習Ⅰ・Ⅱ</p>
+            <p class="text-[11px] leading-tight mt-0.5" style="color: color-mix(in srgb, var(--c) 70%, white 30%);">A友 · 連続 2 コマ</p>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-[10px] text-[color:var(--color-text-tertiary)] leading-relaxed">
+        padding: 8px 12px 8px 16px / 左端 1.5×(full height − 4px) / glow 12px / blur 20 / 角丸 12
+      </p>
+    </div>
+
+    <div class="rounded-3xl p-5 shadow-card relative overflow-hidden" style="background: radial-gradient(circle at 30% 20%, rgba(96,165,250,0.10), transparent 60%), radial-gradient(circle at 70% 80%, rgba(244,114,182,0.08), transparent 60%), var(--color-bg-elevated);">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">RoomCalendar — Day view (背景が透けて見えるよう grad 強め)</p>
+      <div class="timegrid" style="background:
+        repeating-linear-gradient(to bottom, rgba(255,255,255,0.05) 0 1px, transparent 1px 60px),
+        rgba(0,0,0,0.18);">
+        <div class="axis">
+          <span style="top:  0px">9</span>
+          <span style="top: 60px">10</span>
+          <span style="top:120px">11</span>
+          <span style="top:180px">12</span>
+          <span style="top:240px">13</span>
+          <span style="top:300px">14</span>
+          <span style="top:360px">15</span>
+          <span style="top:420px">16</span>
+        </div>
+        <div class="lane">
+          <div class="ev rounded-xl" style="top:0;height:60px;left:0;width:100%;background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-touri); box-shadow: 0 0 10px var(--m-touri);"></span>
+            <div class="pl-4 pr-2 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">OS</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-touri) 70%, white 30%);">Touri</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:60px;height:120px;left:0;width:calc(50% - 4px);background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-ami); box-shadow: 0 0 10px var(--m-ami);"></span>
+            <div class="pl-4 pr-1.5 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">基礎演習</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-ami) 70%, white 30%);">A友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:90px;height:60px;left:calc(50% + 4px);width:calc(50% - 4px);background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-bmi); box-shadow: 0 0 10px var(--m-bmi);"></span>
+            <div class="pl-4 pr-1.5 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">線形代数</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-bmi) 70%, white 30%);">B友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:180px;height:60px;left:0;width:100%;background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-cmi); box-shadow: 0 0 10px var(--m-cmi);"></span>
+            <div class="pl-4 pr-2 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">プロジェクト演習</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-cmi) 70%, white 30%);">C友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:240px;height:90px;left:0;width:calc(33.33% - 3px);background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-touri); box-shadow: 0 0 8px var(--m-touri);"></span>
+            <div class="pl-3 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">DB</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-touri) 70%, white 30%);">Touri</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:240px;height:90px;left:calc(33.33% + 1.5px);width:calc(33.33% - 3px);background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-dmi); box-shadow: 0 0 8px var(--m-dmi);"></span>
+            <div class="pl-3 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">統計</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-dmi) 70%, white 30%);">D友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:240px;height:90px;left:calc(66.66% + 3px);width:calc(33.33% - 3px);background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-emi); box-shadow: 0 0 8px var(--m-emi);"></span>
+            <div class="pl-3 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">英語</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-emi) 70%, white 30%);">E友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:330px;height:90px;left:0;width:100%;background:rgba(255,255,255,0.06);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);border:1px solid rgba(255,255,255,0.10);">
+            <span class="absolute left-0 top-1 bottom-1 w-1.5 rounded-full" style="background: var(--m-touri); box-shadow: 0 0 10px var(--m-touri);"></span>
+            <div class="pl-4 pr-2 py-1.5">
+              <p class="text-[12px] font-semibold leading-snug truncate">研究ゼミ</p>
+              <p class="text-[10px] leading-tight" style="color: color-mix(in srgb, var(--m-touri) 70%, white 30%);">Touri</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-[10px] text-[color:var(--color-text-tertiary)]">
+        色は左端の glow のみ。透けて見える層が美しいが、backdrop-filter は古い Android Chrome で performance 注意。
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     PROPOSAL 05 — Snap Pop (大角丸 + Spotify 流 chip + 高彩度)
+     ============================================================ -->
+<section id="p5" class="mx-auto max-w-6xl px-5 py-8 border-t border-[color:var(--color-border-subtle)]">
+  <header class="mb-5 flex items-baseline gap-3 flex-wrap">
+    <span class="text-xs font-mono px-2 py-0.5 rounded bg-[color:var(--color-accent-50)] text-[color:var(--color-accent-500)]">05</span>
+    <h2 class="text-2xl font-bold">Snap Pop — Pill chip + 大角丸</h2>
+    <p class="text-sm text-[color:var(--color-text-secondary)]">
+      Snapchat / Spotify Encore の playful 路線。角丸 14px、メンバー名は pill chip、本体は背景に gradient 加味。
+    </p>
+  </header>
+
+  <div class="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">Single element</p>
+      <div class="space-y-3">
+        <div class="relative w-full overflow-hidden" style="--c: var(--m-touri); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--c) 22%, transparent), color-mix(in srgb, var(--c) 10%, transparent)); border: 1px solid color-mix(in srgb, var(--c) 24%, transparent); height: 60px;">
+          <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+          <div class="pl-3 pr-2.5 py-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);">
+                <span class="h-1.5 w-1.5 rounded-full" style="background: var(--c);"></span>Touri
+              </span>
+            </div>
+            <p class="text-[13px] font-bold leading-snug truncate mt-0.5">オペレーティングシステム</p>
+          </div>
+        </div>
+        <div class="relative w-full overflow-hidden" style="--c: var(--m-ami); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--c) 22%, transparent), color-mix(in srgb, var(--c) 10%, transparent)); border: 1px solid color-mix(in srgb, var(--c) 24%, transparent); height: 116px;">
+          <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+          <div class="pl-3 pr-2.5 py-2">
+            <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);">
+              <span class="h-1.5 w-1.5 rounded-full" style="background: var(--c);"></span>A友
+            </span>
+            <p class="text-[13px] font-bold leading-snug mt-1">基礎演習Ⅰ・Ⅱ</p>
+            <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-0.5">連続 2 コマ</p>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-[10px] text-[color:var(--color-text-tertiary)] leading-relaxed">
+        padding: 8px 10px / pill chip 高さ 16px / linear gradient (22→10% mix) / 角丸 14
+      </p>
+    </div>
+
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">RoomCalendar — Day view</p>
+      <div class="timegrid">
+        <div class="axis">
+          <span style="top:  0px">9</span>
+          <span style="top: 60px">10</span>
+          <span style="top:120px">11</span>
+          <span style="top:180px">12</span>
+          <span style="top:240px">13</span>
+          <span style="top:300px">14</span>
+          <span style="top:360px">15</span>
+          <span style="top:420px">16</span>
+        </div>
+        <div class="lane">
+          <div class="ev" style="top:0;height:60px;left:0;width:100%;--c:var(--m-touri);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2.5 pr-2 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>Touri</span>
+              <p class="text-[12px] font-bold leading-snug truncate mt-0.5">OS</p>
+            </div>
+          </div>
+          <div class="ev" style="top:60px;height:120px;left:0;width:calc(50% - 3px);--c:var(--m-ami);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2.5 pr-1.5 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>A友</span>
+              <p class="text-[12px] font-bold leading-snug truncate mt-0.5">基礎演習</p>
+            </div>
+          </div>
+          <div class="ev" style="top:90px;height:60px;left:calc(50% + 3px);width:calc(50% - 3px);--c:var(--m-bmi);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2.5 pr-1.5 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>B友</span>
+              <p class="text-[12px] font-bold leading-snug truncate mt-0.5">線形代数</p>
+            </div>
+          </div>
+          <div class="ev" style="top:180px;height:60px;left:0;width:100%;--c:var(--m-cmi);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2.5 pr-2 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>C友</span>
+              <p class="text-[12px] font-bold leading-snug truncate mt-0.5">プロジェクト演習</p>
+            </div>
+          </div>
+          <div class="ev" style="top:240px;height:90px;left:0;width:calc(33.33% - 2px);--c:var(--m-touri);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>Touri</span>
+              <p class="text-[11px] font-bold leading-snug truncate mt-0.5">DB</p>
+            </div>
+          </div>
+          <div class="ev" style="top:240px;height:90px;left:calc(33.33% + 1px);width:calc(33.33% - 2px);--c:var(--m-dmi);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>D友</span>
+              <p class="text-[11px] font-bold leading-snug truncate mt-0.5">統計</p>
+            </div>
+          </div>
+          <div class="ev" style="top:240px;height:90px;left:calc(66.66% + 2px);width:calc(33.33% - 2px);--c:var(--m-emi);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>E友</span>
+              <p class="text-[11px] font-bold leading-snug truncate mt-0.5">英語</p>
+            </div>
+          </div>
+          <div class="ev" style="top:330px;height:90px;left:0;width:100%;--c:var(--m-touri);border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 22%,transparent),color-mix(in srgb,var(--c) 10%,transparent));border:1px solid color-mix(in srgb,var(--c) 24%,transparent);">
+            <span class="absolute left-0 top-0 bottom-0 w-1" style="background: var(--c);"></span>
+            <div class="pl-2.5 pr-2 py-1.5">
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style="background: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);"><span class="h-1 w-1 rounded-full" style="background: var(--c);"></span>Touri</span>
+              <p class="text-[12px] font-bold leading-snug truncate mt-0.5">研究ゼミ</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-[10px] text-[color:var(--color-text-tertiary)]">
+        色情報が「左 bar + chip 背景 + chip dot」と 3 重に効くので、メンバー識別が一番早い。ただし色彩がやや忙しい。
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     PROPOSAL 06 — Things Minimal (角丸大 + 行 + checkbox)
+     ============================================================ -->
+<section id="p6" class="mx-auto max-w-6xl px-5 py-8 border-t border-[color:var(--color-border-subtle)]">
+  <header class="mb-5 flex items-baseline gap-3 flex-wrap">
+    <span class="text-xs font-mono px-2 py-0.5 rounded bg-[color:var(--color-accent-50)] text-[color:var(--color-accent-500)]">06</span>
+    <h2 class="text-2xl font-bold">Things Minimal — Tag chip + 線</h2>
+    <p class="text-sm text-[color:var(--color-text-secondary)]">
+      Things 3 流の極簡: タイトルが主役、メンバーは右端の小さな color chip。本体背景は完全な neutral (bg-elevated そのまま)。
+    </p>
+  </header>
+
+  <div class="grid lg:grid-cols-[1fr_1.4fr] gap-6">
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">Single element</p>
+      <div class="space-y-3">
+        <div class="relative w-full overflow-hidden rounded-xl" style="--c: var(--m-touri); background: var(--color-bg-muted); height: 56px;">
+          <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--c);"></span>
+          <div class="flex items-center justify-between gap-2 pl-3 pr-3 py-2 h-full">
+            <p class="text-[13px] font-semibold leading-snug truncate flex-1">オペレーティングシステム</p>
+            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border" style="border-color: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);">
+              <span class="h-1.5 w-1.5 rounded-full" style="background: var(--c);"></span>Touri
+            </span>
+          </div>
+        </div>
+        <div class="relative w-full overflow-hidden rounded-xl" style="--c: var(--m-ami); background: var(--color-bg-muted); height: 112px;">
+          <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--c);"></span>
+          <div class="pl-3 pr-3 py-2 h-full flex flex-col">
+            <div class="flex items-start justify-between gap-2">
+              <p class="text-[13px] font-semibold leading-snug">基礎演習Ⅰ・Ⅱ</p>
+              <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border flex-shrink-0" style="border-color: color-mix(in srgb, var(--c) 30%, transparent); color: var(--c);">
+                <span class="h-1.5 w-1.5 rounded-full" style="background: var(--c);"></span>A友
+              </span>
+            </div>
+            <p class="text-[11px] text-[color:var(--color-text-tertiary)] leading-tight mt-auto">連続 2 コマ</p>
+          </div>
+        </div>
+      </div>
+      <p class="mt-4 text-[10px] text-[color:var(--color-text-tertiary)] leading-relaxed">
+        padding: 8px 12px / 左バー 3px (full height − 16px) / chip border 1px / 本体は bg-muted (純色なし)
+      </p>
+    </div>
+
+    <div class="rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+      <p class="text-[10px] uppercase tracking-wider text-[color:var(--color-text-tertiary)] mb-3">RoomCalendar — Day view</p>
+      <div class="timegrid">
+        <div class="axis">
+          <span style="top:  0px">9</span>
+          <span style="top: 60px">10</span>
+          <span style="top:120px">11</span>
+          <span style="top:180px">12</span>
+          <span style="top:240px">13</span>
+          <span style="top:300px">14</span>
+          <span style="top:360px">15</span>
+          <span style="top:420px">16</span>
+        </div>
+        <div class="lane">
+          <div class="ev rounded-xl" style="top:0;height:60px;left:0;width:100%;background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-touri);"></span>
+            <div class="flex items-center justify-between gap-2 pl-3 pr-2 py-1.5 h-full">
+              <p class="text-[12px] font-semibold leading-snug truncate flex-1">OS</p>
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium border flex-shrink-0" style="border-color: color-mix(in srgb, var(--m-touri) 30%, transparent); color: var(--m-touri);">
+                <span class="h-1 w-1 rounded-full" style="background: var(--m-touri);"></span>Touri
+              </span>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:60px;height:120px;left:0;width:calc(50% - 3px);background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-ami);"></span>
+            <div class="pl-3 pr-1.5 py-1.5 h-full flex flex-col">
+              <div class="flex items-start justify-between gap-1">
+                <p class="text-[12px] font-semibold leading-snug truncate">基礎演習</p>
+                <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium border flex-shrink-0" style="border-color: color-mix(in srgb, var(--m-ami) 30%, transparent); color: var(--m-ami);">
+                  <span class="h-1 w-1 rounded-full" style="background: var(--m-ami);"></span>A友
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:90px;height:60px;left:calc(50% + 3px);width:calc(50% - 3px);background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-bmi);"></span>
+            <div class="flex items-center justify-between gap-1 pl-3 pr-1.5 py-1.5 h-full">
+              <p class="text-[12px] font-semibold leading-snug truncate flex-1">線形代数</p>
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium border flex-shrink-0" style="border-color: color-mix(in srgb, var(--m-bmi) 30%, transparent); color: var(--m-bmi);">
+                <span class="h-1 w-1 rounded-full" style="background: var(--m-bmi);"></span>B友
+              </span>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:180px;height:60px;left:0;width:100%;background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-cmi);"></span>
+            <div class="flex items-center justify-between gap-2 pl-3 pr-2 py-1.5 h-full">
+              <p class="text-[12px] font-semibold leading-snug truncate flex-1">プロジェクト演習</p>
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium border flex-shrink-0" style="border-color: color-mix(in srgb, var(--m-cmi) 30%, transparent); color: var(--m-cmi);">
+                <span class="h-1 w-1 rounded-full" style="background: var(--m-cmi);"></span>C友
+              </span>
+            </div>
+          </div>
+          <!-- 3-lane (狭いので chip 省略) -->
+          <div class="ev rounded-xl" style="top:240px;height:90px;left:0;width:calc(33.33% - 2px);background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-touri);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">DB</p>
+              <p class="text-[10px] leading-tight mt-0.5" style="color: var(--m-touri);">Touri</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:240px;height:90px;left:calc(33.33% + 1px);width:calc(33.33% - 2px);background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-dmi);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">統計</p>
+              <p class="text-[10px] leading-tight mt-0.5" style="color: var(--m-dmi);">D友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:240px;height:90px;left:calc(66.66% + 2px);width:calc(33.33% - 2px);background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-emi);"></span>
+            <div class="pl-2 pr-1 py-1.5">
+              <p class="text-[11px] font-semibold leading-snug truncate">英語</p>
+              <p class="text-[10px] leading-tight mt-0.5" style="color: var(--m-emi);">E友</p>
+            </div>
+          </div>
+          <div class="ev rounded-xl" style="top:330px;height:90px;left:0;width:100%;background:var(--color-bg-muted);">
+            <span class="absolute left-0 top-2 bottom-2 w-[3px] rounded-full" style="background: var(--m-touri);"></span>
+            <div class="flex items-center justify-between gap-2 pl-3 pr-2 py-1.5 h-full">
+              <p class="text-[12px] font-semibold leading-snug truncate flex-1">研究ゼミ</p>
+              <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium border flex-shrink-0" style="border-color: color-mix(in srgb, var(--m-touri) 30%, transparent); color: var(--m-touri);">
+                <span class="h-1 w-1 rounded-full" style="background: var(--m-touri);"></span>Touri
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="mt-3 text-[10px] text-[color:var(--color-text-tertiary)]">
+        chip が右端なので、視線は「タイトル → chip」の自然な左→右移動。狭い lane では chip 省略 → 文字色フォールバック。
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     COMPARE 表
+     ============================================================ -->
+<section id="cmp" class="mx-auto max-w-6xl px-5 py-10 border-t border-[color:var(--color-border-subtle)]">
+  <h2 class="text-2xl font-bold">案の比較</h2>
+  <p class="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+    左 = 案、上 = 評価軸。◎ 強い / ○ 標準 / △ 弱い。「眩しさ」「学生向け馴染み」など主観評価あり。
+  </p>
+
+  <div class="mt-5 overflow-x-auto rounded-3xl bg-[color:var(--color-bg-elevated)] shadow-card">
+    <table class="w-full min-w-[760px] text-sm">
+      <thead class="text-left text-[color:var(--color-text-secondary)] text-xs uppercase tracking-wider">
+        <tr class="border-b border-[color:var(--color-border-subtle)]">
+          <th class="px-4 py-3 w-40">案</th>
+          <th class="px-3 py-3">情報密度</th>
+          <th class="px-3 py-3">5+ 件の眩しさ低減</th>
+          <th class="px-3 py-3">メンバー識別速度</th>
+          <th class="px-3 py-3">学生馴染み</th>
+          <th class="px-3 py-3">実装難度</th>
+          <th class="px-3 py-3">Snap token 親和</th>
+        </tr>
+      </thead>
+      <tbody class="text-[color:var(--color-text-primary)]">
+        <tr class="border-b border-[color:var(--color-border-subtle)]">
+          <td class="px-4 py-3 font-semibold"><a href="#p1" class="hover:text-[color:var(--color-accent-500)]">01 Tint + Bar</a></td>
+          <td class="px-3 py-3">○</td><td class="px-3 py-3">○</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">◎ (低)</td><td class="px-3 py-3">○</td>
+        </tr>
+        <tr class="border-b border-[color:var(--color-border-subtle)]">
+          <td class="px-4 py-3 font-semibold"><a href="#p2" class="hover:text-[color:var(--color-accent-500)]">02 Notion Cal</a></td>
+          <td class="px-3 py-3">○</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">○</td><td class="px-3 py-3">△</td><td class="px-3 py-3">◎ (低)</td><td class="px-3 py-3">△</td>
+        </tr>
+        <tr class="border-b border-[color:var(--color-border-subtle)]">
+          <td class="px-4 py-3 font-semibold"><a href="#p3" class="hover:text-[color:var(--color-accent-500)]">03 Linear Mono</a></td>
+          <td class="px-3 py-3">◎</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">△</td><td class="px-3 py-3">△</td><td class="px-3 py-3">◎ (低)</td><td class="px-3 py-3">△</td>
+        </tr>
+        <tr class="border-b border-[color:var(--color-border-subtle)]">
+          <td class="px-4 py-3 font-semibold"><a href="#p4" class="hover:text-[color:var(--color-accent-500)]">04 Apple Glass</a></td>
+          <td class="px-3 py-3">△</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">○</td><td class="px-3 py-3">○</td><td class="px-3 py-3">△ (高、Android 互換注意)</td><td class="px-3 py-3">◎</td>
+        </tr>
+        <tr class="border-b border-[color:var(--color-border-subtle)]">
+          <td class="px-4 py-3 font-semibold"><a href="#p5" class="hover:text-[color:var(--color-accent-500)]">05 Snap Pop</a></td>
+          <td class="px-3 py-3">○</td><td class="px-3 py-3">△ (色強め)</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">○</td><td class="px-3 py-3">○ (中)</td><td class="px-3 py-3">◎</td>
+        </tr>
+        <tr>
+          <td class="px-4 py-3 font-semibold"><a href="#p6" class="hover:text-[color:var(--color-accent-500)]">06 Things Min</a></td>
+          <td class="px-3 py-3">◎</td><td class="px-3 py-3">◎</td><td class="px-3 py-3">○</td><td class="px-3 py-3">○</td><td class="px-3 py-3">◎ (低)</td><td class="px-3 py-3">○</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-6 rounded-3xl bg-[color:var(--color-bg-elevated)] p-5 shadow-card">
+    <h3 class="text-base font-bold">Architect への申し送り (参考)</h3>
+    <ul class="mt-3 list-disc pl-5 space-y-1.5 text-sm text-[color:var(--color-text-secondary)]">
+      <li>「眩しさ低減」と「学生馴染み」を両立できるのは <b>01 Tint+Bar</b> または <b>06 Things Min</b>。01 は Penmark/TimeTree 互換、06 は Things/Notion 互換。</li>
+      <li><b>03 Linear Mono</b> は情報量が最大化される (= 沢山並んでも疲れない) が、メンバー色が小さすぎるので「誰の予定か瞬時に判別」要件には弱い。</li>
+      <li><b>04 Apple Glass</b> は Android Chrome の古いバージョンで <code>backdrop-filter</code> performance 劣化、また iOS でも timegrid 内で重ねた時に再描画コスト発生。E2E テスト時要検証。</li>
+      <li><b>05 Snap Pop</b> は Snap token と一番親和するが、chip + 左 bar + grad で色情報が 3 重に増える。5+ 件並んだ時に「うるさい」と感じやすい。</li>
+      <li><b>02 Notion Cal</b> は最も「呼吸」する設計だが、学生 UI としては Penmark に近すぎず、馴染みのなさが導入障壁になる可能性。</li>
+      <li>左 color label の太さ: 01=4px / 02=2px / 03=dot 8px / 04=1.5px glow / 05=4px + chip / 06=3px。<b>4px が太すぎず細すぎず</b>、TimeTree との比較でも標準値。</li>
+      <li>padding は全案 <b>8pt grid 準拠</b> (主に 8px 12px) を採用。現状の Atender 実装は 12-16px 過多なので、どの案を採っても余白は減る。</li>
+      <li>狭い lane (3 分割で 100px 以下) で chip 等を省略する fallback ルールは <b>06 Things Min</b> のみが明示。他案にも適用すべき。</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="mx-auto max-w-6xl px-5 py-10 text-xs text-[color:var(--color-text-tertiary)] border-t border-[color:var(--color-border-subtle)]">
+  Atender · Event element design gallery · 2026-05-27 · Architect レビュー用。HTML / CSS のみ、JavaScript なし。Tailwind は CDN。
+</footer>
+
+</body>
+</html>

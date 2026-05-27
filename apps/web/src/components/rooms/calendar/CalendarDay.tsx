@@ -25,21 +25,34 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const laneWidth = 88 / event.laneCount;
           const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
 
+          const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
           return (
             <div
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-              className="absolute overflow-hidden rounded-xl px-2 py-1 text-xs font-bold leading-tight text-white"
+              className="absolute overflow-hidden rounded-xl border border-white/10"
               style={{
                 top: `${top}%`,
                 height: `${height}%`,
                 left: `${12 + event.lane * laneWidth}%`,
                 width: `calc(${laneWidth}% - 2px)`,
-                background: color,
+                background: "rgba(255,255,255,0.06)",
+                backdropFilter: "blur(20px) saturate(140%)",
+                WebkitBackdropFilter: "blur(20px) saturate(140%)",
               }}
               title={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
             >
-              <div className="truncate">{formatMinute(event.startMinute)} {event.kind === "meeting" ? event.courseName : event.title}</div>
-              <div className="truncate text-[10px] opacity-80">{event.kind === "meeting" ? event.memberName : event.authorName}</div>
+              <span
+                className="absolute left-0 top-1 bottom-1 w-1.5 rounded-full"
+                style={{ background: color, boxShadow: `0 0 12px ${color}, inset 0 0 4px rgba(255,255,255,0.4)` }}
+              />
+              <div className="flex h-full flex-col gap-0.5 pl-3.5 pr-2 py-1.5">
+                <p className="truncate text-[12px] font-semibold leading-snug text-fg-primary">
+                  {event.kind === "meeting" ? event.courseName : event.title}
+                </p>
+                <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>
+                  {event.kind === "meeting" ? event.memberName : event.authorName} · {formatMinute(event.startMinute)}
+                </p>
+              </div>
             </div>
           );
         })}
