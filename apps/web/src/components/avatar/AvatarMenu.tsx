@@ -8,6 +8,7 @@ import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
 import { SemesterListSheet } from "@/components/sheet/SemesterListSheet";
 import { Button, Field, Input } from "@/components/ui";
+import { useTheme, type Theme } from "@/lib/useTheme";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
 type Sheet = "profile" | "school" | "rules" | "semesters" | null;
@@ -60,9 +61,11 @@ export function AvatarMenu() {
       <MenuButton onClick={() => openSheet("school")}>学校・学科</MenuButton>
       <MenuButton onClick={() => openSheet("rules")}>出欠ルール</MenuButton>
       <MenuButton onClick={() => openSheet("semesters")}>学期管理</MenuButton>
-      <div className="my-1 h-px bg-white/8" />
+      <div className="my-1 h-px bg-border-subtle" />
       <MenuButton onClick={() => { setMenuOpen(false); void navigate({ to: "/stats" }); }}>出席率を見る</MenuButton>
-      <div className="my-1 h-px bg-white/8" />
+      <div className="my-1 h-px bg-border-subtle" />
+      <ThemeToggleRow />
+      <div className="my-1 h-px bg-border-subtle" />
       <MenuButton danger onClick={() => void signOut()}>ログアウト</MenuButton>
     </div>
   );
@@ -94,6 +97,36 @@ export function AvatarMenu() {
       <SchoolDeptEditSheet open={sheet === "school"} onClose={() => setSheet(null)} />
       <AttendanceRuleSheet open={sheet === "rules"} onClose={() => setSheet(null)} />
       <SemesterListSheet open={sheet === "semesters"} onClose={() => setSheet(null)} />
+    </div>
+  );
+}
+
+function ThemeToggleRow() {
+  const { theme, setTheme } = useTheme();
+  const options: { value: Theme; label: string }[] = [
+    { value: "auto", label: "自動" },
+    { value: "light", label: "ライト" },
+    { value: "dark", label: "ダーク" },
+  ];
+  return (
+    <div className="px-2 py-2">
+      <p className="mb-2 px-2 text-xs font-bold uppercase tracking-wide text-fg-tertiary">テーマ</p>
+      <div className="flex gap-1 rounded-full bg-bg-muted p-1">
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => setTheme(o.value)}
+            className={`flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition active:scale-[0.97] ${
+              theme === o.value
+                ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
+                : "text-fg-secondary hover:text-fg-primary"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
