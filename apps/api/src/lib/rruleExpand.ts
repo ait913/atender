@@ -1,4 +1,7 @@
-import { rrulestr, type RRuleSet } from "rrule";
+import pkg from "rrule";
+
+type RRuleSet = InstanceType<typeof pkg.RRuleSet>;
+const rrulestr = pkg.rrulestr.bind(pkg);
 
 export type RRuleParts = {
   rrule: string;
