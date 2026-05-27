@@ -280,6 +280,14 @@ body {
   margin: 0;
   background: var(--color-bg-base);
   background-attachment: fixed;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* dark mode のみ accent radial gradient を効かせる (light は flat canvas) */
@@ -296,17 +304,6 @@ body {
     radial-gradient(1200px 700px at 50% -10%, rgba(16, 235, 153, 0.10), transparent 60%),
     radial-gradient(900px 600px at 90% 110%, rgba(198, 133, 255, 0.06), transparent 60%),
     var(--color-bg-base);
-}
-
-/* light mode: bg-white/N の置換は component 側で対応 (CSS escape 制約のため) */
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--text-base);
-  line-height: var(--leading-normal);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 button, input, select, textarea {
