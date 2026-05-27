@@ -156,7 +156,7 @@ function ProfileEditSheet({ open, onClose }: { open: boolean; onClose: () => voi
     >
       <Field label="名前"><Input value={name} onChange={(event) => setName(event.currentTarget.value)} /></Field>
       <Field label="ハンドル" hint="半角英数字 + _ のみ (空のままで設定なし)">
-        <Input value={handle} onChange={(event) => setHandle(event.currentTarget.value.replace(/^@/, ""))} placeholder="touri_a" />
+        <Input value={handle} onChange={(event) => setHandle(event.currentTarget.value.replace(/^@/, ""))} placeholder="your_handle" />
       </Field>
       {error ? <p className="rounded-2xl bg-status-absent/15 px-4 py-3 text-sm font-bold text-status-absent">{error}</p> : null}
     </BottomSheet>

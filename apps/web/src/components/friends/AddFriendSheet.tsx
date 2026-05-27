@@ -32,7 +32,7 @@ export function AddFriendSheet({ open, onClose }: { open: boolean; onClose: () =
         </div>
       }
     >
-      <Field label="ハンドル検索"><Input value={rawHandle} onChange={(event) => setRawHandle(event.currentTarget.value)} placeholder="@touri" /></Field>
+      <Field label="ハンドル検索"><Input value={rawHandle} onChange={(event) => setRawHandle(event.currentTarget.value)} placeholder="@handle" /></Field>
       <div className="space-y-2">
         {(search.data?.users ?? []).map((user) => (
           <button key={user.id} type="button" className="flex w-full items-center justify-between rounded-md border border-border-subtle p-3 text-left" onClick={() => create.mutate({ receiverId: user.id })}>
