@@ -17,6 +17,7 @@
     "@tanstack/react-query": "^5",
     "@tanstack/react-router": "^1",
     "dayjs": "^1.11",
+    "lucide-react": "^1.16.0",
     "react": "^19",
     "react-dom": "^19",
     "vaul": "^1.1.2",

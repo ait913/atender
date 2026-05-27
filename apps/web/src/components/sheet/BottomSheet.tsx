@@ -1,4 +1,5 @@
 import * as Dialog from "@radix-ui/react-dialog";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function BottomSheet({
@@ -22,12 +23,15 @@ export function BottomSheet({
           aria-describedby={undefined}
           className="
             fixed left-1/2 -translate-x-1/2 z-[1110]
-            bottom-0 w-full max-w-none rounded-t-[28px] rounded-b-none
+            bottom-2 w-[calc(100%-12px)] max-w-none rounded-2xl
             md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:w-[min(560px,calc(100vw-32px))] md:rounded-3xl
             flex flex-col bg-bg-elevated shadow-sheet sheet-slide-up
             focus:outline-none
           "
-          style={{ maxHeight: "min(92dvh, 760px)" }}
+          style={{
+            maxHeight: "min(92dvh, 760px)",
+            marginBottom: "env(safe-area-inset-bottom)",
+          }}
         >
           <div className="flex flex-shrink-0 justify-center pt-3 pb-2 md:hidden">
             <span className="h-1 w-9 rounded-full bg-fg-primary/20" />
@@ -37,10 +41,10 @@ export function BottomSheet({
             <Dialog.Close asChild>
               <button
                 type="button"
-                className="grid h-11 w-11 place-items-center rounded-full bg-bg-muted text-lg text-fg-secondary transition hover:bg-fg-primary/10 active:scale-95"
+                className="grid h-11 w-11 place-items-center rounded-full bg-bg-muted text-fg-secondary transition hover:bg-fg-primary/10 active:scale-95"
                 aria-label="閉じる"
               >
-                ✕
+                <X className="h-5 w-5" strokeWidth={2.5} />
               </button>
             </Dialog.Close>
           </div>

@@ -1,8 +1,17 @@
-export const navItems = [
-  { to: "/", label: "今日", icon: "◐" },
-  { to: "/timetable", label: "時間割", icon: "▦" },
-  { to: "/rooms", label: "ルーム", icon: "◎" },
-  { to: "/friends", label: "友達", icon: "✦" },
+import { Calendar, Grid3x3, Sparkles, Users } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+
+export type NavItem = {
+  to: string;
+  label: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+};
+
+export const navItems: readonly NavItem[] = [
+  { to: "/", label: "今日", icon: Calendar },
+  { to: "/timetable", label: "時間割", icon: Grid3x3 },
+  { to: "/rooms", label: "ルーム", icon: Users },
+  { to: "/friends", label: "友達", icon: Sparkles },
 ] as const;
 
 export function isActivePath(pathname: string, to: string) {

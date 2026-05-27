@@ -18,6 +18,7 @@ export function BottomTab() {
     >
       {navItems.map((item) => {
         const active = isActivePath(pathname, item.to);
+        const Icon = item.icon;
         return (
           <Link
             key={item.to}
@@ -26,13 +27,13 @@ export function BottomTab() {
             aria-current={active ? "page" : undefined}
           >
             <span
-              className={`grid h-12 w-12 place-items-center rounded-2xl text-2xl leading-none transition-all duration-200 ${
+              className={`grid h-12 w-12 place-items-center rounded-2xl transition-all duration-200 ${
                 active
                   ? "bg-accent-500 text-fg-on-accent scale-105 shadow-glow"
                   : "bg-transparent text-fg-secondary group-hover:bg-fg-primary/5 group-active:scale-95"
               }`}
             >
-              {item.icon}
+              <Icon className="h-6 w-6" strokeWidth={2.25} />
             </span>
             <span
               className={`text-[11px] font-bold leading-none transition-opacity ${

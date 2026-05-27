@@ -1,4 +1,5 @@
 import { useParams } from "@tanstack/react-router";
+import { Settings } from "lucide-react";
 import { useState } from "react";
 import { useRoom } from "@/api/hooks";
 import { RoomSettingsSheet } from "@/components/sheet/RoomSettingsSheet";
@@ -21,9 +22,9 @@ export function RoomDetail() {
           type="button"
           aria-label="ルームの設定"
           onClick={() => setSettingsOpen(true)}
-          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-fg-primary/8 text-xl text-fg-secondary transition hover:bg-fg-primary/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-secondary transition hover:bg-fg-primary/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
         >
-          ⚙
+          <Settings className="h-5 w-5" strokeWidth={2.25} />
         </button>
       </div>
       <div className="flex rounded-full bg-bg-muted p-1">
