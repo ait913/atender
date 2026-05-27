@@ -7,6 +7,7 @@ export const RoomSummaryDto = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
+  showMemberTimetables: z.boolean(),
   memberCount: z.number().int(),
   myRole: RoomRoleEnum,
   upcomingEvent: z.object({
@@ -47,9 +48,14 @@ export const RoomEventDto = z.object({
 export const CreateRoomInput = z.object({
   name: z.string().min(1).max(60),
   description: z.string().max(500).optional(),
+  showMemberTimetables: z.boolean().optional().default(true),
 });
 
-export const UpdateRoomInput = CreateRoomInput.partial();
+export const UpdateRoomInput = z.object({
+  name: z.string().min(1).max(60).optional(),
+  description: z.string().max(500).nullable().optional(),
+  showMemberTimetables: z.boolean().optional(),
+});
 
 const RoomEventInputBase = z.object({
   title: z.string().min(1).max(120),

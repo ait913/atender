@@ -4,7 +4,7 @@ import { minutesToTime, statusLongLabels } from "@/components/ui";
 export function OccurrenceLyricCard({ occurrence, state }: { occurrence: OccurrenceDto; state: "past" | "current" | "future" | "next" }) {
   const stateClass = {
     past: "opacity-25 scale-95 -translate-y-2 bg-white/4",
-    current: "opacity-100 bg-bg-elevated shadow-glow ring-2 ring-accent-500/40",
+    current: "opacity-100 bg-bg-elevated shadow-glow-soft ring-2 ring-accent-500/50",
     next: "opacity-95 bg-bg-elevated shadow-card",
     future: "opacity-60 bg-white/5",
   }[state];

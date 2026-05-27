@@ -23,7 +23,7 @@ export const UserTimetableCreateInput = TemplateCreateInput.omit({
 });
 
 export const UserTimetablePatchInput = z.object({
-  title: z.string().min(1).max(100).optional(),
+  title: z.string().min(1).max(120).optional(),
   daySlots: z.array(DaySlotDto).optional(),
   courses: z.array(z.object({
     id: z.string().optional(),

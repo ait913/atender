@@ -372,15 +372,16 @@ enum RoomRole {
 }
 
 model Room {
-  id              String   @id @default(cuid())
-  name            String
-  description     String?
-  inviteCode      String   @unique @default(cuid())
-  inviteExpiresAt DateTime?
-  createdByUserId String
-  createdBy       User     @relation("RoomCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String
+  description           String?
+  inviteCode            String   @unique @default(cuid())
+  inviteExpiresAt       DateTime?
+  showMemberTimetables  Boolean  @default(true)
+  createdByUserId       String
+  createdBy             User     @relation("RoomCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   memberships RoomMembership[]
   events      RoomEvent[]

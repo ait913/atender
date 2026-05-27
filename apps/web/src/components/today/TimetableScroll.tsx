@@ -31,7 +31,7 @@ export function TimetableScroll({ occurrences }: { occurrences: OccurrenceDto[] 
     <>
       <ul
         ref={ref}
-        className="h-[calc(100dvh-260px)] min-h-80 overflow-y-auto overscroll-contain scroll-py-[40%] snap-y snap-mandatory pr-1"
+        className="-mx-2 h-[calc(100dvh-260px)] min-h-80 overflow-y-auto overscroll-contain scroll-py-[40%] snap-y snap-mandatory px-2"
         onWheel={(event) => event.deltaY !== 0 && setManual(true)}
         onTouchMove={() => setManual(true)}
       >
