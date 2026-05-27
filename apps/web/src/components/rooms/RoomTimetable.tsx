@@ -90,22 +90,25 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
         const width = 100 / event.laneCount;
         const color = event.memberColor;
         const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-        const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}26` : "rgba(255,255,255,0.08)";
+        const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
         return (
           <div
             key={`${event.userId}:${event.courseId}:${event.dayOfWeek}:${event.startMinute}:${event.lane}`}
-            className="absolute overflow-hidden rounded-xl"
+            className="absolute overflow-hidden rounded-[12px]"
             style={{
               top: `${topPercent(event.startMinute, range)}%`,
               height: `${heightPercent(event.startMinute, event.endMinute, range)}%`,
               left: `${event.lane * width}%`,
               width: `calc(${width}% - 2px)`,
               background: tint,
-              borderLeft: `3px solid ${color}`,
             }}
             title={`${event.memberName}: ${event.courseName}`}
           >
-            <div className="flex h-full flex-col gap-0.5 pl-1.5 pr-1 py-1">
+            <span
+              className="absolute left-1 top-1 bottom-1 w-0.5 rounded-full"
+              style={{ background: color }}
+            />
+            <div className="flex h-full flex-col gap-0.5 pl-2.5 pr-1 py-1">
               <p className="truncate text-[11px] font-semibold leading-snug text-fg-primary">{event.courseName}</p>
               <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>{event.memberName}</p>
             </div>

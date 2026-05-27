@@ -35,14 +35,18 @@ export function CalendarWeek({
                 {events.map((event) => {
                   const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
                   const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-                  const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}26` : "rgba(255,255,255,0.08)";
+                  const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
                   return (
                     <li
                       key={eventKey(event)}
-                      className="relative overflow-hidden rounded-xl"
-                      style={{ background: tint, borderLeft: `3px solid ${color}` }}
+                      className="relative overflow-hidden rounded-[12px]"
+                      style={{ background: tint }}
                     >
-                      <div className="flex items-baseline gap-2 pl-2 pr-2 py-2">
+                      <span
+                        className="absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full"
+                        style={{ background: color }}
+                      />
+                      <div className="flex items-baseline gap-2 pl-4 pr-2 py-2">
                         <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: subColor }}>
                           {formatMinute(event.startMinute)}
                         </span>

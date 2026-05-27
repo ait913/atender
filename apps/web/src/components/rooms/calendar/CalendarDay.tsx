@@ -26,22 +26,25 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
 
           const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-          const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}26` : "rgba(255,255,255,0.08)";
+          const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
           return (
             <div
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-              className="absolute overflow-hidden rounded-xl"
+              className="absolute overflow-hidden rounded-[12px]"
               style={{
                 top: `${top}%`,
                 height: `${height}%`,
                 left: `${12 + event.lane * laneWidth}%`,
                 width: `calc(${laneWidth}% - 2px)`,
                 background: tint,
-                borderLeft: `3px solid ${color}`,
               }}
               title={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
             >
-              <div className="flex h-full flex-col gap-0.5 pl-2 pr-2 py-1.5">
+              <span
+                className="absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full"
+                style={{ background: color }}
+              />
+              <div className="flex h-full flex-col gap-0.5 pl-3.5 pr-2 py-1.5">
                 <p className="truncate text-[12px] font-semibold leading-snug text-fg-primary">
                   {event.kind === "meeting" ? event.courseName : event.title}
                 </p>

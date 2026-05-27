@@ -11,7 +11,7 @@ export type DayMeetingCardProps = {
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
   const color = course.color ?? "#10EB99";
   const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-  const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}26` : "rgba(255,255,255,0.08)";
+  const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
   const first = slots[0];
   const last = slots[slots.length - 1];
   if (!first || !last) return null;
@@ -25,15 +25,18 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
     <button
       type="button"
       onClick={onClick}
-      className="relative block w-full overflow-hidden rounded-2xl text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      className="relative block w-full overflow-hidden rounded-[12px] text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       style={{
         background: tint,
-        borderLeft: `3px solid ${color}`,
         minHeight,
       }}
       aria-label={`${course.name} ${periodLabel}限 ${timeRange}`}
     >
-      <div className="flex items-center gap-3 pl-3 pr-3 py-3">
+      <span
+        className="absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full"
+        style={{ background: color }}
+      />
+      <div className="flex items-center gap-3 pl-4 pr-3 py-3">
         <div className="flex flex-shrink-0 flex-col items-center justify-center">
           <span
             className={`font-black leading-none ${periodLabel.length > 2 ? "text-xl" : "text-3xl"}`}
