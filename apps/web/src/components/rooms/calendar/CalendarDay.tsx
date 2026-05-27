@@ -26,6 +26,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
 
           const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+          const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
           return (
             <div
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
@@ -35,9 +36,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
                 height: `${height}%`,
                 left: `${12 + event.lane * laneWidth}%`,
                 width: `calc(${laneWidth}% - 2px)`,
-                background: "rgba(255,255,255,0.06)",
-                backdropFilter: "blur(20px) saturate(140%)",
-                WebkitBackdropFilter: "blur(20px) saturate(140%)",
+                background: tint,
               }}
               title={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
             >

@@ -90,6 +90,7 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
         const width = 100 / event.laneCount;
         const color = event.memberColor;
         const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+        const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
         return (
           <div
             key={`${event.userId}:${event.courseId}:${event.dayOfWeek}:${event.startMinute}:${event.lane}`}
@@ -99,9 +100,7 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
               height: `${heightPercent(event.startMinute, event.endMinute, range)}%`,
               left: `${event.lane * width}%`,
               width: `calc(${width}% - 2px)`,
-              background: "rgba(255,255,255,0.06)",
-              backdropFilter: "blur(16px) saturate(140%)",
-              WebkitBackdropFilter: "blur(16px) saturate(140%)",
+              background: tint,
             }}
             title={`${event.memberName}: ${event.courseName}`}
           >

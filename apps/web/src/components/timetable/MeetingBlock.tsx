@@ -3,15 +3,12 @@ import type { CourseDto } from "@atender/shared";
 export function MeetingBlock({ course, onClick }: { course: CourseDto; onClick?: () => void }) {
   const color = course.color ?? "#10EB99";
   const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+  const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
   return (
     <button
       type="button"
       className="relative h-full w-full overflow-hidden rounded-[12px] border border-white/10 text-left transition active:scale-[0.99]"
-      style={{
-        background: "rgba(255,255,255,0.06)",
-        backdropFilter: "blur(16px) saturate(140%)",
-        WebkitBackdropFilter: "blur(16px) saturate(140%)",
-      }}
+      style={{ background: tint }}
       onClick={onClick}
     >
       <span

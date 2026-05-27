@@ -96,11 +96,12 @@ function DayEventList({ date, events }: { date: string; events: CalendarEvent[] 
           {events.map((event) => {
             const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
             const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+            const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
             return (
               <li
                 key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
                 className="relative overflow-hidden rounded-[12px] border border-white/10"
-                style={{ background: "rgba(255,255,255,0.05)", backdropFilter: "blur(16px) saturate(140%)", WebkitBackdropFilter: "blur(16px) saturate(140%)" }}
+                style={{ background: tint }}
               >
                 <span
                   className="absolute left-0 top-1 bottom-1 w-1 rounded-full"

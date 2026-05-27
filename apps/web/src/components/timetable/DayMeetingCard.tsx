@@ -11,6 +11,7 @@ export type DayMeetingCardProps = {
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
   const color = course.color ?? "#10EB99";
   const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
+  const tint = /^#[0-9a-fA-F]{6}$/.test(color) ? `${color}1f` : "rgba(255,255,255,0.06)";
   const first = slots[0];
   const last = slots[slots.length - 1];
   if (!first || !last) return null;
@@ -26,9 +27,7 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
       onClick={onClick}
       className="relative block w-full overflow-hidden rounded-[14px] border border-white/10 text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
       style={{
-        background: "rgba(255,255,255,0.06)",
-        backdropFilter: "blur(20px) saturate(140%)",
-        WebkitBackdropFilter: "blur(20px) saturate(140%)",
+        background: tint,
         minHeight,
       }}
       aria-label={`${course.name} ${periodLabel}限 ${timeRange}`}
