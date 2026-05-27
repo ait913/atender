@@ -23,7 +23,6 @@ export function ConfirmDialog({
       open={open}
       onClose={onCancel}
       title={title}
-      maxHeight="60dvh"
       footer={
         <div className="flex justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onCancel}>キャンセル</Button>
