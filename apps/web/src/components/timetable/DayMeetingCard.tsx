@@ -8,14 +8,9 @@ export type DayMeetingCardProps = {
   onClick: () => void;
 };
 
-function hexWithAlpha(hex: string, alphaHex: string) {
-  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return `${hex}${alphaHex}`;
-  return hex;
-}
-
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
-  const color = course.color ?? "#10B981";
-  const cardBg = hexWithAlpha(color, "1f"); // 12% on dark
+  const color = course.color ?? "#10EB99";
+  const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
   const first = slots[0];
   const last = slots[slots.length - 1];
   if (!first || !last) return null;
@@ -23,52 +18,49 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
   const periodLabel = slots.length === 1
     ? String(first.periodIndex)
     : `${first.periodIndex}-${last.periodIndex}`;
-  const minHeight = slots.length * 96;
+  const minHeight = slots.length * 80;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="block w-full rounded-3xl p-5 text-left shadow-card transition-all duration-150 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-      style={{ background: cardBg, minHeight }}
+      className="relative block w-full overflow-hidden rounded-[14px] border border-white/10 text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+      style={{
+        background: "rgba(255,255,255,0.06)",
+        backdropFilter: "blur(20px) saturate(140%)",
+        WebkitBackdropFilter: "blur(20px) saturate(140%)",
+        minHeight,
+      }}
       aria-label={`${course.name} ${periodLabel}限 ${timeRange}`}
     >
-      <div className="flex h-full items-stretch gap-5">
+      <span
+        className="absolute left-0 top-1 bottom-1 w-1.5 rounded-full"
+        style={{ background: color, boxShadow: `0 0 12px ${color}, inset 0 0 4px rgba(255,255,255,0.4)` }}
+      />
+      <div className="flex items-center gap-3 pl-4 pr-3 py-3">
         <div className="flex flex-shrink-0 flex-col items-center justify-center">
           <span
-            className={`font-black leading-none tracking-tight ${
-              periodLabel.length > 2 ? "text-4xl" : "text-6xl"
-            }`}
+            className={`font-black leading-none ${periodLabel.length > 2 ? "text-xl" : "text-3xl"}`}
             style={{ color }}
           >
             {periodLabel}
           </span>
-          <span
-            className="mt-1 text-[10px] font-bold uppercase tracking-widest opacity-70"
-            style={{ color }}
-          >
-            限
-          </span>
+          <span className="mt-0.5 text-[9px] font-bold uppercase tracking-widest opacity-70" style={{ color }}>限</span>
         </div>
-        <div
-          className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 pl-5"
-          style={{ borderLeft: `1px solid ${hexWithAlpha(color, "33")}` }}
-        >
-          <h3 className="line-clamp-2 text-lg font-black leading-tight text-fg-primary">
+        <div className="min-w-0 flex-1">
+          <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-fg-primary">
             {course.name}
           </h3>
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            {course.room ? (
-              <span className="font-bold" style={{ color }}>{course.room}</span>
-            ) : null}
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+            {course.room ? <span className="font-semibold" style={{ color: subColor }}>{course.room}</span> : null}
             {course.teacher ? (
               <>
                 {course.room ? <span aria-hidden className="text-fg-tertiary">·</span> : null}
-                <span className="text-fg-secondary">{course.teacher}</span>
+                <span className="text-fg-tertiary">{course.teacher}</span>
               </>
             ) : null}
           </p>
-          <p className="text-[11px] font-medium text-fg-tertiary">{timeRange}</p>
+          <p className="mt-0.5 text-[10px] text-fg-tertiary">{timeRange}</p>
         </div>
       </div>
     </button>

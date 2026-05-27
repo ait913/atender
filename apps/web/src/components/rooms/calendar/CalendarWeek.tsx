@@ -38,7 +38,7 @@ export function CalendarWeek({
                   return (
                     <li
                       key={eventKey(event)}
-                      className="relative overflow-hidden rounded-xl border border-white/10"
+                      className="relative overflow-hidden rounded-[12px] border border-white/10"
                       style={{
                         background: "rgba(255,255,255,0.06)",
                         backdropFilter: "blur(20px) saturate(140%)",
@@ -50,13 +50,13 @@ export function CalendarWeek({
                         style={{ background: color, boxShadow: `0 0 12px ${color}, inset 0 0 4px rgba(255,255,255,0.4)` }}
                       />
                       <div className="flex items-baseline gap-2 pl-3.5 pr-2 py-2">
-                        <span className="shrink-0 text-[12px] font-bold tabular-nums" style={{ color: subColor }}>
+                        <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: subColor }}>
                           {formatMinute(event.startMinute)}
                         </span>
-                        <span className="min-w-0 flex-1 truncate text-[12px] font-semibold text-fg-primary">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-fg-primary">
                           {event.kind === "meeting" ? event.courseName : event.title}
                         </span>
-                        <span className="shrink-0 text-[11px]" style={{ color: subColor }}>
+                        <span className="shrink-0 text-[10px]" style={{ color: subColor }}>
                           {event.kind === "meeting" ? event.memberName : event.authorName}
                         </span>
                       </div>

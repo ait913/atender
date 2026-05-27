@@ -1,22 +1,29 @@
 import type { CourseDto } from "@atender/shared";
 
-function hexWithAlpha(hex: string, alphaHex: string) {
-  if (/^#[0-9a-fA-F]{6}$/.test(hex)) return `${hex}${alphaHex}`;
-  return hex;
-}
-
 export function MeetingBlock({ course, onClick }: { course: CourseDto; onClick?: () => void }) {
   const color = course.color ?? "#10EB99";
-  const bg = hexWithAlpha(color, "26"); // ~15% on dark
+  const subColor = `color-mix(in srgb, ${color} 70%, white 30%)`;
   return (
     <button
       type="button"
-      className="h-full w-full p-2 text-left transition hover:brightness-110"
-      style={{ background: bg, borderLeft: `4px solid ${color}` }}
+      className="relative h-full w-full overflow-hidden rounded-[12px] border border-white/10 text-left transition active:scale-[0.99]"
+      style={{
+        background: "rgba(255,255,255,0.06)",
+        backdropFilter: "blur(16px) saturate(140%)",
+        WebkitBackdropFilter: "blur(16px) saturate(140%)",
+      }}
       onClick={onClick}
     >
-      <p className="line-clamp-2 text-sm font-bold" style={{ color }}>{course.name}</p>
-      <p className="mt-1 truncate text-xs font-medium text-fg-secondary">{course.teacher ?? course.room ?? ""}</p>
+      <span
+        className="absolute left-0 top-1 bottom-1 w-1.5 rounded-full"
+        style={{ background: color, boxShadow: `0 0 10px ${color}, inset 0 0 3px rgba(255,255,255,0.4)` }}
+      />
+      <div className="flex h-full flex-col gap-0.5 pl-3 pr-2 py-1.5">
+        <p className="line-clamp-2 text-[12px] font-semibold leading-snug text-fg-primary">{course.name}</p>
+        <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>
+          {course.room ?? course.teacher ?? ""}
+        </p>
+      </div>
     </button>
   );
 }
