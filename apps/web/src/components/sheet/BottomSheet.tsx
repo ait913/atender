@@ -23,7 +23,7 @@ export function BottomSheet({
           aria-describedby={undefined}
           className="
             fixed left-1/2 -translate-x-1/2 z-[1110]
-            bottom-2 w-[calc(100%-12px)] max-w-none rounded-2xl
+            bottom-2 w-[calc(100%-12px)] max-w-none rounded-2xl overflow-hidden
             md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:w-[min(560px,calc(100vw-32px))] md:rounded-3xl
             flex flex-col bg-bg-elevated shadow-sheet sheet-slide-up
             focus:outline-none

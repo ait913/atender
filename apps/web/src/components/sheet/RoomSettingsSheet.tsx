@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { APP_URL } from "@/api/client";
+import { IcsImportWizard } from "@/components/ics-import/IcsImportWizard";
 import { useMe, useRegenerateRoomInvite, useRemoveRoomMember, useRoom, useRoomAction, useRoomMembers, useUpdateRoom } from "@/api/hooks";
 import { memberColor } from "@/lib/memberColor";
 import { Button, ConfirmDialog, Field, Input, Textarea, Toggle } from "@/components/ui";
@@ -23,6 +24,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
   const [pendingLeave, setPendingLeave] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const myMembership = useMemo(
     () => members.data?.members.find((member) => member.userId === me.data?.user.id),
@@ -141,6 +143,14 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           ))}
         </ul>
       </section>
+      <section className="space-y-3 border-t border-fg-primary/8 pt-5">
+        <h3 className="text-sm font-black text-fg-primary">外部カレンダーから取り込み</h3>
+        <p className="text-xs text-fg-secondary">スマホ等の .ics ファイルを取り込んでルームの予定に反映できます。</p>
+        <Button type="button" onClick={() => setImportOpen(true)}>
+          取り込み画面を開く
+        </Button>
+      </section>
+      <IcsImportWizard roomId={roomId} open={importOpen} onClose={() => setImportOpen(false)} />
       {isOwner ? (
         <section className="space-y-3 border-t border-fg-primary/8 pt-5">
           <h3 className="text-sm font-black text-fg-primary">招待リンク</h3>

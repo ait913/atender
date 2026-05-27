@@ -16,22 +16,14 @@ export function MainAttendanceCTA(props: Props) {
   const keyboardOpen = useIsKeyboardOpen();
   return (
     <>
-      {/* Mobile: 展開エリアは画面上端 fixed (TopBar 直下) */}
-      {!keyboardOpen && props.expanded ? (
-        <section
-          className="fixed inset-x-2 z-40 mx-auto max-w-[960px] md:hidden"
-          style={{ top: "calc(56px + env(safe-area-inset-top))" }}
-        >
-          <ExpandedPanel {...props} />
-        </section>
-      ) : null}
-      {/* Mobile: CTA は画面下端 fixed (BottomTab の上) */}
+      {/* Mobile: CTA + 展開エリアを画面下端 fixed (展開エリアは CTA のすぐ上に出る) */}
       {!keyboardOpen ? (
         <section
           className="fixed inset-x-0 z-40 bg-bg-base/85 backdrop-blur-xl border-t border-fg-primary/8 md:hidden"
           style={{ bottom: "var(--tab-bar-height)", paddingTop: 12, paddingBottom: 12 }}
         >
-          <div className="mx-auto w-full max-w-[960px] px-5">
+          <div className="mx-auto w-full max-w-[960px] space-y-3 px-5">
+            {props.expanded ? <ExpandedPanel {...props} /> : null}
             <CTAButtons {...props} />
           </div>
         </section>
@@ -45,10 +37,7 @@ export function MainAttendanceCTA(props: Props) {
   );
 }
 
-function ExpandedPanel({
-  occurrences,
-  onChangeStatus,
-}: Props) {
+function ExpandedPanel({ occurrences, onChangeStatus }: Props) {
   return (
     <div className="max-h-[40dvh] space-y-4 overflow-y-auto rounded-2xl bg-bg-elevated p-5 shadow-card">
       {occurrences.map((occurrence) => (
@@ -85,13 +74,7 @@ function ExpandedPanel({
   );
 }
 
-function CTAButtons({
-  occurrences,
-  expanded,
-  onToggle,
-  onMarkAll,
-  pending,
-}: Props) {
+function CTAButtons({ occurrences, expanded, onToggle, onMarkAll, pending }: Props) {
   const unrecorded = occurrences.filter((occurrence) => occurrence.status == null).length;
   return (
     <div className="flex items-stretch gap-3">
