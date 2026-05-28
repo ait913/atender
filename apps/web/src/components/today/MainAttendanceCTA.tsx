@@ -20,9 +20,9 @@ export function MainAttendanceCTA(props: Props) {
       {!keyboardOpen ? (
         <section
           className="fixed inset-x-0 z-40 bg-bg-base/85 backdrop-blur-xl border-t border-fg-primary/8 md:hidden"
-          style={{ bottom: "var(--tab-bar-height)", paddingTop: 12, paddingBottom: 12 }}
+          style={{ bottom: "var(--tab-bar-height)", paddingTop: 8, paddingBottom: 8 }}
         >
-          <div className="mx-auto w-full max-w-[960px] space-y-3 px-5">
+          <div className="mx-auto w-full max-w-[920px] space-y-2 px-3">
             {props.expanded ? <ExpandedPanel {...props} /> : null}
             <CTAButtons {...props} />
           </div>
@@ -39,9 +39,9 @@ export function MainAttendanceCTA(props: Props) {
 
 function ExpandedPanel({ occurrences, onChangeStatus }: Props) {
   return (
-    <div className="max-h-[40dvh] space-y-4 overflow-y-auto rounded-2xl bg-bg-elevated p-5 shadow-card">
+    <div className="max-h-[36dvh] space-y-4 overflow-y-auto rounded-2xl bg-bg-elevated p-3 shadow-card">
       {occurrences.map((occurrence) => (
-        <div key={occurrence.id} className="space-y-2.5">
+        <div key={occurrence.id} className="space-y-1.5">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-base font-bold">
               <span className="text-accent-500">{occurrence.periodIndex}限</span>{" "}
@@ -56,7 +56,7 @@ function ExpandedPanel({ occurrences, onChangeStatus }: Props) {
                 <button
                   key={status}
                   type="button"
-                  className={`min-h-12 min-w-12 rounded-full px-4 text-sm font-bold transition active:scale-95 ${
+                  className={`min-h-10 min-w-10 rounded-full px-3 text-[12px] font-bold transition active:scale-95 ${
                     selected
                       ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
                       : "bg-fg-primary/8 text-fg-primary hover:bg-fg-primary/12"
@@ -81,8 +81,8 @@ function CTAButtons({ occurrences, expanded, onToggle, onMarkAll, pending }: Pro
       <Button
         type="button"
         variant={unrecorded === 0 ? "secondary" : "primary"}
-        size="lg"
-        className="min-w-0 flex-1 text-base"
+        size="md"
+        className="min-w-0 flex-1 text-sm"
         disabled={pending || unrecorded === 0}
         onClick={onMarkAll}
       >
@@ -90,7 +90,7 @@ function CTAButtons({ occurrences, expanded, onToggle, onMarkAll, pending }: Pro
       </Button>
       <button
         type="button"
-        className="grid h-14 w-14 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/14 active:scale-95"
+        className="grid h-12 w-12 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/14 active:scale-95"
         onClick={onToggle}
         aria-label={expanded ? "個別修正を閉じる" : "個別修正を開く"}
         aria-expanded={expanded}

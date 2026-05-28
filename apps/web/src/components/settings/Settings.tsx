@@ -28,14 +28,14 @@ export function Settings() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 pb-12">
-      <section className="rounded-3xl bg-bg-elevated p-5 shadow-card">
+    <div className="mx-auto max-w-2xl space-y-4 pb-8">
+      <section className="rounded-2xl bg-bg-elevated p-3 shadow-card">
         <div className="flex items-center gap-4">
-          <div className="grid h-14 w-14 place-items-center overflow-hidden rounded-full bg-accent-500 text-xl font-black text-fg-on-accent shadow-glow-soft">
+          <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-accent-500 text-base font-black text-fg-on-accent shadow-glow-soft">
             {user?.image ? <img src={user.image} alt="" className="h-full w-full object-cover" /> : (user?.name ?? user?.email ?? "A").slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-lg font-black text-fg-primary">{user?.name ?? "No name"}</p>
+            <p className="truncate text-sm font-bold text-fg-primary">{user?.name ?? "No name"}</p>
             <p className="truncate text-sm text-fg-secondary">{user?.email}</p>
             {user?.handle ? <p className="truncate text-xs text-fg-tertiary">@{user.handle}</p> : null}
           </div>
@@ -84,7 +84,7 @@ function ThemeRow() {
     { value: "dark", label: "ダーク" },
   ];
   return (
-    <div className="px-5 py-4">
+    <div className="px-4 py-3">
       <div className="flex gap-1 rounded-full bg-bg-muted p-1">
         {options.map((option) => (
           <button

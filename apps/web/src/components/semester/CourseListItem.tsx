@@ -8,17 +8,17 @@ export function CourseListItem({ stats, onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-2xl bg-bg-elevated p-4 text-left shadow-card transition hover:bg-fg-primary/4 active:scale-[0.99]"
+      className="flex w-full items-center gap-3 rounded-2xl bg-bg-elevated p-3 text-left shadow-card transition hover:bg-fg-primary/4 active:scale-[0.99]"
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-lg font-bold text-fg-primary">{stats.courseName}</p>
+        <p className="truncate text-sm font-bold text-fg-primary">{stats.courseName}</p>
         <p className="mt-0.5 truncate text-xs text-fg-tertiary">{stats.teacher ?? ""}</p>
       </div>
       <div className="flex flex-col items-end">
         <span className="text-[10px] font-bold text-fg-tertiary">出席率</span>
         <span className="text-3xl font-black tabular-nums" style={{ color: pctColor(pct) }}>
           {pct == null ? "—" : pct}
-          <span className="ml-0.5 text-base font-bold">%</span>
+          <span className="ml-0.5 text-sm font-bold">%</span>
         </span>
       </div>
     </button>

@@ -11,8 +11,8 @@ export function BottomTab() {
       className="fixed inset-x-0 bottom-0 z-40 flex justify-around bg-bg-elevated/85 backdrop-blur-xl border-t border-border-subtle md:hidden"
       style={{
         height: "var(--tab-bar-height)",
-        paddingTop: 8,
-        paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+        paddingTop: 4,
+        paddingBottom: "calc(4px + env(safe-area-inset-bottom))",
         boxShadow: "0 -8px 32px rgba(0,0,0,0.55)",
       }}
     >
@@ -23,20 +23,20 @@ export function BottomTab() {
           <Link
             key={item.to}
             to={item.to}
-            className="group flex flex-1 flex-col items-center justify-end gap-1 py-1.5"
+            className="group flex flex-1 flex-col items-center justify-end gap-0.5 py-1.5"
             aria-current={active ? "page" : undefined}
           >
             <span
-              className={`grid h-12 w-12 place-items-center rounded-2xl transition-all duration-200 ${
+              className={`grid h-10 w-10 place-items-center rounded-xl transition-all duration-200 ${
                 active
                   ? "bg-accent-500 text-fg-on-accent scale-105 shadow-glow"
                   : "bg-transparent text-fg-secondary group-hover:bg-fg-primary/5 group-active:scale-95"
               }`}
             >
-              <Icon className="h-6 w-6" strokeWidth={2.25} />
+              <Icon className="h-5 w-5" strokeWidth={2.25} />
             </span>
             <span
-              className={`text-[11px] font-bold leading-none transition-opacity ${
+              className={`text-[10px] font-bold leading-none transition-opacity ${
                 active ? "text-accent-500 opacity-100" : "text-fg-tertiary opacity-70"
               }`}
             >

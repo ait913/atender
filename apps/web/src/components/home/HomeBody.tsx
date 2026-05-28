@@ -9,11 +9,12 @@ type Props = {
   context: HomeContext;
   mode: HomeViewMode;
   semesterId: string | null;
+  onSemesterChange: (id: string) => void;
 };
 
-export function HomeBody({ context, mode, semesterId }: Props) {
+export function HomeBody({ context, mode, semesterId, onSemesterChange }: Props) {
   if (context.kind === "self") {
-    if (mode === "timetable") return <SelfTimetableView semesterId={semesterId} />;
+    if (mode === "timetable") return <SelfTimetableView semesterId={semesterId} onSemesterChange={onSemesterChange} />;
     return <PersonalCalendar semesterId={semesterId} />;
   }
   if (mode === "timetable") return <RoomTimetable roomId={context.roomId} />;

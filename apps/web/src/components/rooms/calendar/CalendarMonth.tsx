@@ -47,7 +47,7 @@ export function CalendarMonth({
             key={dateString}
             type="button"
             onClick={() => onSelectDate(dateString)}
-            className={`flex h-12 flex-col items-center justify-center rounded-2xl transition active:scale-95 ${
+            className={`flex h-10 flex-col items-center justify-center rounded-xl transition active:scale-95 ${
               isSelected
                 ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
                 : inMonth
@@ -57,7 +57,7 @@ export function CalendarMonth({
             aria-label={date.format("M月D日")}
             aria-pressed={isSelected}
           >
-            <span className="text-sm font-black leading-none">{date.date()}</span>
+            <span className="text-[12px] font-black leading-none">{date.date()}</span>
             <span className="mt-1 flex h-1 items-center gap-0.5">
               {dots.map((color, index) => (
                 <span key={`${color}:${index}`} className="h-1 w-1 rounded-full" style={{ background: color }} />

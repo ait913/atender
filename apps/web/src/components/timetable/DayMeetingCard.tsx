@@ -1,4 +1,5 @@
 import type { CourseDto, DaySlotDto, MeetingDto } from "@atender/shared";
+import { EventTile } from "@/components/event-tile";
 import { minutesToTime } from "@/components/ui";
 
 export type DayMeetingCardProps = {
@@ -10,8 +11,6 @@ export type DayMeetingCardProps = {
 
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
   const color = course.color ?? "#F97316";
-  const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-  const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
   const first = slots[0];
   const last = slots[slots.length - 1];
   if (!first || !last) return null;
@@ -20,48 +19,29 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
     ? String(first.periodIndex)
     : `${first.periodIndex}-${last.periodIndex}`;
   const minHeight = slots.length * 80;
+  const subtitleText = [course.room, course.teacher].filter(Boolean).join(" · ");
 
   return (
-    <button
-      type="button"
+    <EventTile
+      density="comfortable"
+      color={color}
+      title={course.name}
+      subtitle={subtitleText}
+      meta={timeRange}
       onClick={onClick}
-      className="relative block w-full overflow-hidden rounded-[12px] text-left transition-all duration-150 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-      style={{
-        background: tint,
-        minHeight,
-      }}
       aria-label={`${course.name} ${periodLabel}限 ${timeRange}`}
-    >
-      <span
-        className="absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full"
-        style={{ background: color }}
-      />
-      <div className="flex items-center gap-3 pl-4 pr-3 py-3">
-        <div className="flex flex-shrink-0 flex-col items-center justify-center">
+      style={{ minHeight }}
+      badge={
+        <div className="flex flex-shrink-0 flex-col items-center justify-center pr-2">
           <span
-            className={`font-black leading-none ${periodLabel.length > 2 ? "text-xl" : "text-3xl"}`}
+            className={`font-black leading-none ${periodLabel.length > 2 ? "text-base" : "text-2xl"}`}
             style={{ color }}
           >
             {periodLabel}
           </span>
-          <span className="mt-0.5 text-[9px] font-bold uppercase tracking-widest opacity-70" style={{ color }}>限</span>
+          <span className="mt-0.5 text-[8px] font-bold uppercase tracking-widest opacity-70" style={{ color }}>限</span>
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-fg-primary">
-            {course.name}
-          </h3>
-          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
-            {course.room ? <span className="font-semibold" style={{ color: subColor }}>{course.room}</span> : null}
-            {course.teacher ? (
-              <>
-                {course.room ? <span aria-hidden className="text-fg-tertiary">·</span> : null}
-                <span className="text-fg-tertiary">{course.teacher}</span>
-              </>
-            ) : null}
-          </p>
-          <p className="mt-0.5 text-[10px] text-fg-tertiary">{timeRange}</p>
-        </div>
-      </div>
-    </button>
+      }
+    />
   );
 }

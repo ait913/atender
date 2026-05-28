@@ -14,7 +14,7 @@ type Props = {
 
 export function ContextChips({ items, selected, onChange, onAddRoom }: Props) {
   return (
-    <div className="-mx-5 overflow-x-auto overscroll-x-contain px-5 py-2" data-testid="context-chips">
+    <div className="-mx-3 overflow-x-auto overscroll-x-contain px-3 py-1" data-testid="context-chips">
       <ul className="flex w-max gap-2">
         {items.map((item) => {
           const active =

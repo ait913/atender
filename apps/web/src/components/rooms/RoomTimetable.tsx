@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { useMemo } from "react";
 import { useRoomWeek } from "@/api/hooks";
+import { EventTile } from "@/components/event-tile";
 import { EmptyState, Panel } from "@/components/ui";
 import { clusterByDay, type LaneEvent } from "@/lib/timetableCluster";
 import {
@@ -41,15 +42,15 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
     <div
       className="grid overflow-hidden rounded-2xl bg-bg-elevated shadow-card"
       style={{
-        gridTemplateColumns: `40px repeat(${days.length}, minmax(0, 1fr))`,
+        gridTemplateColumns: `32px repeat(${days.length}, minmax(0, 1fr))`,
         gridTemplateRows: "auto 1fr",
-        height: "calc(100dvh - var(--room-tt-chrome-top) - var(--room-tt-chrome-bottom) - env(safe-area-inset-bottom, 0px))",
+        height: "calc(100dvh - var(--room-tt-chrome-top, 168px) - var(--tab-bar-height) - env(safe-area-inset-bottom, 0px))",
         minHeight: "320px",
       }}
     >
       <div className="border-b border-fg-primary/8" />
       {days.map((day) => (
-        <div key={day} className="border-b border-l border-fg-primary/8 py-2 text-center text-xs font-black text-fg-secondary">
+        <div key={day} className="border-b border-l border-fg-primary/8 py-1.5 text-center text-[11px] font-black text-fg-secondary">
           {DAY_LABELS[day - 1]}
         </div>
       ))}
@@ -57,7 +58,7 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
         {hourLabels.map((hour) => (
           <span
             key={hour}
-            className="absolute left-0 right-1 text-right text-[10px] font-bold text-fg-tertiary tabular-nums"
+            className="absolute left-0 right-1 text-right text-[9px] font-semibold text-fg-tertiary tabular-nums"
             style={{ top: `${topPercent(hour * 60, range)}%`, transform: "translateY(-50%)" }}
           >
             {String(hour).padStart(2, "0")}
@@ -89,30 +90,22 @@ function DayColumn({ events, range }: { events: LaneEvent[]; range: ViewRange })
       {events.map((event) => {
         const width = 100 / event.laneCount;
         const color = event.memberColor;
-        const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-        const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
         return (
-          <div
+          <EventTile
             key={`${event.userId}:${event.courseId}:${event.dayOfWeek}:${event.startMinute}:${event.lane}`}
-            className="absolute overflow-hidden rounded-[12px]"
+            density="compact"
+            color={color}
+            title={event.courseName}
+            subtitle={event.memberName}
+            className="absolute"
             style={{
               top: `${topPercent(event.startMinute, range)}%`,
               height: `${heightPercent(event.startMinute, event.endMinute, range)}%`,
               left: `${event.lane * width}%`,
               width: `calc(${width}% - 2px)`,
-              background: tint,
             }}
-            title={`${event.memberName}: ${event.courseName}`}
-          >
-            <span
-              className="absolute left-1 top-1 bottom-1 w-0.5 rounded-full"
-              style={{ background: color }}
-            />
-            <div className="flex h-full flex-col gap-0.5 pl-2.5 pr-1 py-1">
-              <p className="truncate text-[11px] font-semibold leading-snug text-fg-primary">{event.courseName}</p>
-              <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>{event.memberName}</p>
-            </div>
-          </div>
+            ariaLabel={`${event.memberName}: ${event.courseName}`}
+          />
         );
       })}
     </div>

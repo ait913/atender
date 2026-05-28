@@ -23,18 +23,18 @@ export function SemesterOverview() {
   const { startDate, endDate, overall, days, courses } = overview.data;
 
   return (
-    <div className="space-y-6 pb-8">
-      <header className="flex items-baseline justify-between gap-3">
+    <div className="space-y-4 pb-6">
+      <header className="flex items-baseline justify-between gap-2">
         <HomeSemesterPicker semesterId={semesterId} onChange={setSemesterId} />
         <p className="text-xs text-fg-tertiary">期間 {formatJp(startDate)} 〜 {formatJp(endDate)}</p>
       </header>
-      <section className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      <section className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <OverallRateCard overall={overall} />
         <AttendanceCalendar days={days} startDate={startDate} endDate={endDate} />
       </section>
       <section>
-        <h2 className="mb-3 text-lg font-bold">科目一覧</h2>
-        <ul className="grid gap-3 md:grid-cols-2">
+        <h2 className="mb-2 text-sm font-bold">科目一覧</h2>
+        <ul className="grid gap-2 md:grid-cols-2">
           {courses.map((course) => (
             <li key={course.courseId}>
               <CourseListItem stats={course} onClick={() => setOpenCourseId(course.courseId)} />

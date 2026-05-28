@@ -2,8 +2,8 @@ import { Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { MeetingDto, UserTimetableDto } from "@atender/shared";
 import { useCreateUserTimetable, useMe, usePatchUserTimetable, useSemesters, useUserTimetables } from "@/api/hooks";
+import { HomeSemesterPicker } from "@/components/home/HomeSemesterPicker";
 import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
-import { DayList } from "@/components/timetable/DayList";
 import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingCreateSheet } from "@/components/timetable/MeetingCreateSheet";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
@@ -22,7 +22,7 @@ function activeTimetable(timetables: UserTimetableDto[] | undefined, semesterId?
   return timetables?.find((item) => item.semesterId === semesterId) ?? null;
 }
 
-export function SelfTimetableView({ semesterId }: { semesterId: string | null }) {
+export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId: string | null; onSemesterChange: (id: string) => void }) {
   const me = useMe();
   const semesters = useSemesters();
   const timetables = useUserTimetables();
@@ -34,8 +34,6 @@ export function SelfTimetableView({ semesterId }: { semesterId: string | null })
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const today = useMemo(() => getTodayDayOfWeek(), []);
-  const [activeDay, setActiveDay] = useState<number>(today);
-  const [viewMode, setViewMode] = useState<"day" | "week">("day");
   const emptyTimetable = useMemo<UserTimetableDto | null>(() => {
     const fallbackSemesterId = semesterId ?? me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id;
     if (!fallbackSemesterId) return null;
@@ -79,37 +77,27 @@ export function SelfTimetableView({ semesterId }: { semesterId: string | null })
   if (!display) return <Panel>先に学期を作成してください。</Panel>;
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="時間割の設定"
-          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-secondary transition hover:bg-fg-primary/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-        >
-          <Settings className="h-5 w-5" strokeWidth={2.25} />
-        </button>
-      </div>
-      <div className="md:hidden">
-        <DayList
-          timetable={display}
-          activeDay={activeDay}
-          today={today}
-          viewMode={viewMode}
-          onChangeDay={setActiveDay}
-          onToggleViewMode={() => setViewMode((mode) => (mode === "day" ? "week" : "day"))}
-          onMeetingClick={(meeting) => setDetailMeeting(meeting)}
-          onEmptyCellClick={handleEmptyCellClick}
-        />
-      </div>
-      <div className="hidden md:block">
-        <TimetableGrid timetable={display} onMeetingClick={(meeting) => setDetailMeeting(meeting)} onEmptyCellClick={handleEmptyCellClick} />
-      </div>
+    <div className="space-y-3">
+      <HomeSemesterPicker
+        semesterId={semesterId}
+        onChange={onSemesterChange}
+        trailing={
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="時間割の設定"
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-secondary transition hover:bg-fg-primary/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
+          >
+            <Settings className="h-4 w-4" strokeWidth={2.25} />
+          </button>
+        }
+      />
+      <TimetableGrid timetable={display} onMeetingClick={(meeting) => setDetailMeeting(meeting)} onEmptyCellClick={handleEmptyCellClick} />
       <MeetingCreateSheet
         open={sheet != null}
         onClose={() => setSheet(null)}
         timetable={selected ?? createdTimetable}
-        initialDayOfWeek={sheet?.dayOfWeek ?? activeDay}
+        initialDayOfWeek={sheet?.dayOfWeek ?? today}
         initialPeriod={sheet?.period ?? 1}
       />
       <MeetingDetailSheet

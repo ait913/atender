@@ -18,22 +18,22 @@ export function AttendanceCalendar({ days, startDate, endDate }: Props) {
   for (let d = gridStart; d.isBefore(gridEnd) || d.isSame(gridEnd); d = d.add(1, "day")) cells.push(d);
 
   return (
-    <div className="rounded-3xl bg-bg-elevated p-4 shadow-card">
-      <header className="mb-3 flex items-center justify-between">
+    <div className="rounded-3xl bg-bg-elevated p-2.5 shadow-card">
+      <header className="mb-2 flex items-center justify-between">
         <button
           type="button"
           onClick={() => setAnchor(anchor.subtract(1, "month"))}
           disabled={anchor.isSame(dayjs(startDate), "month")}
-          className="grid h-8 w-8 place-items-center rounded-full hover:bg-fg-primary/6 disabled:opacity-30"
+          className="grid h-7 w-7 place-items-center rounded-full hover:bg-fg-primary/6 disabled:opacity-30"
         >
           ‹
         </button>
-        <h3 className="text-base font-bold">{anchor.format("YYYY年 M月")}</h3>
+        <h3 className="text-sm font-bold">{anchor.format("YYYY年 M月")}</h3>
         <button
           type="button"
           onClick={() => setAnchor(anchor.add(1, "month"))}
           disabled={anchor.isSame(dayjs(endDate), "month")}
-          className="grid h-8 w-8 place-items-center rounded-full hover:bg-fg-primary/6 disabled:opacity-30"
+          className="grid h-7 w-7 place-items-center rounded-full hover:bg-fg-primary/6 disabled:opacity-30"
         >
           ›
         </button>
@@ -49,15 +49,15 @@ export function AttendanceCalendar({ days, startDate, endDate }: Props) {
           return (
             <div
               key={iso}
-              className={`flex aspect-square flex-col items-center justify-center rounded-xl border border-border-subtle text-xs tabular-nums ${inMonth ? "text-fg-primary" : "text-fg-tertiary opacity-30"}`}
+              className={`flex aspect-square flex-col items-center justify-center rounded-lg border border-border-subtle text-[11px] tabular-nums ${inMonth ? "text-fg-primary" : "text-fg-tertiary opacity-30"}`}
             >
               <span className="font-bold">{cell.date()}</span>
-              <span className="mt-0.5 text-sm leading-none" style={{ color: markerColor(summary?.status) }}>{marker(summary?.status)}</span>
+              <span className="mt-0.5 text-[12px] leading-none" style={{ color: markerColor(summary?.status) }}>{marker(summary?.status)}</span>
             </div>
           );
         })}
       </div>
-      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-fg-tertiary">
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-fg-tertiary">
         <span>○ 出席</span>
         <span>× 欠席</span>
         <span>△ 遅刻/早退</span>

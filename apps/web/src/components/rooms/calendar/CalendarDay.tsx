@@ -1,4 +1,5 @@
 import { CalendarDays, Link2 } from "lucide-react";
+import { EventTile } from "@/components/event-tile";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 import { assignLanes } from "@/lib/calendarLane";
 
@@ -10,11 +11,11 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
   const laneEvents = assignLanes(events);
 
   return (
-    <div className="relative rounded-2xl bg-bg-elevated p-3 shadow-card">
+    <div className="relative rounded-2xl bg-bg-elevated p-2 shadow-card">
       <div className="relative" style={{ height: `${(endHour - startHour) * 60}px` }}>
         {hours.map((hour) => (
           <div key={hour} className="absolute left-0 right-0 border-t border-fg-primary/8" style={{ top: `${((hour - startHour) / (endHour - startHour)) * 100}%` }}>
-            <span className="absolute -top-2 left-0 w-10 text-xs font-bold text-fg-tertiary tabular-nums">{String(hour).padStart(2, "0")}</span>
+            <span className="absolute -top-2 left-0 w-10 text-[10px] font-bold text-fg-tertiary tabular-nums">{String(hour).padStart(2, "0")}</span>
           </div>
         ))}
         {laneEvents.map((event) => {
@@ -25,36 +26,23 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const height = ((visibleEnd - visibleStart) / totalMinute) * 100;
           const laneWidth = 88 / event.laneCount;
           const color = event.kind === "meeting" ? event.memberColor : roomEventColor(event);
-
-          const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-          const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
           return (
-            <div
+            <EventTile
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-              className="absolute overflow-hidden rounded-[12px]"
+              density="compact"
+              color={color}
+              title={event.kind === "meeting" ? event.courseName : event.title}
+              subtitle={`${event.kind === "meeting" ? event.memberName : event.authorName} · ${formatMinute(event.startMinute)}`}
+              leadingIcon={<RoomEventIcon event={event} />}
+              className="absolute"
               style={{
                 top: `${top}%`,
                 height: `${height}%`,
                 left: `${12 + event.lane * laneWidth}%`,
                 width: `calc(${laneWidth}% - 2px)`,
-                background: tint,
               }}
-              title={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
-            >
-              <span
-                className="absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full"
-                style={{ background: color }}
-              />
-              <div className="flex h-full flex-col gap-0.5 pl-3.5 pr-2 py-1.5">
-                <p className="flex min-w-0 items-center gap-1 truncate text-[12px] font-semibold leading-snug text-fg-primary">
-                  <RoomEventIcon event={event} />
-                  <span className="truncate">{event.kind === "meeting" ? event.courseName : event.title}</span>
-                </p>
-                <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>
-                  {event.kind === "meeting" ? event.memberName : event.authorName} · {formatMinute(event.startMinute)}
-                </p>
-              </div>
-            </div>
+              ariaLabel={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
+            />
           );
         })}
       </div>

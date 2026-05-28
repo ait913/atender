@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { CalendarDays, Link2 } from "lucide-react";
+import { EventTile } from "@/components/event-tile";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 
 export function CalendarWeek({
@@ -23,7 +24,7 @@ export function CalendarWeek({
         return (
           <section
             key={dateString}
-            className={`rounded-2xl bg-bg-elevated p-3 shadow-card transition ${selected ? "ring-2 ring-accent-500" : ""}`}
+            className={`rounded-2xl bg-bg-elevated p-2 shadow-card transition ${selected ? "ring-2 ring-accent-500" : ""}`}
           >
             <header className="mb-2 flex items-center justify-between gap-2">
               <button type="button" onClick={() => onSelectDate(dateString)} className="text-sm font-black text-fg-primary">
@@ -35,30 +36,22 @@ export function CalendarWeek({
               <ul className="space-y-2">
                 {events.map((event) => {
                   const color = event.kind === "meeting" ? event.memberColor : roomEventColor(event);
-                  const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
-                  const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
                   return (
                     <li
                       key={eventKey(event)}
-                      className="relative overflow-hidden rounded-[12px]"
-                      style={{ background: tint }}
                     >
-                      <span
-                        className="absolute left-1.5 top-1.5 bottom-1.5 w-1 rounded-full"
-                        style={{ background: color }}
+                      <EventTile
+                        density="compact"
+                        color={color}
+                        title={event.kind === "meeting" ? event.courseName : event.title}
+                        subtitle={event.kind === "meeting" ? event.memberName : event.authorName}
+                        leadingIcon={<RoomEventIcon event={event} />}
+                        badge={
+                          <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color }}>
+                            {formatMinute(event.startMinute)}
+                          </span>
+                        }
                       />
-                      <div className="flex items-baseline gap-2 pl-4 pr-2 py-2">
-                        <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: subColor }}>
-                          {formatMinute(event.startMinute)}
-                        </span>
-                        <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-[13px] font-semibold text-fg-primary">
-                          <RoomEventIcon event={event} />
-                          <span className="truncate">{event.kind === "meeting" ? event.courseName : event.title}</span>
-                        </span>
-                        <span className="shrink-0 text-[10px]" style={{ color: subColor }}>
-                          {event.kind === "meeting" ? event.memberName : event.authorName}
-                        </span>
-                      </div>
                     </li>
                   );
                 })}

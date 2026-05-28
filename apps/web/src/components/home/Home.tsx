@@ -29,8 +29,8 @@ export function Home() {
     <div className="space-y-3 pb-32 md:pb-0">
       <ContextChips items={chips} selected={context} onChange={setContext} onAddRoom={() => void navigate({ to: "/rooms" })} />
       <HomeViewModeTabs mode={mode} onChange={setMode} />
-      {context.kind === "self" ? <HomeSemesterPicker semesterId={semesterId} onChange={setSemesterId} /> : null}
-      <HomeBody context={context} mode={mode} semesterId={semesterId} />
+      {context.kind === "self" && mode !== "timetable" ? <HomeSemesterPicker semesterId={semesterId} onChange={setSemesterId} /> : null}
+      <HomeBody context={context} mode={mode} semesterId={semesterId} onSemesterChange={setSemesterId} />
       {context.kind === "self" && mode === "timetable" ? <SelfTodayCTA /> : null}
     </div>
   );
