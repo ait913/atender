@@ -7,7 +7,7 @@ import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsShee
 import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingCreateSheet } from "@/components/timetable/MeetingCreateSheet";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
-import { TimetableGrid } from "@/components/timetable/TimetableGrid";
+import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
 import { Panel } from "@/components/ui";
 
 const defaultSlots = [
@@ -92,7 +92,26 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
           </button>
         }
       />
-      <TimetableGrid timetable={display} onMeetingClick={(meeting) => setDetailMeeting(meeting)} onEmptyCellClick={handleEmptyCellClick} />
+      <TimetableView
+        daySlots={display.daySlots}
+        events={display.meetings.map<TimetableEventInput>((m) => {
+          const course = display.courses.find((c) => c.id === m.courseId);
+          return {
+            id: m.id,
+            dayOfWeek: m.dayOfWeek,
+            startPeriodIndex: m.startPeriodIndex,
+            periodCount: m.periodCount,
+            color: course?.color ?? "#F97316",
+            title: course?.name ?? "授業",
+            subtitle: course?.room ?? undefined,
+          };
+        })}
+        onEventClick={(id) => {
+          const meeting = display.meetings.find((m) => m.id === id);
+          if (meeting) setDetailMeeting(meeting);
+        }}
+        onEmptyCellClick={handleEmptyCellClick}
+      />
       <MeetingCreateSheet
         open={sheet != null}
         onClose={() => setSheet(null)}
