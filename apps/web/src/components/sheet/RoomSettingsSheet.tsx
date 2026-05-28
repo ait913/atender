@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { APP_URL } from "@/api/client";
 import { IcsImportWizard } from "@/components/ics-import/IcsImportWizard";
+import { RoomGoogleSyncSection } from "@/components/rooms/RoomGoogleSyncSection";
 import { useMe, useRegenerateRoomInvite, useRemoveRoomMember, useRoom, useRoomAction, useRoomMembers, useUpdateRoom } from "@/api/hooks";
 import { memberColor } from "@/lib/memberColor";
 import { Button, ConfirmDialog, Field, Input, Textarea, Toggle } from "@/components/ui";
@@ -150,6 +151,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           取り込み画面を開く
         </Button>
       </section>
+      <RoomGoogleSyncSection roomId={roomId} />
       <IcsImportWizard roomId={roomId} open={importOpen} onClose={() => setImportOpen(false)} />
       {isOwner ? (
         <section className="space-y-3 border-t border-fg-primary/8 pt-5">

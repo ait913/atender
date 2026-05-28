@@ -6,6 +6,13 @@ import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { sessionMiddleware } from "../middleware/session";
 import { setupGuard } from "../middleware/setupGuard";
+import {
+  completeGoogleLink,
+  getConnection,
+  listAvailableCalendars,
+  runAllSyncsForUser,
+  unlinkGoogle,
+} from "../services/googleCalendarSync.service";
 import { createRule, deleteRule, listRules, patchRule } from "../services/icsTitleRule.service";
 
 type MeUser = {
@@ -60,6 +67,8 @@ const CreateRuleInput = z.object({
   priority: z.number().int().min(0).max(9998).optional(),
 });
 const PatchRuleInput = CreateRuleInput.partial();
+const LinkCompleteBody = z.object({}).strict();
+const UnlinkQuery = z.object({ deleteEvents: z.enum(["true", "false"]).default("true") });
 
 export function registerMeRoutes(app: Hono) {
   app.get("/api/me", sessionMiddleware, async (c) => {
@@ -140,4 +149,69 @@ export function registerMeRoutes(app: Hono) {
     await deleteRule(c.get("user").id, c.req.valid("param").ruleId);
     return c.json({ ok: true });
   });
+
+  app.get("/api/me/google-calendar/connection", sessionMiddleware, setupGuard, async (c) => {
+    const connection = await getConnection(c.get("user").id);
+    return c.json({ connection: connection ? dtoConnection(connection) : null });
+  });
+
+  app.post("/api/me/google-calendar/link/complete", sessionMiddleware, setupGuard, zValidator("json", LinkCompleteBody), async (c) => {
+    const connection = await completeGoogleLink({ userId: c.get("user").id, headers: c.req.raw.headers });
+    return c.json({ connection: dtoConnection(connection) }, 201);
+  });
+
+  app.delete("/api/me/google-calendar/connection", sessionMiddleware, setupGuard, zValidator("query", UnlinkQuery), async (c) => {
+    const result = await unlinkGoogle({
+      userId: c.get("user").id,
+      deleteEvents: c.req.valid("query").deleteEvents === "true",
+    });
+    return c.json(result);
+  });
+
+  app.get("/api/me/google-calendar/calendars", sessionMiddleware, setupGuard, async (c) => {
+    const calendars = await listAvailableCalendars({ userId: c.get("user").id, headers: c.req.raw.headers });
+    return c.json({ calendars: calendars.map(dtoListedCalendar) });
+  });
+
+  app.post("/api/me/google-calendar/sync-all", sessionMiddleware, setupGuard, async (c) => {
+    return c.json(await runAllSyncsForUser(c.get("user").id));
+  });
+}
+
+function dtoConnection(conn: {
+  id: string;
+  googleEmail: string;
+  scope: string;
+  status: string;
+  lastError: string | null;
+  lastSyncedAt: Date | null;
+  createdAt: Date;
+}) {
+  return {
+    id: conn.id,
+    googleEmail: conn.googleEmail,
+    scope: conn.scope,
+    status: conn.status,
+    lastError: conn.lastError,
+    lastSyncedAt: conn.lastSyncedAt?.toISOString() ?? null,
+    createdAt: conn.createdAt.toISOString(),
+  };
+}
+
+function dtoListedCalendar(calendar: {
+  id: string;
+  summary: string;
+  timeZone: string;
+  accessRole: string;
+  primary?: boolean;
+  backgroundColor?: string;
+}) {
+  return {
+    id: calendar.id,
+    summary: calendar.summary,
+    timeZone: calendar.timeZone,
+    accessRole: calendar.accessRole,
+    primary: calendar.primary ?? false,
+    backgroundColor: calendar.backgroundColor ?? null,
+  };
 }

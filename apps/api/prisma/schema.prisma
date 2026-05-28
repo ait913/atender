@@ -44,6 +44,7 @@ model User {
   authoredRoomEvents  RoomEvent[]      @relation("RoomEventAuthor")
   icsImports          IcsImport[]
   icsTitleRules       IcsTitleRule[]
+  googleCalendarConnection GoogleCalendarConnection?
 
   @@index([schoolId, departmentId])
 }
@@ -63,6 +64,7 @@ model Account {
   password              String?   // (Atender では未使用、better-auth 既定スキーマ準拠)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+  googleCalendarConnection GoogleCalendarConnection?
 
   @@unique([providerId, accountId])
   @@index([userId])
@@ -388,6 +390,7 @@ model Room {
   memberships RoomMembership[]
   events      RoomEvent[]
   icsImports  IcsImport[]
+  googleCalendarSyncs GoogleCalendarSync[]
 
   @@index([createdByUserId])
 }
@@ -432,12 +435,79 @@ model RoomEvent {
   importId             String?
   import               IcsImport?      @relation(fields: [importId], references: [id], onDelete: SetNull)
   visibilityMode       EventVisibility @default(NORMAL)
+  googleSyncId         String?
+  googleSync           GoogleCalendarSync? @relation("RoomEventGoogleSync", fields: [googleSyncId], references: [id], onDelete: SetNull)
+  googleEventId        String?
+  googleRecurringEventId String?
 
   overrides RoomEventOverride[]
 
   @@index([roomId, start])
   @@index([authorId])
   @@unique([roomId, externalUid])
+  @@unique([googleSyncId, googleEventId])
+  @@index([googleSyncId])
+}
+
+model GoogleCalendarConnection {
+  id            String              @id @default(cuid())
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId     String
+  account       Account             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  googleEmail   String
+  scope         String
+  status        GoogleConnStatus    @default(ACTIVE)
+  lastError     String?
+  lastSyncedAt  DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  syncs         GoogleCalendarSync[]
+
+  @@unique([userId])
+  @@unique([accountId])
+  @@index([status])
+}
+
+model GoogleCalendarSync {
+  id                   String                   @id @default(cuid())
+  connectionId         String
+  connection           GoogleCalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  roomId               String
+  room                 Room                     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  googleCalendarId     String
+  calendarSummary      String
+  calendarTimeZone     String
+  visibilityMode       EventVisibility          @default(TITLE_MAPPED)
+  syncToken            String?
+  status               GoogleSyncStatus         @default(IDLE)
+  lastError            String?
+  lastSyncedAt         DateTime?
+  enabled              Boolean                  @default(true)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+
+  events               RoomEvent[]              @relation("RoomEventGoogleSync")
+
+  @@unique([roomId, connectionId, googleCalendarId])
+  @@index([connectionId, enabled])
+  @@index([roomId])
+  @@index([status, lastSyncedAt])
+}
+
+enum GoogleConnStatus {
+  ACTIVE
+  REVOKED
+  ERROR
+}
+
+enum GoogleSyncStatus {
+  IDLE
+  SYNCING
+  OK
+  FAILED
+  REVOKED
 }
 
 model RoomEventOverride {

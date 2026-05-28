@@ -61,6 +61,7 @@ const setupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/setup"
 const meRoute = createRoute({ getParentRoute: () => rootRoute, path: "/me", beforeLoad: () => { throw redirect({ to: "/" }); } });
 const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", beforeLoad: () => { throw redirect({ to: "/" }); } });
 const settingsCalendarRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/calendar", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: SettingsCalendar });
+const settingsGoogleIntegrationRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/integrations/google", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: SettingsCalendar });
 
 const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Today });
 const timetableRoute = createRoute({ getParentRoute: () => rootRoute, path: "/timetable", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Timetable });
@@ -80,6 +81,7 @@ const routeTree = rootRoute.addChildren([
   meRoute,
   settingsRoute,
   settingsCalendarRoute,
+  settingsGoogleIntegrationRoute,
   homeRoute,
   timetableRoute,
   templatesRoute,

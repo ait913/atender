@@ -22,6 +22,7 @@ export type RoomEventEvent = {
   authorName: string;
   authorColor: string;
   title: string;
+  source: RoomWeekDto["roomEvents"][number]["source"];
   occurrenceDate?: string;
   date: string;
   startMinute: number;
@@ -77,6 +78,7 @@ export function buildCalendarEvents(weeks: RoomWeekDto[]): CalendarEvent[] {
         authorName: author?.name ?? author?.handle ?? "No name",
         authorColor: author?.color ?? fallbackMemberColor(roomEvent.authorId),
         title: roomEvent.title,
+        source: roomEvent.source,
         occurrenceDate: roomEvent.occurrenceDate,
         date: start.format("YYYY-MM-DD"),
         startMinute: start.hour() * 60 + start.minute(),

@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { CalendarDays, Link2 } from "lucide-react";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 
 export function CalendarWeek({
@@ -33,7 +34,7 @@ export function CalendarWeek({
             {events.length > 0 ? (
               <ul className="space-y-2">
                 {events.map((event) => {
-                  const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
+                  const color = event.kind === "meeting" ? event.memberColor : roomEventColor(event);
                   const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
                   const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
                   return (
@@ -50,8 +51,9 @@ export function CalendarWeek({
                         <span className="shrink-0 text-[11px] font-bold tabular-nums" style={{ color: subColor }}>
                           {formatMinute(event.startMinute)}
                         </span>
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-fg-primary">
-                          {event.kind === "meeting" ? event.courseName : event.title}
+                        <span className="flex min-w-0 flex-1 items-center gap-1 truncate text-[13px] font-semibold text-fg-primary">
+                          <RoomEventIcon event={event} />
+                          <span className="truncate">{event.kind === "meeting" ? event.courseName : event.title}</span>
                         </span>
                         <span className="shrink-0 text-[10px]" style={{ color: subColor }}>
                           {event.kind === "meeting" ? event.memberName : event.authorName}
@@ -69,6 +71,20 @@ export function CalendarWeek({
       })}
     </div>
   );
+}
+
+function roomEventColor(event: CalendarEvent) {
+  if (event.kind === "meeting") return event.memberColor;
+  if (event.source === "GOOGLE_OAUTH") return "#38bdf8";
+  if (event.source === "ICS_FILE" || event.source === "ICS_URL") return "#94a3b8";
+  return event.authorColor;
+}
+
+function RoomEventIcon({ event }: { event: CalendarEvent }) {
+  if (event.kind === "meeting") return null;
+  if (event.source === "GOOGLE_OAUTH") return <CalendarDays className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />;
+  if (event.source === "ICS_FILE" || event.source === "ICS_URL") return <Link2 className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />;
+  return null;
 }
 
 function eventKey(event: CalendarEvent) {

@@ -8,10 +8,11 @@ import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
 import { SemesterListSheet } from "@/components/sheet/SemesterListSheet";
 import { Button, Field, Input } from "@/components/ui";
+import { GoogleCalendarSection } from "./GoogleCalendarSection";
 import { useTheme, type Theme } from "@/lib/useTheme";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 
-type Sheet = "profile" | "school" | "rules" | "semesters" | null;
+type Sheet = "profile" | "school" | "rules" | "semesters" | "google" | null;
 
 export function AvatarMenu() {
   const me = useMe();
@@ -62,6 +63,7 @@ export function AvatarMenu() {
       <MenuButton onClick={() => openSheet("rules")}>出欠ルール</MenuButton>
       <MenuButton onClick={() => openSheet("semesters")}>学期管理</MenuButton>
       <MenuButton onClick={() => { setMenuOpen(false); void navigate({ to: "/settings/calendar" }); }}>カレンダー設定</MenuButton>
+      <MenuButton onClick={() => openSheet("google")}>Google Calendar 連携</MenuButton>
       <div className="my-1 h-px bg-border-subtle" />
       <MenuButton onClick={() => { setMenuOpen(false); void navigate({ to: "/stats" }); }}>出席率を見る</MenuButton>
       <div className="my-1 h-px bg-border-subtle" />
@@ -98,6 +100,9 @@ export function AvatarMenu() {
       <SchoolDeptEditSheet open={sheet === "school"} onClose={() => setSheet(null)} />
       <AttendanceRuleSheet open={sheet === "rules"} onClose={() => setSheet(null)} />
       <SemesterListSheet open={sheet === "semesters"} onClose={() => setSheet(null)} />
+      <BottomSheet open={sheet === "google"} onClose={() => setSheet(null)} title="Google Calendar 連携">
+        <GoogleCalendarSection />
+      </BottomSheet>
     </div>
   );
 }

@@ -24,14 +24,25 @@ import {
   updateRoomEvent,
 } from "../services/room.service";
 import { commitIcsImport, createIcsImport, deleteIcsImport, listIcsImports, previewIcsImport } from "../services/icsImport.service";
+import { createSync, deleteSync, listSyncs, runSync, updateSync } from "../services/googleCalendarSync.service";
 
 const IdParam = z.object({ id: z.string() });
+const SyncParam = z.object({ id: z.string(), syncId: z.string() });
 const IcsImportParam = z.object({ id: z.string(), importId: z.string() });
 const MemberParam = z.object({ id: z.string(), userId: z.string() });
 const EventParam = z.object({ id: z.string(), eventId: z.string() });
 const JoinInput = z.object({ inviteCode: z.string().min(1) });
 const WeekQuery = z.object({ weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 const EventsQuery = z.object({ from: z.string().datetime().optional(), to: z.string().datetime().optional() });
+const CreateSyncBody = z.object({
+  googleCalendarId: z.string().min(1).max(500),
+  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).default("TITLE_MAPPED"),
+});
+const PatchSyncBody = z.object({
+  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).optional(),
+  enabled: z.boolean().optional(),
+});
+const DeleteSyncQuery = z.object({ deleteEvents: z.enum(["true", "false"]).default("true") });
 const DeleteEventQuery = z.object({
   scope: z.enum(["single", "future", "all"]).default("all"),
   originalDate: z.string().datetime().optional(),
@@ -127,6 +138,50 @@ export function registerRoomRoutes(app: Hono) {
     return c.json({ ok: true });
   });
 
+  app.get("/api/rooms/:id/google-calendar-syncs", sessionMiddleware, setupGuard, zValidator("param", IdParam), async (c) => {
+    const syncs = await listSyncs(c.get("user").id, c.req.valid("param").id);
+    return c.json({ syncs: syncs.map(dtoSync) });
+  });
+
+  app.post("/api/rooms/:id/google-calendar-syncs", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", CreateSyncBody), async (c) => {
+    const body = c.req.valid("json");
+    const sync = await createSync({
+      userId: c.get("user").id,
+      roomId: c.req.valid("param").id,
+      googleCalendarId: body.googleCalendarId,
+      visibilityMode: body.visibilityMode,
+      headers: c.req.raw.headers,
+    });
+    return c.json({ sync: dtoSync(sync) }, 201);
+  });
+
+  app.patch("/api/rooms/:id/google-calendar-syncs/:syncId", sessionMiddleware, setupGuard, zValidator("param", SyncParam), zValidator("json", PatchSyncBody), async (c) => {
+    const param = c.req.valid("param");
+    const sync = await updateSync({
+      userId: c.get("user").id,
+      roomId: param.id,
+      syncId: param.syncId,
+      patch: c.req.valid("json"),
+    });
+    return c.json({ sync: dtoSync(sync) });
+  });
+
+  app.delete("/api/rooms/:id/google-calendar-syncs/:syncId", sessionMiddleware, setupGuard, zValidator("param", SyncParam), zValidator("query", DeleteSyncQuery), async (c) => {
+    const param = c.req.valid("param");
+    const result = await deleteSync({
+      userId: c.get("user").id,
+      roomId: param.id,
+      syncId: param.syncId,
+      deleteEvents: c.req.valid("query").deleteEvents === "true",
+    });
+    return c.json(result);
+  });
+
+  app.post("/api/rooms/:id/google-calendar-syncs/:syncId/run", sessionMiddleware, setupGuard, zValidator("param", SyncParam), async (c) => {
+    const param = c.req.valid("param");
+    return c.json(await runSync({ syncId: param.syncId, userId: c.get("user").id, headers: c.req.raw.headers }));
+  });
+
   app.post("/api/rooms/:id/events", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", CreateRoomEventInput), async (c) => {
     const event = await createRoomEvent(c.get("user").id, c.req.valid("param").id, c.req.valid("json"));
     return c.json({ event }, 201);
@@ -142,4 +197,32 @@ export function registerRoomRoutes(app: Hono) {
     await deleteRoomEvent(c.get("user").id, param.id, param.eventId, c.req.valid("query"));
     return c.json({ ok: true });
   });
+}
+
+function dtoSync(sync: {
+  id: string;
+  googleCalendarId: string;
+  calendarSummary: string;
+  calendarTimeZone: string;
+  visibilityMode: string;
+  syncToken: string | null;
+  status: string;
+  lastError: string | null;
+  lastSyncedAt: Date | null;
+  enabled: boolean;
+  createdAt: Date;
+}) {
+  return {
+    id: sync.id,
+    googleCalendarId: sync.googleCalendarId,
+    calendarSummary: sync.calendarSummary,
+    calendarTimeZone: sync.calendarTimeZone,
+    visibilityMode: sync.visibilityMode,
+    status: sync.status,
+    lastError: sync.lastError,
+    lastSyncedAt: sync.lastSyncedAt?.toISOString() ?? null,
+    enabled: sync.enabled,
+    createdAt: sync.createdAt.toISOString(),
+    hasSyncToken: sync.syncToken != null,
+  };
 }

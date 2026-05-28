@@ -1,5 +1,6 @@
 export * from "./useAttendanceRules";
 export * from "./useFriendships";
+export * from "./useGoogleCalendar";
 export * from "./useIcsImports";
 export * from "./useIcsTitleRules";
 export * from "./useMe";

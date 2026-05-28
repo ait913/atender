@@ -20,4 +20,7 @@ export const QK = {
   icsImports: (id: string) => ["rooms", id, "ics-imports"] as const,
   icsImportPreview: (id: string, importId: string) => ["rooms", id, "ics-imports", importId, "preview"] as const,
   icsTitleRules: () => ["me", "ics-title-rules"] as const,
+  googleConnection: () => ["me", "google-calendar", "connection"] as const,
+  googleCalendars: () => ["me", "google-calendar", "calendars"] as const,
+  googleSyncs: (roomId: string) => ["rooms", roomId, "google-calendar-syncs"] as const,
 } as const;

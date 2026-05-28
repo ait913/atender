@@ -16,6 +16,7 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@tanstack/react-query": "^5",
     "@tanstack/react-router": "^1",
+    "better-auth": "1.6.11",
     "dayjs": "^1.11",
     "lucide-react": "^1.16.0",
     "react": "^19",

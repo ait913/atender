@@ -29,6 +29,9 @@ function eventDto(event: {
   visibilityMode?: string;
   overrideId?: string | null;
   occurrenceDate?: Date;
+  googleSyncId?: string | null;
+  googleEventId?: string | null;
+  googleRecurringEventId?: string | null;
   createdAt: Date;
 }) {
   return {
@@ -49,6 +52,9 @@ function eventDto(event: {
     recurrenceRule: event.recurrenceRule ?? null,
     occurrenceDate: (event.occurrenceDate ?? event.start).toISOString(),
     overrideId: event.overrideId ?? null,
+    googleSyncId: event.googleSyncId ?? null,
+    googleEventId: event.googleEventId ?? null,
+    googleRecurringEventId: event.googleRecurringEventId ?? null,
     createdAt: event.createdAt.toISOString(),
   };
 }
@@ -339,6 +345,9 @@ function visibleOccurrenceDto(event: ExpandedOccurrence, viewerId: string) {
     recurrenceRule: isAuthor ? event.recurrenceRule : null,
     occurrenceDate: event.occurrenceDate.toISOString(),
     overrideId: event.overrideId,
+    googleSyncId: event.googleSyncId ?? null,
+    googleEventId: event.googleEventId ?? null,
+    googleRecurringEventId: event.googleRecurringEventId ?? null,
     createdAt: event.createdAt.toISOString(),
   };
 }

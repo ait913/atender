@@ -20,6 +20,9 @@ export type ExpandedOccurrence = {
   isRecurringOccurrence: boolean;
   recurrenceRule: string | null;
   overrideId: string | null;
+  googleSyncId: string | null;
+  googleEventId: string | null;
+  googleRecurringEventId: string | null;
   createdAt: Date;
 };
 
@@ -84,6 +87,9 @@ function toOccurrence(
     isRecurringOccurrence: recurring,
     recurrenceRule: event.recurrenceRule,
     overrideId: override?.id ?? null,
+    googleSyncId: event.googleSyncId,
+    googleEventId: event.googleEventId,
+    googleRecurringEventId: event.googleRecurringEventId,
     createdAt: event.createdAt,
   };
 }

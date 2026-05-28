@@ -5,6 +5,7 @@ export * from "./schemas/course.js";
 export * from "./schemas/me.js";
 export * from "./schemas/meeting.js";
 export * from "./schemas/friendship.js";
+export * from "./schemas/google.js";
 export * from "./schemas/ics.js";
 export * from "./schemas/rules.js";
 export * from "./schemas/room.js";

@@ -101,6 +101,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1
         version: 1.169.2(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      better-auth:
+        specifier: 1.6.11
+        version: 1.6.11(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.3.5)(typescript@5.9.3))(typescript@5.9.3))(better-sqlite3@11.10.0)(pg@8.20.0)(prisma@6.19.3(magicast@0.3.5)(typescript@5.9.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@2.1.9(@types/node@20.19.41)(jsdom@29.1.1(@noble/hashes@2.2.0))(lightningcss@1.32.0)(msw@2.14.6(@types/node@20.19.41)(typescript@5.9.3)))
       dayjs:
         specifier: ^1.11
         version: 1.11.20

@@ -50,6 +50,9 @@ export const RoomEventDto = z.object({
   recurrenceRule: z.string().nullable(),
   occurrenceDate: z.string(),
   overrideId: z.string().nullable(),
+  googleSyncId: z.string().nullable().optional(),
+  googleEventId: z.string().nullable().optional(),
+  googleRecurringEventId: z.string().nullable().optional(),
   createdAt: z.string(),
 });
 

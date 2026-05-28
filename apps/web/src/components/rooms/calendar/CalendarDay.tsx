@@ -1,3 +1,4 @@
+import { CalendarDays, Link2 } from "lucide-react";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 import { assignLanes } from "@/lib/calendarLane";
 
@@ -23,7 +24,7 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const top = ((visibleStart - startHour * 60) / totalMinute) * 100;
           const height = ((visibleEnd - visibleStart) / totalMinute) * 100;
           const laneWidth = 88 / event.laneCount;
-          const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
+          const color = event.kind === "meeting" ? event.memberColor : roomEventColor(event);
 
           const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
           const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
@@ -45,8 +46,9 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
                 style={{ background: color }}
               />
               <div className="flex h-full flex-col gap-0.5 pl-3.5 pr-2 py-1.5">
-                <p className="truncate text-[12px] font-semibold leading-snug text-fg-primary">
-                  {event.kind === "meeting" ? event.courseName : event.title}
+                <p className="flex min-w-0 items-center gap-1 truncate text-[12px] font-semibold leading-snug text-fg-primary">
+                  <RoomEventIcon event={event} />
+                  <span className="truncate">{event.kind === "meeting" ? event.courseName : event.title}</span>
                 </p>
                 <p className="truncate text-[10px] leading-tight" style={{ color: subColor }}>
                   {event.kind === "meeting" ? event.memberName : event.authorName} · {formatMinute(event.startMinute)}
@@ -58,6 +60,20 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
       </div>
     </div>
   );
+}
+
+function roomEventColor(event: CalendarEvent) {
+  if (event.kind === "meeting") return event.memberColor;
+  if (event.source === "GOOGLE_OAUTH") return "#38bdf8";
+  if (event.source === "ICS_FILE" || event.source === "ICS_URL") return "#94a3b8";
+  return event.authorColor;
+}
+
+function RoomEventIcon({ event }: { event: CalendarEvent }) {
+  if (event.kind === "meeting") return null;
+  if (event.source === "GOOGLE_OAUTH") return <CalendarDays className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />;
+  if (event.source === "ICS_FILE" || event.source === "ICS_URL") return <Link2 className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />;
+  return null;
 }
 
 function formatMinute(minute: number) {
