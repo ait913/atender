@@ -7,6 +7,7 @@ import { AppError } from "../lib/appError";
 import { semesterDto } from "../lib/dto";
 import { semesterDateEnd, semesterDateStart } from "../lib/tz";
 import { sessionMiddleware } from "../middleware/session";
+import { getSemesterOverview } from "../services/semesterOverview.service";
 
 const IdParam = z.object({ id: z.string() });
 
@@ -49,6 +50,12 @@ export function registerSemesterRoutes(app: Hono) {
     const semester = await findSemesterOrThrow(c.req.valid("param").id);
     if (semester.userId !== user.id) throw new AppError(403, "FORBIDDEN", "Forbidden");
     return c.json({ semester: semesterDto(semester) });
+  });
+
+  app.get("/api/semesters/:id/overview", sessionMiddleware, zValidator("param", IdParam), async (c) => {
+    const user = c.get("user");
+    const { id } = c.req.valid("param");
+    return c.json(await getSemesterOverview({ semesterId: id, userId: user.id }));
   });
 
   app.patch("/api/semesters/:id", sessionMiddleware, zValidator("param", IdParam), zValidator("json", SemesterUpdateInput), async (c) => {

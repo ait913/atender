@@ -6,4 +6,5 @@ export * from "./EmptyState";
 export * from "./Toast";
 export * from "./Toggle";
 export * from "./ConfirmDialog";
+export * from "./FullScreenModal";
 export * from "./labels";

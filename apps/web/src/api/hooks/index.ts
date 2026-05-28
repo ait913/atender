@@ -1,4 +1,5 @@
 export * from "./useAttendanceRules";
+export * from "./useCourseSuspensions";
 export * from "./useFriendships";
 export * from "./useGoogleCalendar";
 export * from "./useIcsImports";
@@ -10,6 +11,7 @@ export * from "./useRoomMonth";
 export * from "./useRoomWeek";
 export * from "./useSchools";
 export * from "./useSemesters";
+export * from "./useSemesterOverview";
 export * from "./useStats";
 export * from "./useTemplates";
 export * from "./useTodayOccurrences";

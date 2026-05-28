@@ -31,7 +31,10 @@ export function AvailabilityBar({
       member.userId,
       slots.map((slot) =>
         events.some((event) => {
-          const ownerId = event.kind === "meeting" ? event.userId : event.authorId;
+          let ownerId: string | null = null;
+          if (event.kind === "meeting") ownerId = event.userId;
+          if (event.kind === "roomEvent") ownerId = event.authorId;
+          if (!ownerId) return false;
           return ownerId === member.userId && event.startMinute < slot.endMinute && event.endMinute > slot.startMinute;
         }),
       ),

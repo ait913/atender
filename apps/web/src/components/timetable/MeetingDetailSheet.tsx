@@ -56,7 +56,7 @@ export function MeetingDetailSheet({
 
   const first = slots[0];
   const last = slots[slots.length - 1];
-  const color = (editing ? form.color : course?.color) ?? "#10EB99";
+  const color = (editing ? form.color : course?.color) ?? "#F97316";
   const bg = hexWithAlpha(color, "26");
   const periodLabel = first && last && slots.length > 1
     ? `${first.periodIndex}-${last.periodIndex}`

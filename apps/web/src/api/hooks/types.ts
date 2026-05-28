@@ -2,6 +2,8 @@ import type {
   AttendanceRuleDto,
   CourseCreateInput,
   CourseDto,
+  CourseSuspensionCreateInput,
+  CourseSuspensionDto,
   CreateFriendshipInput,
   CreateRoomEventInput,
   CreateRoomInput,
@@ -27,6 +29,7 @@ import type {
   SchoolSearchQuery,
   SemesterCreateInput,
   SemesterDto,
+  SemesterOverviewDto,
   StatsResponse,
   TemplateCopyInput,
   TemplateCreateInput,
@@ -60,6 +63,8 @@ export type UserTimetableResponse = { userTimetable: UserTimetableDto };
 export type AttendanceRecordResponse = { record: { occurrenceId: string; status: OccurrenceDto["status"]; note: string | null; updatedAt: string } };
 export type RuleResponse = { rule: AttendanceRuleDto };
 export type CourseResponse = { course: CourseDto };
+export type CourseSuspensionsResponse = { suspensions: CourseSuspensionDto[] };
+export type CourseSuspensionResponse = { suspension: CourseSuspensionDto };
 export type FriendshipsResponse = { friendships: FriendshipDto[] };
 export type FriendshipResponse = { friendship: FriendshipDto };
 export type UsersSearchResponse = { users: UserSearchDto[] };
@@ -81,6 +86,8 @@ export type {
   MeetingBulkCreateInput,
   MeUpdateInput,
   CourseCreateInput,
+  CourseSuspensionCreateInput,
+  CourseSuspensionDto,
   CreateFriendshipInput,
   CreateRoomInput,
   CreateRoomEventInput,
@@ -92,6 +99,7 @@ export type {
   RoomWeekDto,
   SchoolSearchQuery,
   SemesterCreateInput,
+  SemesterOverviewDto,
   StatsResponse,
   TemplateCopyInput,
   TemplateCreateInput,

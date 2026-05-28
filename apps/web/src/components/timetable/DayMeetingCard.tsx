@@ -9,7 +9,7 @@ export type DayMeetingCardProps = {
 };
 
 export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
-  const color = course.color ?? "#10EB99";
+  const color = course.color ?? "#F97316";
   const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
   const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
   const first = slots[0];

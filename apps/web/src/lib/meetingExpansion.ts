@@ -30,7 +30,19 @@ export type RoomEventEvent = {
   isAllDay: boolean;
 };
 
-export type CalendarEvent = MeetingEvent | RoomEventEvent;
+export type PersonalEvent = {
+  kind: "personal";
+  eventId: string;
+  date: string;
+  title: string;
+  startMinute: number;
+  endMinute: number;
+  authorName: string;
+  authorColor: string;
+  occurrenceDate: string;
+};
+
+export type CalendarEvent = MeetingEvent | RoomEventEvent | PersonalEvent;
 
 export function buildCalendarEvents(weeks: RoomWeekDto[]): CalendarEvent[] {
   const members = new Map<string, { name: string | null; handle: string | null; color: string }>();

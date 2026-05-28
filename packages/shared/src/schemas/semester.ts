@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CourseStatsDto } from "./stats.js";
 
 export const SemesterDto = z.object({
   id: z.string(),
@@ -22,6 +23,35 @@ export const SemesterUpdateInput = z.object({
   return v.startDate <= v.endDate;
 }, { message: "startDate must be <= endDate" });
 
+export const AttendanceDaySummary = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  status: z.enum([
+    "ALL_PRESENT",
+    "HAS_ABSENT",
+    "HAS_TARDY",
+    "ALL_SUSPENDED",
+    "PARTIAL_UNRECORDED",
+    "NO_CLASS",
+  ]),
+  occurrenceCount: z.number().int(),
+});
+
+export const SemesterOverviewDto = z.object({
+  semesterId: z.string(),
+  semesterName: z.string(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  overall: z.object({
+    effectiveNumerator: z.number(),
+    effectiveDenominator: z.number(),
+    attendanceRate: z.number().nullable(),
+  }),
+  days: z.array(AttendanceDaySummary),
+  courses: z.array(CourseStatsDto),
+});
+
 export type SemesterDto = z.infer<typeof SemesterDto>;
 export type SemesterCreateInput = z.infer<typeof SemesterCreateInput>;
 export type SemesterUpdateInput = z.infer<typeof SemesterUpdateInput>;
+export type AttendanceDaySummary = z.infer<typeof AttendanceDaySummary>;
+export type SemesterOverviewDto = z.infer<typeof SemesterOverviewDto>;

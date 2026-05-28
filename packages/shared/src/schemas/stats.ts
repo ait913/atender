@@ -4,6 +4,7 @@ import { ATTENDANCE_STATUS } from "../enums.js";
 export const CourseStatsDto = z.object({
   courseId: z.string(),
   courseName: z.string(),
+  teacher: z.string().nullable(),
   totalSessions: z.number().int(),
   generatedOccurrences: z.number().int(),
   counts: z.object({
@@ -13,6 +14,7 @@ export const CourseStatsDto = z.object({
     tardy: z.number().int(),
     earlyLeave: z.number().int(),
     cancelled: z.number().int(),
+    suspended: z.number().int(),
     unrecorded: z.number().int(),
   }),
   effectiveNumerator: z.number(),

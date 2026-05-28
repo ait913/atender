@@ -1,4 +1,4 @@
-import { Calendar, Grid3x3, Sparkles, Users } from "lucide-react";
+import { Calendar, GraduationCap, Settings as SettingsIcon, UserCircle, Users } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 export type NavItem = {
@@ -8,10 +8,11 @@ export type NavItem = {
 };
 
 export const navItems: readonly NavItem[] = [
-  { to: "/", label: "今日", icon: Calendar },
-  { to: "/timetable", label: "時間割", icon: Grid3x3 },
+  { to: "/", label: "ホーム", icon: Calendar },
+  { to: "/semester", label: "学期・科目", icon: GraduationCap },
   { to: "/rooms", label: "ルーム", icon: Users },
-  { to: "/friends", label: "友達", icon: Sparkles },
+  { to: "/friends", label: "友達", icon: UserCircle },
+  { to: "/settings", label: "設定", icon: SettingsIcon },
 ] as const;
 
 export function isActivePath(pathname: string, to: string) {

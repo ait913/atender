@@ -64,13 +64,14 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
 
 function roomEventColor(event: CalendarEvent) {
   if (event.kind === "meeting") return event.memberColor;
+  if (event.kind === "personal") return event.authorColor;
   if (event.source === "GOOGLE_OAUTH") return "#38bdf8";
   if (event.source === "ICS_FILE" || event.source === "ICS_URL") return "#94a3b8";
   return event.authorColor;
 }
 
 function RoomEventIcon({ event }: { event: CalendarEvent }) {
-  if (event.kind === "meeting") return null;
+  if (event.kind === "meeting" || event.kind === "personal") return null;
   if (event.source === "GOOGLE_OAUTH") return <CalendarDays className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />;
   if (event.source === "ICS_FILE" || event.source === "ICS_URL") return <Link2 className="h-3 w-3 shrink-0" strokeWidth={2.5} aria-hidden />;
   return null;

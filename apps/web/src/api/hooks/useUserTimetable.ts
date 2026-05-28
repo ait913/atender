@@ -40,6 +40,7 @@ export function usePatchUserTimetable(id?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QK.userTimetables() });
       queryClient.invalidateQueries({ queryKey: ["today"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
   });
 }
@@ -53,6 +54,7 @@ export function useCreateMeetingsBulk() {
       queryClient.invalidateQueries({ queryKey: ["today"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
   });
 }

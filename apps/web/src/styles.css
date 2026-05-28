@@ -15,7 +15,7 @@
   --color-text-primary: #F5F6F8;
   --color-text-secondary: rgba(245, 246, 248, 0.72);
   --color-text-tertiary: rgba(245, 246, 248, 0.52);
-  --color-text-on-accent: #04140C;
+  --color-text-on-accent: #FFFFFF;
   --color-text-on-danger: #FFFFFF;
 
   /* ボーダー */
@@ -26,15 +26,15 @@
   /* event の subtitle 色 mix target (dark=white で明るく、light=black で暗く) */
   --event-mix-target: white;
 
-  /* アクセント = emerald (status と被るが、accent は明度を上げて区別) */
-  --color-accent-50: rgba(16, 235, 153, 0.12);
-  --color-accent-100: rgba(16, 235, 153, 0.20);
-  --color-accent-500: #10EB99;
-  --color-accent-600: #34F2A6;
-  --color-accent-700: #6EF7BD;
+  /* v9: accent = orange */
+  --color-accent-50: rgba(249, 115, 22, 0.12);
+  --color-accent-100: rgba(249, 115, 22, 0.20);
+  --color-accent-500: #F97316;
+  --color-accent-600: #FB923C;
+  --color-accent-700: #FDBA74;
 
   /* status (出席状態) — 鮮やか + dot/glow で使う */
-  --color-status-present: #10EB99;
+  --color-status-present: #34D399;
   --color-status-absent: #FF5C7A;
   --color-status-excused: #5AA9FF;
   --color-status-tardy: #FFC93C;
@@ -44,10 +44,10 @@
 
   /* friendship / room */
   --color-friendship-pending: #FFC93C;
-  --color-friendship-accepted: #10EB99;
+  --color-friendship-accepted: #34D399;
   --color-friendship-blocked: #FF5C7A;
   --color-room-event: #C685FF;
-  --color-room-availability-empty: rgba(16, 235, 153, 0.16);
+  --color-room-availability-empty: rgba(249, 115, 22, 0.16);
   --room-tt-chrome-top: 200px;
   --room-tt-chrome-bottom: 80px;
 
@@ -62,8 +62,8 @@
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.30);
   --shadow-sheet: 0 -16px 48px rgba(0, 0, 0, 0.65), 0 -2px 8px rgba(0, 0, 0, 0.40);
   --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.40);
-  --shadow-glow: 0 0 24px rgba(16, 235, 153, 0.45), 0 0 48px rgba(16, 235, 153, 0.20);
-  --shadow-glow-soft: 0 0 16px rgba(16, 235, 153, 0.28);
+  --shadow-glow: 0 0 24px rgba(249, 115, 22, 0.45), 0 0 48px rgba(249, 115, 22, 0.20);
+  --shadow-glow-soft: 0 0 16px rgba(249, 115, 22, 0.28);
 
   /* z-index 階層 (Tailwind の z-* 代わりに arbitrary value で参照) */
   --z-base: 0;
@@ -158,15 +158,15 @@
     --color-border-default: rgba(15, 23, 42, 0.14);
     --color-border-emphasis: rgba(15, 23, 42, 0.30);
 
-    /* アクセント (white bg 上で読める emerald-600 系) */
-    --color-accent-50: rgba(5, 150, 105, 0.10);
-    --color-accent-100: rgba(5, 150, 105, 0.18);
-    --color-accent-500: #059669;
-    --color-accent-600: #047857;
-    --color-accent-700: #065F46;
+    /* v9: accent = orange */
+    --color-accent-50: rgba(234, 88, 12, 0.10);
+    --color-accent-100: rgba(234, 88, 12, 0.18);
+    --color-accent-500: #EA580C;
+    --color-accent-600: #C2410C;
+    --color-accent-700: #9A3412;
 
     /* status (white bg でも目立つ濃度) */
-    --color-status-present: #059669;
+    --color-status-present: #16A34A;
     --color-status-absent: #DC2626;
     --color-status-excused: #2563EB;
     --color-status-tardy: #D97706;
@@ -176,17 +176,17 @@
 
     /* friendship / room */
     --color-friendship-pending: #D97706;
-    --color-friendship-accepted: #059669;
+    --color-friendship-accepted: #16A34A;
     --color-friendship-blocked: #DC2626;
     --color-room-event: #9333EA;
-    --color-room-availability-empty: rgba(5, 150, 105, 0.14);
+    --color-room-availability-empty: rgba(234, 88, 12, 0.14);
 
     /* shadow (light bg は強めに、階層を補強) */
     --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.05);
     --shadow-sheet: 0 -6px 20px rgba(15, 23, 42, 0.08), 0 -1px 4px rgba(15, 23, 42, 0.04);
     --shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
-    --shadow-glow: 0 0 20px rgba(5, 150, 105, 0.32);
-    --shadow-glow-soft: 0 0 12px rgba(5, 150, 105, 0.22);
+    --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.32);
+    --shadow-glow-soft: 0 0 12px rgba(234, 88, 12, 0.22);
   }
 }
 
@@ -206,12 +206,12 @@
   --color-border-subtle: rgba(15, 23, 42, 0.08);
   --color-border-default: rgba(15, 23, 42, 0.14);
   --color-border-emphasis: rgba(15, 23, 42, 0.30);
-  --color-accent-50: rgba(5, 150, 105, 0.10);
-  --color-accent-100: rgba(5, 150, 105, 0.18);
-  --color-accent-500: #059669;
-  --color-accent-600: #047857;
-  --color-accent-700: #065F46;
-  --color-status-present: #059669;
+  --color-accent-50: rgba(234, 88, 12, 0.10);
+  --color-accent-100: rgba(234, 88, 12, 0.18);
+  --color-accent-500: #EA580C;
+  --color-accent-600: #C2410C;
+  --color-accent-700: #9A3412;
+  --color-status-present: #16A34A;
   --color-status-absent: #DC2626;
   --color-status-excused: #2563EB;
   --color-status-tardy: #D97706;
@@ -219,15 +219,15 @@
   --color-status-cancelled: rgba(15, 23, 42, 0.40);
   --color-status-none: rgba(15, 23, 42, 0.18);
   --color-friendship-pending: #D97706;
-  --color-friendship-accepted: #059669;
+  --color-friendship-accepted: #16A34A;
   --color-friendship-blocked: #DC2626;
   --color-room-event: #9333EA;
-  --color-room-availability-empty: rgba(5, 150, 105, 0.14);
+  --color-room-availability-empty: rgba(234, 88, 12, 0.14);
   --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.05);
   --shadow-sheet: 0 -6px 20px rgba(15, 23, 42, 0.08), 0 -1px 4px rgba(15, 23, 42, 0.04);
   --shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
-  --shadow-glow: 0 0 20px rgba(5, 150, 105, 0.32);
-  --shadow-glow-soft: 0 0 12px rgba(5, 150, 105, 0.22);
+  --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.32);
+  --shadow-glow-soft: 0 0 12px rgba(234, 88, 12, 0.22);
 }
 
 @theme {
@@ -308,14 +308,14 @@ body {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) body {
     background:
-      radial-gradient(1200px 700px at 50% -10%, rgba(16, 235, 153, 0.10), transparent 60%),
+      radial-gradient(1200px 700px at 50% -10%, rgba(249, 115, 22, 0.10), transparent 60%),
       radial-gradient(900px 600px at 90% 110%, rgba(198, 133, 255, 0.06), transparent 60%),
       var(--color-bg-base);
   }
 }
 :root[data-theme="dark"] body {
   background:
-    radial-gradient(1200px 700px at 50% -10%, rgba(16, 235, 153, 0.10), transparent 60%),
+    radial-gradient(1200px 700px at 50% -10%, rgba(249, 115, 22, 0.10), transparent 60%),
     radial-gradient(900px 600px at 90% 110%, rgba(198, 133, 255, 0.06), transparent 60%),
     var(--color-bg-base);
 }

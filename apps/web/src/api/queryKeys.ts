@@ -8,6 +8,8 @@ export const QK = {
   userTimetable: (id: string) => ["user-timetables", id] as const,
   today: (date?: string) => ["today", date ?? "current"] as const,
   stats: (semesterId?: string | null) => ["stats", semesterId ?? "current"] as const,
+  courseSuspensions: (courseId: string) => ["courses", courseId, "suspensions"] as const,
+  semesterOverview: (semesterId?: string | null) => ["semesters", semesterId ?? "any", "overview"] as const,
   rules: (scope: { schoolId?: string | null; departmentId?: string | null }) => ["attendance-rules", scope] as const,
   friendships: (q: { status?: string; direction?: string } = {}) => ["friendships", q] as const,
   friendshipsPendingCount: () => ["friendships", "pending-count"] as const,

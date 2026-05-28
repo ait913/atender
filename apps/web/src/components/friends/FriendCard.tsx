@@ -6,7 +6,7 @@ function otherUser(friendship: FriendshipDto, meId?: string): FriendshipUserDto 
 }
 
 function avatarColor(id: string) {
-  const palette = ["from-emerald-400 to-cyan-400", "from-pink-400 to-rose-500", "from-amber-300 to-orange-500", "from-violet-400 to-fuchsia-500", "from-sky-400 to-indigo-500"];
+  const palette = ["from-status-present to-cyan-400", "from-pink-400 to-rose-500", "from-amber-300 to-orange-500", "from-violet-400 to-fuchsia-500", "from-sky-400 to-indigo-500"];
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];

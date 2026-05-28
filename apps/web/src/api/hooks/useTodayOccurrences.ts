@@ -31,6 +31,10 @@ export function useMarkAllPresent(onErrorToast: (message: string) => void) {
       for (const [key, data] of context?.queries ?? []) queryClient.setQueryData(key, data);
       onErrorToast("保存できませんでした、もう一度試してください");
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+    },
   });
 }
 
@@ -56,6 +60,10 @@ export function usePatchAttendance(onErrorToast: (message: string) => void) {
     onError: (_error, _vars, context) => {
       for (const [key, data] of context?.queries ?? []) queryClient.setQueryData(key, data);
       onErrorToast("保存できませんでした、もう一度試してください");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
   });
 }

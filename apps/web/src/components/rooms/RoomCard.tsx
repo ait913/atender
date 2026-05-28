@@ -1,7 +1,7 @@
 import type { RoomSummaryDto } from "@atender/shared";
 
 function roomTint(id: string) {
-  const palette = ["from-emerald-500/80 to-cyan-500/40", "from-violet-500/80 to-fuchsia-500/40", "from-amber-400/80 to-rose-500/40", "from-sky-500/80 to-indigo-500/40"];
+  const palette = ["from-status-present/80 to-cyan-500/40", "from-violet-500/80 to-fuchsia-500/40", "from-amber-400/80 to-rose-500/40", "from-sky-500/80 to-indigo-500/40"];
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
   return palette[hash % palette.length];

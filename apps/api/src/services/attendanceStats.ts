@@ -42,6 +42,7 @@ export async function computeCourseStats(args: {
           occurrences: {
             include: { attendanceRecord: true },
           },
+          suspensions: true,
         },
       },
     },
@@ -55,15 +56,22 @@ export async function computeCourseStats(args: {
   const todayIso = toIsoDate(args.now ?? new Date());
 
   return timetable.courses.map((course) => {
-    const counts = { present: 0, absent: 0, excused: 0, tardy: 0, earlyLeave: 0, cancelled: 0, unrecorded: 0 };
+    const counts = { present: 0, absent: 0, excused: 0, tardy: 0, earlyLeave: 0, cancelled: 0, suspended: 0, unrecorded: 0 };
     const separateCounts: Partial<Record<AttendanceStatus, number>> = {};
     let numerator = 0;
     let denominatorReduction = 0;
+    const suspendedDates = new Set(course.suspensions.map((suspension) => toIsoDate(suspension.date)));
 
     for (const occurrence of course.occurrences) {
+      const occurrenceDate = toIsoDate(occurrence.date);
+      if (suspendedDates.has(occurrenceDate)) {
+        counts.suspended += 1;
+        denominatorReduction += 1;
+        continue;
+      }
       const record = occurrence.attendanceRecord;
       if (!record) {
-        if (toIsoDate(occurrence.date) <= todayIso) counts.unrecorded += 1;
+        if (occurrenceDate <= todayIso) counts.unrecorded += 1;
         continue;
       }
       if (record.status === "PRESENT") counts.present += 1;
@@ -87,6 +95,7 @@ export async function computeCourseStats(args: {
     return {
       courseId: course.id,
       courseName: course.name,
+      teacher: course.teacher,
       totalSessions: course.totalSessions,
       generatedOccurrences: course.occurrences.length,
       counts,
