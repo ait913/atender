@@ -142,9 +142,9 @@
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    /* 階層: base (canvas、薄灰) < muted (沈み面) < elevated (white card 最明) */
-    --color-bg-base: #F1F3F6;
-    --color-bg-muted: #E2E5EB;
+    /* 階層: base (canvas、極薄) < muted (沈み面) < elevated (white card 最明) */
+    --color-bg-base: #F9F9F9;
+    --color-bg-muted: #F2F2F2;
     --color-bg-elevated: #FFFFFF;
     --color-bg-overlay: rgba(15, 23, 42, 0.40);
 
@@ -184,10 +184,10 @@
     --color-room-event: #9333EA;
     --color-room-availability-empty: rgba(234, 88, 12, 0.14);
 
-    /* shadow (light bg は強めに、階層を補強) */
-    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.05);
-    --shadow-sheet: 0 -6px 20px rgba(15, 23, 42, 0.08), 0 -1px 4px rgba(15, 23, 42, 0.04);
-    --shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+    /* shadow (base が明るいので elevated との階層を影で補強) */
+    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.06);
+    --shadow-sheet: 0 -6px 24px rgba(15, 23, 42, 0.10), 0 -1px 4px rgba(15, 23, 42, 0.05);
+    --shadow-popover: 0 12px 36px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
     --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.32);
     --shadow-glow-soft: 0 0 12px rgba(234, 88, 12, 0.22);
   }
@@ -196,8 +196,8 @@
 /* ユーザーが light を明示 */
 :root[data-theme="light"] {
   color-scheme: light;
-  --color-bg-base: #F1F3F6;
-  --color-bg-muted: #E2E5EB;
+  --color-bg-base: #F9F9F9;
+  --color-bg-muted: #F2F2F2;
   --color-bg-elevated: #FFFFFF;
   --color-bg-overlay: rgba(15, 23, 42, 0.40);
   --color-text-primary: #0F172A;
@@ -226,9 +226,9 @@
   --color-friendship-blocked: #DC2626;
   --color-room-event: #9333EA;
   --color-room-availability-empty: rgba(234, 88, 12, 0.14);
-  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 4px 12px rgba(15, 23, 42, 0.05);
-  --shadow-sheet: 0 -6px 20px rgba(15, 23, 42, 0.08), 0 -1px 4px rgba(15, 23, 42, 0.04);
-  --shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.14), 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-sheet: 0 -6px 24px rgba(15, 23, 42, 0.10), 0 -1px 4px rgba(15, 23, 42, 0.05);
+  --shadow-popover: 0 12px 36px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
   --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.32);
   --shadow-glow-soft: 0 0 12px rgba(234, 88, 12, 0.22);
 }
