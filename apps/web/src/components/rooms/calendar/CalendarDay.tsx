@@ -28,13 +28,8 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const laneWidth = 88 / event.laneCount;
           const color = eventColor(event);
           return (
-            <EventTile
+            <div
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
-              density="compact"
-              color={color}
-              title={eventTitle(event)}
-              subtitle={`${event.kind === "meeting" ? event.memberName : event.authorName} · ${formatMinute(event.startMinute)}`}
-              leadingIcon={<RoomEventIcon event={event} />}
               className="absolute"
               style={{
                 top: `${top}%`,
@@ -42,8 +37,19 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
                 left: `${12 + event.lane * laneWidth}%`,
                 width: `calc(${laneWidth}% - 2px)`,
               }}
-              ariaLabel={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
-            />
+            >
+              <EventTile
+                density="compact"
+                align="top"
+                color={color}
+                title={eventTitle(event)}
+                subtitle={`${event.kind === "meeting" ? event.memberName : event.authorName} · ${formatMinute(event.startMinute)}`}
+                leadingIcon={<RoomEventIcon event={event} />}
+                className="h-full w-full"
+                radius="var(--radius-sm)"
+                ariaLabel={event.kind === "meeting" ? `${event.courseName} (${event.memberName})` : event.title}
+              />
+            </div>
           );
         })}
       </div>

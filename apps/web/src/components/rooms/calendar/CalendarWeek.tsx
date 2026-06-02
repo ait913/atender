@@ -25,10 +25,10 @@ export function CalendarWeek({
         return (
           <section
             key={dateString}
-            className={`rounded-2xl bg-bg-elevated p-2 shadow-card transition ${selected ? "ring-2 ring-accent-500" : ""}`}
+            className="rounded-2xl bg-bg-elevated p-2 shadow-card transition"
           >
             <header className="mb-2 flex items-center justify-between gap-2">
-              <button type="button" onClick={() => onSelectDate(dateString)} className="text-sm font-black text-fg-primary">
+              <button type="button" onClick={() => onSelectDate(dateString)} className={`text-sm font-black ${selected ? "text-accent-500" : "text-fg-primary"}`}>
                 {dayjs(dateString).format("M/D")}
               </button>
               <span className="text-xs font-bold text-fg-tertiary">{events.length} 件</span>
@@ -43,6 +43,7 @@ export function CalendarWeek({
                     >
                       <EventTile
                         density="compact"
+                        radius="var(--radius-sm)"
                         color={color}
                         title={eventTitle(event)}
                         subtitle={event.kind === "meeting" ? event.memberName : event.authorName}

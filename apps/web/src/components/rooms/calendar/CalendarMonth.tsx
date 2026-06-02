@@ -53,7 +53,7 @@ export function CalendarMonth({
               key={dateString}
               type="button"
               onClick={() => onSelectDate(dateString)}
-              className={`min-h-24 min-w-0 rounded-sm p-0.5 text-left transition active:scale-95 ${
+              className={`flex min-h-24 min-w-0 flex-col rounded-sm p-0.5 text-left transition active:scale-95 ${
                 isSelected
                   ? "text-fg-primary"
                   : inMonth
