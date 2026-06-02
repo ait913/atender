@@ -29,7 +29,14 @@ export function Settings() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-8">
-      <section className="rounded-2xl bg-bg-elevated p-3 shadow-card">
+      <section
+        className="rounded-lg border p-3"
+        style={{
+          borderColor: "var(--border-settings)",
+          boxShadow: "var(--shadow-settings-panel)",
+          background: "var(--color-bg-elevated)",
+        }}
+      >
         <div className="flex items-center gap-4">
           <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-full bg-accent-500 text-base font-black text-fg-on-accent shadow-glow-soft">
             {user?.image ? <img src={user.image} alt="" className="h-full w-full object-cover" /> : (user?.name ?? user?.email ?? "A").slice(0, 1).toUpperCase()}

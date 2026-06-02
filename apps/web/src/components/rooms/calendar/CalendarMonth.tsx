@@ -1,71 +1,97 @@
 import dayjs, { type Dayjs } from "dayjs";
+import type { AttendanceDaySummary } from "@atender/shared";
+import { dayStatusColor, eventColor, eventTitle } from "@/lib/calendarEventDisplay";
+import { monthGridRange } from "@/lib/calendarRange";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
-
-function mondayOf(date: Dayjs) {
-  const day = date.day();
-  return date.startOf("day").subtract(day === 0 ? 6 : day - 1, "day");
-}
 
 export function CalendarMonth({
   anchor,
   selectedDate,
   events,
+  statusByDate,
   onSelectDate,
+  maxChipsPerCell = 2,
 }: {
   anchor: Dayjs;
   selectedDate: string;
   events: CalendarEvent[];
+  statusByDate?: Map<string, AttendanceDaySummary["status"]>;
   onSelectDate: (date: string) => void;
+  maxChipsPerCell?: number;
 }) {
-  const gridStart = mondayOf(anchor.startOf("month"));
-  const monthEnd = anchor.endOf("month");
-  const gridEnd = (monthEnd.day() === 0 ? mondayOf(monthEnd.add(1, "day")) : mondayOf(monthEnd)).add(6, "day");
+  const range = monthGridRange(anchor);
+  const gridStart = dayjs(range.start);
+  const gridEnd = dayjs(range.end);
   const dates = Array.from({ length: gridEnd.diff(gridStart, "day") + 1 }, (_, index) => gridStart.add(index, "day").format("YYYY-MM-DD"));
-  const dotsByDate = new Map<string, string[]>();
+  const eventsByDate = new Map<string, CalendarEvent[]>();
 
   for (const event of events) {
-    const dots = dotsByDate.get(event.date) ?? [];
-    const color = event.kind === "meeting" ? event.memberColor : event.authorColor;
-    if (!dots.includes(color)) dots.push(color);
-    dotsByDate.set(event.date, dots);
+    const list = eventsByDate.get(event.date) ?? [];
+    list.push(event);
+    eventsByDate.set(event.date, list);
   }
 
   return (
-    <div className="grid grid-cols-7 gap-1">
-      {["月", "火", "水", "木", "金", "土", "日"].map((day) => (
-        <div key={day} className="py-2 text-center text-xs font-bold text-fg-tertiary">{day}</div>
-      ))}
-      {dates.map((dateString) => {
-        const date = dayjs(dateString);
-        const inMonth = date.month() === anchor.month();
-        const isSelected = dateString === selectedDate;
-        const isToday = dateString === dayjs().format("YYYY-MM-DD");
-        const dots = (dotsByDate.get(dateString) ?? []).slice(0, 3);
+    <div className="rounded-2xl bg-bg-elevated p-2 shadow-card">
+      <div className="grid grid-cols-7 gap-px">
+        {["月", "火", "水", "木", "金", "土", "日"].map((day) => (
+          <div key={day} className="py-2 text-center text-xs font-bold text-fg-tertiary">{day}</div>
+        ))}
+        {dates.map((dateString) => {
+          const date = dayjs(dateString);
+          const inMonth = date.month() === anchor.month();
+          const isSelected = dateString === selectedDate;
+          const isToday = dateString === dayjs().format("YYYY-MM-DD");
+          const dayEvents = (eventsByDate.get(dateString) ?? []).sort((a, b) => a.startMinute - b.startMinute);
+          const visibleEvents = inMonth ? dayEvents.slice(0, maxChipsPerCell) : [];
+          const extraCount = inMonth ? dayEvents.length - visibleEvents.length : 0;
+          const status = statusByDate?.get(dateString);
+          const showStatusDot = inMonth && status != null && status !== "NO_CLASS";
 
-        return (
-          <button
-            key={dateString}
-            type="button"
-            onClick={() => onSelectDate(dateString)}
-            className={`flex h-10 flex-col items-center justify-center rounded-xl transition active:scale-95 ${
-              isSelected
-                ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
-                : inMonth
-                  ? "text-fg-primary hover:bg-fg-primary/6"
-                  : "text-fg-tertiary"
-            } ${isToday && !isSelected ? "ring-2 ring-accent-500/40" : ""}`}
-            aria-label={date.format("M月D日")}
-            aria-pressed={isSelected}
-          >
-            <span className="text-[12px] font-black leading-none">{date.date()}</span>
-            <span className="mt-1 flex h-1 items-center gap-0.5">
-              {dots.map((color, index) => (
-                <span key={`${color}:${index}`} className="h-1 w-1 rounded-full" style={{ background: color }} />
-              ))}
-            </span>
-          </button>
-        );
-      })}
+          return (
+            <button
+              key={dateString}
+              type="button"
+              onClick={() => onSelectDate(dateString)}
+              className={`min-h-16 min-w-0 rounded-xl p-0.5 text-left transition active:scale-95 ${
+                isSelected
+                  ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
+                  : inMonth
+                    ? "text-fg-primary hover:bg-fg-primary/6"
+                    : "text-fg-tertiary"
+              } ${isToday && !isSelected ? "ring-2 ring-accent-500/40" : ""}`}
+              aria-label={date.format("M月D日")}
+              aria-pressed={isSelected}
+            >
+              <span className="mb-1 flex min-w-0 items-center gap-1">
+                <span className="text-[11px] font-bold leading-none">{date.date()}</span>
+                {showStatusDot && status ? (
+                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dayStatusColor(status) }} />
+                ) : null}
+              </span>
+              {visibleEvents.length > 0 ? (
+                <span className="block space-y-0.5">
+                  {visibleEvents.map((event) => {
+                    const color = eventColor(event);
+                    return (
+                      <span
+                        key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.date}:${event.startMinute}` : `${event.kind}:${event.eventId}:${event.date}`}
+                        className="block truncate rounded-[4px] px-1 py-0.5 text-[9px] font-semibold leading-tight text-fg-primary"
+                        style={{ background: `color-mix(in srgb, ${color} 18%, var(--color-bg-elevated))` }}
+                      >
+                        {eventTitle(event)}
+                      </span>
+                    );
+                  })}
+                  {extraCount > 0 ? (
+                    <span className="block truncate text-[9px] font-semibold leading-tight text-fg-tertiary">+{extraCount}</span>
+                  ) : null}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

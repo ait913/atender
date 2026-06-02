@@ -3,30 +3,41 @@ import { useEffect, useState } from "react";
 export type Theme = "auto" | "light" | "dark";
 
 const STORAGE_KEY = "theme";
+const MQ = "(prefers-color-scheme: dark)";
 
-function readStored(): Theme {
+export function readStored(): Theme {
   if (typeof window === "undefined") return "auto";
   const v = window.localStorage.getItem(STORAGE_KEY);
   if (v === "light" || v === "dark") return v;
   return "auto";
 }
 
-function apply(theme: Theme) {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  if (theme === "auto") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", theme);
+export function resolveTheme(theme: Theme): "light" | "dark" {
+  if (theme === "light" || theme === "dark") return theme;
+  if (typeof window === "undefined" || !window.matchMedia) return "dark";
+  return window.matchMedia(MQ).matches ? "dark" : "light";
 }
 
-export function initTheme() {
-  apply(readStored());
+function applyResolved(resolved: "light" | "dark"): void {
+  if (typeof document === "undefined") return;
+  document.documentElement.setAttribute("data-theme", resolved);
+}
+
+export function initTheme(): void {
+  applyResolved(resolveTheme(readStored()));
 }
 
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>(readStored);
 
   useEffect(() => {
-    apply(theme);
+    applyResolved(resolveTheme(theme));
+    if (theme !== "auto") return;
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mql = window.matchMedia(MQ);
+    const onChange = () => applyResolved(resolveTheme("auto"));
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
   }, [theme]);
 
   const setTheme = (next: Theme) => {

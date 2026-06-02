@@ -11,6 +11,7 @@ export function MeetingBlock({ course, onClick }: { course: CourseDto; onClick?:
       subtitle={course.room ?? course.teacher}
       onClick={onClick}
       className="h-full"
+      radius="var(--radius-timetable-cell)"
     />
   );
 }

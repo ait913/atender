@@ -104,6 +104,7 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
             color: course?.color ?? "#F97316",
             title: course?.name ?? "授業",
             subtitle: course?.room ?? undefined,
+            mergeKey: m.courseId,
           };
         })}
         onEventClick={(id) => {

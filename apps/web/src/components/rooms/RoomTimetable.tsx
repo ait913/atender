@@ -70,6 +70,7 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
             color,
             title: meeting.courseName,
             subtitle: memberName || undefined,
+            mergeKey: `${meeting.userId}:${meeting.courseId}`,
           },
         });
       }

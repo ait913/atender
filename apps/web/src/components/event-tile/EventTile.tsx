@@ -16,6 +16,7 @@ export type EventTileProps = {
   ariaLabel?: string;
   className?: string;
   style?: CSSProperties;
+  radius?: string;
 };
 
 export function EventTile({
@@ -32,6 +33,7 @@ export function EventTile({
   ariaLabel,
   className = "",
   style,
+  radius,
 }: EventTileProps) {
   const subColor = `color-mix(in srgb, ${color} 70%, var(--event-mix-target))`;
   const tint = `color-mix(in srgb, ${color} 15%, var(--color-bg-elevated))`;
@@ -40,8 +42,8 @@ export function EventTile({
   const pillWidth = density === "compact" ? "w-0.5" : "w-1";
   const titleSize = density === "compact" ? "text-[12px]" : "text-[13px]";
   const subtitleSize = density === "compact" ? "text-[10px]" : "text-[11px]";
-  const rootClass = `relative block w-full overflow-hidden rounded-md text-left transition active:scale-[0.99] ${className}`;
-  const rootStyle = { background: tint, height, ...style };
+  const rootClass = `relative block w-full overflow-hidden text-left transition active:scale-[0.99] ${radius ? "" : "rounded-md"} ${className}`;
+  const rootStyle = { background: tint, height, borderRadius: radius, ...style };
   const content = (
     <>
       {showPill ? (

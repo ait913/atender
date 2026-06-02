@@ -22,6 +22,7 @@
   --color-border-subtle: rgba(255, 255, 255, 0.06);
   --color-border-default: rgba(255, 255, 255, 0.12);
   --color-border-emphasis: rgba(255, 255, 255, 0.28);
+  --border-settings: var(--color-border-default);
 
   /* event の subtitle 色 mix target (dark=white で明るく、light=black で暗く) */
   --event-mix-target: white;
@@ -57,6 +58,7 @@
   --radius-lg: 24px;
   --radius-xl: 28px;
   --radius-full: 9999px;
+  --radius-timetable-cell: 8px;
 
   /* shadow (浮遊感 + accent glow) */
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.30);
@@ -64,6 +66,7 @@
   --shadow-popover: 0 12px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.40);
   --shadow-glow: 0 0 24px rgba(249, 115, 22, 0.45), 0 0 48px rgba(249, 115, 22, 0.20);
   --shadow-glow-soft: 0 0 16px rgba(249, 115, 22, 0.28);
+  --shadow-settings-panel: none;
 
   /* z-index 階層 (Tailwind の z-* 代わりに arbitrary value で参照) */
   --z-base: 0;
@@ -137,63 +140,11 @@
   --self-tt-chrome: 352px;
 }
 
-/* === Light mode tokens =================================================== */
-/* OS が light を返し、ユーザーが dark を明示してない時 */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    /* 階層: base (canvas、極薄) < muted (沈み面) < elevated (white card 最明) */
-    --color-bg-base: #F9F9F9;
-    --color-bg-muted: #F2F2F2;
-    --color-bg-elevated: #FFFFFF;
-    --color-bg-overlay: rgba(15, 23, 42, 0.40);
-
-    /* テキスト (slate-900 系、WCAG AA クリア) */
-    --color-text-primary: #0F172A;
-    --color-text-secondary: rgba(15, 23, 42, 0.72);
-    --color-text-tertiary: rgba(15, 23, 42, 0.58);
-    --color-text-on-accent: #FFFFFF;
-    --color-text-on-danger: #FFFFFF;
-    --event-mix-target: black;
-
-    /* ボーダー (暗色半透明) */
-    --color-border-subtle: rgba(15, 23, 42, 0.08);
-    --color-border-default: rgba(15, 23, 42, 0.14);
-    --color-border-emphasis: rgba(15, 23, 42, 0.30);
-
-    /* v9: accent = orange */
-    --color-accent-50: rgba(234, 88, 12, 0.10);
-    --color-accent-100: rgba(234, 88, 12, 0.18);
-    --color-accent-500: #EA580C;
-    --color-accent-600: #C2410C;
-    --color-accent-700: #9A3412;
-
-    /* status (white bg でも目立つ濃度) */
-    --color-status-present: #16A34A;
-    --color-status-absent: #DC2626;
-    --color-status-excused: #2563EB;
-    --color-status-tardy: #D97706;
-    --color-status-early: #9333EA;
-    --color-status-cancelled: rgba(15, 23, 42, 0.40);
-    --color-status-none: rgba(15, 23, 42, 0.18);
-
-    /* friendship / room */
-    --color-friendship-pending: #D97706;
-    --color-friendship-accepted: #16A34A;
-    --color-friendship-blocked: #DC2626;
-    --color-room-event: #9333EA;
-    --color-room-availability-empty: rgba(234, 88, 12, 0.14);
-
-    /* shadow (base が明るいので elevated との階層を影で補強) */
-    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.06);
-    --shadow-sheet: 0 -6px 24px rgba(15, 23, 42, 0.10), 0 -1px 4px rgba(15, 23, 42, 0.05);
-    --shadow-popover: 0 12px 36px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
-    --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.32);
-    --shadow-glow-soft: 0 0 12px rgba(234, 88, 12, 0.22);
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
-/* ユーザーが light を明示 */
+/* === Light mode tokens =================================================== */
 :root[data-theme="light"] {
   color-scheme: light;
   --color-bg-base: #F9F9F9;
@@ -209,6 +160,7 @@
   --color-border-subtle: rgba(15, 23, 42, 0.08);
   --color-border-default: rgba(15, 23, 42, 0.14);
   --color-border-emphasis: rgba(15, 23, 42, 0.30);
+  --border-settings: var(--color-border-subtle);
   --color-accent-50: rgba(234, 88, 12, 0.10);
   --color-accent-100: rgba(234, 88, 12, 0.18);
   --color-accent-500: #EA580C;
@@ -231,6 +183,7 @@
   --shadow-popover: 0 12px 36px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.08);
   --shadow-glow: 0 0 20px rgba(234, 88, 12, 0.32);
   --shadow-glow-soft: 0 0 12px rgba(234, 88, 12, 0.22);
+  --shadow-settings-panel: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 @theme {
@@ -307,15 +260,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* dark mode のみ accent radial gradient を効かせる (light は flat canvas) */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) body {
-    background:
-      radial-gradient(1200px 700px at 50% -10%, rgba(249, 115, 22, 0.10), transparent 60%),
-      radial-gradient(900px 600px at 90% 110%, rgba(198, 133, 255, 0.06), transparent 60%),
-      var(--color-bg-base);
-  }
-}
 :root[data-theme="dark"] body {
   background:
     radial-gradient(1200px 700px at 50% -10%, rgba(249, 115, 22, 0.10), transparent 60%),
@@ -330,14 +274,6 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 a { color: inherit; text-decoration: none; }
 
-/* date input の calendar アイコン dark mode で白 */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) input[type="date"]::-webkit-calendar-picker-indicator,
-  :root:not([data-theme="light"]) input[type="time"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    opacity: 0.7;
-  }
-}
 :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 :root[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1);

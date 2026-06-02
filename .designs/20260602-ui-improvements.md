@@ -21,6 +21,41 @@
 
 # 項目 1: 時間割の連続コマ結合 (最重要)
 
+## 1.0 TimetableView の公開 prop 契約 (設計レベルの公開インターフェース)
+
+`TimetableView` は SelfTimetableView / RoomTimetable から呼ばれる共通描画コンポーネント。以下を**公開契約**として固定する (Reviewer の描画テストはこの prop 形を根拠に組む)。
+
+```ts
+export type TimetableEventInput = {
+  id: string;
+  dayOfWeek: number;        // 表示系 1=月..7=日 (DEFAULT_DAYS=[1,2,3,4,5])
+  startPeriodIndex: number; // daySlots のいずれかの periodIndex と一致する必要がある
+  periodCount: number;      // 1 以上。連続コマ数
+  color: string;
+  title: string;            // セルに表示されるテキスト
+  subtitle?: string;
+  mergeKey?: string;        // 同一性キー (coalesce 用)。Self=courseId, Room=userId:courseId
+};
+
+export type TimetableViewProps = {
+  daySlots: DaySlotDto[];   // DaySlotDto = {periodIndex, label, startMinute, endMinute, isBreak}
+  events: TimetableEventInput[];
+  days?: number[];          // 既定 [1,2,3,4,5]。event.dayOfWeek がこの配列に含まれないと描画されない
+  onEventClick?: (eventId: string) => void;
+  onEmptyCellClick?: (dayOfWeek: number, periodIndex: number) => void; // 第1引数は number (曜日番号)
+  height?: string;
+};
+```
+
+> ここの `dayOfWeek` は **表示系 1=月..7=日** で、項目 3 が扱う `MeetingDto.dayOfWeek` (格納値 0=日..6=土) とは**別系統**。混同しないこと (3.1 dayOfWeek 規約参照)。
+
+### 描画テスト作成時の必須前提
+
+- **イベントが描画される条件**: `event.dayOfWeek` が `days` (既定 `[1,2,3,4,5]`) に含まれ、**かつ** `event.startPeriodIndex` が `daySlots` のいずれかの `periodIndex` と一致すること。この 2 条件のどちらかを満たさない event は描画されない。
+  - テストは必ず `daySlots` を `{periodIndex:1,label:"1限",startMinute:540,endMinute:630,isBreak:false}` のように **periodIndex 付きで与え**、`events` の `startPeriodIndex` をその `periodIndex` に合わせる。periodIndex を欠いた daySlots では `startRowIndex = periodIndexes.indexOf(startPeriodIndex)` が -1 になり描画されないため、テストが偽陰性になる。
+- **`onEmptyCellClick` のシグネチャ**: `(dayOfWeek: number, periodIndex: number)` の **2 つの number 引数**で呼ばれる (オブジェクト 1 個ではない)。1.4 の挙動仕様「空セルクリックで `onEmptyCellClick(1, 1)`」はこの意味 — 第 1 引数が曜日番号 (表示系 1=月)、第 2 引数が periodIndex。テストは `expect(spy).toHaveBeenCalledWith(1, 1)` の形で assert する。
+- **イベントブロックの DOM 位置**: イベントブロックは**グリッド直下の子**で、`style` に `grid-row: <n> / span <span>` を持つ (1.3 新方式)。継続行に空セル (EmptyCell) は出ない (継続セルは `occupiedSet` で空セル描画から除外される)。テストは「イベントブロックがセル div の子ではなくグリッド直下に居る」「継続セルに `+` ボタンが無い」を構造で assert する。
+
 ## 1.1 調査で判明した実態 (Leader 仮説の訂正含む)
 
 - **作成フロー側 (API) は既に coalesce 済み**。`apps/api/src/services/meeting.service.ts` の `periodsToMeetings()` が `startPeriodIndexes` の連番をまとめ、`{startPeriodIndex, periodCount}` 単位の **1 meeting (periodCount>1)** として保存する。よって「月1+2 を同時選択」で新規作成した場合、DB 上は 1 meeting / periodCount=2 になっている。

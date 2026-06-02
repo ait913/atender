@@ -4,8 +4,15 @@ import type { ReactNode } from "react";
 export function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1.5 px-1 text-xs font-bold uppercase tracking-wide text-fg-tertiary">{title}</h2>
-      <div className="overflow-hidden rounded-2xl bg-bg-elevated shadow-card divide-y divide-border-subtle">
+      <h2 className="mb-1.5 px-1 text-[11px] font-semibold uppercase tracking-wide text-fg-tertiary">{title}</h2>
+      <div
+        className="overflow-hidden rounded-lg border divide-y divide-border-subtle"
+        style={{
+          borderColor: "var(--border-settings)",
+          boxShadow: "var(--shadow-settings-panel)",
+          background: "var(--color-bg-elevated)",
+        }}
+      >
         {children}
       </div>
     </section>

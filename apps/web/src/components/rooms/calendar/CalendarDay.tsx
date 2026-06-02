@@ -1,5 +1,6 @@
 import { CalendarDays, Link2 } from "lucide-react";
 import { EventTile } from "@/components/event-tile";
+import { eventColor, eventTitle } from "@/lib/calendarEventDisplay";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 import { assignLanes } from "@/lib/calendarLane";
 
@@ -25,13 +26,13 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
           const top = ((visibleStart - startHour * 60) / totalMinute) * 100;
           const height = ((visibleEnd - visibleStart) / totalMinute) * 100;
           const laneWidth = 88 / event.laneCount;
-          const color = event.kind === "meeting" ? event.memberColor : roomEventColor(event);
+          const color = eventColor(event);
           return (
             <EventTile
               key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.startMinute}` : `e:${event.eventId}`}
               density="compact"
               color={color}
-              title={event.kind === "meeting" ? event.courseName : event.title}
+              title={eventTitle(event)}
               subtitle={`${event.kind === "meeting" ? event.memberName : event.authorName} · ${formatMinute(event.startMinute)}`}
               leadingIcon={<RoomEventIcon event={event} />}
               className="absolute"
@@ -48,14 +49,6 @@ export function CalendarDay({ events }: { date: string; events: CalendarEvent[] 
       </div>
     </div>
   );
-}
-
-function roomEventColor(event: CalendarEvent) {
-  if (event.kind === "meeting") return event.memberColor;
-  if (event.kind === "personal") return event.authorColor;
-  if (event.source === "GOOGLE_OAUTH") return "#38bdf8";
-  if (event.source === "ICS_FILE" || event.source === "ICS_URL") return "#94a3b8";
-  return event.authorColor;
 }
 
 function RoomEventIcon({ event }: { event: CalendarEvent }) {

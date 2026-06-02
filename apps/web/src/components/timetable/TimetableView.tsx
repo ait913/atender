@@ -1,6 +1,7 @@
 import { Fragment, useMemo } from "react";
 import type { DaySlotDto } from "@atender/shared";
 import { EventTile } from "@/components/event-tile";
+import { coalesceTimetableEvents } from "@/lib/coalesceTimetableEvents";
 import { EmptyCell } from "./EmptyCell";
 import { PeriodLabel } from "./PeriodLabel";
 
@@ -12,6 +13,7 @@ export type TimetableEventInput = {
   color: string;
   title: string;
   subtitle?: string;
+  mergeKey?: string;
 };
 
 export type TimetableViewProps = {
@@ -36,29 +38,36 @@ export function TimetableView({
 }: TimetableViewProps) {
   const slotByIndex = useMemo(() => new Map(daySlots.map((slot) => [slot.periodIndex, slot])), [daySlots]);
   const periodIndexes = useMemo(() => daySlots.map((s) => s.periodIndex).sort((a, b) => a - b), [daySlots]);
+  const coalescedEvents = useMemo(() => coalesceTimetableEvents(events), [events]);
 
-  // Group events by (dayOfWeek, startPeriodIndex). Multi-event cells render side-by-side.
-  const cellEvents = useMemo(() => {
-    const map = new Map<string, TimetableEventInput[]>();
-    for (const event of events) {
+  const eventGroups = useMemo(() => {
+    const map = new Map<string, { events: TimetableEventInput[]; maxSpan: number }>();
+    for (const event of coalescedEvents) {
+      if (!days.includes(event.dayOfWeek)) continue;
+      if (!periodIndexes.includes(event.startPeriodIndex)) continue;
       const key = `${event.dayOfWeek}:${event.startPeriodIndex}`;
-      const list = map.get(key) ?? [];
-      list.push(event);
-      map.set(key, list);
+      const group = map.get(key) ?? { events: [], maxSpan: 1 };
+      group.events.push(event);
+      group.maxSpan = Math.max(group.maxSpan, event.periodCount);
+      map.set(key, group);
     }
     return map;
-  }, [events]);
+  }, [coalescedEvents, days, periodIndexes]);
 
-  // Compute which (dayOfWeek, periodIndex) cells are "occupied" by a continuing multi-period event.
-  const continuationSet = useMemo(() => {
+  const occupiedSet = useMemo(() => {
     const set = new Set<string>();
-    for (const event of events) {
-      for (let i = 1; i < event.periodCount; i++) {
-        set.add(`${event.dayOfWeek}:${event.startPeriodIndex + i}`);
+    for (const event of coalescedEvents) {
+      if (!days.includes(event.dayOfWeek)) continue;
+      const startRowIndex = periodIndexes.indexOf(event.startPeriodIndex);
+      if (startRowIndex < 0) continue;
+      for (let i = 0; i < event.periodCount; i++) {
+        const periodIndex = periodIndexes[startRowIndex + i];
+        if (periodIndex == null) continue;
+        set.add(`${event.dayOfWeek}:${periodIndex}`);
       }
     }
     return set;
-  }, [events]);
+  }, [coalescedEvents, days, periodIndexes]);
 
   const rowCount = periodIndexes.length;
 
@@ -94,51 +103,52 @@ export function TimetableView({
             </div>
             {days.map((dayOfWeek) => {
               const key = `${dayOfWeek}:${periodIndex}`;
-              const list = cellEvents.get(key) ?? [];
-              const isContinuation = continuationSet.has(key);
+              const isOccupied = occupiedSet.has(key);
               return (
                 <div
                   key={key}
-                  className="overflow-hidden border-b border-r border-border-subtle"
-                  style={{
-                    // 連続コマの 2 行目以降は何も描画しない (1 行目の event が grid row span で覆う想定はせず、各 cell に描画)
-                    padding: isContinuation ? undefined : 2,
-                  }}
+                  className="border-b border-r border-border-subtle p-0.5"
                 >
-                  {isContinuation ? null : list.length > 0 ? (
-                    <div className="flex h-full w-full gap-0.5">
-                      {list.map((event) => {
-                        const span = event.periodCount;
-                        const height =
-                          span > 1
-                            ? `calc(${span * 100}% + ${(span - 1) * 1}px)`
-                            : "100%";
-                        return (
-                          <div
-                            key={event.id}
-                            className="relative min-w-0 flex-1"
-                            style={{ height }}
-                          >
-                            <EventTile
-                              density="compact"
-                              color={event.color}
-                              title={event.title}
-                              subtitle={event.subtitle}
-                              className="absolute inset-0"
-                              onClick={() => onEventClick?.(event.id)}
-                              ariaLabel={`${event.title}${event.subtitle ? ` / ${event.subtitle}` : ""}`}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : onEmptyCellClick ? (
+                  {!isOccupied && onEmptyCellClick ? (
                     <EmptyCell onClick={() => onEmptyCellClick(dayOfWeek, periodIndex)} />
                   ) : null}
                 </div>
               );
             })}
           </Fragment>
+        );
+      })}
+      {Array.from(eventGroups.entries()).map(([key, group]) => {
+        const [dayOfWeekText, startPeriodIndexText] = key.split(":");
+        const dayOfWeek = Number(dayOfWeekText);
+        const startPeriodIndex = Number(startPeriodIndexText);
+        const dayColumnIndex = days.indexOf(dayOfWeek);
+        const startRowIndex = periodIndexes.indexOf(startPeriodIndex);
+        if (dayColumnIndex < 0 || startRowIndex < 0) return null;
+        const span = Math.min(group.maxSpan, rowCount - startRowIndex);
+        return (
+          <div
+            key={`event-${key}`}
+            className="z-[1] flex min-h-0 min-w-0 gap-0.5 p-0.5"
+            style={{
+              gridColumn: `${dayColumnIndex + 2}`,
+              gridRow: `${startRowIndex + 2} / span ${span}`,
+            }}
+          >
+            {group.events.map((event) => (
+              <EventTile
+                key={event.id}
+                density="compact"
+                color={event.color}
+                title={event.title}
+                subtitle={event.subtitle}
+                className="h-full w-full min-w-0 flex-1"
+                radius="var(--radius-timetable-cell)"
+                onClick={() => onEventClick?.(event.id)}
+                ariaLabel={`${event.title}${event.subtitle ? ` / ${event.subtitle}` : ""}`}
+              />
+            ))}
+          </div>
         );
       })}
     </div>

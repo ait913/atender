@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import { CalendarDays, Link2 } from "lucide-react";
 import { EventTile } from "@/components/event-tile";
+import { eventColor, eventTitle } from "@/lib/calendarEventDisplay";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 
 export function CalendarWeek({
@@ -35,7 +36,7 @@ export function CalendarWeek({
             {events.length > 0 ? (
               <ul className="space-y-2">
                 {events.map((event) => {
-                  const color = event.kind === "meeting" ? event.memberColor : roomEventColor(event);
+                  const color = eventColor(event);
                   return (
                     <li
                       key={eventKey(event)}
@@ -43,7 +44,7 @@ export function CalendarWeek({
                       <EventTile
                         density="compact"
                         color={color}
-                        title={event.kind === "meeting" ? event.courseName : event.title}
+                        title={eventTitle(event)}
                         subtitle={event.kind === "meeting" ? event.memberName : event.authorName}
                         leadingIcon={<RoomEventIcon event={event} />}
                         badge={
@@ -64,14 +65,6 @@ export function CalendarWeek({
       })}
     </div>
   );
-}
-
-function roomEventColor(event: CalendarEvent) {
-  if (event.kind === "meeting") return event.memberColor;
-  if (event.kind === "personal") return event.authorColor;
-  if (event.source === "GOOGLE_OAUTH") return "#38bdf8";
-  if (event.source === "ICS_FILE" || event.source === "ICS_URL") return "#94a3b8";
-  return event.authorColor;
 }
 
 function RoomEventIcon({ event }: { event: CalendarEvent }) {
