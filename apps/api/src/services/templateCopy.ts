@@ -53,7 +53,6 @@ export async function copyTemplateToUser(args: {
             userTimetableId: timetable.id,
             name: course.name,
             teacher: course.teacher,
-            room: course.room,
             color: course.color,
             totalSessions: course.totalSessions,
             note: course.note,
@@ -74,6 +73,7 @@ export async function copyTemplateToUser(args: {
             dayOfWeek: meeting.dayOfWeek,
             startPeriodIndex: meeting.startPeriodIndex,
             periodCount: meeting.periodCount,
+            room: meeting.room,
           },
         });
       }

@@ -1,4 +1,4 @@
-import type { MeetingBulkCreateInput } from "@atender/shared";
+import type { MeetingBulkCreateInput, MeetingUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { meetingDto } from "../lib/dto";
@@ -47,6 +47,7 @@ export async function createMeetingsBulk(userId: string, input: MeetingBulkCreat
           dayOfWeek: input.dayOfWeek,
           startPeriodIndex: group.startPeriodIndex,
           periodCount: group.periodCount,
+          room: input.room ?? null,
         },
       });
       await generateOccurrencesForMeeting(tx, meeting);
@@ -55,4 +56,73 @@ export async function createMeetingsBulk(userId: string, input: MeetingBulkCreat
     return created;
   });
   return meetings.map(meetingDto);
+}
+
+function hasPeriodConflict(
+  meetings: Array<{ id: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number }>,
+  target: { id: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number },
+) {
+  const targetPeriods = new Set(Array.from({ length: target.periodCount }, (_, index) => target.startPeriodIndex + index));
+  for (const meeting of meetings) {
+    if (meeting.id === target.id || meeting.dayOfWeek !== target.dayOfWeek) continue;
+    for (let offset = 0; offset < meeting.periodCount; offset += 1) {
+      const conflictPeriod = meeting.startPeriodIndex + offset;
+      if (targetPeriods.has(conflictPeriod)) return conflictPeriod;
+    }
+  }
+  return null;
+}
+
+export async function updateMeeting(userId: string, meetingId: string, input: MeetingUpdateInput) {
+  const current = await prisma.meeting.findFirst({
+    where: { id: meetingId, userTimetable: { userId } },
+    include: { userTimetable: { include: { meetings: true } } },
+  });
+  if (!current) throw new AppError(404, "NOT_FOUND", "Meeting not found");
+
+  const next = {
+    id: current.id,
+    dayOfWeek: input.dayOfWeek ?? current.dayOfWeek,
+    startPeriodIndex: input.startPeriodIndex ?? current.startPeriodIndex,
+    periodCount: input.periodCount ?? current.periodCount,
+  };
+  const scheduleChanged =
+    next.dayOfWeek !== current.dayOfWeek ||
+    next.startPeriodIndex !== current.startPeriodIndex ||
+    next.periodCount !== current.periodCount;
+
+  if (scheduleChanged) {
+    const conflictPeriod = hasPeriodConflict(current.userTimetable.meetings, next);
+    if (conflictPeriod != null) {
+      throw new AppError(409, "PERIOD_CONFLICT", "Period is already occupied", { conflictPeriod });
+    }
+  }
+
+  const data = {
+    ...(input.dayOfWeek !== undefined ? { dayOfWeek: input.dayOfWeek } : {}),
+    ...(input.startPeriodIndex !== undefined ? { startPeriodIndex: input.startPeriodIndex } : {}),
+    ...(input.periodCount !== undefined ? { periodCount: input.periodCount } : {}),
+    ...(input.room !== undefined ? { room: input.room } : {}),
+  };
+
+  if (!scheduleChanged) {
+    const updated = await prisma.meeting.update({ where: { id: meetingId }, data });
+    return meetingDto(updated);
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.meetingOccurrence.deleteMany({ where: { meetingId } });
+    const meeting = await tx.meeting.update({ where: { id: meetingId }, data });
+    await generateOccurrencesForMeeting(tx, meeting);
+    return meeting;
+  });
+  return meetingDto(updated);
+}
+
+export async function deleteMeeting(userId: string, meetingId: string) {
+  const meeting = await prisma.meeting.findFirst({
+    where: { id: meetingId, userTimetable: { userId } },
+  });
+  if (!meeting) throw new AppError(404, "NOT_FOUND", "Meeting not found");
+  await prisma.meeting.delete({ where: { id: meetingId } });
 }

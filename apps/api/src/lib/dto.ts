@@ -40,32 +40,32 @@ export function daySlotDto(slot: DaySlot | { periodIndex: number; label: string;
   };
 }
 
-export function courseDto(course: Course | { id: string; name: string; teacher: string | null; room: string | null; color: string | null; totalSessions: number; note: string | null }) {
+export function courseDto(course: Course | { id: string; name: string; teacher: string | null; color: string | null; totalSessions: number; note: string | null }) {
   return {
     id: course.id,
     name: course.name,
     teacher: course.teacher,
-    room: course.room,
     color: course.color,
     totalSessions: course.totalSessions,
     note: course.note,
   };
 }
 
-export function meetingDto(meeting: Meeting | { id: string; courseId: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number }) {
+export function meetingDto(meeting: Meeting | { id: string; courseId: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number; room: string | null }) {
   return {
     id: meeting.id,
     courseId: meeting.courseId,
     dayOfWeek: meeting.dayOfWeek,
     startPeriodIndex: meeting.startPeriodIndex,
     periodCount: meeting.periodCount,
+    room: meeting.room,
   };
 }
 
 export type TemplateWithParts = TimetableTemplate & {
   daySlots: Array<{ periodIndex: number; label: string; startMinute: number; endMinute: number; isBreak: boolean }>;
-  courses: Array<{ id: string; name: string; teacher: string | null; room: string | null; color: string | null; totalSessions: number; note: string | null }>;
-  meetings: Array<{ id: string; courseId: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number }>;
+  courses: Array<{ id: string; name: string; teacher: string | null; color: string | null; totalSessions: number; note: string | null }>;
+  meetings: Array<{ id: string; courseId: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number; room: string | null }>;
 };
 
 export function templateDto(template: TemplateWithParts) {

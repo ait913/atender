@@ -93,4 +93,22 @@ describe("today API", () => {
     expect(body.occurrences[0].startMinute).toBeLessThan(body.occurrences[1].startMinute);
     expect(body.occurrences[0].endMinute).not.toBe(body.occurrences[1].endMinute);
   });
+
+  it("[仕様9] GET /api/today の room は occurrence.meeting.room に追従する", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await db.meeting.update({ where: { id: complete.meeting.id }, data: { room: "B202" } });
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-05-13T00:00:00.000Z") });
+
+    const first = await app.request("/api/today?date=2026-05-13", { headers: { Cookie: complete.cookie } });
+    const firstBody = await json(first);
+    expect(first.status).toBe(200);
+    expect(firstBody.occurrences[0].room).toBe("B202");
+
+    await db.meeting.update({ where: { id: complete.meeting.id }, data: { room: "C303" } });
+    const second = await app.request("/api/today?date=2026-05-13", { headers: { Cookie: complete.cookie } });
+    const secondBody = await json(second);
+    expect(second.status).toBe(200);
+    expect(secondBody.occurrences[0].room).toBe("C303");
+  });
 });

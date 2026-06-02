@@ -41,7 +41,7 @@ export function TimetableGrid({
             const course = meeting ? courseById.get(meeting.courseId) : null;
             return (
               <div key={`${day}-${slot.periodIndex}`} className="overflow-hidden border-b border-r border-border-subtle p-0.5">
-                {course && meeting ? <MeetingBlock course={course} onClick={() => onMeetingClick?.(meeting)} /> : <EmptyCell onClick={() => onEmptyCellClick(dayOfWeek, slot.periodIndex)} />}
+                {course && meeting ? <MeetingBlock course={course} meeting={meeting} onClick={() => onMeetingClick?.(meeting)} /> : <EmptyCell onClick={() => onEmptyCellClick(dayOfWeek, slot.periodIndex)} />}
               </div>
             );
           })}

@@ -36,7 +36,7 @@ export function registerTodayRoutes(app: Hono) {
         courseId: occurrence.courseId,
         courseName: occurrence.course.name,
         teacher: occurrence.course.teacher,
-        room: occurrence.course.room,
+        room: occurrence.meeting.room,
         color: occurrence.course.color,
         date: toIsoDate(occurrence.date),
         periodIndex: occurrence.meeting.startPeriodIndex + occurrence.periodOffset,

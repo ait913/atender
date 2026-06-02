@@ -1,28 +1,15 @@
-import { useMemo, useState } from "react";
-import { usePatchUserTimetable, useUserTimetables } from "@/api/hooks";
+import { useState } from "react";
+import { useDeleteCourse } from "@/api/hooks";
 import { Button, ConfirmDialog } from "@/components/ui";
 
 type Props = { courseId: string; onDeleted: () => void };
 
 export function DangerZone({ courseId, onDeleted }: Props) {
-  const timetables = useUserTimetables();
-  const owner = useMemo(() => {
-    for (const timetable of timetables.data?.userTimetables ?? []) {
-      if (timetable.courses.some((course) => course.id === courseId)) return timetable;
-    }
-    return null;
-  }, [courseId, timetables.data?.userTimetables]);
-  const patch = usePatchUserTimetable(owner?.id);
+  const deleteCourseMutation = useDeleteCourse();
   const [confirming, setConfirming] = useState(false);
 
   async function deleteCourse() {
-    if (!owner) return;
-    await patch.mutateAsync({
-      courses: owner.courses
-        .filter((course) => course.id !== courseId)
-        .map((course) => ({ ...course, teacher: course.teacher ?? undefined, room: course.room ?? undefined, color: course.color ?? undefined, note: course.note ?? undefined })),
-      meetings: owner.meetings.filter((meeting) => meeting.courseId !== courseId),
-    });
+    await deleteCourseMutation.mutateAsync(courseId);
     setConfirming(false);
     onDeleted();
   }

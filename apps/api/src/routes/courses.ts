@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { CourseCreateInput, CourseSuspensionCreateInput } from "@atender/shared";
+import { CourseCreateInput, CourseSuspensionCreateInput, CourseUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { courseDto } from "../lib/dto";
@@ -24,13 +24,44 @@ export function registerCourseRoutes(app: Hono) {
         userTimetableId: input.userTimetableId,
         name: input.name,
         teacher: input.teacher ?? null,
-        room: input.room ?? null,
         color: input.color ?? null,
         totalSessions: input.totalSessions,
         note: input.note ?? null,
       },
     });
     return c.json({ course: courseDto(course) }, 201);
+  });
+
+  app.patch("/api/courses/:courseId", sessionMiddleware, setupGuard, zValidator("param", CourseParam), zValidator("json", CourseUpdateInput), async (c) => {
+    const user = c.get("user");
+    const { courseId } = c.req.valid("param");
+    const input = c.req.valid("json");
+    const course = await prisma.course.findFirst({
+      where: { id: courseId, userTimetable: { userId: user.id } },
+    });
+    if (!course) throw new AppError(404, "NOT_FOUND", "Course not found");
+    const updated = await prisma.course.update({
+      where: { id: courseId },
+      data: {
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.teacher !== undefined ? { teacher: input.teacher } : {}),
+        ...(input.color !== undefined ? { color: input.color } : {}),
+        ...(input.totalSessions !== undefined ? { totalSessions: input.totalSessions } : {}),
+        ...(input.note !== undefined ? { note: input.note } : {}),
+      },
+    });
+    return c.json({ course: courseDto(updated) });
+  });
+
+  app.delete("/api/courses/:courseId", sessionMiddleware, setupGuard, zValidator("param", CourseParam), async (c) => {
+    const user = c.get("user");
+    const { courseId } = c.req.valid("param");
+    const course = await prisma.course.findFirst({
+      where: { id: courseId, userTimetable: { userId: user.id } },
+    });
+    if (!course) throw new AppError(404, "NOT_FOUND", "Course not found");
+    await prisma.course.delete({ where: { id: courseId } });
+    return c.json({ ok: true });
   });
 
   app.get("/api/courses/:courseId/suspensions", sessionMiddleware, setupGuard, zValidator("param", CourseParam), async (c) => {

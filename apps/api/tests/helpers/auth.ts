@@ -120,7 +120,6 @@ export async function createUserTimetable(
       userTimetableId: userTimetable.id,
       name: "オペレーティングシステム",
       teacher: "山田",
-      room: "305",
       color: "#ffffff",
       totalSessions: 15,
     },
@@ -133,6 +132,7 @@ export async function createUserTimetable(
       dayOfWeek: 3,
       startPeriodIndex: 1,
       periodCount: 2,
+      room: "305",
     },
   });
 

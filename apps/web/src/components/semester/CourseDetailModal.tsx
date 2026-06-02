@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import type { CourseDto, UserTimetableDto } from "@atender/shared";
-import { useMe, usePatchUserTimetable, useUserTimetables } from "@/api/hooks";
-import { Button, Field, FullScreenModal, Input, Panel, Textarea } from "@/components/ui";
+import { useMe, useUserTimetables } from "@/api/hooks";
+import { Button, FullScreenModal, Panel } from "@/components/ui";
+import { CourseEditModal } from "./CourseEditModal";
 import { CourseOccurrenceHistory } from "./CourseOccurrenceHistory";
 import { CourseSuspensionSection } from "./CourseSuspensionSection";
 import { DangerZone } from "./DangerZone";
@@ -35,58 +36,19 @@ function CourseDetailBody({ courseId, onClose }: { courseId: string; onClose: ()
 }
 
 function CourseEditSection({ course, timetable }: { course: CourseDto; timetable: UserTimetableDto }) {
-  const patch = usePatchUserTimetable(timetable.id);
-  const [name, setName] = useState(course.name);
-  const [teacher, setTeacher] = useState(course.teacher ?? "");
-  const [room, setRoom] = useState(course.room ?? "");
-  const [color, setColor] = useState(course.color ?? "#F97316");
-  const [totalSessions, setTotalSessions] = useState(String(course.totalSessions));
-  const [note, setNote] = useState(course.note ?? "");
-
-  async function save() {
-    const nextCourses = timetable.courses.map((item) => {
-      const base = { ...item, teacher: item.teacher ?? undefined, room: item.room ?? undefined, color: item.color ?? undefined, note: item.note ?? undefined };
-      if (item.id !== course.id) return base;
-      return {
-        ...base,
-        name: name.trim() || item.name,
-        teacher: teacher.trim() || undefined,
-        room: room.trim() || undefined,
-        color,
-        totalSessions: Math.max(1, Number(totalSessions) || item.totalSessions),
-        note: note.trim() || undefined,
-      };
-    });
-    await patch.mutateAsync({ courses: nextCourses, meetings: timetable.meetings });
-  }
+  const [open, setOpen] = useState(false);
 
   return (
     <section className="rounded-3xl bg-bg-elevated p-5 shadow-card">
-      <h3 className="mb-3 text-base font-bold">科目編集</h3>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="科目名" className="sm:col-span-2">
-          <Input value={name} onChange={(event) => setName(event.currentTarget.value)} maxLength={100} />
-        </Field>
-        <Field label="先生">
-          <Input value={teacher} onChange={(event) => setTeacher(event.currentTarget.value)} maxLength={50} />
-        </Field>
-        <Field label="教室">
-          <Input value={room} onChange={(event) => setRoom(event.currentTarget.value)} maxLength={30} />
-        </Field>
-        <Field label="色">
-          <Input type="color" value={color} onChange={(event) => setColor(event.currentTarget.value)} />
-        </Field>
-        <Field label="総コマ数">
-          <Input type="number" min={1} max={60} value={totalSessions} onChange={(event) => setTotalSessions(event.currentTarget.value)} />
-        </Field>
-        <Field label="メモ" className="sm:col-span-2">
-          <Textarea value={note} onChange={(event) => setNote(event.currentTarget.value)} maxLength={500} />
-        </Field>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h3 className="text-base font-bold">{course.name}</h3>
+          <p className="mt-1 text-sm text-fg-secondary">{course.teacher ?? "先生未設定"}</p>
+          {course.note ? <p className="mt-3 whitespace-pre-wrap text-sm text-fg-secondary">{course.note}</p> : null}
+        </div>
+        <Button type="button" variant="primary" onClick={() => setOpen(true)}>編集</Button>
       </div>
-      <div className="mt-4 flex justify-end">
-        <Button type="button" variant="primary" disabled={patch.isPending} onClick={() => void save()}>保存</Button>
-      </div>
-      {patch.error ? <p className="mt-2 rounded-2xl bg-status-absent/15 px-3 py-2 text-xs font-bold text-status-absent">{patch.error.message}</p> : null}
+      <CourseEditModal open={open} onClose={() => setOpen(false)} timetableId={timetable.id} course={course} />
     </section>
   );
 }

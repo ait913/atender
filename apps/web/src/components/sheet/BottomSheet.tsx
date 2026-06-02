@@ -8,26 +8,30 @@ export function BottomSheet({
   title,
   children,
   footer,
+  stackLevel = 1,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
+  stackLevel?: 1 | 2;
 }) {
+  const overlayZ = stackLevel === 2 ? "z-[1120]" : "z-[1100]";
+  const contentZ = stackLevel === 2 ? "z-[1130]" : "z-[1110]";
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[1100] bg-black/70 backdrop-blur-md overlay-fade-in" />
+        <Dialog.Overlay className={`fixed inset-0 ${overlayZ} bg-black/70 backdrop-blur-md overlay-fade-in`} />
         <Dialog.Content
           aria-describedby={undefined}
-          className="
-            fixed left-1/2 -translate-x-1/2 z-[1110]
+          className={`
+            fixed left-1/2 -translate-x-1/2 ${contentZ}
             bottom-2 w-[calc(100%-12px)] max-w-none rounded-2xl overflow-hidden
             md:bottom-auto md:top-1/2 md:-translate-y-1/2 md:w-[min(560px,calc(100vw-32px))] md:rounded-3xl
             flex flex-col bg-bg-elevated shadow-sheet sheet-slide-up
             focus:outline-none
-          "
+          `}
           style={{
             maxHeight: "min(92dvh, 760px)",
             marginBottom: "env(safe-area-inset-bottom)",

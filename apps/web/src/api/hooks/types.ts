@@ -4,6 +4,7 @@ import type {
   CourseDto,
   CourseSuspensionCreateInput,
   CourseSuspensionDto,
+  CourseUpdateInput,
   CreateFriendshipInput,
   CreateRoomEventInput,
   CreateRoomInput,
@@ -19,6 +20,8 @@ import type {
   MarkAttendanceInput,
   MeUpdateInput,
   MeetingBulkCreateInput,
+  MeetingDto,
+  MeetingUpdateInput,
   OccurrenceDto,
   RoomDto,
   RoomEventDto,
@@ -63,6 +66,7 @@ export type UserTimetableResponse = { userTimetable: UserTimetableDto };
 export type AttendanceRecordResponse = { record: { occurrenceId: string; status: OccurrenceDto["status"]; note: string | null; updatedAt: string } };
 export type RuleResponse = { rule: AttendanceRuleDto };
 export type CourseResponse = { course: CourseDto };
+export type MeetingResponse = { meeting: MeetingDto };
 export type CourseSuspensionsResponse = { suspensions: CourseSuspensionDto[] };
 export type CourseSuspensionResponse = { suspension: CourseSuspensionDto };
 export type FriendshipsResponse = { friendships: FriendshipDto[] };
@@ -84,8 +88,10 @@ export type {
   MarkAllPresentResponse,
   MarkAttendanceInput,
   MeetingBulkCreateInput,
+  MeetingUpdateInput,
   MeUpdateInput,
   CourseCreateInput,
+  CourseUpdateInput,
   CourseSuspensionCreateInput,
   CourseSuspensionDto,
   CreateFriendshipInput,

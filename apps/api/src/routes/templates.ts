@@ -88,7 +88,6 @@ export function registerTemplateRoutes(app: Hono) {
             templateId: created.id,
             name: course.name,
             teacher: course.teacher ?? null,
-            room: course.room ?? null,
             color: course.color ?? null,
             totalSessions: course.totalSessions,
             note: course.note ?? null,
@@ -99,7 +98,7 @@ export function registerTemplateRoutes(app: Hono) {
       for (const meeting of input.meetings) {
         const courseId = courseMap.get(meeting.courseTempId);
         if (!courseId) throw new AppError(400, "VALIDATION_ERROR", "Meeting references missing course");
-        await tx.templateMeeting.create({ data: { templateId: created.id, courseId, dayOfWeek: meeting.dayOfWeek, startPeriodIndex: meeting.startPeriodIndex, periodCount: meeting.periodCount } });
+        await tx.templateMeeting.create({ data: { templateId: created.id, courseId, dayOfWeek: meeting.dayOfWeek, startPeriodIndex: meeting.startPeriodIndex, periodCount: meeting.periodCount, room: meeting.room ?? null } });
       }
       return tx.timetableTemplate.findUniqueOrThrow({ where: { id: created.id }, include: templateInclude });
     });
@@ -147,13 +146,13 @@ export function registerTemplateRoutes(app: Hono) {
         await tx.templateCourse.deleteMany({ where: { templateId: id } });
         const courseMap = new Map<string, string>();
         for (const course of input.courses ?? []) {
-          const created = await tx.templateCourse.create({ data: { templateId: id, name: course.name, teacher: course.teacher ?? null, room: course.room ?? null, color: course.color ?? null, totalSessions: course.totalSessions, note: course.note ?? null } });
+          const created = await tx.templateCourse.create({ data: { templateId: id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, totalSessions: course.totalSessions, note: course.note ?? null } });
           courseMap.set(course.tempId, created.id);
         }
         for (const meeting of input.meetings ?? []) {
           const courseId = courseMap.get(meeting.courseTempId);
           if (!courseId) throw new AppError(400, "VALIDATION_ERROR", "Meeting references missing course");
-          await tx.templateMeeting.create({ data: { templateId: id, courseId, dayOfWeek: meeting.dayOfWeek, startPeriodIndex: meeting.startPeriodIndex, periodCount: meeting.periodCount } });
+          await tx.templateMeeting.create({ data: { templateId: id, courseId, dayOfWeek: meeting.dayOfWeek, startPeriodIndex: meeting.startPeriodIndex, periodCount: meeting.periodCount, room: meeting.room ?? null } });
         }
       }
       return tx.timetableTemplate.findUniqueOrThrow({ where: { id }, include: templateInclude });

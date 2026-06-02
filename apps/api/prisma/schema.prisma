@@ -223,7 +223,6 @@ model TemplateCourse {
   template    TimetableTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   name        String
   teacher     String?
-  room        String?
   color       String?              // "#RRGGBB" 等、UI hint
   totalSessions Int                // 学期通しの想定総コマ数 (Researcher 例: 15)
   note        String?
@@ -242,6 +241,7 @@ model TemplateMeeting {
   dayOfWeek       Int               // 0=日 ... 6=土 (JS 標準)
   startPeriodIndex Int              // 何限から始まるか (TemplateDaySlot.periodIndex 参照)
   periodCount      Int @default(1)  // 連続コマ数 (1, 2, 3, ...)。slot 多重表現
+  room             String?
 
   @@index([templateId, dayOfWeek])
   @@index([courseId])
@@ -289,7 +289,6 @@ model Course {
   userTimetable   UserTimetable @relation(fields: [userTimetableId], references: [id], onDelete: Cascade)
   name            String
   teacher         String?
-  room            String?
   color           String?
   totalSessions   Int
   note            String?
@@ -324,6 +323,7 @@ model Meeting {
   dayOfWeek       Int
   startPeriodIndex Int
   periodCount     Int @default(1)
+  room             String?
 
   occurrences MeetingOccurrence[]
 

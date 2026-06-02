@@ -130,3 +130,45 @@ describe("meeting bulk create endpoint", () => {
     expectError(await json(setupRequired), "SETUP_REQUIRED");
   });
 });
+
+describe("meeting bulk create endpoint room field", () => {
+  it("[仕様7] bulk に room を渡すと全 Meeting が room を持つ", async () => {
+    const db = prisma();
+    const user = await setupCompleteUser(db);
+
+    const res = await requestJson(app, "/api/meetings/bulk", {
+      method: "POST",
+      headers: cookieHeader(user.cookie),
+      body: { ...bulkBody(user.userTimetable.id, user.course.id, [1, 2, 4]), room: "B202" },
+    });
+    const body = await json(res) as any;
+
+    expect(res.status).toBe(201);
+    expect(body.meetings).toHaveLength(2);
+    expect(body.meetings.map((meeting: any) => meeting.room)).toEqual(["B202", "B202"]);
+    await expect(db.meeting.findMany({
+      where: { id: { in: body.meetings.map((meeting: any) => meeting.id) } },
+      orderBy: { startPeriodIndex: "asc" },
+    })).resolves.toEqual(expect.arrayContaining([
+      expect.objectContaining({ room: "B202" }),
+      expect.objectContaining({ room: "B202" }),
+    ]));
+  });
+
+  it("[仕様8] bulk で room 省略時 Meeting.room は null", async () => {
+    const db = prisma();
+    const user = await setupCompleteUser(db);
+
+    const res = await requestJson(app, "/api/meetings/bulk", {
+      method: "POST",
+      headers: cookieHeader(user.cookie),
+      body: bulkBody(user.userTimetable.id, user.course.id, [5]),
+    });
+    const body = await json(res) as any;
+
+    expect(res.status).toBe(201);
+    expect(body.meetings).toHaveLength(1);
+    expect(body.meetings[0].room).toBeNull();
+    await expect(db.meeting.findUniqueOrThrow({ where: { id: body.meetings[0].id } })).resolves.toMatchObject({ room: null });
+  });
+});

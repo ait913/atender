@@ -9,7 +9,7 @@ export type DayMeetingCardProps = {
   onClick: () => void;
 };
 
-export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: DayMeetingCardProps) {
+export function DayMeetingCard({ course, meeting, slots, onClick }: DayMeetingCardProps) {
   const color = course.color ?? "#F97316";
   const first = slots[0];
   const last = slots[slots.length - 1];
@@ -19,7 +19,7 @@ export function DayMeetingCard({ course, meeting: _meeting, slots, onClick }: Da
     ? String(first.periodIndex)
     : `${first.periodIndex}-${last.periodIndex}`;
   const minHeight = slots.length * 80;
-  const subtitleText = [course.room, course.teacher].filter(Boolean).join(" · ");
+  const subtitleText = [meeting.room, course.teacher].filter(Boolean).join(" · ");
 
   return (
     <EventTile

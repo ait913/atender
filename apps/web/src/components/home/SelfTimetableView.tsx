@@ -1,12 +1,12 @@
 import { Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { MeetingDto, UserTimetableDto } from "@atender/shared";
-import { useCreateUserTimetable, useMe, usePatchUserTimetable, useSemesters, useUserTimetables } from "@/api/hooks";
+import { useCreateUserTimetable, useDeleteMeeting, useMe, useSemesters, useUserTimetables } from "@/api/hooks";
 import { HomeSemesterPicker } from "@/components/home/HomeSemesterPicker";
 import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
 import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
-import { MeetingCreateSheet } from "@/components/timetable/MeetingCreateSheet";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
+import { MeetingEditModal } from "@/components/timetable/MeetingEditModal";
 import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
 import { Panel } from "@/components/ui";
 
@@ -28,9 +28,10 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
   const timetables = useUserTimetables();
   const selected = activeTimetable(timetables.data?.userTimetables, semesterId);
   const createTimetable = useCreateUserTimetable();
-  const patchTimetable = usePatchUserTimetable(selected?.id);
+  const deleteMeeting = useDeleteMeeting();
   const [sheet, setSheet] = useState<{ dayOfWeek: number; period: number } | null>(null);
   const [detailMeeting, setDetailMeeting] = useState<MeetingDto | null>(null);
+  const [editMeeting, setEditMeeting] = useState<MeetingDto | null>(null);
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const today = useMemo(() => getTodayDayOfWeek(), []);
@@ -52,14 +53,6 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
     });
     setCreatedTimetable(created.userTimetable);
     return created.userTimetable;
-  }
-
-  async function removeMeeting(meeting: MeetingDto) {
-    if (!selected) return;
-    await patchTimetable.mutateAsync({
-      courses: selected.courses.map((course) => ({ ...course, teacher: course.teacher ?? undefined, room: course.room ?? undefined, color: course.color ?? undefined, note: course.note ?? undefined })),
-      meetings: selected.meetings.filter((item) => item.id !== meeting.id),
-    });
   }
 
   const detailCourse = detailMeeting && display
@@ -103,7 +96,7 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
             periodCount: m.periodCount,
             color: course?.color ?? "#F97316",
             title: course?.name ?? "授業",
-            subtitle: course?.room ?? undefined,
+            subtitle: m.room ?? undefined,
             mergeKey: m.courseId,
           };
         })}
@@ -113,27 +106,42 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
         }}
         onEmptyCellClick={handleEmptyCellClick}
       />
-      <MeetingCreateSheet
-        open={sheet != null}
-        onClose={() => setSheet(null)}
-        timetable={selected ?? createdTimetable}
-        initialDayOfWeek={sheet?.dayOfWeek ?? today}
-        initialPeriod={sheet?.period ?? 1}
-      />
+      {(selected ?? createdTimetable) ? (
+        <MeetingEditModal
+          open={sheet != null}
+          onClose={() => setSheet(null)}
+          timetable={(selected ?? createdTimetable)!}
+          mode="create"
+          initialDayOfWeek={sheet?.dayOfWeek ?? today}
+          initialPeriod={sheet?.period ?? 1}
+        />
+      ) : null}
       <MeetingDetailSheet
         open={detailMeeting != null}
         onClose={() => setDetailMeeting(null)}
         meeting={detailMeeting}
         course={detailCourse}
         slots={detailSlots}
-        timetable={display}
-        pending={patchTimetable.isPending}
+        pending={deleteMeeting.isPending}
+        onEdit={() => {
+          setEditMeeting(detailMeeting);
+          setDetailMeeting(null);
+        }}
         onDelete={async () => {
           if (!detailMeeting) return;
-          await removeMeeting(detailMeeting);
+          await deleteMeeting.mutateAsync(detailMeeting.id);
           setDetailMeeting(null);
         }}
       />
+      {display ? (
+        <MeetingEditModal
+          open={editMeeting != null}
+          onClose={() => setEditMeeting(null)}
+          timetable={display}
+          mode="edit"
+          meeting={editMeeting}
+        />
+      ) : null}
       <TimetableSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} timetable={selected ?? createdTimetable} />
     </div>
   );
