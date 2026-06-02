@@ -82,32 +82,40 @@ export function TimetableView({
       }}
     >
       {/* corner */}
-      <div className="border-b border-r border-border-subtle bg-bg-muted" />
+      <div
+        className="border-b border-r border-border-subtle bg-bg-muted"
+        style={{ gridColumn: "1", gridRow: "1" }}
+      />
       {/* day header */}
-      {days.map((dayOfWeek) => (
+      {days.map((dayOfWeek, dayIndex) => (
         <div
           key={`h-${dayOfWeek}`}
           className="border-b border-r border-border-subtle bg-bg-muted text-center text-[11px] font-semibold leading-[28px]"
+          style={{ gridColumn: `${dayIndex + 2}`, gridRow: "1" }}
         >
           {DAY_LABELS[dayOfWeek - 1] ?? ""}
         </div>
       ))}
       {/* rows */}
-      {periodIndexes.map((periodIndex) => {
+      {periodIndexes.map((periodIndex, periodRowIndex) => {
         const slot = slotByIndex.get(periodIndex);
         if (!slot) return null;
         return (
           <Fragment key={periodIndex}>
-            <div className="border-b border-r border-border-subtle bg-bg-muted">
+            <div
+              className="border-b border-r border-border-subtle bg-bg-muted"
+              style={{ gridColumn: "1", gridRow: `${periodRowIndex + 2}` }}
+            >
               <PeriodLabel slot={slot} />
             </div>
-            {days.map((dayOfWeek) => {
+            {days.map((dayOfWeek, dayIndex) => {
               const key = `${dayOfWeek}:${periodIndex}`;
               const isOccupied = occupiedSet.has(key);
               return (
                 <div
                   key={key}
                   className="border-b border-r border-border-subtle p-0.5"
+                  style={{ gridColumn: `${dayIndex + 2}`, gridRow: `${periodRowIndex + 2}` }}
                 >
                   {!isOccupied && onEmptyCellClick ? (
                     <EmptyCell onClick={() => onEmptyCellClick(dayOfWeek, periodIndex)} />
@@ -139,6 +147,7 @@ export function TimetableView({
               <EventTile
                 key={event.id}
                 density="compact"
+                align="top"
                 color={event.color}
                 title={event.title}
                 subtitle={event.subtitle}

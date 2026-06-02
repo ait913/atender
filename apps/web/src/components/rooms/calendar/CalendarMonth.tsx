@@ -10,7 +10,7 @@ export function CalendarMonth({
   events,
   statusByDate,
   onSelectDate,
-  maxChipsPerCell = 2,
+  maxChipsPerCell = 3,
 }: {
   anchor: Dayjs;
   selectedDate: string;
@@ -53,18 +53,28 @@ export function CalendarMonth({
               key={dateString}
               type="button"
               onClick={() => onSelectDate(dateString)}
-              className={`min-h-16 min-w-0 rounded-xl p-0.5 text-left transition active:scale-95 ${
+              className={`min-h-24 min-w-0 rounded-xl p-0.5 text-left transition active:scale-95 ${
                 isSelected
-                  ? "bg-accent-500 text-fg-on-accent shadow-glow-soft"
+                  ? "text-fg-primary"
                   : inMonth
                     ? "text-fg-primary hover:bg-fg-primary/6"
                     : "text-fg-tertiary"
-              } ${isToday && !isSelected ? "ring-2 ring-accent-500/40" : ""}`}
+              }`}
               aria-label={date.format("M月D日")}
               aria-pressed={isSelected}
             >
               <span className="mb-1 flex min-w-0 items-center gap-1">
-                <span className="text-[11px] font-bold leading-none">{date.date()}</span>
+                <span
+                  className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold leading-none ${
+                    isSelected
+                      ? "bg-accent-500 text-fg-on-accent"
+                      : isToday && inMonth
+                        ? "text-accent-500"
+                        : ""
+                  }`}
+                >
+                  {date.date()}
+                </span>
                 {showStatusDot && status ? (
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dayStatusColor(status) }} />
                 ) : null}
@@ -76,7 +86,7 @@ export function CalendarMonth({
                     return (
                       <span
                         key={event.kind === "meeting" ? `m:${event.userId}:${event.courseId}:${event.date}:${event.startMinute}` : `${event.kind}:${event.eventId}:${event.date}`}
-                        className="block truncate rounded-[4px] px-1 py-0.5 text-[9px] font-semibold leading-tight text-fg-primary"
+                        className="block truncate rounded-[4px] px-1 py-0.5 text-[10px] font-semibold leading-tight text-fg-primary"
                         style={{ background: `color-mix(in srgb, ${color} 18%, var(--color-bg-elevated))` }}
                       >
                         {eventTitle(event)}
@@ -84,7 +94,7 @@ export function CalendarMonth({
                     );
                   })}
                   {extraCount > 0 ? (
-                    <span className="block truncate text-[9px] font-semibold leading-tight text-fg-tertiary">+{extraCount}</span>
+                    <span className="block truncate text-[10px] font-semibold leading-tight text-fg-tertiary">+{extraCount}</span>
                   ) : null}
                 </span>
               ) : null}

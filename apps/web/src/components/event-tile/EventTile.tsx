@@ -8,6 +8,7 @@ export type EventTileProps = {
   subtitle?: string | null;
   meta?: string | null;
   density?: EventTileDensity;
+  align?: "center" | "top";
   showPill?: boolean;
   onClick?: () => void;
   leadingIcon?: ReactNode;
@@ -25,6 +26,7 @@ export function EventTile({
   subtitle,
   meta,
   density = "compact",
+  align = "center",
   showPill = true,
   onClick,
   leadingIcon,
@@ -52,7 +54,7 @@ export function EventTile({
           style={{ background: color }}
         />
       ) : null}
-      <div className={`flex h-full items-center gap-2 ${pad} ${showPill ? "pl-3" : ""}`}>
+      <div className={`flex h-full gap-2 ${align === "top" ? "items-start" : "items-center"} ${pad} ${showPill ? "pl-3" : ""}`}>
         {badge ?? null}
         <div className="min-w-0 flex-1">
           <p className={`line-clamp-2 ${titleSize} font-semibold leading-tight text-fg-primary`}>
