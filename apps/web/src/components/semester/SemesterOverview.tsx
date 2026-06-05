@@ -5,6 +5,7 @@ import { Panel } from "@/components/ui";
 import { AttendanceCalendar } from "./AttendanceCalendar";
 import { CourseDetailModal } from "./CourseDetailModal";
 import { CourseListItem } from "./CourseListItem";
+import { DayDetailSheet } from "./DayDetailSheet";
 import { OverallRateCard } from "./OverallRateCard";
 
 export function SemesterOverview() {
@@ -12,6 +13,7 @@ export function SemesterOverview() {
   const [semesterId, setSemesterId] = useState<string | null>(null);
   const overview = useSemesterOverview(semesterId);
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
+  const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (semesterId == null && me.data?.user.defaultSemesterId) setSemesterId(me.data.user.defaultSemesterId);
@@ -30,7 +32,7 @@ export function SemesterOverview() {
       </header>
       <section className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <OverallRateCard overall={overall} />
-        <AttendanceCalendar days={days} startDate={startDate} endDate={endDate} />
+        <AttendanceCalendar days={days} startDate={startDate} endDate={endDate} semesterId={semesterId} onSelectDay={setDayDetailDate} />
       </section>
       <section>
         <h2 className="mb-2 text-sm font-bold">科目一覧</h2>
@@ -44,6 +46,7 @@ export function SemesterOverview() {
         {courses.length === 0 ? <Panel>科目がまだありません</Panel> : null}
       </section>
       <CourseDetailModal courseId={openCourseId} onClose={() => setOpenCourseId(null)} />
+      <DayDetailSheet date={dayDetailDate} semesterId={semesterId} onClose={() => setDayDetailDate(null)} />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import type {
   CreateFriendshipInput,
   CreateRoomEventInput,
   CreateRoomInput,
+  DayDetailDto,
   DepartmentDto,
   EffectiveRuleResponse,
   FriendshipDto,
@@ -23,6 +24,9 @@ import type {
   MeetingDto,
   MeetingUpdateInput,
   OccurrenceDto,
+  PersonalEventCreateInput,
+  PersonalEventDto,
+  PersonalEventUpdateInput,
   RoomDto,
   RoomEventDto,
   RoomMemberDto,
@@ -37,6 +41,8 @@ import type {
   TemplateCopyInput,
   TemplateCreateInput,
   TemplateDto,
+  TimetableSuspensionCreateInput,
+  TimetableSuspensionDto,
   UpdateRoomEventInput,
   UpdateRoomInput,
   UserDto,
@@ -69,6 +75,11 @@ export type CourseResponse = { course: CourseDto };
 export type MeetingResponse = { meeting: MeetingDto };
 export type CourseSuspensionsResponse = { suspensions: CourseSuspensionDto[] };
 export type CourseSuspensionResponse = { suspension: CourseSuspensionDto };
+export type TimetableSuspensionsResponse = { suspensions: TimetableSuspensionDto[] };
+export type TimetableSuspensionResponse = { suspension: TimetableSuspensionDto };
+export type PersonalEventsResponse = { events: PersonalEventDto[] };
+export type PersonalEventResponse = { event: PersonalEventDto };
+export type DayDetailResponse = DayDetailDto;
 export type FriendshipsResponse = { friendships: FriendshipDto[] };
 export type FriendshipResponse = { friendship: FriendshipDto };
 export type UsersSearchResponse = { users: UserSearchDto[] };
@@ -94,12 +105,16 @@ export type {
   CourseUpdateInput,
   CourseSuspensionCreateInput,
   CourseSuspensionDto,
+  DayDetailDto,
   CreateFriendshipInput,
   CreateRoomInput,
   CreateRoomEventInput,
   IcsImportCommitResult,
   IcsImportPreview,
   IcsTitleRuleDto,
+  PersonalEventCreateInput,
+  PersonalEventDto,
+  PersonalEventUpdateInput,
   UpdateRoomInput,
   UpdateRoomEventInput,
   RoomWeekDto,
@@ -109,6 +124,8 @@ export type {
   StatsResponse,
   TemplateCopyInput,
   TemplateCreateInput,
+  TimetableSuspensionCreateInput,
+  TimetableSuspensionDto,
   UserTimetableCreateInput,
   UserTimetablePatchInput,
 };

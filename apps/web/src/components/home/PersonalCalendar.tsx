@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import type { AttendanceDaySummary } from "@atender/shared";
-import { useSemesterOverview, useSemesters, useUserTimetables } from "@/api/hooks";
+import { usePersonalEvents, useSemesterOverview, useSemesters, useUserTimetables } from "@/api/hooks";
 import { Panel } from "@/components/ui";
 import { CalendarDay } from "@/components/rooms/calendar/CalendarDay";
 import { CalendarMonth } from "@/components/rooms/calendar/CalendarMonth";
@@ -41,10 +41,11 @@ export function PersonalCalendar({ semesterId }: Props) {
     }
     return { start: selectedDate, end: selectedDate };
   }, [anchor, selectedDate, viewMode, weekStarts]);
+  const personalEvents = usePersonalEvents({ from: range.start, to: range.end, semesterId });
 
   const events = useMemo<CalendarEvent[]>(() => {
     if (!timetable || !semester) return [];
-    return expandUserTimetable({
+    const meetingEvents = expandUserTimetable({
       timetable,
       rangeStart: range.start,
       rangeEnd: range.end,
@@ -52,7 +53,22 @@ export function PersonalCalendar({ semesterId }: Props) {
       semesterEnd: semester.endDate,
       statusByDate,
     });
-  }, [range.end, range.start, semester, statusByDate, timetable]);
+    const ownEvents: CalendarEvent[] = (personalEvents.data?.events ?? []).map((event) => ({
+      kind: "personal",
+      eventId: event.id,
+      date: event.date,
+      title: event.title,
+      startMinute: event.isAllDay ? 0 : event.startMinute ?? 0,
+      endMinute: event.isAllDay ? 1440 : event.endMinute ?? event.startMinute ?? 0,
+      authorName: "自分",
+      authorColor: event.color ?? "#8b5cf6",
+      occurrenceDate: event.date,
+    }));
+    return [...meetingEvents, ...ownEvents].sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.startMinute - b.startMinute;
+    });
+  }, [personalEvents.data?.events, range.end, range.start, semester, statusByDate, timetable]);
   const eventMap = useMemo(() => eventsByDate(events), [events]);
   const dayEvents = eventMap.get(selectedDate) ?? [];
 
@@ -62,8 +78,8 @@ export function PersonalCalendar({ semesterId }: Props) {
   }
 
   if (!semesterId) return <Panel>学期を選択してください。</Panel>;
-  if (timetables.isLoading || semesters.isLoading || overview.isLoading) return <Panel>読み込み中...</Panel>;
-  if (timetables.isError || semesters.isError || overview.isError) return <Panel>カレンダーを読み込めませんでした。</Panel>;
+  if (timetables.isLoading || semesters.isLoading || overview.isLoading || personalEvents.isLoading) return <Panel>読み込み中...</Panel>;
+  if (timetables.isError || semesters.isError || overview.isError || personalEvents.isError) return <Panel>カレンダーを読み込めませんでした。</Panel>;
   if (!timetable) return <Panel>この学期の時間割がありません</Panel>;
   if (!semester) return <Panel>学期を読み込めませんでした。</Panel>;
 

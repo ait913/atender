@@ -24,6 +24,7 @@ export function useCreateCourseSuspension(courseId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: QK.courseSuspensions(courseId) });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["day"] });
     },
   });
 }
@@ -38,6 +39,7 @@ export function useDeleteCourseSuspension(courseId: string | undefined) {
       queryClient.invalidateQueries({ queryKey: QK.courseSuspensions(courseId) });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["day"] });
     },
   });
 }

@@ -4,7 +4,7 @@ import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { dateStringToJstDay, toIsoDate } from "../lib/tz";
 
-function suspensionDto(suspension: {
+export function suspensionDto(suspension: {
   id: string;
   courseId: string;
   date: Date;

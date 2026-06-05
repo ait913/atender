@@ -34,6 +34,7 @@ export function useMarkAllPresent(onErrorToast: (message: string) => void) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      queryClient.invalidateQueries({ queryKey: ["day"] });
     },
   });
 }
@@ -64,6 +65,23 @@ export function usePatchAttendance(onErrorToast: (message: string) => void) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      queryClient.invalidateQueries({ queryKey: ["day"] });
+    },
+  });
+}
+
+export function useDeleteAttendance(onErrorToast: (message: string) => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (occurrenceId: string) => api<{ ok: true }>(`/api/attendance/${occurrenceId}`, { method: "DELETE" }),
+    onError: () => {
+      onErrorToast("保存できませんでした、もう一度試してください");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["today"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      queryClient.invalidateQueries({ queryKey: ["day"] });
     },
   });
 }

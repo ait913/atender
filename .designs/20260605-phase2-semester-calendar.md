@@ -153,7 +153,10 @@ export const PersonalEventCreateInput = z
   })
   .refine(timeRefine, { message: "time range required when not all-day" });
 
-export const PersonalEventUpdateInput = PersonalEventCreateInput; // 全フィールド置換 (PUT 的)。date 変更可
+// PATCH 部分更新 (挙動仕様 #21 準拠)。送られたフィールドだけ更新。
+// isAllDay を true にした場合は startMinute/endMinute を null に戻す (service 側で強制)。
+// isAllDay=false にする/のままで時刻を送る場合は timeRefine 同等の検証を適用。
+export const PersonalEventUpdateInput = PersonalEventCreateInput.partial();
 
 export type PersonalEventDto = z.infer<typeof PersonalEventDto>;
 export type PersonalEventCreateInput = z.infer<typeof PersonalEventCreateInput>;

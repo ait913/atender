@@ -37,6 +37,7 @@ export async function computeCourseStats(args: {
   const timetable = await prisma.userTimetable.findUnique({
     where: { userId_semesterId: { userId: args.userId, semesterId: args.semesterId } },
     include: {
+      timetableSuspensions: true,
       courses: {
         include: {
           occurrences: {
@@ -54,6 +55,7 @@ export async function computeCourseStats(args: {
     ? (await getEffectiveRule({ schoolId: scope.schoolId, departmentId: scope.departmentId, userId: args.userId })).effective
     : systemDefaultRule;
   const todayIso = toIsoDate(args.now ?? new Date());
+  const timetableSuspendedDates = new Set(timetable.timetableSuspensions.map((suspension) => toIsoDate(suspension.date)));
 
   return timetable.courses.map((course) => {
     const counts = { present: 0, absent: 0, excused: 0, tardy: 0, earlyLeave: 0, cancelled: 0, suspended: 0, unrecorded: 0 };
@@ -64,6 +66,11 @@ export async function computeCourseStats(args: {
 
     for (const occurrence of course.occurrences) {
       const occurrenceDate = toIsoDate(occurrence.date);
+      if (timetableSuspendedDates.has(occurrenceDate)) {
+        counts.suspended += 1;
+        denominatorReduction += 1;
+        continue;
+      }
       if (suspendedDates.has(occurrenceDate)) {
         counts.suspended += 1;
         denominatorReduction += 1;

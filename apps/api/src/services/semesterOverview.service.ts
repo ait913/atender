@@ -52,6 +52,7 @@ async function buildDaySummaries(args: {
   const timetable = await prisma.userTimetable.findUnique({
     where: { userId_semesterId: { userId: args.userId, semesterId: args.semesterId } },
     include: {
+      timetableSuspensions: true,
       courses: {
         include: {
           occurrences: { include: { attendanceRecord: true } },
@@ -63,12 +64,15 @@ async function buildDaySummaries(args: {
 
   const byDate = new Map<string, Array<{ status: DayStatus }>>();
   if (timetable) {
+    const timetableSuspendedDates = new Set(timetable.timetableSuspensions.map((suspension) => toIsoDate(suspension.date)));
     for (const course of timetable.courses) {
       const suspendedDates = new Set(course.suspensions.map((suspension) => toIsoDate(suspension.date)));
       for (const occurrence of course.occurrences) {
         const dateIso = toIsoDate(occurrence.date);
         const list = byDate.get(dateIso) ?? [];
-        if (suspendedDates.has(dateIso)) {
+        if (timetableSuspendedDates.has(dateIso)) {
+          list.push({ status: "SUSPENDED" });
+        } else if (suspendedDates.has(dateIso)) {
           list.push({ status: "SUSPENDED" });
         } else if (!occurrence.attendanceRecord) {
           list.push({ status: "UNRECORDED" });

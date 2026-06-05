@@ -202,4 +202,131 @@ describe("stats API", () => {
     expect(body.semesterId).toBe(complete.semester.id);
     expect(body.courses.map((c: { courseId: string }) => c.courseId)).toEqual([complete.course.id]);
   });
+
+  it("[#8] timetable suspension counts an unrecorded occurrence as suspended and reduces denominator", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-05-13T00:00:00.000Z") });
+    await (db as any).timetableSuspension.create({
+      data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+
+    const res = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const course = (await json(res)).courses[0];
+
+    expect(res.status).toBe(200);
+    expect(course.counts.suspended).toBe(1);
+    expect(course.effectiveDenominator).toBe(14);
+  });
+
+  it("[#10] deleting timetable suspension restores normal PRESENT evaluation", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    const occurrence = await createOccurrence(db, {
+      meetingId: complete.meeting.id,
+      courseId: complete.course.id,
+      date: new Date("2026-05-13T00:00:00.000Z"),
+    });
+    await db.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: complete.user.id, status: "PRESENT" } });
+    const suspension = await (db as any).timetableSuspension.create({
+      data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+
+    const suspendedRes = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const suspendedCourse = (await json(suspendedRes)).courses[0];
+    expect(suspendedCourse.counts.suspended).toBe(1);
+    expect(suspendedCourse.effectiveDenominator).toBe(14);
+
+    await (db as any).timetableSuspension.delete({ where: { id: suspension.id } });
+    const restoredRes = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const restoredCourse = (await json(restoredRes)).courses[0];
+
+    expect(restoredRes.status).toBe(200);
+    expect(restoredCourse.effectiveNumerator).toBe(1);
+    expect(restoredCourse.effectiveDenominator).toBe(15);
+  });
+
+  it("[#13] timetable suspension and course suspension on the same occurrence do not double-count", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-05-13T00:00:00.000Z") });
+    await (db as any).timetableSuspension.create({
+      data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+    await db.courseSuspension.create({
+      data: { courseId: complete.course.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+
+    const res = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const course = (await json(res)).courses[0];
+
+    expect(res.status).toBe(200);
+    expect(course.counts.suspended).toBe(1);
+    expect(course.effectiveDenominator).toBe(14);
+  });
+
+  it("[#14] removing only timetable suspension keeps the course suspension denominator reduction", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-05-13T00:00:00.000Z") });
+    const suspension = await (db as any).timetableSuspension.create({
+      data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+    await db.courseSuspension.create({
+      data: { courseId: complete.course.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+
+    await (db as any).timetableSuspension.delete({ where: { id: suspension.id } });
+    const res = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const course = (await json(res)).courses[0];
+
+    expect(res.status).toBe(200);
+    expect(course.counts.suspended).toBe(1);
+    expect(course.effectiveDenominator).toBe(14);
+  });
+
+  it("[#26] adding timetable suspension after PRESENT keeps AttendanceRecord but stats prefer suspended", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    const occurrence = await createOccurrence(db, {
+      meetingId: complete.meeting.id,
+      courseId: complete.course.id,
+      date: new Date("2026-05-13T00:00:00.000Z"),
+    });
+    const record = await db.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: complete.user.id, status: "PRESENT" } });
+    await (db as any).timetableSuspension.create({
+      data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+
+    const res = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const course = (await json(res)).courses[0];
+
+    await expect(db.attendanceRecord.findFirst({ where: { id: record.id } })).resolves.not.toBeNull();
+    expect(res.status).toBe(200);
+    expect(course.counts.suspended).toBe(1);
+    expect(course.effectiveNumerator).toBe(0);
+    expect(course.effectiveDenominator).toBe(14);
+  });
+
+  it("[#27] deleting timetable suspension reactivates the preserved PRESENT record", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    const occurrence = await createOccurrence(db, {
+      meetingId: complete.meeting.id,
+      courseId: complete.course.id,
+      date: new Date("2026-05-13T00:00:00.000Z"),
+    });
+    await db.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: complete.user.id, status: "PRESENT" } });
+    const suspension = await (db as any).timetableSuspension.create({
+      data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-05-13T00:00:00.000Z") },
+    });
+
+    await (db as any).timetableSuspension.delete({ where: { id: suspension.id } });
+    const res = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const course = (await json(res)).courses[0];
+
+    expect(res.status).toBe(200);
+    expect(course.effectiveNumerator).toBe(1);
+    expect(course.effectiveDenominator).toBe(15);
+  });
 });
