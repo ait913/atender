@@ -1,0 +1,35 @@
+{
+  "date": "2026-06-08",
+  "occurrences": [
+    {
+      "id": "occ_01",
+      "meetingId": "meeting_01",
+      "courseId": "course_01",
+      "courseName": "情報デザイン",
+      "teacher": "佐藤先生",
+      "room": "A-201",
+      "color": "#F97316",
+      "date": "2026-06-08",
+      "periodIndex": 1,
+      "periodOffset": 0,
+      "startMinute": 540,
+      "endMinute": 630,
+      "status": "PRESENT"
+    },
+    {
+      "id": "occ_02",
+      "meetingId": "meeting_02",
+      "courseId": "course_02",
+      "courseName": "英語表現",
+      "teacher": null,
+      "room": "B-102",
+      "color": "#5AA9FF",
+      "date": "2026-06-08",
+      "periodIndex": 2,
+      "periodOffset": 0,
+      "startMinute": 640,
+      "endMinute": 730,
+      "status": null
+    }
+  ]
+}

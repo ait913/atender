@@ -1,0 +1,63 @@
+{
+  "semesterId": "sem_2026_spring",
+  "semesterName": "2026 前期",
+  "startDate": "2026-04-01",
+  "endDate": "2026-07-31",
+  "overall": {
+    "effectiveNumerator": 18,
+    "effectiveDenominator": 20,
+    "attendanceRate": 0.9
+  },
+  "days": [
+    { "date": "2026-06-01", "status": "ALL_PRESENT", "occurrenceCount": 2 },
+    { "date": "2026-06-02", "status": "NO_CLASS", "occurrenceCount": 0 },
+    { "date": "2026-06-03", "status": "HAS_TARDY", "occurrenceCount": 1 },
+    { "date": "2026-06-04", "status": "PARTIAL_UNRECORDED", "occurrenceCount": 3 },
+    { "date": "2026-06-05", "status": "HAS_ABSENT", "occurrenceCount": 2 }
+  ],
+  "courses": [
+    {
+      "courseId": "course_01",
+      "courseName": "情報デザイン",
+      "teacher": "佐藤先生",
+      "totalSessions": 15,
+      "generatedOccurrences": 10,
+      "counts": {
+        "present": 9,
+        "absent": 0,
+        "excused": 0,
+        "tardy": 1,
+        "earlyLeave": 0,
+        "cancelled": 0,
+        "suspended": 0,
+        "unrecorded": 0
+      },
+      "effectiveNumerator": 9.5,
+      "effectiveDenominator": 10,
+      "attendanceRate": 0.95,
+      "separateCounts": {
+        "TARDY": 1
+      }
+    },
+    {
+      "courseId": "course_02",
+      "courseName": "英語表現",
+      "teacher": null,
+      "totalSessions": 15,
+      "generatedOccurrences": 10,
+      "counts": {
+        "present": 8,
+        "absent": 1,
+        "excused": 0,
+        "tardy": 0,
+        "earlyLeave": 0,
+        "cancelled": 0,
+        "suspended": 0,
+        "unrecorded": 1
+      },
+      "effectiveNumerator": 8,
+      "effectiveDenominator": 9,
+      "attendanceRate": 0.8888888889
+    }
+  ]
+}

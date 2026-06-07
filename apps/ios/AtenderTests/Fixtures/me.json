@@ -1,0 +1,20 @@
+{
+  "user": {
+    "id": "user_01",
+    "email": "touri@example.com",
+    "name": "Touri",
+    "image": null,
+    "handle": "touri",
+    "inviteCode": "ATD123",
+    "defaultSemesterId": "sem_2026_spring",
+    "schoolId": "school_01",
+    "departmentId": "department_01"
+  },
+  "setupStatus": {
+    "hasSchool": true,
+    "hasDepartment": true,
+    "hasSemester": true,
+    "hasUserTimetable": true,
+    "isComplete": true
+  }
+}

@@ -29,6 +29,12 @@ targets:
       - Atender
     info:
       path: Atender/Info.plist
+      properties:
+        ATENDER_API_BASE_URL: $(ATENDER_API_BASE_URL)
+        CFBundleURLTypes:
+          - CFBundleURLName: net.appily.atender.auth
+            CFBundleURLSchemes:
+              - atender
     settings:
       base:
         GENERATE_INFOPLIST_FILE: false
