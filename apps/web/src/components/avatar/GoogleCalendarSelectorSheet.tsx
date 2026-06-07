@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useCreateGoogleSync, useGoogleCalendars, useGoogleSyncs } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
-import { Button } from "@/components/ui";
+import { Button, ListSkeleton } from "@/components/ui";
 
 type VisibilityMode = "NORMAL" | "TITLE_MAPPED" | "BUSY_ONLY";
 
@@ -33,7 +33,7 @@ export function GoogleCalendarSelectorSheet({ open, onClose, roomId }: { open: b
       <div className="space-y-5">
         <section className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">あなたの Google カレンダー</p>
-          {calendars.isLoading ? <p className="text-sm font-bold text-fg-secondary">読み込み中...</p> : null}
+          {calendars.isLoading ? <ListSkeleton rows={3} /> : null}
           <div className="space-y-2">
             {(calendars.data?.calendars ?? []).map((calendar) => {
               const disabled = syncedIds.has(calendar.id);

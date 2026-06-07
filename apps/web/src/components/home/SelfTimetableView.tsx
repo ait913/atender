@@ -4,6 +4,7 @@ import type { MeetingDto, UserTimetableDto } from "@atender/shared";
 import { useCreateUserTimetable, useDeleteMeeting, useMe, useSemesters, useUserTimetables } from "@/api/hooks";
 import { HomeSemesterPicker } from "@/components/home/HomeSemesterPicker";
 import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
+import { displayDowToJs, jsDowToDisplay, resolveDisplayDays } from "@/components/timetable/dayConvention";
 import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { MeetingEditModal } from "@/components/timetable/MeetingEditModal";
@@ -38,7 +39,7 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
   const emptyTimetable = useMemo<UserTimetableDto | null>(() => {
     const fallbackSemesterId = semesterId ?? me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id;
     if (!fallbackSemesterId) return null;
-    return { id: "", userId: me.data?.user.id ?? "", semesterId: fallbackSemesterId, title: "自分の時間割", sourceTemplateId: null, daySlots: defaultSlots, courses: [], meetings: [], createdAt: "", updatedAt: "" };
+    return { id: "", userId: me.data?.user.id ?? "", semesterId: fallbackSemesterId, title: "自分の時間割", sourceTemplateId: null, daysOfWeek: [1, 2, 3, 4, 5], daySlots: defaultSlots, courses: [], meetings: [], createdAt: "", updatedAt: "" };
   }, [me.data?.user.defaultSemesterId, me.data?.user.id, semesterId, semesters.data?.semesters]);
   const display = selected ?? createdTimetable ?? emptyTimetable;
 
@@ -62,9 +63,9 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
     ? display.daySlots.filter((slot) => slot.periodIndex >= detailMeeting.startPeriodIndex && slot.periodIndex < detailMeeting.startPeriodIndex + detailMeeting.periodCount)
     : [];
 
-  async function handleEmptyCellClick(dayOfWeek: number, period: number) {
+  async function handleEmptyCellClick(displayDow: number, period: number) {
     const timetable = await ensureTimetable();
-    if (timetable) setSheet({ dayOfWeek, period });
+    if (timetable) setSheet({ dayOfWeek: displayDowToJs(displayDow), period });
   }
 
   if (!display) return <Panel>先に学期を作成してください。</Panel>;
@@ -87,11 +88,12 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
       />
       <TimetableView
         daySlots={display.daySlots}
+        days={resolveDisplayDays(display)}
         events={display.meetings.map<TimetableEventInput>((m) => {
           const course = display.courses.find((c) => c.id === m.courseId);
           return {
             id: m.id,
-            dayOfWeek: m.dayOfWeek,
+            dayOfWeek: jsDowToDisplay(m.dayOfWeek),
             startPeriodIndex: m.startPeriodIndex,
             periodCount: m.periodCount,
             color: course?.color ?? "#F97316",

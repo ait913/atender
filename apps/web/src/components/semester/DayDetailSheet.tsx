@@ -14,7 +14,7 @@ import {
   usePatchAttendance,
 } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, ListSkeleton } from "@/components/ui";
 import { PersonalEventEditModal } from "./PersonalEventEditModal";
 
 type Props = {
@@ -56,7 +56,7 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
 
   return (
     <BottomSheet open={date != null} onClose={onClose} title={title} stackLevel={1}>
-      {detail.isLoading ? <p className="text-sm text-fg-tertiary">読み込み中...</p> : null}
+      {detail.isLoading ? <ListSkeleton rows={3} /> : null}
       {data ? (
         <>
           <section className="rounded-2xl bg-bg-muted/50 p-4">

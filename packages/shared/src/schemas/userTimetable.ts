@@ -1,12 +1,18 @@
 import { z } from "zod";
 import { DaySlotDto, MeetingDto, CourseDto, TemplateCreateInput } from "./template.js";
 
+const DaysOfWeek = z
+  .array(z.number().int().min(1).max(7))
+  .min(1)
+  .refine((a) => new Set(a).size === a.length, { message: "曜日が重複しています" });
+
 export const UserTimetableDto = z.object({
   id: z.string(),
   userId: z.string(),
   semesterId: z.string(),
   title: z.string(),
   sourceTemplateId: z.string().nullable(),
+  daysOfWeek: z.array(z.number().int().min(1).max(7)),
   daySlots: z.array(DaySlotDto),
   courses: z.array(CourseDto),
   meetings: z.array(MeetingDto),
@@ -24,6 +30,7 @@ export const UserTimetableCreateInput = TemplateCreateInput.omit({
 
 export const UserTimetablePatchInput = z.object({
   title: z.string().min(1).max(120).optional(),
+  daysOfWeek: DaysOfWeek.optional(),
   daySlots: z.array(DaySlotDto).optional(),
   courses: z.array(z.object({
     id: z.string().optional(),

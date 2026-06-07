@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useRooms } from "@/api/hooks";
-import { Button, EmptyState } from "@/components/ui";
+import { Button, EmptyState, ListSkeleton } from "@/components/ui";
 import { JoinByCodeSheet } from "./JoinByCodeSheet";
 import { RoomCard } from "./RoomCard";
 import { RoomCreateSheet } from "./RoomCreateSheet";
@@ -21,7 +21,9 @@ export function Rooms() {
           <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>作成</Button>
         </div>
       </div>
-      {list.length === 0 && !rooms.isLoading ? (
+      {rooms.isLoading ? (
+        <ListSkeleton rows={3} />
+      ) : list.length === 0 ? (
         <EmptyState title="まだルームに参加していません" action={<Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>ルームを作成</Button>}>友達の時間割と予定をまとめて見られます。</EmptyState>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">{list.map((room) => <RoomCard key={room.id} room={room} onClick={() => void navigate({ to: "/rooms/$id", params: { id: room.id } })} />)}</div>

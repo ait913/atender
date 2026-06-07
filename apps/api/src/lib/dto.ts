@@ -94,6 +94,13 @@ export type UserTimetableWithParts = UserTimetable & {
   meetings: Meeting[];
 };
 
+export function parseDaysOfWeek(csv: string): number[] {
+  return csv
+    .split(",")
+    .map((s) => Number(s.trim()))
+    .filter((n) => Number.isInteger(n) && n >= 1 && n <= 7);
+}
+
 export function userTimetableDto(timetable: UserTimetableWithParts) {
   return {
     id: timetable.id,
@@ -101,6 +108,7 @@ export function userTimetableDto(timetable: UserTimetableWithParts) {
     semesterId: timetable.semesterId,
     title: timetable.title,
     sourceTemplateId: timetable.sourceTemplateId,
+    daysOfWeek: parseDaysOfWeek(timetable.daysOfWeek),
     daySlots: timetable.daySlots.map(daySlotDto),
     courses: timetable.courses.map(courseDto),
     meetings: timetable.meetings.map(meetingDto),

@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import type { AttendanceDaySummary } from "@atender/shared";
 import { usePersonalEvents, useSemesterOverview, useSemesters, useUserTimetables } from "@/api/hooks";
-import { Panel } from "@/components/ui";
+import { CalendarMonthSkeleton, Panel } from "@/components/ui";
 import { CalendarDay } from "@/components/rooms/calendar/CalendarDay";
 import { CalendarMonth } from "@/components/rooms/calendar/CalendarMonth";
 import { CalendarSegmented } from "@/components/rooms/calendar/CalendarSegmented";
@@ -78,7 +78,7 @@ export function PersonalCalendar({ semesterId }: Props) {
   }
 
   if (!semesterId) return <Panel>学期を選択してください。</Panel>;
-  if (timetables.isLoading || semesters.isLoading || overview.isLoading || personalEvents.isLoading) return <Panel>読み込み中...</Panel>;
+  if (timetables.isLoading || semesters.isLoading || overview.isLoading || personalEvents.isLoading) return <CalendarMonthSkeleton />;
   if (timetables.isError || semesters.isError || overview.isError || personalEvents.isError) return <Panel>カレンダーを読み込めませんでした。</Panel>;
   if (!timetable) return <Panel>この学期の時間割がありません</Panel>;
   if (!semester) return <Panel>学期を読み込めませんでした。</Panel>;

@@ -111,3 +111,137 @@ describe("user timetables API", () => {
     expectError(body, /SETUP_REQUIRED|SCHOOL_OR_DEPT_NOT_SET/);
   });
 });
+
+describe("user timetables daysOfWeek", () => {
+  it("POST /api/user-timetables returns default weekday daysOfWeek", async () => {
+    const db = prisma();
+    const user = await createTestUser(db);
+    const semester = await createSemester(db, user.id);
+    const cookie = await createSessionCookie(db, user.id);
+
+    const res = await requestJson(app, "/api/user-timetables", {
+      method: "POST",
+      headers: { Cookie: cookie },
+      body: {
+        semesterId: semester.id,
+        title: "新規時間割",
+        daySlots: [{ periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false }],
+        courses: [{ tempId: "c1", name: "OS", totalSessions: 15 }],
+        meetings: [{ courseTempId: "c1", dayOfWeek: 3, startPeriodIndex: 1, periodCount: 1 }],
+      },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(201);
+    expect(body.userTimetable.daysOfWeek).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("PATCH daysOfWeek accepts all weekdays and weekends", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { daysOfWeek: [1, 2, 3, 4, 5, 6, 7] },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(200);
+    expect(body.userTimetable.daysOfWeek).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("PATCH daysOfWeek normalizes unordered values ascending", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { daysOfWeek: [6, 1, 3] },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(200);
+    expect(body.userTimetable.daysOfWeek).toEqual([1, 3, 6]);
+  });
+
+  it("PATCH daysOfWeek rejects duplicate values with ZodError", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { daysOfWeek: [1, 1, 2] },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(body)).toContain("ZodError");
+  });
+
+  it("PATCH daysOfWeek rejects an empty array with ZodError", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { daysOfWeek: [] },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(body)).toContain("ZodError");
+  });
+
+  it.each([[0], [8]])("PATCH daysOfWeek rejects out-of-range value %j with ZodError", async (daysOfWeek) => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { daysOfWeek },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(body)).toContain("ZodError");
+  });
+
+  it("PATCH daysOfWeek does not change existing occurrence count or schedule fields", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id });
+
+    const baselineRes = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { title: complete.userTimetable.title },
+    });
+    expect(baselineRes.status).toBe(200);
+
+    const before = await db.meetingOccurrence.findMany({
+      where: { meetingId: complete.meeting.id },
+      orderBy: [{ date: "asc" }, { startMinute: "asc" }, { endMinute: "asc" }],
+      select: { date: true, startMinute: true, endMinute: true },
+    });
+
+    const res = await requestJson(app, `/api/user-timetables/${complete.userTimetable.id}`, {
+      method: "PATCH",
+      headers: { Cookie: complete.cookie },
+      body: { daysOfWeek: [1, 2, 3, 4, 5, 6, 7] },
+    });
+
+    const after = await db.meetingOccurrence.findMany({
+      where: { meetingId: complete.meeting.id },
+      orderBy: [{ date: "asc" }, { startMinute: "asc" }, { endMinute: "asc" }],
+      select: { date: true, startMinute: true, endMinute: true },
+    });
+
+    expect(res.status).toBe(200);
+    expect(after).toEqual(before);
+  });
+});

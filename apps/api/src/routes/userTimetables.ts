@@ -82,6 +82,10 @@ export function registerUserTimetableRoutes(app: Hono) {
     await getOwnedTimetable(id, user.id);
     const timetable = await prisma.$transaction(async (tx) => {
       if (input.title) await tx.userTimetable.update({ where: { id }, data: { title: input.title } });
+      if (input.daysOfWeek) {
+        const csv = [...new Set(input.daysOfWeek)].sort((a, b) => a - b).join(",");
+        await tx.userTimetable.update({ where: { id }, data: { daysOfWeek: csv } });
+      }
       if (input.daySlots) {
         await tx.daySlot.deleteMany({ where: { userTimetableId: id } });
         await tx.daySlot.createMany({ data: input.daySlots.map((slot) => ({ ...slot, userTimetableId: id })) });

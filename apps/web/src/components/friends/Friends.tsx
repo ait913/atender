@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useCreateFriendship, useFriendshipAction, useFriendships, useMe } from "@/api/hooks";
-import { Button, EmptyState } from "@/components/ui";
+import { Button, EmptyState, ListSkeleton } from "@/components/ui";
 import { AddFriendSheet } from "./AddFriendSheet";
 import { FriendCard } from "./FriendCard";
 
@@ -26,6 +26,7 @@ export function Friends() {
         <h1 className="text-2xl font-bold">友達</h1>
         <Button type="button" variant="primary" onClick={() => setAddOpen(true)}>友達を追加</Button>
       </div>
+      {friendships.isLoading ? <ListSkeleton rows={3} /> : null}
       {rows.length === 0 && !friendships.isLoading ? <EmptyState title="まだ友達がいません">ハンドル検索または招待リンクで追加できます。</EmptyState> : null}
       <Section title={`受信した申請 (${received.length})`}>{received.map((item) => <FriendCard key={item.id} friendship={item} meId={meId} variant="received" onAccept={() => accept.mutate(item.id)} onDecline={() => decline.mutate(item.id)} />)}</Section>
       <Section title={`送信した申請 (${sent.length})`}>{sent.map((item) => <FriendCard key={item.id} friendship={item} meId={meId} variant="sent" onCancel={() => cancel.mutate(item.id)} />)}</Section>

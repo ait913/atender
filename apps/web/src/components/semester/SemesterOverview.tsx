@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMe, useSemesterOverview } from "@/api/hooks";
 import { HomeSemesterPicker } from "@/components/home/HomeSemesterPicker";
-import { Panel } from "@/components/ui";
+import { AttendanceCalendarSkeleton, Panel } from "@/components/ui";
 import { AttendanceCalendar } from "./AttendanceCalendar";
 import { CourseDetailModal } from "./CourseDetailModal";
 import { CourseListItem } from "./CourseListItem";
@@ -19,7 +19,7 @@ export function SemesterOverview() {
     if (semesterId == null && me.data?.user.defaultSemesterId) setSemesterId(me.data.user.defaultSemesterId);
   }, [me.data?.user.defaultSemesterId, semesterId]);
 
-  if (overview.isLoading) return <Panel>読み込み中...</Panel>;
+  if (overview.isLoading) return <AttendanceCalendarSkeleton />;
   if (!overview.data) return <Panel>学期を選択してください。</Panel>;
 
   const { startDate, endDate, overall, days, courses } = overview.data;

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { UserTimetableDto } from "@atender/shared";
 import { useCopyTemplate, useMe, usePatchUserTimetable, usePublishTimetable, useSemesters, useTemplates } from "@/api/hooks";
+import { DayChips } from "@/components/timetable/DayChips";
 import { Button, Field, Input, Toggle } from "@/components/ui";
 import { BottomSheet } from "./BottomSheet";
 
@@ -32,6 +33,7 @@ export function TimetableSettingsSheet({
   const [name, setName] = useState("");
   const [publishEnabled, setPublishEnabled] = useState(true);
   const [publishTitle, setPublishTitle] = useState("");
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [slots, setSlots] = useState<SlotInput[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -48,9 +50,10 @@ export function TimetableSettingsSheet({
     setName(timetable?.title ?? "");
     setPublishEnabled(true);
     setPublishTitle(semester?.name ?? timetable?.title ?? "");
+    setDaysOfWeek(timetable?.daysOfWeek ?? [1, 2, 3, 4, 5]);
     setSlots(timetable?.daySlots.map((s) => ({ ...s })) ?? []);
     setMessage(null);
-  }, [open, timetable?.title, timetable?.daySlots, semester?.name]);
+  }, [open, timetable?.title, timetable?.daysOfWeek, timetable?.daySlots, semester?.name]);
 
   function addSlot() {
     setSlots((cur) => {
@@ -76,6 +79,11 @@ export function TimetableSettingsSheet({
     const trimmedName = name.trim();
     const trimmedPublishTitle = publishTitle.trim();
 
+    if (daysOfWeek.length === 0) {
+      setMessage("表示する曜日を1つ以上選んでください");
+      return;
+    }
+
     // validate slots: end > start, no overlap
     for (let i = 0; i < slots.length; i++) {
       const s = slots[i];
@@ -89,6 +97,9 @@ export function TimetableSettingsSheet({
     const patches: Promise<unknown>[] = [];
     if (trimmedName.length > 0 && trimmedName !== timetable.title) {
       patches.push(patch.mutateAsync({ title: trimmedName }));
+    }
+    if (JSON.stringify([...daysOfWeek].sort((a, b) => a - b)) !== JSON.stringify([...timetable.daysOfWeek].sort((a, b) => a - b))) {
+      patches.push(patch.mutateAsync({ daysOfWeek }));
     }
     const slotsChanged = JSON.stringify(slots) !== JSON.stringify(timetable.daySlots);
     if (slotsChanged) {
@@ -110,6 +121,7 @@ export function TimetableSettingsSheet({
     setName(timetable?.title ?? "");
     setPublishEnabled(true);
     setPublishTitle(semester?.name ?? timetable?.title ?? "");
+    setDaysOfWeek(timetable?.daysOfWeek ?? [1, 2, 3, 4, 5]);
     setSlots(timetable?.daySlots.map((s) => ({ ...s })) ?? []);
     setMessage(null);
     onClose();
@@ -135,6 +147,11 @@ export function TimetableSettingsSheet({
       <Field label="名前">
         <Input value={name} disabled={!timetable} onChange={(event) => setName(event.currentTarget.value)} />
       </Field>
+
+      <div className="space-y-3 border-t border-fg-primary/8 pt-5">
+        <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">表示する曜日</span>
+        <DayChips value={daysOfWeek} onChange={setDaysOfWeek} disabled={!timetable} />
+      </div>
 
       <div className="space-y-3 border-t border-fg-primary/8 pt-5">
         <div className="flex items-center justify-between">

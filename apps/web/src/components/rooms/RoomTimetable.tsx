@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import type { DaySlotDto } from "@atender/shared";
 import { useMe, useRoomWeek, useUserTimetables } from "@/api/hooks";
 import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
-import { EmptyState, Panel } from "@/components/ui";
+import { EmptyState, Panel, TimetableGridSkeleton } from "@/components/ui";
 
 const DEFAULT_SLOTS: DaySlotDto[] = [
   { periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false },
@@ -77,8 +77,13 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
     }
     return Array.from(seen.values()).map((acc) => acc.event);
   }, [week.data, daySlots]);
+  const displayDays = useMemo(() => {
+    const set = new Set<number>([1, 2, 3, 4, 5]);
+    for (const e of events) set.add(e.dayOfWeek);
+    return [...set].sort((a, b) => a - b);
+  }, [events]);
 
-  if (week.isLoading) return <Panel>読み込み中...</Panel>;
+  if (week.isLoading) return <TimetableGridSkeleton days={5} rows={5} height="calc(100dvh - var(--room-tt-chrome-top, 168px) - var(--tab-bar-height) - env(safe-area-inset-bottom, 0px))" />;
   if (week.isError) return <Panel>時間割を読み込めませんでした。</Panel>;
   if (events.length === 0) {
     return <EmptyState title={week.data?.members.length ? "メンバーの時間割がまだありません" : "メンバーがいません"} />;
@@ -87,6 +92,7 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
   return (
     <TimetableView
       daySlots={daySlots}
+      days={displayDays}
       events={events}
       height="calc(100dvh - var(--room-tt-chrome-top, 168px) - var(--tab-bar-height) - env(safe-area-inset-bottom, 0px))"
     />

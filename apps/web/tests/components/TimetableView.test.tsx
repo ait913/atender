@@ -177,4 +177,62 @@ describe("TimetableView", () => {
     expect(eventBlock.parentElement?.className).toContain("grid");
     expect(eventBlock.parentElement).toContainElement(eventBlock);
   });
+
+  it("renders seven weekday headers when days includes weekdays and weekends", () => {
+    renderTimetable({ days: [1, 2, 3, 4, 5, 6, 7] });
+
+    expect(screen.getByText("月")).toBeInTheDocument();
+    expect(screen.getByText("火")).toBeInTheDocument();
+    expect(screen.getByText("水")).toBeInTheDocument();
+    expect(screen.getByText("木")).toBeInTheDocument();
+    expect(screen.getByText("金")).toBeInTheDocument();
+    expect(screen.getByText("土")).toBeInTheDocument();
+    expect(screen.getByText("日")).toBeInTheDocument();
+  });
+
+  it("does not render weekend headers for default weekday-only days", () => {
+    renderTimetable({ days: [1, 2, 3, 4, 5] });
+
+    expect(screen.getByText("月")).toBeInTheDocument();
+    expect(screen.queryByText("土")).not.toBeInTheDocument();
+    expect(screen.queryByText("日")).not.toBeInTheDocument();
+  });
+
+  it("renders a Sunday event when display day 7 is included", () => {
+    renderTimetable({
+      days: [1, 2, 3, 4, 5, 6, 7],
+      events: [
+        {
+          id: "event-sunday",
+          dayOfWeek: 7,
+          startPeriodIndex: 1,
+          periodCount: 1,
+          color: "#10b981",
+          title: "日曜講義",
+          mergeKey: "sunday-course",
+        },
+      ],
+    });
+
+    expect(screen.getByText("日曜講義")).toBeInTheDocument();
+  });
+
+  it("does not render a Sunday event when display day 7 is not included", () => {
+    renderTimetable({
+      days: [1, 2, 3, 4, 5],
+      events: [
+        {
+          id: "event-sunday",
+          dayOfWeek: 7,
+          startPeriodIndex: 1,
+          periodCount: 1,
+          color: "#10b981",
+          title: "日曜講義",
+          mergeKey: "sunday-course",
+        },
+      ],
+    });
+
+    expect(screen.queryByText("日曜講義")).not.toBeInTheDocument();
+  });
 });

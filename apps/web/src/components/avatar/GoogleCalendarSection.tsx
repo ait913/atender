@@ -1,7 +1,7 @@
 import { CalendarDays, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { useGoogleConnection, useLinkGoogleCalendar, useRunAllGoogleSyncs } from "@/api/hooks";
-import { Button } from "@/components/ui";
+import { Button, ListSkeleton } from "@/components/ui";
 import { GoogleCalendarConnectSheet } from "./GoogleCalendarConnectSheet";
 
 export function GoogleCalendarSection() {
@@ -12,7 +12,7 @@ export function GoogleCalendarSection() {
   const [unlinkOpen, setUnlinkOpen] = useState(false);
 
   if (connection.isLoading) {
-    return <p className="text-sm font-bold text-fg-secondary">読み込み中...</p>;
+    return <ListSkeleton rows={2} />;
   }
 
   if (!conn) {

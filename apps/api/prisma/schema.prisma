@@ -260,6 +260,7 @@ model UserTimetable {
   title            String
   sourceTemplateId String?
   sourceTemplate   TimetableTemplate? @relation(fields: [sourceTemplateId], references: [id], onDelete: SetNull)
+  daysOfWeek       String             @default("1,2,3,4,5")
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
