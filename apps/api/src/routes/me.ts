@@ -1,7 +1,7 @@
 import type { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { MeUpdateInput } from "@atender/shared";
+import { MeResponseDto, MeUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { sessionMiddleware } from "../middleware/session";
@@ -38,7 +38,7 @@ async function getMeResponse(user: MeUser) {
     hasUserTimetable,
     isComplete: user.schoolId != null && user.departmentId != null && user.defaultSemesterId != null,
   };
-  return {
+  return MeResponseDto.parse({
     user: {
       id: user.id,
       email: user.email,
@@ -51,7 +51,7 @@ async function getMeResponse(user: MeUser) {
       departmentId: user.departmentId,
     },
     setupStatus,
-  };
+  });
 }
 
 function departmentSchoolMismatch() {

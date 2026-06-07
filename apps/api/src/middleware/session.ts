@@ -12,6 +12,18 @@ function readCookie(headers: Headers, name: string) {
   return decodeURIComponent(match.slice(name.length + 1));
 }
 
+function readBearerToken(headers: Headers) {
+  const authorization = headers.get("Authorization");
+  if (!authorization || authorization.slice(0, 7).toLowerCase() !== "bearer ") return null;
+  const token = authorization.slice(7).trim();
+  if (!token) return null;
+  try {
+    return decodeURIComponent(token);
+  } catch {
+    return token;
+  }
+}
+
 export const sessionMiddleware: MiddlewareHandler<{ Variables: AppVariables }> = async (c, next) => {
   const auth = getAuth();
   const session = await auth.api.getSession({ headers: c.req.raw.headers });
@@ -22,7 +34,7 @@ export const sessionMiddleware: MiddlewareHandler<{ Variables: AppVariables }> =
     return;
   }
 
-  const token = readCookie(c.req.raw.headers, "better-auth.session_token");
+  const token = readBearerToken(c.req.raw.headers) ?? readCookie(c.req.raw.headers, "better-auth.session_token");
   if (!token) {
     throw new AppError(401, "UNAUTHORIZED", "Unauthorized");
   }

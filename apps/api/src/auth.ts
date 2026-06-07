@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { magicLink } from "better-auth/plugins";
+import { bearer, magicLink } from "better-auth/plugins";
 import { Resend } from "resend";
 import { getPrisma } from "./db";
 import { env, trustedOrigins } from "./env";
@@ -8,6 +8,16 @@ import { env, trustedOrigins } from "./env";
 const resend = new Resend(env.RESEND_API_KEY);
 
 type Auth = ReturnType<typeof betterAuth>;
+
+function getAppleProviderConfig() {
+  const { APPLE_CLIENT_ID, APPLE_CLIENT_SECRET, APPLE_APP_BUNDLE_ID } = env;
+  if (!APPLE_CLIENT_ID || !APPLE_CLIENT_SECRET || !APPLE_APP_BUNDLE_ID) return null;
+  return {
+    clientId: APPLE_CLIENT_ID,
+    clientSecret: APPLE_CLIENT_SECRET,
+    appBundleIdentifier: APPLE_APP_BUNDLE_ID,
+  };
+}
 
 let authInstance: Auth | null = null;
 
@@ -17,6 +27,7 @@ export function resetAuth() {
 
 export function getAuth(): Auth {
   if (!authInstance) {
+    const appleProviderConfig = getAppleProviderConfig();
     const created = betterAuth({
       database: prismaAdapter(getPrisma(), { provider: "sqlite" }),
       secret: env.BETTER_AUTH_SECRET,
@@ -28,8 +39,14 @@ export function getAuth(): Auth {
           accessType: "offline",
           prompt: "consent",
         },
+        ...(appleProviderConfig
+          ? {
+              apple: appleProviderConfig,
+            }
+          : {}),
       },
       plugins: [
+        bearer(),
         magicLink({
           expiresIn: 60 * 15,
           sendMagicLink: async ({ email, url }) => {

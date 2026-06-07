@@ -1,5 +1,28 @@
 import { z } from "zod";
 
+export const MeResponseDto = z.object({
+  user: z.object({
+    id: z.string(),
+    email: z.string(),
+    name: z.string().nullable(),
+    image: z.string().nullable(),
+    handle: z.string().nullable(),
+    inviteCode: z.string().nullable(),
+    defaultSemesterId: z.string().nullable(),
+    schoolId: z.string().nullable(),
+    departmentId: z.string().nullable(),
+  }),
+  setupStatus: z.object({
+    hasSchool: z.boolean(),
+    hasDepartment: z.boolean(),
+    hasSemester: z.boolean(),
+    hasUserTimetable: z.boolean(),
+    isComplete: z.boolean(),
+  }),
+});
+
+export type MeResponseDto = z.infer<typeof MeResponseDto>;
+
 export const MeUpdateInput = z.object({
   schoolId: z.string().optional(),
   departmentId: z.string().optional(),

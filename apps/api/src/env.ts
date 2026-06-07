@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const OptionalNonEmptyString = z.preprocess((value) => value === "" ? undefined : value, z.string().min(1).optional());
+
 const EnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   BETTER_AUTH_SECRET: z.string().min(1),
@@ -10,6 +12,9 @@ const EnvSchema = z.object({
   RESEND_FROM: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
+  APPLE_CLIENT_ID: OptionalNonEmptyString,
+  APPLE_CLIENT_SECRET: OptionalNonEmptyString,
+  APPLE_APP_BUNDLE_ID: OptionalNonEmptyString,
   PUBLIC_WEB_URL: z.string().url(),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
