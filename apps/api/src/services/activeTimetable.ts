@@ -12,16 +12,16 @@ export async function findActiveUserTimetable(userId: string, semesterId?: strin
   });
 }
 
-export async function inferUserSchoolDepartment(userId: string) {
-  const timetable = await prisma.userTimetable.findFirst({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-    include: {
-      sourceTemplate: { select: { schoolId: true, departmentId: true } },
-    },
+export async function resolveUserRuleScope(userId: string): Promise<{
+  schoolId: string | null;
+  departmentId: string | null;
+}> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { schoolId: true, departmentId: true },
   });
   return {
-    schoolId: timetable?.sourceTemplate?.schoolId ?? null,
-    departmentId: timetable?.sourceTemplate?.departmentId ?? null,
+    schoolId: user?.schoolId ?? null,
+    departmentId: user?.departmentId ?? null,
   };
 }
