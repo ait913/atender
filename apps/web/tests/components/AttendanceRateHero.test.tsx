@@ -37,7 +37,7 @@ describe("AttendanceRateHero", () => {
     renderHero({ allowedAbsences: -2 });
 
     // 仕様 #41
-    expect(screen.getByText("残り全部出席しても 70% に届きません")).toBeInTheDocument();
+    expect(screen.getByText("70% を下回る見込み")).toBeInTheDocument();
   });
 
   it("renders all-remaining-can-be-absent text when allowedAbsences covers remainingCount", () => {

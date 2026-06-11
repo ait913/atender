@@ -5,6 +5,7 @@ import {
   useCreateCourseSuspension,
   useCreatePersonalEvent,
   useCreateTimetableSuspension,
+  useBulkMarkAttendance,
   useDayDetail,
   useDeleteAttendance,
   useDeleteCourseSuspension,
@@ -21,6 +22,7 @@ vi.mock("@/api/hooks", () => ({
   useDeleteAttendance: vi.fn(),
   useCreateTimetableSuspension: vi.fn(),
   useDeleteTimetableSuspension: vi.fn(),
+  useBulkMarkAttendance: vi.fn(),
   useMarkAllPresent: vi.fn(),
   useCreateCourseSuspension: vi.fn(),
   useDeleteCourseSuspension: vi.fn(),
@@ -71,8 +73,9 @@ const baseDetail = {
   personalEvents: [],
 };
 
-function mockHooks(detail: any = baseDetail, options: Partial<{ pending: boolean }> = {}) {
+function mockHooks(detail: any = baseDetail, options: Partial<{ pending: boolean; bulkPending: boolean }> = {}) {
   const patchAttendance = vi.fn();
+  const bulk = vi.fn();
   const markAll = vi.fn();
   const createTimetableSuspension = vi.fn().mockResolvedValue(undefined);
   const deleteTimetableSuspension = vi.fn().mockResolvedValue(undefined);
@@ -91,6 +94,10 @@ function mockHooks(detail: any = baseDetail, options: Partial<{ pending: boolean
     mutateAsync: deleteTimetableSuspension,
     isPending: pending,
   } as any);
+  vi.mocked(useBulkMarkAttendance).mockReturnValue({
+    mutate: bulk,
+    isPending: options.bulkPending ?? false,
+  } as any);
   vi.mocked(useMarkAllPresent).mockReturnValue({ mutate: markAll, isPending: pending } as any);
   vi.mocked(useCreateCourseSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeleteCourseSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
@@ -98,7 +105,7 @@ function mockHooks(detail: any = baseDetail, options: Partial<{ pending: boolean
   vi.mocked(useCreatePersonalEvent).mockReturnValue({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false } as any);
   vi.mocked(useUpdatePersonalEvent).mockReturnValue({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false } as any);
 
-  return { patchAttendance, markAll, createTimetableSuspension, deleteTimetableSuspension };
+  return { patchAttendance, bulk, markAll, createTimetableSuspension, deleteTimetableSuspension };
 }
 
 function renderSheet() {
@@ -110,17 +117,18 @@ describe("DayDetailSheet review contract", () => {
     vi.clearAllMocks();
   });
 
-  it("renders mark-all-present for two unrecorded occurrences and calls mutate with PRESENT", () => {
-    const { markAll } = mockHooks();
+  it("renders mark-all-present for two unrecorded occurrences and calls bulk FILL with PRESENT", () => {
+    const { bulk } = mockHooks();
     renderSheet();
 
+    // 仕様 #12
     fireEvent.click(screen.getByRole("button", { name: /全部出席にする \(2\)/ }));
 
-    expect(markAll).toHaveBeenCalledWith({ date: "2026-05-13", status: "PRESENT" });
+    expect(bulk).toHaveBeenCalledWith({ dates: ["2026-05-13"], status: "PRESENT", mode: "FILL" });
   });
 
   it("opens the bulk status menu and can mark all unrecorded absent", () => {
-    const { markAll } = mockHooks();
+    const { bulk } = mockHooks();
     renderSheet();
 
     fireEvent.click(screen.getByLabelText("一括記録のステータスを選ぶ"));
@@ -133,11 +141,12 @@ describe("DayDetailSheet review contract", () => {
 
     fireEvent.click(within(menu).getByRole("menuitem", { name: "全部 欠席 (2)" }));
 
-    expect(markAll).toHaveBeenCalledWith({ date: "2026-05-13", status: "ABSENT" });
+    // 仕様 #13
+    expect(bulk).toHaveBeenCalledWith({ dates: ["2026-05-13"], status: "ABSENT", mode: "FILL" });
   });
 
-  it("disables bulk controls when all occurrences are recorded", () => {
-    mockHooks({
+  it("enables overwrite bulk controls when all occurrences are recorded", () => {
+    const { bulk } = mockHooks({
       ...baseDetail,
       occurrences: [
         { ...occurrence, status: "PRESENT" },
@@ -146,8 +155,14 @@ describe("DayDetailSheet review contract", () => {
     });
     renderSheet();
 
-    expect(screen.getByRole("button", { name: "記録済み" })).toBeDisabled();
-    expect(screen.getByLabelText("一括記録のステータスを選ぶ")).toBeDisabled();
+    // 仕様 #12
+    const main = screen.getByRole("button", { name: "全部 出席に上書き" });
+    expect(main).toBeEnabled();
+    expect(screen.getByLabelText("一括記録のステータスを選ぶ")).toBeEnabled();
+
+    fireEvent.click(main);
+
+    expect(bulk).toHaveBeenCalledWith({ dates: ["2026-05-13"], status: "PRESENT", mode: "OVERWRITE" });
   });
 
   it("hides or disables bulk controls while the whole day is suspended", () => {
@@ -173,7 +188,42 @@ describe("DayDetailSheet review contract", () => {
 
     fireEvent.click(screen.getByLabelText("一括記録のステータスを選ぶ"));
 
+    // 仕様 #13
     expect(screen.getByText("未記録の 2 件のみ。記録済みは変わりません")).toBeInTheDocument();
+  });
+
+  it("opens overwrite status menu for recorded occurrences and explains overwrite scope", () => {
+    const { bulk } = mockHooks({
+      ...baseDetail,
+      occurrences: [
+        { ...occurrence, status: "PRESENT" },
+        { ...secondOccurrence, status: "ABSENT" },
+      ],
+    });
+    renderSheet();
+
+    fireEvent.click(screen.getByLabelText("一括記録のステータスを選ぶ"));
+
+    const menu = screen.getByRole("menu");
+    // 仕様 #14 #15
+    expect(within(menu).getByRole("menuitem", { name: "全部 欠席 に上書き" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "全部 公欠 に上書き" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "全部 遅刻 に上書き" })).toBeInTheDocument();
+    expect(within(menu).getByRole("menuitem", { name: "全部 早退 に上書き" })).toBeInTheDocument();
+    expect(screen.getByText("記録済み 2 件をすべて上書きします")).toBeInTheDocument();
+
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "全部 欠席 に上書き" }));
+
+    expect(bulk).toHaveBeenCalledWith({ dates: ["2026-05-13"], status: "ABSENT", mode: "OVERWRITE" });
+  });
+
+  it("disables bulk controls while bulk attendance mutation is pending", () => {
+    mockHooks(baseDetail, { bulkPending: true });
+    renderSheet();
+
+    // 仕様 #18
+    expect(screen.getByRole("button", { name: /全部出席にする \(2\)/ })).toBeDisabled();
+    expect(screen.getByLabelText("一括記録のステータスを選ぶ")).toBeDisabled();
   });
 
   it("renders create-suspension button without checkbox and creates with undefined reason when empty", async () => {

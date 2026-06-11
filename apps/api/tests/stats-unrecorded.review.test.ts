@@ -94,7 +94,8 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
     expect(courseStats.toDate.attendanceRate).toBeCloseTo(6 / 10);
     expect(courseStats.counts.unrecorded).toBe(3);
     expect(courseStats.remainingCount).toBe(5);
-    expect(courseStats.allowedAbsences).toBe(0);
+    // 仕様: allowedAbsences 新式
+    expect(courseStats.allowedAbsences).toBe(3);
   });
 
   it("contrasts with no past unrecorded occurrences", async () => {
@@ -198,7 +199,8 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
     expect(courseStats.toDate.effectiveDenominator).toBe(9);
     expect(courseStats.toDate.attendanceRate).toBeCloseTo(6.5 / 9);
     expect(courseStats.remainingCount).toBe(8);
-    expect(courseStats.allowedAbsences).toBe(2);
+    // 仕様: allowedAbsences 新式
+    expect(courseStats.allowedAbsences).toBe(4);
   });
 
   it("allows negative allowedAbsences when past unrecorded occurrences already put the projection below requirement", async () => {
@@ -224,7 +226,8 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
     expect(courseStats.toDate.effectiveDenominator).toBe(10);
     expect(courseStats.toDate.attendanceRate).toBeCloseTo(0.5);
     expect(courseStats.remainingCount).toBe(0);
-    expect(courseStats.allowedAbsences).toBe(-2);
+    // 仕様: allowedAbsences 新式
+    expect(courseStats.allowedAbsences).toBe(3);
   });
 
   it("returns null toDate rate and null allowedAbsences when there are no occurrences", async () => {
