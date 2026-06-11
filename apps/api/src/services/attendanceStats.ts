@@ -2,7 +2,7 @@ import type { AttendanceStatus, RuleStrategy } from "@prisma/client";
 import type { CourseStatsDto } from "@atender/shared";
 import { prisma } from "../db";
 import { toIsoDate } from "../lib/tz";
-import { inferUserSchoolDepartment } from "./activeTimetable";
+import { resolveUserRuleScope } from "./activeTimetable";
 import { getEffectiveRule, systemDefaultRule, type EffectiveRule } from "./rules";
 
 function strategyWeight(strategy: RuleStrategy): { num: number; den: number; separate: boolean } {
@@ -61,7 +61,7 @@ export async function computeCourseStatsWithProjection(args: {
   });
   if (!timetable) return { courses: [], overallProjection: { num: 0, den: 0 } };
 
-  const scope = await inferUserSchoolDepartment(args.userId);
+  const scope = await resolveUserRuleScope(args.userId);
   const effective = scope.schoolId && scope.departmentId
     ? (await getEffectiveRule({ schoolId: scope.schoolId, departmentId: scope.departmentId, userId: args.userId })).effective
     : systemDefaultRule;
