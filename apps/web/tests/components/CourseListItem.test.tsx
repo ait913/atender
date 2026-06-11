@@ -33,11 +33,9 @@ function stats(rate: number | null, overrides: Partial<any> = {}) {
 
 describe("CourseListItem", () => {
   it.each([
-    [0.92, "92", "--color-status-present"],
-    // 設計doc #46 の「0.64 → absent」例は rateColor の正規定義 (#49: required-10 以上は tardy) と
-    // doc 内で矛盾するため、正規定義に従い absent 閾値未満 (59 < 70-10) で検証する
+    [0.92, "92", "--color-accent-500"],
     [0.59, "59", "--color-status-absent"],
-    [0.66, "66", "--color-status-tardy"],
+    [0.66, "66", "--color-status-absent"],
   ] as const)("renders %s with required-rate-aware color", (rate, text, token) => {
     const { container } = render(<CourseListItem stats={stats(rate) as any} requiredRate={70} onClick={vi.fn()} />);
 
@@ -50,7 +48,8 @@ describe("CourseListItem", () => {
     render(<CourseListItem stats={stats(0.7) as any} requiredRate={70} onClick={vi.fn()} />);
 
     // 仕様 #47
-    expect(screen.getByText(/出7\s*欠4\s*未1/)).toBeInTheDocument();
+    expect(screen.getByText(/出7\s*欠4/)).toBeInTheDocument();
+    expect(screen.queryByText(/未1/)).not.toBeInTheDocument();
   });
 
   it("calls onClick when the row is clicked", () => {

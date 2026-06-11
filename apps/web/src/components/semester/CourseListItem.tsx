@@ -1,4 +1,5 @@
 import type { CourseStatsDto } from "@atender/shared";
+import { AlertTriangle } from "lucide-react";
 import { rateColor } from "@/lib/attendanceRateColor";
 
 type Props = { stats: CourseStatsDto; requiredRate: number; onClick: () => void };
@@ -15,7 +16,22 @@ export function CourseListItem({ stats, requiredRate, onClick }: Props) {
       <span className="w-1 flex-shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex items-start justify-between gap-3">
-          <p className="min-w-0 truncate text-sm font-bold text-fg-primary">{stats.courseName}</p>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="min-w-0 truncate text-sm font-bold text-fg-primary">{stats.courseName}</p>
+            {stats.counts.unrecorded > 0 ? (
+              <span
+                aria-label={`未記録 ${stats.counts.unrecorded} 件`}
+                className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                style={{
+                  background: "color-mix(in srgb, var(--color-status-tardy) 18%, transparent)",
+                  color: "var(--color-status-tardy)",
+                }}
+              >
+                <AlertTriangle className="h-3 w-3" />
+                {stats.counts.unrecorded}
+              </span>
+            ) : null}
+          </div>
           <span className="text-2xl font-black leading-none tabular-nums" style={{ color }}>
             {pct == null ? "—" : pct}
             {pct == null ? null : <span className="ml-0.5 text-xs font-bold">%</span>}
@@ -33,7 +49,7 @@ export function CourseListItem({ stats, requiredRate, onClick }: Props) {
           />
         </div>
         <p className="text-xs tabular-nums text-fg-tertiary">
-          出{stats.counts.present} 欠{stats.counts.absent} 未{stats.counts.unrecorded}
+          出{stats.counts.present} 欠{stats.counts.absent}
           <span className="mx-1">・</span>
           <span style={{ color: actionColor(stats.allowedAbsences, stats.remainingCount) }}>
             {shortActionText(stats.allowedAbsences, stats.remainingCount)}
@@ -54,6 +70,6 @@ function shortActionText(allowedAbsences: number | null, remainingCount: number)
 function actionColor(allowedAbsences: number | null, remainingCount: number) {
   if (allowedAbsences == null) return "var(--color-fg-tertiary)";
   if (allowedAbsences < 0) return "var(--color-status-absent)";
-  if (allowedAbsences >= remainingCount) return "var(--color-status-present)";
+  if (allowedAbsences >= remainingCount) return "var(--color-accent-500)";
   return "var(--color-fg-tertiary)";
 }

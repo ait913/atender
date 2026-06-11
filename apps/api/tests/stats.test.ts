@@ -379,7 +379,7 @@ describe("stats API", () => {
     expect(course.effectiveDenominator).toBe(15);
   });
 
-  it("computes toDate from recorded past occurrences only and projects allowed absences optimistically", async () => {
+  it("computes toDate with past unrecorded occurrences as absent-equivalent and projects allowed absences", async () => {
     const { courseStats } = await statsScenario({
       // 仕様 #1
       // 仕様 #2
@@ -387,14 +387,14 @@ describe("stats API", () => {
       now: new Date("2026-06-08T03:00:00.000Z"),
     });
 
-    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 6, effectiveDenominator: 7 });
-    expect(courseStats.toDate.attendanceRate).toBeCloseTo(6 / 7);
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 6, effectiveDenominator: 8 });
+    expect(courseStats.toDate.attendanceRate).toBeCloseTo(6 / 8);
     expect(courseStats.counts.unrecorded).toBe(1);
     expect(courseStats.remainingCount).toBe(7);
-    expect(courseStats.allowedAbsences).toBe(3);
+    expect(courseStats.allowedAbsences).toBe(2);
   });
 
-  it("includes today in toDate when recorded and counts an unrecorded today outside the denominator", async () => {
+  it("includes today in toDate when recorded and counts an unrecorded today in the denominator", async () => {
     const recorded = await statsScenario({
       // 仕様 #3
       statuses: ["PRESENT"],
@@ -409,7 +409,7 @@ describe("stats API", () => {
       dates: ["2026-06-08"],
       now: new Date("2026-06-08T03:00:00.000Z"),
     });
-    expect(unrecorded.courseStats.toDate).toMatchObject({ effectiveNumerator: 0, effectiveDenominator: 0, attendanceRate: null });
+    expect(unrecorded.courseStats.toDate).toMatchObject({ effectiveNumerator: 0, effectiveDenominator: 1, attendanceRate: 0 });
     expect(unrecorded.courseStats.counts.unrecorded).toBe(1);
   });
 
@@ -566,7 +566,7 @@ describe("stats API", () => {
     expect(courseStats.effectiveDenominator).toBe(15);
     expect(courseStats.attendanceRate).toBeCloseTo(1 / 15);
     expect(courseStats.counts).toMatchObject({ present: 1, absent: 1, unrecorded: 1 });
-    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 2 });
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 3 });
   });
 
   it("aggregates overview toDate counts, remaining counts, required rate, and stats root required rate", async () => {
