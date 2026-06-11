@@ -1,13 +1,14 @@
 import type { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { MarkAllPresentInput, MarkAttendanceInput } from "@atender/shared";
+import { BulkClearAttendanceInput, BulkMarkAttendanceInput, MarkAllPresentInput, MarkAttendanceInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { dateStringToJstDay, today } from "../lib/tz";
 import { sessionMiddleware } from "../middleware/session";
 import { setupGuard } from "../middleware/setupGuard";
 import { findActiveUserTimetable } from "../services/activeTimetable";
+import { bulkClearAttendance, bulkMarkAttendance } from "../services/attendance.service";
 
 const OccurrenceParam = z.object({ occurrenceId: z.string() });
 
@@ -47,6 +48,18 @@ export function registerAttendanceRoutes(app: Hono) {
       return { markedCount, skippedCount };
     });
     return c.json({ date: day.isoDate, markedCount: result.markedCount, skippedCount: result.skippedCount });
+  });
+
+  app.post("/api/attendance/bulk", sessionMiddleware, setupGuard, zValidator("json", BulkMarkAttendanceInput), async (c) => {
+    const user = c.get("user");
+    const input = c.req.valid("json");
+    return c.json(await bulkMarkAttendance({ userId: user.id, input }));
+  });
+
+  app.post("/api/attendance/bulk-clear", sessionMiddleware, setupGuard, zValidator("json", BulkClearAttendanceInput), async (c) => {
+    const user = c.get("user");
+    const input = c.req.valid("json");
+    return c.json(await bulkClearAttendance({ userId: user.id, input }));
   });
 
   app.post("/api/attendance/:occurrenceId", sessionMiddleware, setupGuard, zValidator("param", OccurrenceParam), zValidator("json", MarkAttendanceInput), async (c) => {

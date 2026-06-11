@@ -21,10 +21,18 @@ export const CourseStatsDto = z.object({
   effectiveDenominator: z.number(),
   attendanceRate: z.number().nullable(),
   separateCounts: z.record(z.enum(ATTENDANCE_STATUS), z.number().int()).optional(),
+  toDate: z.object({
+    effectiveNumerator: z.number(),
+    effectiveDenominator: z.number(),
+    attendanceRate: z.number().nullable(),
+  }),
+  remainingCount: z.number().int(),
+  allowedAbsences: z.number().int().nullable(),
 });
 
 export const StatsResponse = z.object({
   semesterId: z.string(),
+  requiredAttendanceRate: z.number().int(),
   courses: z.array(CourseStatsDto),
 });
 

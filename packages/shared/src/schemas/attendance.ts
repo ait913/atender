@@ -38,8 +38,35 @@ export const MarkAllPresentResponse = z.object({
   skippedCount: z.number().int(),
 });
 
+const IsoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const BulkMarkAttendanceInput = z.object({
+  dates: z.array(IsoDate).min(1).max(62),
+  status: z.enum(["PRESENT", "ABSENT", "EXCUSED", "TARDY", "EARLY_LEAVE"]),
+  mode: z.enum(["FILL", "OVERWRITE"]).default("FILL"),
+});
+
+export const BulkMarkAttendanceResponse = z.object({
+  upsertedCount: z.number().int(),
+  skippedExistingCount: z.number().int(),
+  skippedSuspendedCount: z.number().int(),
+  noOccurrenceDates: z.array(IsoDate),
+});
+
+export const BulkClearAttendanceInput = z.object({
+  dates: z.array(IsoDate).min(1).max(62),
+});
+
+export const BulkClearAttendanceResponse = z.object({
+  deletedCount: z.number().int(),
+});
+
 export type OccurrenceDto = z.infer<typeof OccurrenceDto>;
 export type TodayResponse = z.infer<typeof TodayResponse>;
 export type MarkAttendanceInput = z.infer<typeof MarkAttendanceInput>;
 export type MarkAllPresentInput = z.infer<typeof MarkAllPresentInput>;
 export type MarkAllPresentResponse = z.infer<typeof MarkAllPresentResponse>;
+export type BulkMarkAttendanceInput = z.infer<typeof BulkMarkAttendanceInput>;
+export type BulkMarkAttendanceResponse = z.infer<typeof BulkMarkAttendanceResponse>;
+export type BulkClearAttendanceInput = z.infer<typeof BulkClearAttendanceInput>;
+export type BulkClearAttendanceResponse = z.infer<typeof BulkClearAttendanceResponse>;

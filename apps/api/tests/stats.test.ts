@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { computeCourseStats } from "../src/services/attendanceStats";
 import { app, prisma } from "./helpers/app";
 import { createOccurrence, setupCompleteUser } from "./helpers/auth";
 import { json } from "./helpers/http";
@@ -20,6 +21,54 @@ async function recordMany(statuses: Array<"PRESENT" | "ABSENT" | "EXCUSED" | "TA
     }
   }
   return complete;
+}
+
+type AttendanceStatus = "PRESENT" | "ABSENT" | "EXCUSED" | "TARDY" | "EARLY_LEAVE" | "CANCELLED" | null;
+
+async function statsScenario(args: {
+  statuses: AttendanceStatus[];
+  dates?: string[];
+  totalSessions?: number;
+  requiredAttendanceRate?: number;
+  now?: Date;
+}) {
+  const db = prisma();
+  const complete = await setupCompleteUser(db);
+  await db.course.update({
+    where: { id: complete.course.id },
+    data: { totalSessions: args.totalSessions ?? args.statuses.length },
+  });
+  await (db.user.update as any)({
+    where: { id: complete.user.id },
+    data: { requiredAttendanceRate: args.requiredAttendanceRate ?? 70 },
+  }).catch(() => undefined);
+
+  const occurrences = [];
+  for (let i = 0; i < args.statuses.length; i += 1) {
+    const date = args.dates?.[i] ?? `2026-06-${String(i + 1).padStart(2, "0")}`;
+    const occurrence = await createOccurrence(db, {
+      meetingId: complete.meeting.id,
+      courseId: complete.course.id,
+      date: new Date(`${date}T00:00:00.000Z`),
+      periodOffset: i,
+      startMinute: 540 + i,
+      endMinute: 630 + i,
+    });
+    occurrences.push(occurrence);
+    const status = args.statuses[i];
+    if (status) {
+      await db.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: complete.user.id, status } });
+    }
+  }
+
+  const result = await computeCourseStats({
+    semesterId: complete.semester.id,
+    userId: complete.user.id,
+    requiredAttendanceRate: args.requiredAttendanceRate ?? 70,
+    now: args.now ?? new Date("2026-06-08T03:00:00.000Z"),
+  } as any);
+  const courses = Array.isArray(result) ? result : (result as any).courses;
+  return { ...complete, occurrences, courseStats: courses[0], statsResult: result as any };
 }
 
 describe("stats API", () => {
@@ -328,5 +377,219 @@ describe("stats API", () => {
     expect(res.status).toBe(200);
     expect(course.effectiveNumerator).toBe(1);
     expect(course.effectiveDenominator).toBe(15);
+  });
+
+  it("computes toDate from recorded past occurrences only and projects allowed absences optimistically", async () => {
+    const { courseStats } = await statsScenario({
+      // 仕様 #1
+      // 仕様 #2
+      statuses: ["PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "ABSENT", null, null, null, null, null, null, null, null],
+      now: new Date("2026-06-08T03:00:00.000Z"),
+    });
+
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 6, effectiveDenominator: 7 });
+    expect(courseStats.toDate.attendanceRate).toBeCloseTo(6 / 7);
+    expect(courseStats.counts.unrecorded).toBe(1);
+    expect(courseStats.remainingCount).toBe(7);
+    expect(courseStats.allowedAbsences).toBe(3);
+  });
+
+  it("includes today in toDate when recorded and counts an unrecorded today outside the denominator", async () => {
+    const recorded = await statsScenario({
+      // 仕様 #3
+      statuses: ["PRESENT"],
+      dates: ["2026-06-08"],
+      now: new Date("2026-06-08T03:00:00.000Z"),
+    });
+    expect(recorded.courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 1 });
+
+    const unrecorded = await statsScenario({
+      // 仕様 #3
+      statuses: [null],
+      dates: ["2026-06-08"],
+      now: new Date("2026-06-08T03:00:00.000Z"),
+    });
+    expect(unrecorded.courseStats.toDate).toMatchObject({ effectiveNumerator: 0, effectiveDenominator: 0, attendanceRate: null });
+    expect(unrecorded.courseStats.counts.unrecorded).toBe(1);
+  });
+
+  it("excludes future pre-recorded attendance from toDate and remainingCount but fixes it in the projection", async () => {
+    const { courseStats } = await statsScenario({
+      // 仕様 #4
+      statuses: ["PRESENT", "PRESENT"],
+      dates: ["2026-06-01", "2026-06-20"],
+      now: new Date("2026-06-08T03:00:00.000Z"),
+      totalSessions: 2,
+    });
+
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 1 });
+    expect(courseStats.remainingCount).toBe(0);
+    expect(courseStats.allowedAbsences).toBe(0);
+  });
+
+  it("uses fractional HALF_PRESENT weights in toDate and allowedAbsences", async () => {
+    const { courseStats } = await statsScenario({
+      // 仕様 #5
+      statuses: ["PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "TARDY", null, null, null, null, null, null, null, null],
+      now: new Date("2026-06-07T03:00:00.000Z"),
+    });
+
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 6.5, effectiveDenominator: 7 });
+    expect(courseStats.toDate.attendanceRate).toBeCloseTo(6.5 / 7);
+    expect(courseStats.allowedAbsences).toBe(4);
+  });
+
+  it("keeps REDUCE_DENOMINATOR/CANCELLED out of toDate and projection denominators", async () => {
+    const { courseStats } = await statsScenario({
+      // 仕様 #6
+      statuses: ["PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "EXCUSED"],
+      now: new Date("2026-06-07T03:00:00.000Z"),
+      totalSessions: 7,
+    });
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 6, effectiveDenominator: 6, attendanceRate: 1 });
+
+    const cancelled = await statsScenario({
+      // 仕様 #6
+      statuses: ["PRESENT", "CANCELLED"],
+      now: new Date("2026-06-02T03:00:00.000Z"),
+      totalSessions: 2,
+    });
+    expect(cancelled.courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 1, attendanceRate: 1 });
+  });
+
+  it("excludes SEPARATE_COUNT records from toDate and projection while preserving separateCounts", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 1 } });
+    await db.attendanceRule.create({
+      data: {
+        schoolId: complete.school.id,
+        departmentId: complete.department.id,
+        userId: complete.user.id,
+        excusedStrategy: "SEPARATE_COUNT",
+        tardyStrategy: "HALF_PRESENT",
+        earlyLeaveStrategy: "HALF_PRESENT",
+      },
+    });
+    const occurrence = await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-06-01T00:00:00.000Z") });
+    await db.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: complete.user.id, status: "EXCUSED" } });
+
+    const result = await computeCourseStats({
+      // 仕様 #7
+      semesterId: complete.semester.id,
+      userId: complete.user.id,
+      requiredAttendanceRate: 70,
+      now: new Date("2026-06-02T03:00:00.000Z"),
+    } as any);
+    const courseStats = (Array.isArray(result) ? result : (result as any).courses)[0];
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 0, effectiveDenominator: 0, attendanceRate: null });
+    expect(courseStats.separateCounts.EXCUSED).toBe(1);
+    expect(courseStats.allowedAbsences).toBeNull();
+  });
+
+  it("excludes timetable and course suspensions from toDate remainingCount and projection", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 3 } });
+    const dates = ["2026-06-01", "2026-06-10", "2026-06-20"];
+    for (const [index, date] of dates.entries()) {
+      await createOccurrence(db, {
+        meetingId: complete.meeting.id,
+        courseId: complete.course.id,
+        date: new Date(`${date}T00:00:00.000Z`),
+        periodOffset: index,
+      });
+    }
+    await (db as any).timetableSuspension.create({ data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-06-01T00:00:00.000Z") } });
+    await db.courseSuspension.create({ data: { courseId: complete.course.id, date: new Date("2026-06-20T00:00:00.000Z") } });
+
+    const result = await computeCourseStats({
+      // 仕様 #8
+      semesterId: complete.semester.id,
+      userId: complete.user.id,
+      requiredAttendanceRate: 70,
+      now: new Date("2026-06-08T03:00:00.000Z"),
+    } as any);
+    const courseStats = (Array.isArray(result) ? result : (result as any).courses)[0];
+
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 0, effectiveDenominator: 0, attendanceRate: null });
+    expect(courseStats.remainingCount).toBe(1);
+    expect(courseStats.allowedAbsences).toBe(0);
+  });
+
+  it("returns zero at the exact required-rate boundary and negative values when already below it", async () => {
+    const boundary = await statsScenario({
+      // 仕様 #9
+      statuses: ["PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "ABSENT", "ABSENT", "ABSENT"],
+      now: new Date("2026-06-10T03:00:00.000Z"),
+    });
+    expect(boundary.courseStats.allowedAbsences).toBe(0);
+
+    const below = await statsScenario({
+      // 仕様 #10
+      statuses: ["PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "ABSENT", "ABSENT", "ABSENT", "ABSENT"],
+      now: new Date("2026-06-10T03:00:00.000Z"),
+    });
+    expect(below.courseStats.allowedAbsences).toBe(-1);
+    expect(below.courseStats.toDate.attendanceRate).toBe(0.6);
+  });
+
+  it("returns null rates and allowedAbsences for a course with zero occurrences", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await db.meetingOccurrence.deleteMany({ where: { meetingId: complete.meeting.id } });
+    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 0 } });
+
+    const result = await computeCourseStats({
+      // 仕様 #11
+      semesterId: complete.semester.id,
+      userId: complete.user.id,
+      requiredAttendanceRate: 70,
+      now: new Date("2026-06-10T03:00:00.000Z"),
+    } as any);
+    const courseStats = (Array.isArray(result) ? result : (result as any).courses)[0];
+
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 0, effectiveDenominator: 0, attendanceRate: null });
+    expect(courseStats.remainingCount).toBe(0);
+    expect(courseStats.allowedAbsences).toBeNull();
+  });
+
+  it("preserves existing totalSessions-based stats fields while adding toDate fields", async () => {
+    const { courseStats } = await statsScenario({
+      // 仕様 #12
+      statuses: ["PRESENT", "ABSENT", null],
+      now: new Date("2026-06-03T03:00:00.000Z"),
+      totalSessions: 15,
+    });
+
+    expect(courseStats.effectiveNumerator).toBe(1);
+    expect(courseStats.effectiveDenominator).toBe(15);
+    expect(courseStats.attendanceRate).toBeCloseTo(1 / 15);
+    expect(courseStats.counts).toMatchObject({ present: 1, absent: 1, unrecorded: 1 });
+    expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 2 });
+  });
+
+  it("aggregates overview toDate counts, remaining counts, required rate, and stats root required rate", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await (db.user.update as any)({ where: { id: complete.user.id }, data: { requiredAttendanceRate: 80 } }).catch(() => undefined);
+    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 2 } });
+    const first = await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-06-01T00:00:00.000Z") });
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-12-01T00:00:00.000Z"), periodOffset: 1 });
+    await db.attendanceRecord.create({ data: { occurrenceId: first.id, userId: complete.user.id, status: "PRESENT" } });
+
+    const overviewRes = await app.request(`/api/semesters/${complete.semester.id}/overview`, { headers: { Cookie: complete.cookie } });
+    const overview = await json(overviewRes);
+    const statsRes = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
+    const stats = await json(statsRes);
+
+    // 仕様 #14
+    expect(overview.overall.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 1, attendanceRate: 1 });
+    expect(overview.overall.unrecordedCount).toBe(0);
+    expect(overview.overall.remainingCount).toBe(1);
+    // 仕様 #15
+    expect(typeof overview.overall.allowedAbsences === "number" || overview.overall.allowedAbsences === null).toBe(true);
+    // 仕様 #16
+    expect(stats.requiredAttendanceRate).toBe(80);
   });
 });

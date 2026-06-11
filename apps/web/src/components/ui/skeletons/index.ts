@@ -4,5 +4,6 @@ export * from "./CalendarWeekSkeleton";
 export * from "./CalendarDaySkeleton";
 export * from "./DayAgendaPanelSkeleton";
 export * from "./AttendanceCalendarSkeleton";
+export * from "./SemesterOverviewSkeleton";
 export * from "./ListSkeleton";
 export * from "./TextLineSkeleton";

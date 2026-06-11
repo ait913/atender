@@ -20,6 +20,8 @@ export function usePatchMe() {
     onSuccess: (data) => {
       queryClient.setQueryData(QK.me(), data);
       queryClient.invalidateQueries({ queryKey: ["users", "search"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
     },
   });
 }

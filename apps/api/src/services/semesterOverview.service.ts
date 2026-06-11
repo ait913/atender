@@ -2,7 +2,7 @@ import type { AttendanceDaySummary, SemesterOverviewDto } from "@atender/shared"
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { toIsoDate } from "../lib/tz";
-import { computeCourseStats } from "./attendanceStats";
+import { computeCourseStatsWithProjection } from "./attendanceStats";
 
 type DayStatus =
   | "PRESENT"
@@ -23,9 +23,20 @@ export async function getSemesterOverview(args: {
     throw new AppError(404, "NOT_FOUND", "Semester not found");
   }
 
-  const courses = await computeCourseStats({ semesterId: args.semesterId, userId: args.userId });
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: args.userId },
+    select: { requiredAttendanceRate: true },
+  });
+  const { courses, overallProjection } = await computeCourseStatsWithProjection({
+    semesterId: args.semesterId,
+    userId: args.userId,
+    requiredAttendanceRate: user.requiredAttendanceRate,
+  });
   const overallNum = courses.reduce((sum, course) => sum + course.effectiveNumerator, 0);
   const overallDen = courses.reduce((sum, course) => sum + course.effectiveDenominator, 0);
+  const overallToDateNum = courses.reduce((sum, course) => sum + course.toDate.effectiveNumerator, 0);
+  const overallToDateDen = courses.reduce((sum, course) => sum + course.toDate.effectiveDenominator, 0);
+  const requiredRate = user.requiredAttendanceRate / 100;
   const days = await buildDaySummaries({ semesterId: args.semesterId, userId: args.userId, startDate: semester.startDate, endDate: semester.endDate });
 
   return {
@@ -33,10 +44,20 @@ export async function getSemesterOverview(args: {
     semesterName: semester.name,
     startDate: toIsoDate(semester.startDate),
     endDate: toIsoDate(semester.endDate),
+    today: toIsoDate(new Date()),
+    requiredAttendanceRate: user.requiredAttendanceRate,
     overall: {
       effectiveNumerator: overallNum,
       effectiveDenominator: overallDen,
       attendanceRate: overallDen === 0 ? null : overallNum / overallDen,
+      toDate: {
+        effectiveNumerator: overallToDateNum,
+        effectiveDenominator: overallToDateDen,
+        attendanceRate: overallToDateDen === 0 ? null : overallToDateNum / overallToDateDen,
+      },
+      unrecordedCount: courses.reduce((sum, course) => sum + course.counts.unrecorded, 0),
+      remainingCount: courses.reduce((sum, course) => sum + course.remainingCount, 0),
+      allowedAbsences: overallProjection.den === 0 ? null : Math.floor(overallProjection.num - requiredRate * overallProjection.den + 1e-9),
     },
     days,
     courses,

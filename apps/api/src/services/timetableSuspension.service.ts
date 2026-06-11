@@ -1,5 +1,12 @@
 import { Prisma } from "@prisma/client";
-import type { TimetableSuspensionCreateInput, TimetableSuspensionDto } from "@atender/shared";
+import type {
+  BulkTimetableSuspensionInput,
+  BulkTimetableSuspensionRemoveInput,
+  BulkTimetableSuspensionRemoveResponse,
+  BulkTimetableSuspensionResponse,
+  TimetableSuspensionCreateInput,
+  TimetableSuspensionDto,
+} from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { dateStringToJstDay, toIsoDate } from "../lib/tz";
@@ -73,4 +80,56 @@ export async function deleteTimetableSuspension(args: { userId: string; id: stri
   });
   if (!existing) throw new AppError(404, "NOT_FOUND", "Suspension not found");
   await prisma.timetableSuspension.delete({ where: { id: args.id } });
+}
+
+function normalizeDates(dates: string[]) {
+  const byIso = new Map<string, Date>();
+  for (const date of dates) {
+    const day = dateStringToJstDay(date);
+    byIso.set(day.isoDate, day.startOfDay);
+  }
+  return [...byIso.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([iso, date]) => ({ iso, date }));
+}
+
+export async function bulkCreateTimetableSuspensions(args: {
+  userId: string;
+  input: BulkTimetableSuspensionInput;
+}): Promise<BulkTimetableSuspensionResponse> {
+  const timetable = await findActiveUserTimetable(args.userId);
+  if (!timetable) throw new AppError(403, "SETUP_REQUIRED", "User must complete setup");
+  const normalizedDates = normalizeDates(args.input.dates);
+
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.timetableSuspension.findMany({
+      where: { userTimetableId: timetable.id, date: { in: normalizedDates.map((item) => item.date) } },
+      select: { date: true },
+    });
+    const existingDates = new Set(existing.map((item) => toIsoDate(item.date)));
+    const createDates = normalizedDates.filter((item) => !existingDates.has(item.iso));
+    if (createDates.length > 0) {
+      await tx.timetableSuspension.createMany({
+        data: createDates.map((item) => ({
+          userTimetableId: timetable.id,
+          date: item.date,
+          reason: args.input.reason?.trim() || null,
+        })),
+      });
+    }
+    return { createdCount: createDates.length, skippedCount: existingDates.size };
+  });
+}
+
+export async function bulkRemoveTimetableSuspensions(args: {
+  userId: string;
+  input: BulkTimetableSuspensionRemoveInput;
+}): Promise<BulkTimetableSuspensionRemoveResponse> {
+  const timetable = await findActiveUserTimetable(args.userId);
+  if (!timetable) throw new AppError(403, "SETUP_REQUIRED", "User must complete setup");
+  const normalizedDates = normalizeDates(args.input.dates);
+  const result = await prisma.timetableSuspension.deleteMany({
+    where: { userTimetableId: timetable.id, date: { in: normalizedDates.map((item) => item.date) } },
+  });
+  return { removedCount: result.count };
 }

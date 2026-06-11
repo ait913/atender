@@ -1,9 +1,15 @@
 import type { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { TimetableSuspensionCreateInput } from "@atender/shared";
+import { BulkTimetableSuspensionInput, BulkTimetableSuspensionRemoveInput, TimetableSuspensionCreateInput } from "@atender/shared";
 import { sessionMiddleware } from "../middleware/session";
-import { createTimetableSuspension, deleteTimetableSuspension, listTimetableSuspensions } from "../services/timetableSuspension.service";
+import {
+  bulkCreateTimetableSuspensions,
+  bulkRemoveTimetableSuspensions,
+  createTimetableSuspension,
+  deleteTimetableSuspension,
+  listTimetableSuspensions,
+} from "../services/timetableSuspension.service";
 
 const DateRangeQuery = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -24,6 +30,18 @@ export function registerTimetableSuspensionRoutes(app: Hono) {
     const input = c.req.valid("json");
     const suspension = await createTimetableSuspension({ userId: user.id, input });
     return c.json({ suspension }, 201);
+  });
+
+  app.post("/api/timetable-suspensions/bulk", sessionMiddleware, zValidator("json", BulkTimetableSuspensionInput), async (c) => {
+    const user = c.get("user");
+    const input = c.req.valid("json");
+    return c.json(await bulkCreateTimetableSuspensions({ userId: user.id, input }));
+  });
+
+  app.post("/api/timetable-suspensions/bulk-remove", sessionMiddleware, zValidator("json", BulkTimetableSuspensionRemoveInput), async (c) => {
+    const user = c.get("user");
+    const input = c.req.valid("json");
+    return c.json(await bulkRemoveTimetableSuspensions({ userId: user.id, input }));
   });
 
   app.delete("/api/timetable-suspensions/:id", sessionMiddleware, zValidator("param", TimetableSuspensionParam), async (c) => {

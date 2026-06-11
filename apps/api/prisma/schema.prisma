@@ -27,6 +27,7 @@ model User {
   department        Department? @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
   handle            String?     @unique
   inviteCode        String      @unique @default(cuid())
+  requiredAttendanceRate Int @default(70)
 
   accounts                 Account[]
   sessions                 Session[]

@@ -16,7 +16,11 @@ export function registerStatsRoutes(app: Hono) {
     const semester = await prisma.semester.findUnique({ where: { id: semesterId } });
     if (!semester) throw new AppError(404, "NOT_FOUND", "Semester not found");
     if (semester.userId !== user.id) throw new AppError(403, "FORBIDDEN", "Forbidden");
-    const courses = await computeCourseStats({ semesterId, userId: user.id });
-    return c.json({ semesterId, courses });
+    const currentUser = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { requiredAttendanceRate: true },
+    });
+    const courses = await computeCourseStats({ semesterId, userId: user.id, requiredAttendanceRate: currentUser.requiredAttendanceRate });
+    return c.json({ semesterId, requiredAttendanceRate: currentUser.requiredAttendanceRate, courses });
   });
 }
