@@ -9,7 +9,7 @@ import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { MeetingEditModal } from "@/components/timetable/MeetingEditModal";
 import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
-import { Panel } from "@/components/ui";
+import { Panel, Skeleton, TimetableGridSkeleton } from "@/components/ui";
 
 const defaultSlots = [
   { periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false },
@@ -68,6 +68,17 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
     if (timetable) setSheet({ dayOfWeek: displayDowToJs(displayDow), period });
   }
 
+  if (me.isLoading || semesters.isLoading || timetables.isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex min-h-9 items-center justify-between gap-2">
+          <Skeleton width="8rem" height="1.25rem" radius="9999px" />
+          <Skeleton circle height="2.25rem" />
+        </div>
+        <TimetableGridSkeleton days={5} rows={5} />
+      </div>
+    );
+  }
   if (!display) return <Panel>先に学期を作成してください。</Panel>;
 
   return (

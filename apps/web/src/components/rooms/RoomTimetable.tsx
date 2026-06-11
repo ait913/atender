@@ -83,7 +83,7 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
     return [...set].sort((a, b) => a - b);
   }, [events]);
 
-  if (week.isLoading) return <TimetableGridSkeleton days={5} rows={5} height="calc(100dvh - var(--room-tt-chrome-top, 168px) - var(--tab-bar-height) - env(safe-area-inset-bottom, 0px))" />;
+  if (week.isLoading) return <TimetableGridSkeleton days={5} rows={daySlots.length} height="calc(100dvh - var(--room-tt-chrome-top, 168px) - var(--tab-bar-height) - env(safe-area-inset-bottom, 0px))" />;
   if (week.isError) return <Panel>時間割を読み込めませんでした。</Panel>;
   if (events.length === 0) {
     return <EmptyState title={week.data?.members.length ? "メンバーの時間割がまだありません" : "メンバーがいません"} />;

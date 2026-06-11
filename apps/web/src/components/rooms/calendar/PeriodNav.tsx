@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Dayjs, ManipulateType } from "dayjs";
 import type { CalendarViewMode } from "@/lib/calendarRange";
 
@@ -32,7 +33,7 @@ export function PeriodNav({
         aria-label="前へ"
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/12 active:scale-95"
       >
-        ＜
+        <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
       </button>
       <h2 className="min-w-0 flex-1 truncate text-center text-base font-black tracking-tight text-fg-primary">{title}</h2>
       <button
@@ -41,7 +42,7 @@ export function PeriodNav({
         aria-label="次へ"
         className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/12 active:scale-95"
       >
-        ＞
+        <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
       </button>
     </div>
   );

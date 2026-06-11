@@ -18,11 +18,12 @@ export function useMarkAllPresent(onErrorToast: (message: string) => void) {
     onMutate: async (body) => {
       await queryClient.cancelQueries({ queryKey: ["today"] });
       const queries = queryClient.getQueriesData<TodayResponse>({ queryKey: ["today"] });
+      const status = body.status ?? "PRESENT";
       for (const [key, previous] of queries) {
         if (!previous) continue;
         queryClient.setQueryData<TodayResponse>(key, {
           ...previous,
-          occurrences: previous.occurrences.map((occurrence) => occurrence.status == null ? { ...occurrence, status: "PRESENT" } : occurrence),
+          occurrences: previous.occurrences.map((occurrence) => occurrence.status == null ? { ...occurrence, status } : occurrence),
         });
       }
       return { queries };

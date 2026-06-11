@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { RoomWeekDto } from "@atender/shared";
 import { useRoomMonth } from "@/api/hooks";
 import { IcsImportWizard } from "@/components/ics-import/IcsImportWizard";
-import { CalendarMonthSkeleton, Panel } from "@/components/ui";
+import { CalendarDaySkeleton, CalendarMonthSkeleton, CalendarWeekSkeleton, DayAgendaPanelSkeleton, Panel } from "@/components/ui";
 import { weekStartsFor, type CalendarViewMode } from "@/lib/calendarRange";
 import { buildCalendarEvents, eventsByDate, type CalendarEvent } from "@/lib/meetingExpansion";
 import { AvailabilityBar } from "./calendar/AvailabilityBar";
@@ -61,7 +61,18 @@ export function RoomCalendar({ roomId }: { roomId: string }) {
         onToggle={() => setExpanded((value) => !value)}
       />
 
-      {data.loading ? <CalendarMonthSkeleton /> : null}
+      {data.loading ? (
+        viewMode === "month" ? (
+          <>
+            <CalendarMonthSkeleton />
+            <DayAgendaPanelSkeleton />
+          </>
+        ) : viewMode === "week" ? (
+          <CalendarWeekSkeleton />
+        ) : (
+          <CalendarDaySkeleton />
+        )
+      ) : null}
       {data.error && !data.loading ? <Panel>カレンダーを読み込めませんでした。</Panel> : null}
       {!data.loading && !data.error ? (
         viewMode === "month" ? (

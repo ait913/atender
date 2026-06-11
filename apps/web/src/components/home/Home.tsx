@@ -26,7 +26,7 @@ export function Home() {
   }, [rooms.data?.rooms]);
 
   return (
-    <div className="space-y-3 pb-32 md:pb-0">
+    <div className="space-y-3 pb-32 md:pb-24">
       <ContextChips items={chips} selected={context} onChange={setContext} onAddRoom={() => void navigate({ to: "/rooms" })} />
       <HomeViewModeTabs mode={mode} onChange={setMode} />
       {context.kind === "self" && mode !== "timetable" ? <HomeSemesterPicker semesterId={semesterId} onChange={setSemesterId} /> : null}
