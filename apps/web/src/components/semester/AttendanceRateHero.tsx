@@ -1,12 +1,14 @@
 import type { SemesterOverviewDto } from "@atender/shared";
+import { AlertTriangle } from "lucide-react";
 import { rateColor } from "@/lib/attendanceRateColor";
 
 type AttendanceRateHeroProps = {
   overall: SemesterOverviewDto["overall"];
   requiredRate: number;
+  onJumpToCalendar?: () => void;
 };
 
-export function AttendanceRateHero({ overall, requiredRate }: AttendanceRateHeroProps) {
+export function AttendanceRateHero({ overall, requiredRate, onJumpToCalendar }: AttendanceRateHeroProps) {
   const pct = overall.toDate.attendanceRate == null ? null : Math.round(overall.toDate.attendanceRate * 100);
   const color = rateColor(pct, requiredRate);
 
@@ -14,17 +16,6 @@ export function AttendanceRateHero({ overall, requiredRate }: AttendanceRateHero
     <div className="rounded-3xl bg-bg-elevated p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-bold text-fg-secondary">今日までの出席率</p>
-        {overall.unrecordedCount > 0 ? (
-          <span
-            className="rounded-full px-2 py-1 text-xs font-bold"
-            style={{
-              background: "color-mix(in srgb, var(--color-status-tardy) 15%, transparent)",
-              color: "var(--color-status-tardy)",
-            }}
-          >
-            未記録 {overall.unrecordedCount}
-          </span>
-        ) : null}
       </div>
       <div className="mt-2 gap-4 md:flex md:items-end">
         <div className="flex items-baseline gap-2 md:min-w-[180px]">
@@ -54,6 +45,29 @@ export function AttendanceRateHero({ overall, requiredRate }: AttendanceRateHero
           </p>
         </div>
       </div>
+      {overall.unrecordedCount > 0 ? (
+        <div
+          className="mt-3 flex items-center gap-2 rounded-2xl px-3 py-2"
+          style={{
+            background: "color-mix(in srgb, var(--color-status-tardy) 15%, transparent)",
+            color: "var(--color-status-tardy)",
+            borderLeft: "3px solid var(--color-status-tardy)",
+          }}
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <p className="min-w-0 flex-1 text-xs font-bold">未記録 {overall.unrecordedCount} 件 — 記録して</p>
+          {onJumpToCalendar ? (
+            <button
+              type="button"
+              aria-label="カレンダーへ移動"
+              onClick={onJumpToCalendar}
+              className="shrink-0 rounded-full px-2 py-1 text-xs font-bold hover:bg-fg-primary/10"
+            >
+              カレンダーへ
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -68,6 +82,6 @@ function actionText(allowedAbsences: number | null, remainingCount: number, requ
 function actionColor(allowedAbsences: number | null, remainingCount: number) {
   if (allowedAbsences == null) return "var(--color-fg-tertiary)";
   if (allowedAbsences < 0) return "var(--color-status-absent)";
-  if (allowedAbsences >= remainingCount) return "var(--color-status-present)";
+  if (allowedAbsences >= remainingCount) return "var(--color-accent-500)";
   return "var(--color-fg-primary)";
 }

@@ -131,8 +131,9 @@ export async function computeCourseStatsWithProjection(args: {
     }
 
     const denominator = Math.max(0, course.totalSessions - denominatorReduction);
-    const projectedNum = fixedNumAll + floatingPast + floatingFuture;
+    const projectedNum = fixedNumAll + floatingFuture;
     const projectedDen = fixedDenAll + floatingPast + floatingFuture;
+    const toDateDenWithUnrecorded = toDateDen + floatingPast;
     overallProjectionNum += projectedNum;
     overallProjectionDen += projectedDen;
     return {
@@ -148,8 +149,8 @@ export async function computeCourseStatsWithProjection(args: {
       ...(Object.keys(separateCounts).length > 0 ? { separateCounts } : {}),
       toDate: {
         effectiveNumerator: toDateNum,
-        effectiveDenominator: toDateDen,
-        attendanceRate: toDateDen === 0 ? null : toDateNum / toDateDen,
+        effectiveDenominator: toDateDenWithUnrecorded,
+        attendanceRate: toDateDenWithUnrecorded === 0 ? null : toDateNum / toDateDenWithUnrecorded,
       },
       remainingCount: floatingFuture,
       allowedAbsences: projectedDen === 0 ? null : Math.floor(projectedNum - requiredRate * projectedDen + 1e-9),

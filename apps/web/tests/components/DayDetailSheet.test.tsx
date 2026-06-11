@@ -14,6 +14,7 @@ import {
   useDeleteCourseSuspension,
   useDeletePersonalEvent,
   useDeleteTimetableSuspension,
+  useMarkAllPresent,
   usePatchAttendance,
   useUpdatePersonalEvent,
 } from "@/api/hooks";
@@ -24,6 +25,7 @@ vi.mock("@/api/hooks", () => ({
   useDeleteAttendance: vi.fn(),
   useCreateTimetableSuspension: vi.fn(),
   useDeleteTimetableSuspension: vi.fn(),
+  useMarkAllPresent: vi.fn(),
   useCreateCourseSuspension: vi.fn(),
   useDeleteCourseSuspension: vi.fn(),
   useDeletePersonalEvent: vi.fn(),
@@ -60,6 +62,7 @@ function mockHooks(detail = baseDetail) {
   vi.mocked(useDeleteAttendance).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useCreateTimetableSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeleteTimetableSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
+  vi.mocked(useMarkAllPresent).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useCreateCourseSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeleteCourseSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeletePersonalEvent).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);

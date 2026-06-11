@@ -47,11 +47,11 @@ describe("AttendanceRateHero", () => {
     expect(screen.getByText("残りを全部休んでも 70% を維持")).toBeInTheDocument();
   });
 
-  it("shows and hides the unrecorded chip", () => {
+  it("shows and hides the unrecorded banner", () => {
     const { rerender } = renderHero({ unrecordedCount: 3 });
 
     // 仕様 #43
-    expect(screen.getByText("未記録 3")).toBeInTheDocument();
+    expect(screen.getByText("未記録 3 件 — 記録して")).toBeInTheDocument();
 
     rerender(
       <AttendanceRateHero

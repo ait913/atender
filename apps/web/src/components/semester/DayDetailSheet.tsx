@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
-import { Edit3, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Edit3, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { CourseSuspensionDto, OccurrenceDto, PersonalEventDto } from "@atender/shared";
+import type { AttendanceStatus, CourseSuspensionDto, OccurrenceDto, PersonalEventDto } from "@atender/shared";
 import {
   useCreateCourseSuspension,
   useCreateTimetableSuspension,
@@ -11,10 +11,11 @@ import {
   useDeleteCourseSuspension,
   useDeletePersonalEvent,
   useDeleteTimetableSuspension,
+  useMarkAllPresent,
   usePatchAttendance,
 } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
-import { Button, Input, ListSkeleton } from "@/components/ui";
+import { Button, Input, ListSkeleton, statusLongLabels } from "@/components/ui";
 import { PersonalEventEditModal } from "./PersonalEventEditModal";
 
 type Props = {
@@ -32,6 +33,8 @@ const statuses = [
   { status: "CANCELLED", label: "休" },
 ] as const;
 
+const BULK_STATUSES = ["ABSENT", "EXCUSED", "TARDY", "EARLY_LEAVE"] as const;
+
 export function DayDetailSheet({ date, semesterId, onClose }: Props) {
   const detail = useDayDetail(date);
   const createTimetableSuspension = useCreateTimetableSuspension(date);
@@ -43,15 +46,18 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
   const data = detail.data;
   const title = date ? dayjs(date).format("YYYY年M月D日 (ddd)") : "";
   const timetableSuspension = data?.timetableSuspension ?? null;
+  const courseSuspendedIds = new Set(data?.courseSuspensions.map((suspension) => suspension.courseId) ?? []);
+  const unrecordedCount = data?.occurrences.filter((occurrence) => occurrence.status == null && !courseSuspendedIds.has(occurrence.courseId)).length ?? 0;
 
-  async function handleTimetableToggle() {
+  async function handleSuspend() {
     if (!date) return;
-    if (timetableSuspension) {
-      await deleteTimetableSuspension.mutateAsync(timetableSuspension.id);
-      return;
-    }
     await createTimetableSuspension.mutateAsync({ date, reason: reason.trim() || undefined });
     setReason("");
+  }
+
+  async function handleUnsuspend() {
+    if (!timetableSuspension) return;
+    await deleteTimetableSuspension.mutateAsync(timetableSuspension.id);
   }
 
   return (
@@ -60,32 +66,49 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
       {data ? (
         <>
           <section className="rounded-2xl bg-bg-muted/50 p-4">
-            <label className="flex min-h-12 items-center justify-between gap-3 text-sm font-bold">
-              <span>この日を休講にする (時間割全体)</span>
-              <input
-                type="checkbox"
-                checked={timetableSuspension != null}
-                onChange={() => void handleTimetableToggle()}
-                disabled={createTimetableSuspension.isPending || deleteTimetableSuspension.isPending}
-                className="h-5 w-5 accent-accent-500"
-              />
-            </label>
             {timetableSuspension ? (
-              <p className="mt-2 text-xs font-bold text-status-cancelled">休講中{timetableSuspension.reason ? `: ${timetableSuspension.reason}` : ""}</p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-bold text-status-cancelled">休講中{timetableSuspension.reason ? `: ${timetableSuspension.reason}` : ""}</p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={deleteTimetableSuspension.isPending}
+                  onClick={() => void handleUnsuspend()}
+                >
+                  休講を解除
+                </Button>
+              </div>
             ) : (
-              <Input
-                value={reason}
-                onChange={(event) => setReason(event.currentTarget.value)}
-                placeholder="理由 (任意)"
-                maxLength={100}
-                className="mt-2"
-              />
+              <div className="space-y-2">
+                <p className="text-sm font-bold">この日を休講にする (時間割全体)</p>
+                <Input
+                  value={reason}
+                  onChange={(event) => setReason(event.currentTarget.value)}
+                  placeholder="理由 (任意)"
+                  maxLength={100}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="primary"
+                    disabled={createTimetableSuspension.isPending}
+                    onClick={() => void handleSuspend()}
+                  >
+                    この日を休講にする
+                  </Button>
+                </div>
+              </div>
             )}
           </section>
 
           <section>
             <h3 className="mb-2 text-sm font-bold">授業 ({data.occurrences.length})</h3>
             <div className="space-y-2">
+              {data.occurrences.length > 0 && timetableSuspension == null ? (
+                <DayBulkAttendanceControl date={data.date} unrecordedCount={unrecordedCount} disabled={false} />
+              ) : null}
               {data.occurrences.map((occurrence) => (
                 <OccurrenceRow
                   key={occurrence.id}
@@ -146,6 +169,72 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
       ) : null}
       {detail.error ? <p className="rounded-2xl bg-status-absent/15 px-3 py-2 text-xs font-bold text-status-absent">{detail.error.message}</p> : null}
     </BottomSheet>
+  );
+}
+
+function DayBulkAttendanceControl({
+  date,
+  unrecordedCount,
+  disabled,
+}: {
+  date: string;
+  unrecordedCount: number;
+  disabled: boolean;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const markAll = useMarkAllPresent(() => {});
+  const isDisabled = disabled || unrecordedCount === 0 || markAll.isPending;
+
+  function mark(status: Exclude<AttendanceStatus, "CANCELLED">) {
+    markAll.mutate({ date, status });
+    setMenuOpen(false);
+  }
+
+  return (
+    <div className="relative">
+      <div className="flex overflow-hidden rounded-full shadow-card">
+        <Button
+          type="button"
+          variant={unrecordedCount === 0 ? "secondary" : "primary"}
+          size="sm"
+          disabled={isDisabled}
+          onClick={() => mark("PRESENT")}
+          className="flex-1 rounded-r-none"
+        >
+          {unrecordedCount === 0 ? "記録済み" : `全部出席にする (${unrecordedCount})`}
+        </Button>
+        <button
+          type="button"
+          aria-label="一括記録のステータスを選ぶ"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          disabled={isDisabled}
+          onClick={() => setMenuOpen((open) => !open)}
+          className="grid min-h-10 w-12 place-items-center bg-accent-600 text-fg-on-accent transition hover:bg-accent-500 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
+      {menuOpen ? (
+        <div
+          role="menu"
+          className="absolute right-0 z-10 mt-2 w-56 rounded-2xl bg-bg-elevated p-2 shadow-card ring-1 ring-fg-primary/8"
+        >
+          <p className="px-2 pb-2 text-[10px] text-fg-tertiary">未記録の {unrecordedCount} 件のみ。記録済みは変わりません</p>
+          {BULK_STATUSES.map((status) => (
+            <button
+              key={status}
+              type="button"
+              role="menuitem"
+              onClick={() => mark(status)}
+              className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-bold text-fg-primary hover:bg-fg-primary/8"
+            >
+              全部 {statusLongLabels[status]} ({unrecordedCount})
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
