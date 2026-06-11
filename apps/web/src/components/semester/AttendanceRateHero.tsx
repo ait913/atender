@@ -74,7 +74,7 @@ export function AttendanceRateHero({ overall, requiredRate, onJumpToCalendar }: 
 
 function actionText(allowedAbsences: number | null, remainingCount: number, requiredRate: number) {
   if (allowedAbsences == null) return "データなし";
-  if (allowedAbsences < 0) return `残り全部出席しても ${requiredRate}% に届きません`;
+  if (allowedAbsences < 0) return `${requiredRate}% を下回る見込み`;
   if (allowedAbsences >= remainingCount) return `残りを全部休んでも ${requiredRate}% を維持`;
   return `あと ${allowedAbsences}限 休める`;
 }

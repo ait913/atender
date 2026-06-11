@@ -27,7 +27,7 @@ export async function getSemesterOverview(args: {
     where: { id: args.userId },
     select: { requiredAttendanceRate: true },
   });
-  const { courses, overallProjection } = await computeCourseStatsWithProjection({
+  const { courses, overallAllowance } = await computeCourseStatsWithProjection({
     semesterId: args.semesterId,
     userId: args.userId,
     requiredAttendanceRate: user.requiredAttendanceRate,
@@ -36,7 +36,6 @@ export async function getSemesterOverview(args: {
   const overallDen = courses.reduce((sum, course) => sum + course.effectiveDenominator, 0);
   const overallToDateNum = courses.reduce((sum, course) => sum + course.toDate.effectiveNumerator, 0);
   const overallToDateDen = courses.reduce((sum, course) => sum + course.toDate.effectiveDenominator, 0);
-  const requiredRate = user.requiredAttendanceRate / 100;
   const days = await buildDaySummaries({ semesterId: args.semesterId, userId: args.userId, startDate: semester.startDate, endDate: semester.endDate });
 
   return {
@@ -57,7 +56,7 @@ export async function getSemesterOverview(args: {
       },
       unrecordedCount: courses.reduce((sum, course) => sum + course.counts.unrecorded, 0),
       remainingCount: courses.reduce((sum, course) => sum + course.remainingCount, 0),
-      allowedAbsences: overallProjection.den === 0 ? null : Math.floor(overallProjection.num - requiredRate * overallProjection.den + 1e-9),
+      allowedAbsences: overallAllowance.hasDenominator ? Math.floor(overallAllowance.allowanceSum + 1e-9) : null,
     },
     days,
     courses,

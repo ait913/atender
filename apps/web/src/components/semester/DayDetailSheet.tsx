@@ -11,7 +11,7 @@ import {
   useDeleteCourseSuspension,
   useDeletePersonalEvent,
   useDeleteTimetableSuspension,
-  useMarkAllPresent,
+  useBulkMarkAttendance,
   usePatchAttendance,
 } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
@@ -48,6 +48,7 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
   const timetableSuspension = data?.timetableSuspension ?? null;
   const courseSuspendedIds = new Set(data?.courseSuspensions.map((suspension) => suspension.courseId) ?? []);
   const unrecordedCount = data?.occurrences.filter((occurrence) => occurrence.status == null && !courseSuspendedIds.has(occurrence.courseId)).length ?? 0;
+  const occurrenceCount = data?.occurrences.filter((occurrence) => !courseSuspendedIds.has(occurrence.courseId)).length ?? 0;
 
   async function handleSuspend() {
     if (!date) return;
@@ -107,7 +108,7 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
             <h3 className="mb-2 text-sm font-bold">授業 ({data.occurrences.length})</h3>
             <div className="space-y-2">
               {data.occurrences.length > 0 && timetableSuspension == null ? (
-                <DayBulkAttendanceControl date={data.date} unrecordedCount={unrecordedCount} disabled={false} />
+                <DayBulkAttendanceControl date={data.date} occurrenceCount={occurrenceCount} unrecordedCount={unrecordedCount} disabled={false} />
               ) : null}
               {data.occurrences.map((occurrence) => (
                 <OccurrenceRow
@@ -174,19 +175,23 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
 
 function DayBulkAttendanceControl({
   date,
+  occurrenceCount,
   unrecordedCount,
   disabled,
 }: {
   date: string;
+  occurrenceCount: number;
   unrecordedCount: number;
   disabled: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const markAll = useMarkAllPresent(() => {});
-  const isDisabled = disabled || unrecordedCount === 0 || markAll.isPending;
+  const bulk = useBulkMarkAttendance();
+  const isDisabled = disabled || bulk.isPending;
+  const allRecorded = unrecordedCount === 0;
+  const mode = allRecorded ? "OVERWRITE" : "FILL";
 
   function mark(status: Exclude<AttendanceStatus, "CANCELLED">) {
-    markAll.mutate({ date, status });
+    bulk.mutate({ dates: [date], status, mode });
     setMenuOpen(false);
   }
 
@@ -195,13 +200,13 @@ function DayBulkAttendanceControl({
       <div className="flex overflow-hidden rounded-full shadow-card">
         <Button
           type="button"
-          variant={unrecordedCount === 0 ? "secondary" : "primary"}
+          variant={allRecorded ? "secondary" : "primary"}
           size="sm"
           disabled={isDisabled}
           onClick={() => mark("PRESENT")}
           className="flex-1 rounded-r-none"
         >
-          {unrecordedCount === 0 ? "記録済み" : `全部出席にする (${unrecordedCount})`}
+          {allRecorded ? "全部 出席に上書き" : `全部出席にする (${unrecordedCount})`}
         </Button>
         <button
           type="button"
@@ -220,7 +225,9 @@ function DayBulkAttendanceControl({
           role="menu"
           className="absolute right-0 z-10 mt-2 w-56 rounded-2xl bg-bg-elevated p-2 shadow-card ring-1 ring-fg-primary/8"
         >
-          <p className="px-2 pb-2 text-[10px] text-fg-tertiary">未記録の {unrecordedCount} 件のみ。記録済みは変わりません</p>
+          <p className="px-2 pb-2 text-[10px] text-fg-tertiary">
+            {allRecorded ? `記録済み ${occurrenceCount} 件をすべて上書きします` : `未記録の ${unrecordedCount} 件のみ。記録済みは変わりません`}
+          </p>
           {BULK_STATUSES.map((status) => (
             <button
               key={status}
@@ -229,7 +236,7 @@ function DayBulkAttendanceControl({
               onClick={() => mark(status)}
               className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-bold text-fg-primary hover:bg-fg-primary/8"
             >
-              全部 {statusLongLabels[status]} ({unrecordedCount})
+              {allRecorded ? `全部 ${statusLongLabels[status]} に上書き` : `全部 ${statusLongLabels[status]} (${unrecordedCount})`}
             </button>
           ))}
         </div>

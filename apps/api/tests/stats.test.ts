@@ -391,7 +391,7 @@ describe("stats API", () => {
     expect(courseStats.toDate.attendanceRate).toBeCloseTo(6 / 8);
     expect(courseStats.counts.unrecorded).toBe(1);
     expect(courseStats.remainingCount).toBe(7);
-    expect(courseStats.allowedAbsences).toBe(2);
+    expect(courseStats.allowedAbsences).toBe(3);
   });
 
   it("includes today in toDate when recorded and counts an unrecorded today in the denominator", async () => {

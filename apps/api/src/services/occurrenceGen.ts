@@ -97,3 +97,42 @@ export async function generateOccurrencesForMeeting(tx: Prisma.TransactionClient
     meetings: [meeting],
   });
 }
+
+export async function reconcileOccurrencesForSemesterDateChange(args: {
+  semesterId: string;
+  userId: string;
+  newStart: Date;
+  newEnd: Date;
+}): Promise<{ created: number; deletedEmpty: number; preservedWithRecord: number }> {
+  return prisma.$transaction(async (tx) => {
+    const timetable = await tx.userTimetable.findUnique({
+      where: { userId_semesterId: { userId: args.userId, semesterId: args.semesterId } },
+      include: { meetings: true },
+    });
+    if (!timetable) return { created: 0, deletedEmpty: 0, preservedWithRecord: 0 };
+
+    const { created } = await generateOccurrencesForMeetings(tx, {
+      userTimetableId: timetable.id,
+      meetings: timetable.meetings,
+      fromDate: args.newStart,
+      toDate: args.newEnd,
+    });
+
+    const outOfRange = await tx.meetingOccurrence.findMany({
+      where: {
+        meeting: { userTimetableId: timetable.id },
+        OR: [{ date: { lt: args.newStart } }, { date: { gt: args.newEnd } }],
+      },
+      select: { id: true, attendanceRecord: { select: { id: true } } },
+    });
+    const deletableIds = outOfRange.filter((occurrence) => occurrence.attendanceRecord == null).map((occurrence) => occurrence.id);
+    const preservedWithRecord = outOfRange.length - deletableIds.length;
+    let deletedEmpty = 0;
+    if (deletableIds.length > 0) {
+      const result = await tx.meetingOccurrence.deleteMany({ where: { id: { in: deletableIds } } });
+      deletedEmpty = result.count;
+    }
+
+    return { created, deletedEmpty, preservedWithRecord };
+  });
+}

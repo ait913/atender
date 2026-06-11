@@ -7,6 +7,7 @@ import { AppError } from "../lib/appError";
 import { semesterDto } from "../lib/dto";
 import { semesterDateEnd, semesterDateStart } from "../lib/tz";
 import { sessionMiddleware } from "../middleware/session";
+import { reconcileOccurrencesForSemesterDateChange } from "../services/occurrenceGen";
 import { getSemesterOverview } from "../services/semesterOverview.service";
 
 const IdParam = z.object({ id: z.string() });
@@ -67,6 +68,7 @@ export function registerSemesterRoutes(app: Hono) {
     const nextStart = input.startDate ? semesterDateStart(input.startDate) : semester.startDate;
     const nextEnd = input.endDate ? semesterDateEnd(input.endDate) : semester.endDate;
     if (nextStart > nextEnd) throw new AppError(400, "VALIDATION_ERROR", "startDate must be <= endDate");
+    const dateChanged = nextStart.getTime() !== semester.startDate.getTime() || nextEnd.getTime() !== semester.endDate.getTime();
     const updated = await prisma.semester.update({
       where: { id },
       data: {
@@ -75,6 +77,14 @@ export function registerSemesterRoutes(app: Hono) {
         ...(input.endDate ? { endDate: nextEnd } : {}),
       },
     });
+    if (dateChanged) {
+      await reconcileOccurrencesForSemesterDateChange({
+        semesterId: id,
+        userId: user.id,
+        newStart: nextStart,
+        newEnd: nextEnd,
+      });
+    }
     return c.json({ semester: semesterDto(updated) });
   });
 
