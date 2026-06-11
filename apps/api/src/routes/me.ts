@@ -25,6 +25,7 @@ type MeUser = {
   defaultSemesterId: string | null;
   schoolId: string | null;
   departmentId: string | null;
+  requiredAttendanceRate: number;
 };
 
 async function getMeResponse(user: MeUser) {
@@ -49,6 +50,7 @@ async function getMeResponse(user: MeUser) {
       defaultSemesterId: user.defaultSemesterId,
       schoolId: user.schoolId,
       departmentId: user.departmentId,
+      requiredAttendanceRate: user.requiredAttendanceRate,
     },
     setupStatus,
   });
@@ -126,6 +128,7 @@ export function registerMeRoutes(app: Hono) {
         ...(hasSchoolId ? { schoolId: requestedSchoolId } : {}),
         ...(hasDepartmentId ? { departmentId: requestedDepartmentId } : {}),
         ...(input.defaultSemesterId !== undefined ? { defaultSemesterId: input.defaultSemesterId } : {}),
+        ...(input.requiredAttendanceRate !== undefined ? { requiredAttendanceRate: input.requiredAttendanceRate } : {}),
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.handle !== undefined ? { handle: input.handle.toLowerCase() } : {}),
       },

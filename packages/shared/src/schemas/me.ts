@@ -11,6 +11,7 @@ export const MeResponseDto = z.object({
     defaultSemesterId: z.string().nullable(),
     schoolId: z.string().nullable(),
     departmentId: z.string().nullable(),
+    requiredAttendanceRate: z.number().int(),
   }),
   setupStatus: z.object({
     hasSchool: z.boolean(),
@@ -29,6 +30,7 @@ export const MeUpdateInput = z.object({
   defaultSemesterId: z.string().nullable().optional(),
   name: z.string().min(1).max(50).optional(),
   handle: z.string().min(1).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
+  requiredAttendanceRate: z.number().int().min(1).max(100).optional(),
 }).refine(
   v => v.departmentId == null || v.schoolId != null,
   { message: "departmentId requires schoolId in the same request or already set on User" }

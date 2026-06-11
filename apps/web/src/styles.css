@@ -41,6 +41,7 @@
   --color-status-tardy: #FFC93C;
   --color-status-early: #C685FF;
   --color-status-cancelled: rgba(255, 255, 255, 0.30);
+  --color-status-suspended: #94A3B8;
   --color-status-none: rgba(255, 255, 255, 0.18);
 
   /* friendship / room */
@@ -172,6 +173,7 @@
   --color-status-tardy: #D97706;
   --color-status-early: #9333EA;
   --color-status-cancelled: rgba(15, 23, 42, 0.40);
+  --color-status-suspended: #64748B;
   --color-status-none: rgba(15, 23, 42, 0.18);
   --color-friendship-pending: #D97706;
   --color-friendship-accepted: #16A34A;
@@ -209,6 +211,7 @@
   --color-status-tardy: var(--color-status-tardy);
   --color-status-early: var(--color-status-early);
   --color-status-cancelled: var(--color-status-cancelled);
+  --color-status-suspended: var(--color-status-suspended);
   --color-status-none: var(--color-status-none);
   --color-friendship-pending: var(--color-friendship-pending);
   --color-friendship-accepted: var(--color-friendship-accepted);

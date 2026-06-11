@@ -1,5 +1,13 @@
 import type {
   AttendanceRuleDto,
+  BulkClearAttendanceInput,
+  BulkClearAttendanceResponse,
+  BulkMarkAttendanceInput,
+  BulkMarkAttendanceResponse,
+  BulkTimetableSuspensionInput,
+  BulkTimetableSuspensionRemoveInput,
+  BulkTimetableSuspensionRemoveResponse,
+  BulkTimetableSuspensionResponse,
   CourseCreateInput,
   CourseDto,
   CourseSuspensionCreateInput,
@@ -94,6 +102,14 @@ export type IcsTitleRulesResponse = { rules: IcsTitleRuleDto[] };
 export type IcsTitleRuleResponse = { rule: IcsTitleRuleDto };
 
 export type {
+  BulkClearAttendanceInput,
+  BulkClearAttendanceResponse,
+  BulkMarkAttendanceInput,
+  BulkMarkAttendanceResponse,
+  BulkTimetableSuspensionInput,
+  BulkTimetableSuspensionRemoveInput,
+  BulkTimetableSuspensionRemoveResponse,
+  BulkTimetableSuspensionResponse,
   EffectiveRuleResponse,
   MarkAllPresentInput,
   MarkAllPresentResponse,

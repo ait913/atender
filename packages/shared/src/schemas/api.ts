@@ -18,6 +18,7 @@ export const UserDto = z.object({
   defaultSemesterId: z.string().nullable(),
   schoolId: z.string().nullable(),
   departmentId: z.string().nullable(),
+  requiredAttendanceRate: z.number().int(),
 });
 
 export type ErrorResponse = z.infer<typeof ErrorResponse>;

@@ -10,9 +10,10 @@ import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
 import { SemesterListSheet } from "@/components/sheet/SemesterListSheet";
 import { useTheme, type Theme } from "@/lib/useTheme";
 import { ProfileEditSheet } from "./ProfileEditSheet";
+import { RequiredRateSheet } from "./RequiredRateSheet";
 import { SettingsRow, SettingsSection } from "./SettingsSection";
 
-type Sheet = "profile" | "school" | "rules" | "semesters" | "google" | null;
+type Sheet = "profile" | "school" | "rules" | "semesters" | "google" | "requiredRate" | null;
 
 export function Settings() {
   const me = useMe();
@@ -55,6 +56,11 @@ export function Settings() {
       </SettingsSection>
 
       <SettingsSection title="出席">
+        <SettingsRow
+          label="必要出席率"
+          trailing={<span className="text-sm font-bold text-fg-tertiary">{user?.requiredAttendanceRate ?? 70}%</span>}
+          onClick={() => setSheet("requiredRate")}
+        />
         <SettingsRow label="出欠ルール" onClick={() => setSheet("rules")} />
         <SettingsRow label="学期管理" onClick={() => setSheet("semesters")} />
       </SettingsSection>
@@ -75,6 +81,7 @@ export function Settings() {
       <ProfileEditSheet open={sheet === "profile"} onClose={() => setSheet(null)} />
       <SchoolDeptEditSheet open={sheet === "school"} onClose={() => setSheet(null)} />
       <AttendanceRuleSheet open={sheet === "rules"} onClose={() => setSheet(null)} />
+      <RequiredRateSheet open={sheet === "requiredRate"} onClose={() => setSheet(null)} />
       <SemesterListSheet open={sheet === "semesters"} onClose={() => setSheet(null)} />
       <BottomSheet open={sheet === "google"} onClose={() => setSheet(null)} title="Google Calendar 連携">
         <GoogleCalendarSection />

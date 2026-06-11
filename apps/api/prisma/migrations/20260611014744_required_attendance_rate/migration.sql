@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "requiredAttendanceRate" INTEGER NOT NULL DEFAULT 70;
