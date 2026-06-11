@@ -25,7 +25,6 @@ export function registerCourseRoutes(app: Hono) {
         name: input.name,
         teacher: input.teacher ?? null,
         color: input.color ?? null,
-        totalSessions: input.totalSessions,
         note: input.note ?? null,
       },
     });
@@ -46,7 +45,6 @@ export function registerCourseRoutes(app: Hono) {
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.teacher !== undefined ? { teacher: input.teacher } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
-        ...(input.totalSessions !== undefined ? { totalSessions: input.totalSessions } : {}),
         ...(input.note !== undefined ? { note: input.note } : {}),
       },
     });

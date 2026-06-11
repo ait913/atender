@@ -6,7 +6,6 @@ function stats(rate: number | null, overrides: Partial<any> = {}) {
     courseId: "course-1",
     courseName: "データベース",
     teacher: "山田",
-    totalSessions: 15,
     generatedOccurrences: 15,
     counts: {
       present: 7,

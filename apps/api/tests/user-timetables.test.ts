@@ -43,7 +43,7 @@ describe("user timetables API", () => {
         semesterId: semester.id,
         title: "新規時間割",
         daySlots: [{ periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false }],
-        courses: [{ tempId: "c1", name: "OS", totalSessions: 15 }],
+        courses: [{ tempId: "c1", name: "OS" }],
         meetings: [{ courseTempId: "c1", dayOfWeek: 3, startPeriodIndex: 1, periodCount: 1 }],
       },
     });
@@ -126,7 +126,7 @@ describe("user timetables daysOfWeek", () => {
         semesterId: semester.id,
         title: "新規時間割",
         daySlots: [{ periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false }],
-        courses: [{ tempId: "c1", name: "OS", totalSessions: 15 }],
+        courses: [{ tempId: "c1", name: "OS" }],
         meetings: [{ courseTempId: "c1", dayOfWeek: 3, startPeriodIndex: 1, periodCount: 1 }],
       },
     });

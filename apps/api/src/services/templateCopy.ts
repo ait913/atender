@@ -54,7 +54,6 @@ export async function copyTemplateToUser(args: {
             name: course.name,
             teacher: course.teacher,
             color: course.color,
-            totalSessions: course.totalSessions,
             note: course.note,
           },
         });

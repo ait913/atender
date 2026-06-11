@@ -121,7 +121,6 @@ export async function createUserTimetable(
       name: "オペレーティングシステム",
       teacher: "山田",
       color: "#ffffff",
-      totalSessions: 15,
     },
   });
 

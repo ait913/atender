@@ -35,7 +35,7 @@ async function createTimetableFromInput(userId: string, input: z.infer<typeof Us
       await tx.daySlot.createMany({ data: input.daySlots.map((slot) => ({ ...slot, userTimetableId: timetable.id })) });
       const courseMap = new Map<string, string>();
       for (const course of input.courses) {
-        const created = await tx.course.create({ data: { userTimetableId: timetable.id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, totalSessions: course.totalSessions, note: course.note ?? null } });
+        const created = await tx.course.create({ data: { userTimetableId: timetable.id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, note: course.note ?? null } });
         courseMap.set(course.tempId, created.id);
       }
       for (const meeting of input.meetings) {
@@ -95,7 +95,7 @@ export function registerUserTimetableRoutes(app: Hono) {
         await tx.course.deleteMany({ where: { userTimetableId: id } });
         const courseMap = new Map<string, string>();
         for (const course of input.courses ?? []) {
-          const created = await tx.course.create({ data: { userTimetableId: id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, totalSessions: course.totalSessions, note: course.note ?? null } });
+          const created = await tx.course.create({ data: { userTimetableId: id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, note: course.note ?? null } });
           if (course.id) courseMap.set(course.id, created.id);
           if (course.tempId) courseMap.set(course.tempId, created.id);
         }
@@ -137,7 +137,7 @@ export function registerUserTimetableRoutes(app: Hono) {
       await tx.templateDaySlot.createMany({ data: timetable.daySlots.map((slot) => ({ templateId: created.id, periodIndex: slot.periodIndex, label: slot.label, startMinute: slot.startMinute, endMinute: slot.endMinute, isBreak: slot.isBreak })) });
       const courseMap = new Map<string, string>();
       for (const course of timetable.courses) {
-        const createdCourse = await tx.templateCourse.create({ data: { templateId: created.id, name: course.name, teacher: course.teacher ?? undefined, color: course.color ?? undefined, totalSessions: course.totalSessions, note: course.note ?? undefined } });
+        const createdCourse = await tx.templateCourse.create({ data: { templateId: created.id, name: course.name, teacher: course.teacher ?? undefined, color: course.color ?? undefined, note: course.note ?? undefined } });
         courseMap.set(course.id, createdCourse.id);
       }
       for (const meeting of timetable.meetings) {

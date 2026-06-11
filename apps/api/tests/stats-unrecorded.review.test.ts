@@ -8,16 +8,11 @@ type AttendanceStatus = "PRESENT" | "ABSENT" | "EXCUSED" | "TARDY" | "EARLY_LEAV
 async function statsScenario(args: {
   statuses: AttendanceStatus[];
   dates?: string[];
-  totalSessions?: number;
   requiredAttendanceRate?: number;
   now?: Date;
 }) {
   const db = prisma();
   const complete = await setupCompleteUser(db);
-  await db.course.update({
-    where: { id: complete.course.id },
-    data: { totalSessions: args.totalSessions ?? args.statuses.length },
-  });
   await (db.user.update as any)({
     where: { id: complete.user.id },
     data: { requiredAttendanceRate: args.requiredAttendanceRate ?? 70 },
@@ -85,7 +80,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
         null,
       ],
       dates: tenPastFiveFutureDates,
-      totalSessions: 15,
       requiredAttendanceRate: 70,
     });
 
@@ -110,7 +104,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
         null,
       ],
       dates: tenPastFiveFutureDates,
-      totalSessions: 15,
       requiredAttendanceRate: 70,
     });
 
@@ -126,12 +119,10 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
     const recorded = await statsScenario({
       statuses: Array(4).fill("PRESENT" as const),
       dates: ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04"],
-      totalSessions: 4,
     });
     const withPastUnrecorded = await statsScenario({
       statuses: [...Array(4).fill("PRESENT" as const), null],
       dates: ["2026-06-01", "2026-06-02", "2026-06-03", "2026-06-04", "2026-06-05"],
-      totalSessions: 5,
     });
 
     expect(recorded.courseStats.toDate.effectiveNumerator).toBe(4);
@@ -146,7 +137,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
     const { courseStats } = await statsScenario({
       statuses: [null, null],
       dates: ["2026-06-08", "2026-06-09"],
-      totalSessions: 2,
     });
 
     expect(courseStats.counts.unrecorded).toBe(1);
@@ -191,7 +181,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
         "2026-06-15",
         "2026-06-16",
       ],
-      totalSessions: 17,
       requiredAttendanceRate: 70,
     });
 
@@ -218,7 +207,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
         "2026-06-07",
         "2026-06-08",
       ],
-      totalSessions: 10,
       requiredAttendanceRate: 70,
     });
 
@@ -233,7 +221,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
   it("returns null toDate rate and null allowedAbsences when there are no occurrences", async () => {
     const { courseStats } = await statsScenario({
       statuses: [],
-      totalSessions: 0,
       requiredAttendanceRate: 70,
     });
 
@@ -259,7 +246,6 @@ describe("stats unrecorded review: design-specified toDate and projection", () =
         null,
       ],
       dates: tenPastFiveFutureDates,
-      totalSessions: 15,
       requiredAttendanceRate: 70,
     });
 

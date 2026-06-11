@@ -227,7 +227,6 @@ model TemplateCourse {
   name          String
   teacher       String?
   color         String? // "#RRGGBB" 等、UI hint
-  totalSessions Int // 学期通しの想定総コマ数 (Researcher 例: 15)
   note          String?
 
   meetings TemplateMeeting[]
@@ -329,7 +328,6 @@ model Course {
   name            String
   teacher         String?
   color           String?
-  totalSessions   Int
   note            String?
 
   meetings    Meeting[]

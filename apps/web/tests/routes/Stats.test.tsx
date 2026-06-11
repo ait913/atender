@@ -26,7 +26,6 @@ describe("/stats", () => {
             {
               courseId: "course-1",
               courseName: "数学I",
-              totalSessions: 15,
               generatedOccurrences: 15,
               counts: {
                 present: 13,

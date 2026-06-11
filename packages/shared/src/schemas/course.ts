@@ -5,7 +5,6 @@ export const CourseCreateInput = z.object({
   name: z.string().min(1).max(100),
   teacher: z.string().max(50).optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-  totalSessions: z.number().int().min(1).max(60).default(15),
   note: z.string().max(500).optional(),
 });
 
@@ -13,7 +12,6 @@ export const CourseUpdateInput = z.object({
   name: z.string().min(1).max(100).optional(),
   teacher: z.string().max(50).nullable().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
-  totalSessions: z.number().int().min(1).max(60).optional(),
   note: z.string().max(500).nullable().optional(),
 });
 

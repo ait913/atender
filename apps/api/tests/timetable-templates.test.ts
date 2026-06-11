@@ -20,7 +20,7 @@ async function createTemplate(db = prisma(), authorUserId: string, schoolId: str
     ],
   });
   const course = await db.templateCourse.create({
-    data: { templateId: template.id, name: "OS", teacher: "山田", color: "#ffffff", totalSessions: 15 },
+    data: { templateId: template.id, name: "OS", teacher: "山田", color: "#ffffff" },
   });
   await db.templateMeeting.create({
     data: { templateId: template.id, courseId: course.id, dayOfWeek: 3, startPeriodIndex: 1, periodCount: 2, room: "305" },

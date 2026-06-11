@@ -20,7 +20,6 @@ vi.mock("@/components/semester/CourseEditModal", () => ({
             name: "新規科目",
             teacher: null,
             color: "#10b981",
-            totalSessions: 15,
             note: null,
           });
           onClose();
@@ -35,8 +34,8 @@ vi.mock("@/components/semester/CourseEditModal", () => ({
 const timetable = {
   id: "tt-1",
   courses: [
-    { id: "course-1", name: "数学", teacher: "田中", color: "#10b981", totalSessions: 15, note: null },
-    { id: "course-2", name: "英語", teacher: "鈴木", color: "#60a5fa", totalSessions: 15, note: null },
+    { id: "course-1", name: "数学", teacher: "田中", color: "#10b981", note: null },
+    { id: "course-2", name: "英語", teacher: "鈴木", color: "#60a5fa", note: null },
   ],
   meetings: [
     { id: "meeting-1", courseId: "course-1", dayOfWeek: 1, startPeriodIndex: 2, periodCount: 2, room: "A301" },

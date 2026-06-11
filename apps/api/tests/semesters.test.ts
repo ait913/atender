@@ -431,9 +431,8 @@ describe("GET /api/semesters/:id/overview overall.allowedAbsences", () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
     await db.user.update({ where: { id: complete.user.id }, data: { requiredAttendanceRate: 88 } });
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 5 } });
     const course2 = await db.course.create({
-      data: { userTimetableId: complete.userTimetable.id, name: "線形代数", color: "#fff", totalSessions: 5 },
+      data: { userTimetableId: complete.userTimetable.id, name: "線形代数", color: "#fff" },
     });
     const meeting2 = await db.meeting.create({
       data: { userTimetableId: complete.userTimetable.id, courseId: course2.id, dayOfWeek: 3, startPeriodIndex: 1, periodCount: 1 },
@@ -461,9 +460,8 @@ describe("GET /api/semesters/:id/overview overall.allowedAbsences", () => {
     const db = prisma();
     const mixed = await setupCompleteUser(db);
     await db.user.update({ where: { id: mixed.user.id }, data: { requiredAttendanceRate: 88 } });
-    await db.course.update({ where: { id: mixed.course.id }, data: { totalSessions: 5 } });
     await db.course.create({
-      data: { userTimetableId: mixed.userTimetable.id, name: "ゼロ単位", color: "#fff", totalSessions: 0 },
+      data: { userTimetableId: mixed.userTimetable.id, name: "ゼロ単位", color: "#fff" },
     });
     await createDatedOccurrences({
       meetingId: mixed.meeting.id,
@@ -476,7 +474,6 @@ describe("GET /api/semesters/:id/overview overall.allowedAbsences", () => {
 
     const allZero = await setupCompleteUser(db, { email: "all-zero@example.test" });
     await db.user.update({ where: { id: allZero.user.id }, data: { requiredAttendanceRate: 88 } });
-    await db.course.update({ where: { id: allZero.course.id }, data: { totalSessions: 0 } });
 
     const allZeroRes = await app.request(`/api/semesters/${allZero.semester.id}/overview`, { headers: { Cookie: allZero.cookie } });
     const allZeroBody = await json(allZeroRes);

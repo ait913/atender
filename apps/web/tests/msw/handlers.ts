@@ -249,7 +249,6 @@ export const handlers = [
         {
           courseId: "course-1",
           courseName: "数学I",
-          totalSessions: 15,
           generatedOccurrences: 15,
           counts: {
             present: 13,
@@ -267,7 +266,6 @@ export const handlers = [
         {
           courseId: "course-2",
           courseName: "未記録科目",
-          totalSessions: 0,
           generatedOccurrences: 0,
           counts: {
             present: 0,
