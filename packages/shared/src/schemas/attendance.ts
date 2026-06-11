@@ -29,6 +29,7 @@ export const MarkAttendanceInput = z.object({
 
 export const MarkAllPresentInput = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  status: z.enum(ATTENDANCE_STATUS).exclude(["CANCELLED"]).optional(),
 });
 
 export const MarkAllPresentResponse = z.object({

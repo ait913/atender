@@ -41,7 +41,7 @@ export function registerAttendanceRoutes(app: Hono) {
           skippedCount += 1;
           continue;
         }
-        await tx.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: user.id, status: "PRESENT" } });
+        await tx.attendanceRecord.create({ data: { occurrenceId: occurrence.id, userId: user.id, status: input.status ?? "PRESENT" } });
         markedCount += 1;
       }
       return { markedCount, skippedCount };

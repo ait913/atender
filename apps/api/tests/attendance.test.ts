@@ -72,6 +72,104 @@ describe("attendance API", () => {
     await expect(db.attendanceRecord.count()).resolves.toBe(0);
   });
 
+  it("mark-all-present creates ABSENT records when status is ABSENT", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, periodOffset: 0 });
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, periodOffset: 1, startMinute: 640, endMinute: 730 });
+
+    const res = await requestJson(app, "/api/attendance/mark-all-present", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { date: "2026-05-13", status: "ABSENT" },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ markedCount: 2 });
+    await expect(db.attendanceRecord.count({ where: { userId: complete.user.id, status: "ABSENT" } })).resolves.toBe(2);
+    await expect(db.attendanceRecord.count({ where: { userId: complete.user.id, status: "PRESENT" } })).resolves.toBe(0);
+  });
+
+  it("mark-all-present with ABSENT skips existing PRESENT records without overwriting them", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    const existing = await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, periodOffset: 0 });
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, periodOffset: 1, startMinute: 640, endMinute: 730 });
+    await db.attendanceRecord.create({ data: { occurrenceId: existing.id, userId: complete.user.id, status: "PRESENT" } });
+
+    const res = await requestJson(app, "/api/attendance/mark-all-present", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { date: "2026-05-13", status: "ABSENT" },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ markedCount: 1, skippedCount: 1 });
+    await expect(db.attendanceRecord.findUniqueOrThrow({ where: { occurrenceId: existing.id } })).resolves.toMatchObject({ status: "PRESENT" });
+    await expect(db.attendanceRecord.count({ where: { userId: complete.user.id, status: "ABSENT" } })).resolves.toBe(1);
+  });
+
+  it("mark-all-present rejects CANCELLED and creates no records", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id });
+
+    const res = await requestJson(app, "/api/attendance/mark-all-present", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { date: "2026-05-13", status: "CANCELLED" },
+    });
+
+    expect(res.status).toBe(400);
+    await expect(db.attendanceRecord.count()).resolves.toBe(0);
+  });
+
+  it("mark-all-present rejects an invalid status", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id });
+
+    const res = await requestJson(app, "/api/attendance/mark-all-present", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { date: "2026-05-13", status: "INVALID" },
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("mark-all-present defaults omitted status to PRESENT", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id });
+
+    const res = await requestJson(app, "/api/attendance/mark-all-present", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { date: "2026-05-13" },
+    });
+
+    expect(res.status).toBe(200);
+    await expect(db.attendanceRecord.count({ where: { userId: complete.user.id, status: "PRESENT" } })).resolves.toBe(1);
+  });
+
+  it("mark-all-present returns zero counts when there are no occurrences for the date", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, "/api/attendance/mark-all-present", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { date: "2026-05-13", status: "ABSENT" },
+    });
+    const body = await json(res);
+
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ markedCount: 0, skippedCount: 0 });
+  });
+
   it("[§8 #50] POST /api/attendance/:occurrenceId upserts by overwriting existing status and updatedAt", async () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);

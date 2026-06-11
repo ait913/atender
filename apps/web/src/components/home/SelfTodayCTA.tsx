@@ -38,7 +38,7 @@ export function SelfTodayCTA() {
         occurrences={occurrences}
         expanded={expanded}
         onToggle={() => setExpanded((value) => !value)}
-        onMarkAll={() => markAll.mutate({ date })}
+        onMarkAll={(status) => markAll.mutate({ date, status })}
         onChangeStatus={changeStatus}
         pending={markAll.isPending}
       />

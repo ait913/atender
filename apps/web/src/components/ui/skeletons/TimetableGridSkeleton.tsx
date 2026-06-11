@@ -1,5 +1,7 @@
-import type { JSX } from "react";
+import { Fragment, type JSX } from "react";
 import { Skeleton } from "../Skeleton";
+
+const DAY_LABELS = ["月", "火", "水", "木", "金", "土", "日"];
 
 export function TimetableGridSkeleton({
   days = 5,
@@ -21,10 +23,29 @@ export function TimetableGridSkeleton({
           minHeight: "320px",
         }}
       >
-        {Array.from({ length: (days + 1) * (rows + 1) }, (_, index) => (
-          <div key={index} className="border-b border-r border-border-subtle p-0.5">
-            <Skeleton height="100%" />
+        <div className="border-b border-r border-border-subtle bg-bg-muted" />
+        {Array.from({ length: days }, (_, dayIndex) => (
+          <div
+            key={`day-${dayIndex}`}
+            className="border-b border-r border-border-subtle bg-bg-muted text-center text-[11px] font-semibold leading-[28px]"
+          >
+            {DAY_LABELS[dayIndex]}
           </div>
+        ))}
+        {Array.from({ length: rows }, (_, rowIndex) => (
+          <Fragment key={`row-group-${rowIndex}`}>
+            <div
+              key={`row-${rowIndex}`}
+              className="flex flex-col items-center justify-center gap-1 border-b border-r border-border-subtle bg-bg-muted"
+            >
+              <Skeleton width="1.25rem" height="0.75rem" radius="9999px" />
+            </div>
+            {Array.from({ length: days }, (_, dayIndex) => (
+              <div key={`cell-${rowIndex}-${dayIndex}`} className="border-b border-r border-border-subtle p-0.5">
+                {(dayIndex + rowIndex) % 3 === 0 ? <Skeleton height="100%" radius="0.375rem" /> : null}
+              </div>
+            ))}
+          </Fragment>
         ))}
       </div>
     </div>

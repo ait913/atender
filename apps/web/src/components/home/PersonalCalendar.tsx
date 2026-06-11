@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { useMemo, useState } from "react";
 import type { AttendanceDaySummary } from "@atender/shared";
 import { usePersonalEvents, useSemesterOverview, useSemesters, useUserTimetables } from "@/api/hooks";
-import { CalendarMonthSkeleton, Panel } from "@/components/ui";
+import { CalendarDaySkeleton, CalendarMonthSkeleton, CalendarWeekSkeleton, DayAgendaPanelSkeleton, Panel } from "@/components/ui";
 import { CalendarDay } from "@/components/rooms/calendar/CalendarDay";
 import { CalendarMonth } from "@/components/rooms/calendar/CalendarMonth";
 import { CalendarSegmented } from "@/components/rooms/calendar/CalendarSegmented";
@@ -78,7 +78,33 @@ export function PersonalCalendar({ semesterId }: Props) {
   }
 
   if (!semesterId) return <Panel>学期を選択してください。</Panel>;
-  if (timetables.isLoading || semesters.isLoading || overview.isLoading || personalEvents.isLoading) return <CalendarMonthSkeleton />;
+  if (timetables.isLoading || semesters.isLoading || overview.isLoading || personalEvents.isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <PeriodNav
+            viewMode={viewMode}
+            anchor={anchor}
+            onChange={(next) => {
+              setAnchor(next);
+              if (viewMode === "day") setSelectedDate(next.format("YYYY-MM-DD"));
+            }}
+          />
+          <CalendarSegmented viewMode={viewMode} onChange={setViewMode} />
+        </div>
+        {viewMode === "month" ? (
+          <>
+            <CalendarMonthSkeleton />
+            <DayAgendaPanelSkeleton />
+          </>
+        ) : viewMode === "week" ? (
+          <CalendarWeekSkeleton />
+        ) : (
+          <CalendarDaySkeleton />
+        )}
+      </div>
+    );
+  }
   if (timetables.isError || semesters.isError || overview.isError || personalEvents.isError) return <Panel>カレンダーを読み込めませんでした。</Panel>;
   if (!timetable) return <Panel>この学期の時間割がありません</Panel>;
   if (!semester) return <Panel>学期を読み込めませんでした。</Panel>;
