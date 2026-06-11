@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { app, prisma } from "./helpers/app";
-import { createSessionCookie, createTestUser } from "./helpers/auth";
+import { createSessionCookie, createTestUser, setupCompleteUser, createOccurrence } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
 import { createFriendship, setUserHandle } from "./helpers/seedFriendship";
 
@@ -68,5 +68,77 @@ describe("user search endpoint", () => {
     const unauthenticated = await requestJson(app, "/api/users/search?handle=touri");
     expect(unauthenticated.status).toBe(401);
     expectError(await json(unauthenticated), "UNAUTHORIZED");
+  });
+});
+
+describe("me requiredAttendanceRate", () => {
+  it("returns default requiredAttendanceRate for a newly created user", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await app.request("/api/me", { headers: cookieHeader(complete.cookie) });
+    const body = await json(res);
+
+    // 仕様 #17
+    expect(res.status).toBe(200);
+    expect(body.user.requiredAttendanceRate).toBe(70);
+  });
+
+  it("patches requiredAttendanceRate without changing unrelated user fields", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, "/api/me", {
+      method: "PATCH",
+      headers: cookieHeader(complete.cookie),
+      body: { requiredAttendanceRate: 80 },
+    });
+    const body = await json(res);
+    const get = await app.request("/api/me", { headers: cookieHeader(complete.cookie) });
+    const after = await json(get);
+
+    // 仕様 #18
+    expect(res.status).toBe(200);
+    expect(body.user.requiredAttendanceRate).toBe(80);
+    expect(after.user.requiredAttendanceRate).toBe(80);
+    expect(after.user.defaultSemesterId).toBe(complete.semester.id);
+  });
+
+  it.each([0, 101, 70.5])("rejects invalid requiredAttendanceRate %s", async (requiredAttendanceRate) => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+
+    const res = await requestJson(app, "/api/me", {
+      method: "PATCH",
+      headers: cookieHeader(complete.cookie),
+      body: { requiredAttendanceRate },
+    });
+    const body = await json(res);
+
+    // 仕様 #19
+    expect(res.status).toBe(400);
+    expectError(body, "VALIDATION_ERROR");
+  });
+
+  it("updates overview allowedAbsences when requiredAttendanceRate changes", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 10 } });
+    // 過去 1 件 (PRESENT 記録) + 学期内未来 9 件 = 射影 10/10。
+    // rate70 → floor(10-7)=3、rate90 → floor(10-9)=1 で確実に差が出る fixture (JST midnight 規約)
+    const past = await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-06-01T00:00:00+09:00") });
+    const futureDates = ["2026-06-18", "2026-06-25", "2026-07-02", "2026-07-09", "2026-07-16", "2026-07-23", "2026-07-30", "2026-08-06", "2026-08-13"];
+    for (const d of futureDates) {
+      await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date(`${d}T00:00:00+09:00`) });
+    }
+    await db.attendanceRecord.create({ data: { occurrenceId: past.id, userId: complete.user.id, status: "PRESENT" } });
+
+    await requestJson(app, "/api/me", { method: "PATCH", headers: cookieHeader(complete.cookie), body: { requiredAttendanceRate: 70 } });
+    const before = await json(await app.request(`/api/semesters/${complete.semester.id}/overview`, { headers: cookieHeader(complete.cookie) }));
+    await requestJson(app, "/api/me", { method: "PATCH", headers: cookieHeader(complete.cookie), body: { requiredAttendanceRate: 90 } });
+    const after = await json(await app.request(`/api/semesters/${complete.semester.id}/overview`, { headers: cookieHeader(complete.cookie) }));
+
+    // 仕様 #20
+    expect(after.overall.allowedAbsences).toBeLessThan(before.overall.allowedAbsences);
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { app, prisma } from "./helpers/app";
-import { createSessionCookie, createTestUser, setupCompleteUser } from "./helpers/auth";
+import { createOccurrence, createSessionCookie, createTestUser, setupCompleteUser } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
 
 describe("timetable suspensions API", () => {
@@ -113,5 +113,106 @@ describe("timetable suspensions API", () => {
 
     expect(res.status).toBe(200);
     expect(body).toEqual({ ok: true });
+  });
+});
+
+describe("bulk timetable suspensions API", () => {
+  it("bulk creates suspensions for all selected dates and exposes them in day detail", async () => {
+    const complete = await setupCompleteUser(prisma());
+
+    const res = await requestJson(app, "/api/timetable-suspensions/bulk", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { dates: ["2026-06-03", "2026-06-10", "2026-06-17"], reason: "学校行事" },
+    });
+    const body = await json(res);
+    const day = await json(await app.request("/api/day/2026-06-10", { headers: { Cookie: complete.cookie } }));
+
+    // 仕様 #34
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ createdCount: 3, skippedCount: 0 });
+    expect(day.timetableSuspension).toMatchObject({ date: "2026-06-10", reason: "学校行事" });
+  });
+
+  it("bulk skips existing dates without returning 409", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await (db as any).timetableSuspension.create({ data: { userTimetableId: complete.userTimetable.id, date: new Date("2026-06-03T00:00:00+09:00") } });
+
+    const res = await requestJson(app, "/api/timetable-suspensions/bulk", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { dates: ["2026-06-03", "2026-06-10", "2026-06-17"] },
+    });
+    const body = await json(res);
+
+    // 仕様 #35
+    expect(res.status).toBe(200);
+    expect(body).toMatchObject({ createdCount: 2, skippedCount: 1 });
+  });
+
+  it("bulk-remove deletes existing dates and ignores missing ones", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    for (const date of ["2026-06-03", "2026-06-10"]) {
+      await (db as any).timetableSuspension.create({ data: { userTimetableId: complete.userTimetable.id, date: new Date(`${date}T00:00:00+09:00`) } });
+    }
+
+    const res = await requestJson(app, "/api/timetable-suspensions/bulk-remove", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { dates: ["2026-06-03", "2026-06-10", "2026-06-17"] },
+    });
+    const body = await json(res);
+
+    // 仕様 #36
+    expect(res.status).toBe(200);
+    expect(body.removedCount).toBe(2);
+    await expect((db as any).timetableSuspension.count()).resolves.toBe(0);
+  });
+
+  it("bulk suspension updates overview status and excludes suspended occurrences from stats", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-06-03T00:00:00+09:00") });
+
+    await requestJson(app, "/api/timetable-suspensions/bulk", {
+      method: "POST",
+      headers: { Cookie: complete.cookie },
+      body: { dates: ["2026-06-03"] },
+    });
+    const overview = await json(await app.request(`/api/semesters/${complete.semester.id}/overview`, { headers: { Cookie: complete.cookie } }));
+    const stats = await json(await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } }));
+
+    // 仕様 #37
+    expect(JSON.stringify(overview)).toContain("ALL_SUSPENDED");
+    expect(stats.courses[0].counts.suspended).toBeGreaterThanOrEqual(1);
+  });
+
+  it("bulk validates setup and date array bounds", async () => {
+    const db = prisma();
+    const user = await createTestUser(db);
+    const cookie = await createSessionCookie(db, user.id);
+
+    const noSetup = await requestJson(app, "/api/timetable-suspensions/bulk", {
+      method: "POST",
+      headers: { Cookie: cookie },
+      body: { dates: ["2026-06-03"] },
+    });
+    const empty = await requestJson(app, "/api/timetable-suspensions/bulk", {
+      method: "POST",
+      headers: { Cookie: cookie },
+      body: { dates: [] },
+    });
+    const tooMany = await requestJson(app, "/api/timetable-suspensions/bulk-remove", {
+      method: "POST",
+      headers: { Cookie: cookie },
+      body: { dates: Array.from({ length: 63 }, (_, index) => `2026-06-${String((index % 28) + 1).padStart(2, "0")}`) },
+    });
+
+    // 仕様 #38
+    expect(noSetup.status).toBe(403);
+    expect(empty.status).toBe(400);
+    expect(tooMany.status).toBe(400);
   });
 });

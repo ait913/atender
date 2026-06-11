@@ -117,4 +117,18 @@ describe("semesters API", () => {
     // 仕様は「status に現れない or NO_CLASS」。少なくとも休講表示 ALL_SUSPENDED は出さない。
     expect(hits.some((hit) => hit.status === "ALL_SUSPENDED")).toBe(false);
   });
+
+  it("includes the server JST today and user requiredAttendanceRate in semester overview", async () => {
+    const db = prisma();
+    const complete = await setupCompleteUser(db);
+    await (db.user.update as any)({ where: { id: complete.user.id }, data: { requiredAttendanceRate: 82 } }).catch(() => undefined);
+
+    const res = await app.request(`/api/semesters/${complete.semester.id}/overview`, { headers: { Cookie: complete.cookie } });
+    const body = await json(res);
+
+    // 仕様 #13
+    expect(res.status).toBe(200);
+    expect(body.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(body.requiredAttendanceRate).toBe(82);
+  });
 });

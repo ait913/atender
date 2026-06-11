@@ -1,9 +1,4 @@
-/**
- * 設計不足: AttendanceCalendar の既存 props 形（status データの渡し方、month 指定）は設計docに明記されていない。
- * 新 prop onSelectDay と UI 契約を、設計された AttendanceDaySummary 相当の最小 days 配列で best-effort 検証する。
- */
-import { fireEvent, render, screen, within } from "@testing-library/react";
-
+import { fireEvent, render, screen } from "@testing-library/react";
 import { AttendanceCalendar } from "@/components/semester/AttendanceCalendar";
 import { usePersonalEvents } from "@/api/hooks";
 
@@ -12,52 +7,148 @@ vi.mock("@/api/hooks", () => ({
 }));
 
 const days = [
-  { date: "2026-05-13", status: "HAS_ABSENT" },
-  { date: "2026-05-14", status: "ALL_PRESENT" },
+  { date: "2026-06-03", status: "HAS_ABSENT" },
+  { date: "2026-06-04", status: "ALL_PRESENT" },
+  { date: "2026-06-05", status: "PARTIAL_UNRECORDED" },
+  { date: "2026-06-12", status: "ALL_PRESENT" },
+  { date: "2026-06-13", status: "ALL_SUSPENDED" },
 ];
 
 function renderCalendar(overrides: Partial<any> = {}) {
   vi.mocked(usePersonalEvents).mockReturnValue({ data: { events: [] }, isLoading: false } as any);
   const onSelectDay = vi.fn();
+  const onToggleSelectionMode = vi.fn();
+  const onToggleDate = vi.fn();
   const result = render(
     <AttendanceCalendar
       days={days as any}
-      startDate="2026-05-01"
-      endDate="2026-05-31"
+      startDate="2026-04-06"
+      endDate="2026-09-18"
+      today="2026-06-11"
       semesterId="semester-1"
       onSelectDay={onSelectDay}
+      selectionMode={false}
+      selectedDates={new Set()}
+      onToggleSelectionMode={onToggleSelectionMode}
+      onToggleDate={onToggleDate}
       {...(overrides as any)}
     />,
   );
-  return { ...result, onSelectDay };
+  return { ...result, onSelectDay, onToggleSelectionMode, onToggleDate };
 }
 
-function dayCell(dayText: string): HTMLElement {
-  const candidates = screen.getAllByRole("button").filter((button) => within(button).queryByText(dayText));
-  if (candidates.length === 0) throw new Error(`No day cell for ${dayText}`);
-  return candidates[0];
+function dayButton(label: string) {
+  return screen.getByRole("button", { name: label });
 }
 
-describe("AttendanceCalendar", () => {
-  it("[UI] month navigation buttons have aria labels and 44px target classes", () => {
+describe("AttendanceCalendar v2", () => {
+  it("opens the month containing today when today is inside the semester", () => {
     renderCalendar();
 
-    expect(screen.getByLabelText("前の月")).toHaveClass("h-11", "w-11");
-    expect(screen.getByLabelText("次の月")).toHaveClass("h-11", "w-11");
+    // 仕様 #50
+    expect(screen.getByText("2026年 6月")).toBeInTheDocument();
   });
 
-  it("[UI] renders day cells as buttons and calls onSelectDay with an ISO date", () => {
+  it.each([
+    ["2026-10-01", "2026年 9月"],
+    ["2026-03-01", "2026年 4月"],
+  ] as const)("clamps initial month for today=%s", (today, expectedHeader) => {
+    renderCalendar({ today });
+
+    // 仕様 #51
+    expect(screen.getByText(expectedHeader)).toBeInTheDocument();
+  });
+
+  it("renders accessible 44px month nav buttons and disables boundaries", () => {
+    renderCalendar({ today: "2026-04-10" });
+
+    const prev = screen.getByLabelText("前の月");
+    const next = screen.getByLabelText("次の月");
+
+    // 仕様 #52
+    expect(prev).toHaveClass("h-11", "w-11");
+    expect(next).toHaveClass("h-11", "w-11");
+    expect(prev).toBeDisabled();
+  });
+
+  it("shows today button off the current month and returns to today's month", () => {
+    renderCalendar();
+    fireEvent.click(screen.getByLabelText("前の月"));
+
+    // 仕様 #53
+    const today = screen.getByRole("button", { name: "今日" });
+    expect(today).toBeInTheDocument();
+    fireEvent.click(today);
+    expect(screen.getByText("2026年 6月")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "今日" })).not.toBeInTheDocument();
+  });
+
+  it("calls selection-mode toggle and reflects pressed state", () => {
+    const { onToggleSelectionMode, rerender } = renderCalendar();
+
+    fireEvent.click(screen.getByRole("button", { name: "複数選択" }));
+    // 仕様 #54
+    expect(onToggleSelectionMode).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <AttendanceCalendar
+        days={days as any}
+        startDate="2026-04-06"
+        endDate="2026-09-18"
+        today="2026-06-11"
+        onSelectDay={vi.fn()}
+        selectionMode
+        selectedDates={new Set()}
+        onToggleSelectionMode={vi.fn()}
+        onToggleDate={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "選択中" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("selects a day in normal mode", () => {
     const { onSelectDay } = renderCalendar();
 
-    fireEvent.click(dayCell("13"));
+    fireEvent.click(dayButton("6月3日"));
 
-    expect(onSelectDay).toHaveBeenCalledWith("2026-05-13");
+    // 仕様 #55
+    expect(onSelectDay).toHaveBeenCalledWith("2026-06-03");
   });
 
-  it("[UI] applies the designed status background token to status cells", () => {
-    const { container } = renderCalendar();
+  it("toggles a day in selection mode instead of opening the day detail", () => {
+    const { onSelectDay, onToggleDate } = renderCalendar({ selectionMode: true });
 
-    expect(container.querySelector('[style*="--color-status-absent"][style*="16%"]')).toBeInTheDocument();
-    expect(container.querySelector('[style*="--color-status-present"][style*="12%"]')).toBeInTheDocument();
+    fireEvent.click(dayButton("6月3日"));
+
+    // 仕様 #56
+    expect(onToggleDate).toHaveBeenCalledWith("2026-06-03");
+    expect(onSelectDay).not.toHaveBeenCalled();
+  });
+
+  it("marks selected dates with ring and check badge", () => {
+    renderCalendar({ selectionMode: true, selectedDates: new Set(["2026-06-03"]) });
+
+    const cell = dayButton("6月3日");
+
+    // 仕様 #57
+    expect(cell.className).toContain("ring");
+    expect(cell.querySelector("svg")).toBeInTheDocument();
+  });
+
+  it("disables out-of-semester cells in selection mode", () => {
+    renderCalendar({ today: "2026-04-10", selectionMode: true });
+
+    // 仕様 #58
+    expect(dayButton("4月5日")).toBeDisabled();
+  });
+
+  it("suppresses future non-suspension status but shows future suspension status", () => {
+    const { container } = renderCalendar();
+    const futurePresent = dayButton("6月12日");
+    const futureSuspended = dayButton("6月13日");
+
+    // 仕様 #59
+    expect(futurePresent.getAttribute("style") ?? "").not.toContain("--color-status-present");
+    expect(futureSuspended.getAttribute("style") ?? container.innerHTML).toContain("--color-status-suspended");
   });
 });
