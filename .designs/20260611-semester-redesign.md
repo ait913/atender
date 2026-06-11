@@ -757,7 +757,7 @@ props 契約: `{ overall, requiredRate }` (§UI 参照)。
 
 ### (h) CourseListItem v2 (RTL)
 
-46. `stats.toDate.attendanceRate = 0.92, requiredRate = 70` → 「92」が present 色 style で描画。`0.64` → absent 色。`0.66`(= required−10 以上) → tardy 色 (`rateColor` の 3 閾値)。
+46. `stats.toDate.attendanceRate = 0.92, requiredRate = 70` → 「92」が present 色 style で描画。`0.59` → absent 色。`0.64`(= required−10 以上) → tardy 色 (`rateColor` の 3 閾値)。
 47. 「出{n} 欠{n} 未{n}」が counts から描画される。
 48. クリックで `onClick` が 1 回呼ばれる。
 49. `rateColor` pure 関数: `(null, 70) → fg-tertiary` / `(70, 70) → present` / `(69.9…→69, 70) → tardy` / `(59, 70) → absent` / `(95, 90) → present` (requiredRate 連動、80/60 ハードコードが消えている)。
