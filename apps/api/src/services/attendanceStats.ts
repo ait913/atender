@@ -44,7 +44,11 @@ export async function computeCourseStatsWithProjection(args: {
   userId: string;
   requiredAttendanceRate: number;
   now?: Date;
-}): Promise<{ courses: CourseStatsDto[]; overallProjection: { num: number; den: number } }> {
+}): Promise<{
+  courses: CourseStatsDto[];
+  overallProjection: { num: number; den: number };
+  overallAllowance: { allowanceSum: number; hasDenominator: boolean };
+}> {
   const timetable = await prisma.userTimetable.findUnique({
     where: { userId_semesterId: { userId: args.userId, semesterId: args.semesterId } },
     include: {
@@ -59,7 +63,13 @@ export async function computeCourseStatsWithProjection(args: {
       },
     },
   });
-  if (!timetable) return { courses: [], overallProjection: { num: 0, den: 0 } };
+  if (!timetable) {
+    return {
+      courses: [],
+      overallProjection: { num: 0, den: 0 },
+      overallAllowance: { allowanceSum: 0, hasDenominator: false },
+    };
+  }
 
   const scope = await resolveUserRuleScope(args.userId);
   const effective = scope.schoolId && scope.departmentId
@@ -71,6 +81,8 @@ export async function computeCourseStatsWithProjection(args: {
   const requiredRate = args.requiredAttendanceRate / 100;
   let overallProjectionNum = 0;
   let overallProjectionDen = 0;
+  let overallAllowanceSum = 0;
+  let overallHasDenominator = false;
 
   const courses = timetable.courses.map((course) => {
     const counts = { present: 0, absent: 0, excused: 0, tardy: 0, earlyLeave: 0, cancelled: 0, suspended: 0, unrecorded: 0 };
@@ -134,8 +146,14 @@ export async function computeCourseStatsWithProjection(args: {
     const projectedNum = fixedNumAll + floatingFuture;
     const projectedDen = fixedDenAll + floatingPast + floatingFuture;
     const toDateDenWithUnrecorded = toDateDen + floatingPast;
+    const consumedAbsence = fixedDenAll - fixedNumAll;
+    const allowanceRaw = (1 - requiredRate) * denominator - consumedAbsence;
     overallProjectionNum += projectedNum;
     overallProjectionDen += projectedDen;
+    if (denominator > 0) {
+      overallHasDenominator = true;
+      overallAllowanceSum += allowanceRaw;
+    }
     return {
       courseId: course.id,
       courseName: course.name,
@@ -153,9 +171,13 @@ export async function computeCourseStatsWithProjection(args: {
         attendanceRate: toDateDenWithUnrecorded === 0 ? null : toDateNum / toDateDenWithUnrecorded,
       },
       remainingCount: floatingFuture,
-      allowedAbsences: projectedDen === 0 ? null : Math.floor(projectedNum - requiredRate * projectedDen + 1e-9),
+      allowedAbsences: denominator === 0 ? null : Math.floor(allowanceRaw + 1e-9),
     };
   });
 
-  return { courses, overallProjection: { num: overallProjectionNum, den: overallProjectionDen } };
+  return {
+    courses,
+    overallProjection: { num: overallProjectionNum, den: overallProjectionDen },
+    overallAllowance: { allowanceSum: overallAllowanceSum, hasDenominator: overallHasDenominator },
+  };
 }

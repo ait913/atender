@@ -9,6 +9,7 @@ import {
   useCreateCourseSuspension,
   useCreatePersonalEvent,
   useCreateTimetableSuspension,
+  useBulkMarkAttendance,
   useDayDetail,
   useDeleteAttendance,
   useDeleteCourseSuspension,
@@ -25,6 +26,7 @@ vi.mock("@/api/hooks", () => ({
   useDeleteAttendance: vi.fn(),
   useCreateTimetableSuspension: vi.fn(),
   useDeleteTimetableSuspension: vi.fn(),
+  useBulkMarkAttendance: vi.fn(),
   useMarkAllPresent: vi.fn(),
   useCreateCourseSuspension: vi.fn(),
   useDeleteCourseSuspension: vi.fn(),
@@ -57,18 +59,20 @@ const baseDetail = {
 
 function mockHooks(detail = baseDetail) {
   const patchAttendance = vi.fn();
+  const bulk = vi.fn();
   vi.mocked(useDayDetail).mockReturnValue({ data: detail, isLoading: false, isError: false } as any);
   vi.mocked(usePatchAttendance).mockReturnValue({ mutate: patchAttendance, isPending: false } as any);
   vi.mocked(useDeleteAttendance).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useCreateTimetableSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeleteTimetableSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
+  vi.mocked(useBulkMarkAttendance).mockReturnValue({ mutate: bulk, isPending: false } as any);
   vi.mocked(useMarkAllPresent).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useCreateCourseSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeleteCourseSuspension).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useDeletePersonalEvent).mockReturnValue({ mutate: vi.fn(), isPending: false } as any);
   vi.mocked(useCreatePersonalEvent).mockReturnValue({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false } as any);
   vi.mocked(useUpdatePersonalEvent).mockReturnValue({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false } as any);
-  return { patchAttendance };
+  return { patchAttendance, bulk };
 }
 
 describe("DayDetailSheet", () => {

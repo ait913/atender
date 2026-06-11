@@ -91,8 +91,8 @@ describe("AttendanceRateHero review contract", () => {
   it("renders impossible-to-reach action text with absent color", () => {
     const { container } = renderHero({ allowedAbsences: -2 });
 
-    expect(screen.getByText(/届きません/)).toBeInTheDocument();
-    expectStyledWith(container, /届きません/, "var(--color-status-absent)");
+    expect(screen.getByText(/下回る見込み/)).toBeInTheDocument();
+    expectStyledWith(container, /下回る見込み/, "var(--color-status-absent)");
   });
 
   it("writes progress and required marker positions as inline styles", () => {
