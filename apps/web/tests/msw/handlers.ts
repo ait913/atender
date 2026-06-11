@@ -262,6 +262,10 @@ export const handlers = [
           effectiveNumerator: 13,
           effectiveDenominator: 15,
           attendanceRate: 86.7,
+          remainingCount: 0,
+          allowedAbsences: 0,
+          maxDayPeriods: 2,
+          allowedAbsenceDays: 0,
         },
         {
           courseId: "course-2",
@@ -279,6 +283,10 @@ export const handlers = [
           effectiveNumerator: 0,
           effectiveDenominator: 0,
           attendanceRate: null,
+          remainingCount: 0,
+          allowedAbsences: null,
+          maxDayPeriods: 0,
+          allowedAbsenceDays: null,
         },
       ],
     });
