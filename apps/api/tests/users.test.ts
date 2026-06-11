@@ -123,7 +123,6 @@ describe("me requiredAttendanceRate", () => {
   it("updates overview allowedAbsences when requiredAttendanceRate changes", async () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 10 } });
     // 過去 1 件 (PRESENT 記録) + 学期内未来 9 件 = 射影 10/10。
     // rate70 → floor(10-7)=3、rate90 → floor(10-9)=1 で確実に差が出る fixture (JST midnight 規約)
     const past = await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-06-01T00:00:00+09:00") });

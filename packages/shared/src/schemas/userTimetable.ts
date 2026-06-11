@@ -38,7 +38,6 @@ export const UserTimetablePatchInput = z.object({
     name: z.string().min(1).max(100),
     teacher: z.string().max(50).optional(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-    totalSessions: z.number().int().min(1).max(60),
     note: z.string().max(500).optional(),
   })).optional(),
   meetings: z.array(z.object({

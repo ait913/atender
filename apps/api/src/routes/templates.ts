@@ -89,7 +89,6 @@ export function registerTemplateRoutes(app: Hono) {
             name: course.name,
             teacher: course.teacher ?? null,
             color: course.color ?? null,
-            totalSessions: course.totalSessions,
             note: course.note ?? null,
           },
         });
@@ -146,7 +145,7 @@ export function registerTemplateRoutes(app: Hono) {
         await tx.templateCourse.deleteMany({ where: { templateId: id } });
         const courseMap = new Map<string, string>();
         for (const course of input.courses ?? []) {
-          const created = await tx.templateCourse.create({ data: { templateId: id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, totalSessions: course.totalSessions, note: course.note ?? null } });
+          const created = await tx.templateCourse.create({ data: { templateId: id, name: course.name, teacher: course.teacher ?? null, color: course.color ?? null, note: course.note ?? null } });
           courseMap.set(course.tempId, created.id);
         }
         for (const meeting of input.meetings ?? []) {

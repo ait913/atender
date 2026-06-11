@@ -40,13 +40,12 @@ export function daySlotDto(slot: DaySlot | { periodIndex: number; label: string;
   };
 }
 
-export function courseDto(course: Course | { id: string; name: string; teacher: string | null; color: string | null; totalSessions: number; note: string | null }) {
+export function courseDto(course: Course | { id: string; name: string; teacher: string | null; color: string | null; note: string | null }) {
   return {
     id: course.id,
     name: course.name,
     teacher: course.teacher,
     color: course.color,
-    totalSessions: course.totalSessions,
     note: course.note,
   };
 }
@@ -64,7 +63,7 @@ export function meetingDto(meeting: Meeting | { id: string; courseId: string; da
 
 export type TemplateWithParts = TimetableTemplate & {
   daySlots: Array<{ periodIndex: number; label: string; startMinute: number; endMinute: number; isBreak: boolean }>;
-  courses: Array<{ id: string; name: string; teacher: string | null; color: string | null; totalSessions: number; note: string | null }>;
+  courses: Array<{ id: string; name: string; teacher: string | null; color: string | null; note: string | null }>;
   meetings: Array<{ id: string; courseId: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number; room: string | null }>;
 };
 

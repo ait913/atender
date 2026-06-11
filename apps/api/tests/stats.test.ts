@@ -28,16 +28,11 @@ type AttendanceStatus = "PRESENT" | "ABSENT" | "EXCUSED" | "TARDY" | "EARLY_LEAV
 async function statsScenario(args: {
   statuses: AttendanceStatus[];
   dates?: string[];
-  totalSessions?: number;
   requiredAttendanceRate?: number;
   now?: Date;
 }) {
   const db = prisma();
   const complete = await setupCompleteUser(db);
-  await db.course.update({
-    where: { id: complete.course.id },
-    data: { totalSessions: args.totalSessions ?? args.statuses.length },
-  });
   await (db.user.update as any)({
     where: { id: complete.user.id },
     data: { requiredAttendanceRate: args.requiredAttendanceRate ?? 70 },
@@ -72,7 +67,7 @@ async function statsScenario(args: {
 }
 
 describe("stats API", () => {
-  it("[§8 #55] totalSessions=15 with PRESENT 10 ABSENT 2 unrecorded 3 yields numerator 10 denominator 15 rate 10/15", async () => {
+  it("[§8 #55] occurrence count 15 with PRESENT 10 ABSENT 2 unrecorded 3 yields numerator 10 denominator 15 rate 10/15", async () => {
     const complete = await recordMany([
       ...Array(10).fill("PRESENT" as const),
       "ABSENT",
@@ -99,7 +94,7 @@ describe("stats API", () => {
     const course = (await json(res)).courses[0];
 
     expect(res.status).toBe(200);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("[§8 #57] EXCUSED with COUNT_AS_PRESENT contributes like PRESENT", async () => {
@@ -120,7 +115,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("[§8 #58] TARDY with default HALF_PRESENT adds 0.5 numerator per record", async () => {
@@ -131,7 +126,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(2);
   });
 
   it("[§8 #59] CANCELLED always reduces denominator", async () => {
@@ -141,7 +136,7 @@ describe("stats API", () => {
     const course = (await json(res)).courses[0];
 
     expect(res.status).toBe(200);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("[§8 #60] user AttendanceRule override wins over school+department default", async () => {
@@ -202,13 +197,12 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(2);
   });
 
   it("[§8 #63] denominator 0 returns attendanceRate null", async () => {
     const db = prisma();
     const complete = await recordMany(["CANCELLED"]);
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 1 } });
 
     const res = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
     const course = (await json(res)).courses[0];
@@ -237,7 +231,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.effectiveNumerator).toBe(0);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(0);
     expect(course.separateCounts.EXCUSED).toBe(1);
   });
 
@@ -265,7 +259,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.counts.suspended).toBe(1);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(0);
   });
 
   it("[#10] deleting timetable suspension restores normal PRESENT evaluation", async () => {
@@ -284,7 +278,7 @@ describe("stats API", () => {
     const suspendedRes = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
     const suspendedCourse = (await json(suspendedRes)).courses[0];
     expect(suspendedCourse.counts.suspended).toBe(1);
-    expect(suspendedCourse.effectiveDenominator).toBe(14);
+    expect(suspendedCourse.effectiveDenominator).toBe(0);
 
     await (db as any).timetableSuspension.delete({ where: { id: suspension.id } });
     const restoredRes = await app.request(`/api/stats?semesterId=${complete.semester.id}`, { headers: { Cookie: complete.cookie } });
@@ -292,7 +286,7 @@ describe("stats API", () => {
 
     expect(restoredRes.status).toBe(200);
     expect(restoredCourse.effectiveNumerator).toBe(1);
-    expect(restoredCourse.effectiveDenominator).toBe(15);
+    expect(restoredCourse.effectiveDenominator).toBe(1);
   });
 
   it("[#13] timetable suspension and course suspension on the same occurrence do not double-count", async () => {
@@ -311,7 +305,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.counts.suspended).toBe(1);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(0);
   });
 
   it("[#14] removing only timetable suspension keeps the course suspension denominator reduction", async () => {
@@ -331,7 +325,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.counts.suspended).toBe(1);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(0);
   });
 
   it("[#26] adding timetable suspension after PRESENT keeps AttendanceRecord but stats prefer suspended", async () => {
@@ -354,7 +348,7 @@ describe("stats API", () => {
     expect(res.status).toBe(200);
     expect(course.counts.suspended).toBe(1);
     expect(course.effectiveNumerator).toBe(0);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(0);
   });
 
   it("[#27] deleting timetable suspension reactivates the preserved PRESENT record", async () => {
@@ -376,7 +370,7 @@ describe("stats API", () => {
 
     expect(res.status).toBe(200);
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("computes toDate with past unrecorded occurrences as absent-equivalent and projects allowed absences", async () => {
@@ -419,7 +413,6 @@ describe("stats API", () => {
       statuses: ["PRESENT", "PRESENT"],
       dates: ["2026-06-01", "2026-06-20"],
       now: new Date("2026-06-08T03:00:00.000Z"),
-      totalSessions: 2,
     });
 
     expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 1 });
@@ -444,7 +437,6 @@ describe("stats API", () => {
       // 仕様 #6
       statuses: ["PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "PRESENT", "EXCUSED"],
       now: new Date("2026-06-07T03:00:00.000Z"),
-      totalSessions: 7,
     });
     expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 6, effectiveDenominator: 6, attendanceRate: 1 });
 
@@ -452,7 +444,6 @@ describe("stats API", () => {
       // 仕様 #6
       statuses: ["PRESENT", "CANCELLED"],
       now: new Date("2026-06-02T03:00:00.000Z"),
-      totalSessions: 2,
     });
     expect(cancelled.courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 1, attendanceRate: 1 });
   });
@@ -460,7 +451,6 @@ describe("stats API", () => {
   it("excludes SEPARATE_COUNT records from toDate and projection while preserving separateCounts", async () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 1 } });
     await db.attendanceRule.create({
       data: {
         schoolId: complete.school.id,
@@ -490,7 +480,6 @@ describe("stats API", () => {
   it("excludes timetable and course suspensions from toDate remainingCount and projection", async () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 3 } });
     const dates = ["2026-06-01", "2026-06-10", "2026-06-20"];
     for (const [index, date] of dates.entries()) {
       await createOccurrence(db, {
@@ -538,7 +527,6 @@ describe("stats API", () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
     await db.meetingOccurrence.deleteMany({ where: { meetingId: complete.meeting.id } });
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 0 } });
 
     const result = await computeCourseStats({
       // 仕様 #11
@@ -554,17 +542,16 @@ describe("stats API", () => {
     expect(courseStats.allowedAbsences).toBeNull();
   });
 
-  it("preserves existing totalSessions-based stats fields while adding toDate fields", async () => {
+  it("preserves existing occurrence-based stats fields while adding toDate fields", async () => {
     const { courseStats } = await statsScenario({
       // 仕様 #12
       statuses: ["PRESENT", "ABSENT", null],
       now: new Date("2026-06-03T03:00:00.000Z"),
-      totalSessions: 15,
     });
 
     expect(courseStats.effectiveNumerator).toBe(1);
-    expect(courseStats.effectiveDenominator).toBe(15);
-    expect(courseStats.attendanceRate).toBeCloseTo(1 / 15);
+    expect(courseStats.effectiveDenominator).toBe(3);
+    expect(courseStats.attendanceRate).toBeCloseTo(1 / 3);
     expect(courseStats.counts).toMatchObject({ present: 1, absent: 1, unrecorded: 1 });
     expect(courseStats.toDate).toMatchObject({ effectiveNumerator: 1, effectiveDenominator: 3 });
   });
@@ -573,7 +560,6 @@ describe("stats API", () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
     await (db.user.update as any)({ where: { id: complete.user.id }, data: { requiredAttendanceRate: 80 } }).catch(() => undefined);
-    await db.course.update({ where: { id: complete.course.id }, data: { totalSessions: 2 } });
     const first = await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-06-01T00:00:00.000Z") });
     await createOccurrence(db, { meetingId: complete.meeting.id, courseId: complete.course.id, date: new Date("2026-12-01T00:00:00.000Z"), periodOffset: 1 });
     await db.attendanceRecord.create({ data: { occurrenceId: first.id, userId: complete.user.id, status: "PRESENT" } });

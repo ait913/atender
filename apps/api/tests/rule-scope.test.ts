@@ -89,7 +89,7 @@ describe("AttendanceRule scope resolution", () => {
     const course = await fetchFirstCourse(complete.semester.id, complete.cookie);
 
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("case B: manual timetable uses school+department default when no user override exists", async () => {
@@ -107,7 +107,7 @@ describe("AttendanceRule scope resolution", () => {
     const course = await fetchFirstCourse(complete.semester.id, complete.cookie);
 
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("case B': user override has priority over school+department default on manual timetable", async () => {
@@ -134,7 +134,7 @@ describe("AttendanceRule scope resolution", () => {
     const course = await fetchFirstCourse(complete.semester.id, complete.cookie);
 
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("case C: manual timetable with no rule rows falls back to system default", async () => {
@@ -143,7 +143,7 @@ describe("AttendanceRule scope resolution", () => {
     const course = await fetchFirstCourse(complete.semester.id, complete.cookie);
 
     expect(course.effectiveNumerator).toBe(0);
-    expect(course.effectiveDenominator).toBe(14);
+    expect(course.effectiveDenominator).toBe(0);
   });
 
   it("case D: template-derived timetable still uses school+department default", async () => {
@@ -175,7 +175,7 @@ describe("AttendanceRule scope resolution", () => {
     const statsCourse = await computeFirstCourse(semester.id, user.id);
 
     expect(statsCourse.effectiveNumerator).toBe(1);
-    expect(statsCourse.effectiveDenominator).toBe(15);
+    expect(statsCourse.effectiveDenominator).toBe(1);
   });
 
   it("case E: missing User.schoolId ignores matching rule rows and uses system default", async () => {
@@ -197,7 +197,7 @@ describe("AttendanceRule scope resolution", () => {
     const statsCourse = await computeFirstCourse(semester.id, user.id);
 
     expect(statsCourse.effectiveNumerator).toBe(0);
-    expect(statsCourse.effectiveDenominator).toBe(14);
+    expect(statsCourse.effectiveDenominator).toBe(0);
   });
 
   it("case E': missing User.departmentId ignores matching rule rows and uses system default", async () => {
@@ -219,15 +219,15 @@ describe("AttendanceRule scope resolution", () => {
     const statsCourse = await computeFirstCourse(semester.id, user.id);
 
     expect(statsCourse.effectiveNumerator).toBe(0);
-    expect(statsCourse.effectiveDenominator).toBe(14);
+    expect(statsCourse.effectiveDenominator).toBe(0);
   });
 
   it.each([
-    ["COUNT_AS_PRESENT", 1, 15, undefined],
-    ["COUNT_AS_ABSENT", 0, 15, undefined],
-    ["HALF_PRESENT", 0.5, 15, undefined],
-    ["REDUCE_DENOMINATOR", 0, 14, undefined],
-    ["SEPARATE_COUNT", 0, 14, 1],
+    ["COUNT_AS_PRESENT", 1, 1, undefined],
+    ["COUNT_AS_ABSENT", 0, 1, undefined],
+    ["HALF_PRESENT", 0.5, 1, undefined],
+    ["REDUCE_DENOMINATOR", 0, 0, undefined],
+    ["SEPARATE_COUNT", 0, 0, 1],
   ] as const)(
     "EXCUSED strategy %s maps to numerator/denominator/separateCounts",
     async (strategy: Strategy, expectedNumerator, expectedDenominator, expectedSeparateCount) => {
@@ -273,7 +273,7 @@ describe("AttendanceRule scope resolution", () => {
     const course = await fetchFirstCourse(complete.semester.id, complete.cookie);
 
     expect(course.effectiveNumerator).toBe(1);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 
   it("EARLY_LEAVE uses the effective earlyLeaveStrategy", async () => {
@@ -297,6 +297,6 @@ describe("AttendanceRule scope resolution", () => {
     const course = await fetchFirstCourse(complete.semester.id, complete.cookie);
 
     expect(course.effectiveNumerator).toBe(0.5);
-    expect(course.effectiveDenominator).toBe(15);
+    expect(course.effectiveDenominator).toBe(1);
   });
 });

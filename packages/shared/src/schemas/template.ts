@@ -13,7 +13,6 @@ export const CourseDto = z.object({
   name: z.string().max(100),
   teacher: z.string().max(50).nullable(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable(),
-  totalSessions: z.number().int().min(1).max(60),
   note: z.string().max(500).nullable(),
 });
 
@@ -66,7 +65,6 @@ export const TemplateCreateInput = z.object({
     name: z.string().min(1).max(100),
     teacher: z.string().max(50).optional(),
     color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-    totalSessions: z.number().int().min(1).max(60),
     note: z.string().max(500).optional(),
   })).max(50),
   meetings: z.array(z.object({

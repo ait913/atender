@@ -26,7 +26,6 @@ describe("courses API", () => {
         teacher: "佐藤",
         room: "A301",
         color: "#10b981",
-        totalSessions: 15,
         note: "room は CourseCreateInput から除去済み",
       },
     });

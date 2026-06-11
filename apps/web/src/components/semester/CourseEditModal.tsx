@@ -21,7 +21,6 @@ export function CourseEditModal({ open, onClose, timetableId, course, stackLevel
   const [form, setForm] = useState({
     name: "",
     teacher: "",
-    totalSessions: "15",
     color: colors[0]!,
     note: "",
   });
@@ -31,7 +30,6 @@ export function CourseEditModal({ open, onClose, timetableId, course, stackLevel
     setForm({
       name: course?.name ?? "",
       teacher: course?.teacher ?? "",
-      totalSessions: String(course?.totalSessions ?? 15),
       color: course?.color ?? colors[0]!,
       note: course?.note ?? "",
     });
@@ -42,13 +40,11 @@ export function CourseEditModal({ open, onClose, timetableId, course, stackLevel
 
   async function handleSave() {
     if (!canSave) return;
-    const totalSessions = Math.min(60, Math.max(1, Number(form.totalSessions) || 15));
     if (course) {
       const result = await updateCourse.mutateAsync({
         name: form.name.trim(),
         teacher: form.teacher.trim() ? form.teacher.trim() : null,
         color: form.color,
-        totalSessions,
         note: form.note.trim() ? form.note.trim() : null,
       });
       onSaved?.(result.course);
@@ -60,7 +56,6 @@ export function CourseEditModal({ open, onClose, timetableId, course, stackLevel
       name: form.name.trim(),
       teacher: form.teacher.trim() || undefined,
       color: form.color,
-      totalSessions,
       note: form.note.trim() || undefined,
     });
     onSaved?.(result.course);
@@ -87,9 +82,6 @@ export function CourseEditModal({ open, onClose, timetableId, course, stackLevel
       </Field>
       <Field label="先生">
         <Input value={form.teacher} maxLength={50} onChange={(event) => setForm({ ...form, teacher: event.currentTarget.value })} />
-      </Field>
-      <Field label="総コマ数">
-        <Input type="number" min={1} max={60} value={form.totalSessions} onChange={(event) => setForm({ ...form, totalSessions: event.currentTarget.value })} />
       </Field>
       <Field label="色">
         <div className="flex flex-wrap items-center gap-2">

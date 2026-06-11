@@ -5,7 +5,6 @@ export const CourseStatsDto = z.object({
   courseId: z.string(),
   courseName: z.string(),
   teacher: z.string().nullable(),
-  totalSessions: z.number().int(),
   generatedOccurrences: z.number().int(),
   counts: z.object({
     present: z.number().int(),

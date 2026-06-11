@@ -142,7 +142,7 @@ export async function computeCourseStatsWithProjection(args: {
       }
     }
 
-    const denominator = Math.max(0, course.totalSessions - denominatorReduction);
+    const denominator = Math.max(0, course.occurrences.length - denominatorReduction);
     const projectedNum = fixedNumAll + floatingFuture;
     const projectedDen = fixedDenAll + floatingPast + floatingFuture;
     const toDateDenWithUnrecorded = toDateDen + floatingPast;
@@ -158,7 +158,6 @@ export async function computeCourseStatsWithProjection(args: {
       courseId: course.id,
       courseName: course.name,
       teacher: course.teacher,
-      totalSessions: course.totalSessions,
       generatedOccurrences: course.occurrences.length,
       counts,
       effectiveNumerator: numerator,
