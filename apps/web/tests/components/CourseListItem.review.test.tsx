@@ -26,6 +26,8 @@ function stats(rate: number | null, overrides: Partial<any> = {}) {
     },
     remainingCount: 5,
     allowedAbsences: 2,
+    maxDayPeriods: 2,
+    allowedAbsenceDays: 1,
     ...overrides,
   };
 }

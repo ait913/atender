@@ -59,6 +59,7 @@ export async function computeCourseStatsWithProjection(args: {
             include: { attendanceRecord: true },
           },
           suspensions: true,
+          meetings: true,
         },
       },
     },
@@ -85,6 +86,11 @@ export async function computeCourseStatsWithProjection(args: {
   let overallHasDenominator = false;
 
   const courses = timetable.courses.map((course) => {
+    const perDay = new Map<number, number>();
+    for (const meeting of course.meetings) {
+      perDay.set(meeting.dayOfWeek, (perDay.get(meeting.dayOfWeek) ?? 0) + meeting.periodCount);
+    }
+    const maxDayPeriods = perDay.size === 0 ? 0 : Math.max(...perDay.values());
     const counts = { present: 0, absent: 0, excused: 0, tardy: 0, earlyLeave: 0, cancelled: 0, suspended: 0, unrecorded: 0 };
     const separateCounts: Partial<Record<AttendanceStatus, number>> = {};
     let numerator = 0;
@@ -148,6 +154,15 @@ export async function computeCourseStatsWithProjection(args: {
     const toDateDenWithUnrecorded = toDateDen + floatingPast;
     const consumedAbsence = fixedDenAll - fixedNumAll;
     const allowanceRaw = (1 - requiredRate) * denominator - consumedAbsence;
+    const allowedAbsences = denominator === 0 ? null : Math.floor(allowanceRaw + 1e-9);
+    const allowedAbsenceDays =
+      allowedAbsences == null
+        ? null
+        : maxDayPeriods === 0
+          ? null
+          : allowedAbsences < 0
+            ? null
+            : Math.floor(allowedAbsences / maxDayPeriods);
     overallProjectionNum += projectedNum;
     overallProjectionDen += projectedDen;
     if (denominator > 0) {
@@ -170,7 +185,9 @@ export async function computeCourseStatsWithProjection(args: {
         attendanceRate: toDateDenWithUnrecorded === 0 ? null : toDateNum / toDateDenWithUnrecorded,
       },
       remainingCount: floatingFuture,
-      allowedAbsences: denominator === 0 ? null : Math.floor(allowanceRaw + 1e-9),
+      allowedAbsences,
+      maxDayPeriods,
+      allowedAbsenceDays,
     };
   });
 

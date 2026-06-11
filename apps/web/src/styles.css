@@ -277,6 +277,19 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 a { color: inherit; text-decoration: none; }
 
+/* iOS Safari 17 系の date input intrinsic 幅はみ出し対策 (WebKit Bug 136041) */
+input[type="date"],
+input[type="time"] {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  text-align: left;
+}
+
 :root[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 :root[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1);

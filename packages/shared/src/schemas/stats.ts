@@ -27,6 +27,8 @@ export const CourseStatsDto = z.object({
   }),
   remainingCount: z.number().int(),
   allowedAbsences: z.number().int().nullable(),
+  maxDayPeriods: z.number().int(),
+  allowedAbsenceDays: z.number().int().nullable(),
 });
 
 export const StatsResponse = z.object({

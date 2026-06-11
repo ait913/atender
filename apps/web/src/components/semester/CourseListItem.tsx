@@ -52,7 +52,7 @@ export function CourseListItem({ stats, requiredRate, onClick }: Props) {
           出{stats.counts.present} 欠{stats.counts.absent}
           <span className="mx-1">・</span>
           <span style={{ color: actionColor(stats.allowedAbsences, stats.remainingCount) }}>
-            {shortActionText(stats.allowedAbsences, stats.remainingCount)}
+            {shortActionText(stats.allowedAbsences, stats.remainingCount, stats.allowedAbsenceDays)}
           </span>
         </p>
       </div>
@@ -60,11 +60,16 @@ export function CourseListItem({ stats, requiredRate, onClick }: Props) {
   );
 }
 
-function shortActionText(allowedAbsences: number | null, remainingCount: number) {
+function shortActionText(
+  allowedAbsences: number | null,
+  remainingCount: number,
+  allowedAbsenceDays: number | null,
+) {
   if (allowedAbsences == null) return "—";
   if (allowedAbsences < 0) return "下回る見込み";
   if (allowedAbsences >= remainingCount) return "残り全休OK";
-  return `あと${allowedAbsences}限休める`;
+  if (allowedAbsenceDays == null) return `あと${allowedAbsences}限休める`;
+  return `あと${allowedAbsences}限 (${allowedAbsenceDays}日) 休める`;
 }
 
 function actionColor(allowedAbsences: number | null, remainingCount: number) {
