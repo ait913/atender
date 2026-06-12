@@ -4,6 +4,7 @@ import { z } from "zod";
 import { MeResponseDto, MeUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
+import { isSetupComplete } from "../lib/setupStatus";
 import { sessionMiddleware } from "../middleware/session";
 import { setupGuard } from "../middleware/setupGuard";
 import {
@@ -37,7 +38,7 @@ async function getMeResponse(user: MeUser) {
     hasDepartment: user.departmentId != null,
     hasSemester: user.defaultSemesterId != null,
     hasUserTimetable,
-    isComplete: user.schoolId != null && user.departmentId != null && user.defaultSemesterId != null,
+    isComplete: isSetupComplete(user),
   };
   return MeResponseDto.parse({
     user: {
