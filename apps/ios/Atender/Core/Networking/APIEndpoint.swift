@@ -40,7 +40,7 @@ enum Endpoints {
     static func createUserTimetable(_ body: UserTimetableCreateInput) -> APIEndpoint { .init(path: "/api/user-timetables", method: .post, body: body) }
     static func patchUserTimetable(id: String, _ body: UserTimetablePatchInput) -> APIEndpoint { .init(path: "/api/user-timetables/\(id)", method: .patch, body: body) }
     static func deleteUserTimetable(id: String) -> APIEndpoint { .init(path: "/api/user-timetables/\(id)", method: .delete) }
-    static func publishAsTemplate(id: String, _ body: TemplateCreateInput) -> APIEndpoint {
+    static func publishAsTemplate(id: String, _ body: TemplatePublishInput) -> APIEndpoint {
         .init(path: "/api/user-timetables/\(id)/publish-as-template", method: .post, body: body)
     }
 

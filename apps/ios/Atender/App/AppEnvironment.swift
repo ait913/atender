@@ -9,6 +9,11 @@ final class AppEnvironment {
     let queryClient: QueryClient
     let toastCenter: ToastCenter
     let appRouter: AppRouter
+    let meRepository: MeRepository
+    let semesterRepository: SemesterRepository
+    let timetableRepository: TimetableRepository
+    let attendanceRepository: AttendanceRepository
+    let personalEventRepository: PersonalEventRepository
 
     init() {
         #if DEBUG
@@ -24,6 +29,11 @@ final class AppEnvironment {
         self.toastCenter = ToastCenter()
         self.appRouter = AppRouter()
         self.apiClient = APIClient(authStore: authStore)
+        self.meRepository = MeRepository(client: self.apiClient, cache: queryClient)
+        self.semesterRepository = SemesterRepository(client: self.apiClient, cache: queryClient)
+        self.timetableRepository = TimetableRepository(client: self.apiClient, cache: queryClient)
+        self.attendanceRepository = AttendanceRepository(client: self.apiClient, cache: queryClient, toast: self.toastCenter)
+        self.personalEventRepository = PersonalEventRepository(client: self.apiClient, cache: queryClient)
         authStore.onLocalSignOut = { [queryClient] in
             queryClient.removeAll()
         }

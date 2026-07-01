@@ -92,7 +92,7 @@ struct AtenderButton: View {
         .buttonStyle(ScaleButtonStyle())
         .disabled(isLoading || !isEnabled)
         .opacity(isEnabled ? 1 : 0.52)
-        .if(variant == .primary) { view in
+        .conditional(variant == .primary) { view in
             view.atenderShadow(.glowSoft)
         }
     }
@@ -148,16 +148,5 @@ private struct ScaleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
-    }
-}
-
-private extension View {
-    @ViewBuilder
-    func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
     }
 }

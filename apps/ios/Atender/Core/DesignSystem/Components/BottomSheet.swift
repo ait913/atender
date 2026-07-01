@@ -59,6 +59,24 @@ struct BottomSheet<Content: View, Footer: View>: View {
                 .presentationBackground(Color.bgElevated)
             }
     }
+
+    init(
+        title: String?,
+        isPresented: Binding<Bool>,
+        detents: Set<PresentationDetent> = [.medium, .large],
+        stackLevel: Int = 1,
+        onDismiss: (() -> Void)? = nil,
+        @ViewBuilder content: @escaping () -> Content,
+        @ViewBuilder footer: @escaping () -> Footer
+    ) {
+        self.title = title
+        self._isPresented = isPresented
+        self.detents = detents
+        self.stackLevel = stackLevel
+        self.onDismiss = onDismiss
+        self.content = content
+        self.footer = footer
+    }
 }
 
 extension BottomSheet where Footer == EmptyView {

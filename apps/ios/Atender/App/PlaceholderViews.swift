@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomePlaceholderView: View {
-    var body: some View { PlaceholderScreen(title: "ホーム", subtitle: "準備中") }
+    var body: some View { HomeView() }
 }
 
 struct SemesterPlaceholderView: View {

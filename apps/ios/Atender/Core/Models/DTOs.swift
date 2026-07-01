@@ -297,6 +297,13 @@ struct TemplateCreateInput: Codable, Equatable {
     }
 }
 
+struct TemplatePublishInput: Codable, Equatable {
+    let title: String
+    var description: String?
+    var year: Int?
+    var term: String?
+}
+
 struct TemplateCopyInput: Codable, Equatable {
     let semesterId: String
     var title: String?
