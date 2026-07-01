@@ -29,7 +29,7 @@ struct SemesterOverviewView: View {
             clearSelection()
             Task { await model?.load(semesterId: newValue) }
         }
-        .background(sheetHost)
+        .overlay(sheetHost)
         .background(courseModalHost)
         .alert("エラー", isPresented: Binding(
             get: { model?.alertMessage != nil },
@@ -110,23 +110,24 @@ struct SemesterOverviewView: View {
         }
     }
 
+    @ViewBuilder
     private var sheetHost: some View {
-        Group {
+        switch activeSheet {
+        case .day(let date):
             BottomSheet(
-                title: daySheetTitle,
-                isPresented: Binding(get: { activeSheet?.isDay == true }, set: { if !$0 { activeSheet = nil } }),
+                title: SemesterDateFormat.yearMonthDayWeekday(date),
+                isPresented: activeSheetBinding,
                 detents: [.large],
                 stackLevel: 1
             ) {
-                if case .day(let date) = activeSheet {
-                    DayDetailSheet(date: date, semesterId: semesterId, onChanged: {
-                        await reloadOverview()
-                    }, onClose: { activeSheet = nil })
-                }
+                DayDetailSheet(date: date, semesterId: semesterId, onChanged: {
+                    await reloadOverview()
+                }, onClose: { activeSheet = nil })
             }
+        case .bulk:
             BottomSheet(
                 title: "\(selectedDates.count)日に一括適用",
-                isPresented: Binding(get: { activeSheet == .bulk }, set: { if !$0 { activeSheet = nil } }),
+                isPresented: activeSheetBinding,
                 detents: [.large],
                 stackLevel: 1
             ) {
@@ -136,7 +137,13 @@ struct SemesterOverviewView: View {
                     Task { await reloadOverview() }
                 })
             }
+        case nil:
+            EmptyView()
         }
+    }
+
+    private var activeSheetBinding: Binding<Bool> {
+        Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
     }
 
     private var courseModalHost: some View {
@@ -153,11 +160,6 @@ struct SemesterOverviewView: View {
                 }
             }
         }
-    }
-
-    private var daySheetTitle: String? {
-        guard case .day(let date) = activeSheet else { return nil }
-        return SemesterDateFormat.yearMonthDayWeekday(date)
     }
 
     private func bootstrap() async {
@@ -206,11 +208,6 @@ struct SemesterOverviewView: View {
 private enum SemesterSheet: Equatable {
     case day(String)
     case bulk
-
-    var isDay: Bool {
-        if case .day = self { return true }
-        return false
-    }
 }
 
 enum SemesterDateFormat {

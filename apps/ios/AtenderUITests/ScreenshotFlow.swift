@@ -80,4 +80,67 @@ final class ScreenshotFlow: XCTestCase {
             idx += 1
         }
     }
+
+    private func dump(_ name: String) {
+        let texts = app.staticTexts.allElementsBoundByIndex.prefix(60).map { $0.label }
+        let buttons = app.buttons.allElementsBoundByIndex.prefix(60).map { $0.label }
+        let d = XCTAttachment(string: "STATICTEXTS:\n" + texts.joined(separator: " | ") + "\n\nBUTTONS:\n" + buttons.joined(separator: " | "))
+        d.name = name
+        d.lifetime = .keepAlways
+        add(d)
+    }
+
+    func testDayDetailOnly() {
+        app.launch()
+        sleep(6)
+        tapButton("学期・科目")
+        sleep(4)
+        var dayOK = false
+        for d in ["9", "10", "8", "16"] {
+            let db = app.buttons[d].firstMatch
+            if db.waitForExistence(timeout: 2) { db.tap(); dayOK = true; break }
+        }
+        sleep(3)
+        snap("D01-day-detail_ok=\(dayOK)")
+    }
+
+    func testPhaseCFlow() {
+        app.launch()
+        sleep(6)
+        // 学期・科目タブへ
+        tapButton("学期・科目")
+        sleep(4)
+        snap("C01-semester-overview")
+        dump("C00-semester-dump")
+
+        // 科目タップ → CourseDetailModal (ボタンラベルは複合文字列なので CONTAINS で狙う)
+        let courseBtn = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "英語")).firstMatch
+        var courseOK = false
+        if courseBtn.waitForExistence(timeout: 3) { courseBtn.tap(); courseOK = true }
+        sleep(3)
+        snap("C02-course-detail_ok=\(courseOK)")
+        _ = tapButton("閉じる", timeout: 2)
+        _ = tapButton("×", timeout: 1)
+        tapAt(0.5, 0.03)
+        sleep(2)
+
+        // カレンダーの日タップ → DayDetailSheet (auto-scroll で tap、isHittableゲート無し)
+        var dayOK = false
+        for d in ["9", "10", "8"] {
+            let db = app.buttons[d].firstMatch
+            if db.waitForExistence(timeout: 2) {
+                db.tap(); dayOK = true; break
+            }
+        }
+        sleep(3)
+        snap("C03-day-detail_ok=\(dayOK)")
+        _ = tapButton("閉じる", timeout: 2)
+        tapAt(0.5, 0.03)
+        sleep(2)
+
+        // 複数選択モード
+        let multiOK = tapButton("複数選択", timeout: 2)
+        sleep(2)
+        snap("C04-multiselect_ok=\(multiOK)")
+    }
 }
