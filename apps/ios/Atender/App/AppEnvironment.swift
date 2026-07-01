@@ -6,6 +6,9 @@ import Observation
 final class AppEnvironment {
     let authStore: AuthStore
     let apiClient: APIClient
+    let queryClient: QueryClient
+    let toastCenter: ToastCenter
+    let appRouter: AppRouter
 
     init() {
         #if DEBUG
@@ -15,7 +18,14 @@ final class AppEnvironment {
         }
         #endif
         let authStore = AuthStore()
+        let queryClient = QueryClient()
         self.authStore = authStore
+        self.queryClient = queryClient
+        self.toastCenter = ToastCenter()
+        self.appRouter = AppRouter()
         self.apiClient = APIClient(authStore: authStore)
+        authStore.onLocalSignOut = { [queryClient] in
+            queryClient.removeAll()
+        }
     }
 }

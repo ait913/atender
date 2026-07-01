@@ -17,6 +17,7 @@ final class AuthStore {
     @ObservationIgnored private let session: URLSession
     @ObservationIgnored private let decoder: JSONDecoder
     @ObservationIgnored private let encoder: JSONEncoder
+    @ObservationIgnored var onLocalSignOut: (() -> Void)?
     @ObservationIgnored private var storedToken: String?
 
     var token: String? { storedToken }
@@ -98,6 +99,7 @@ final class AuthStore {
         try? keychain.delete()
         storedToken = nil
         me = nil
+        onLocalSignOut?()
         state = .signedOut
     }
 

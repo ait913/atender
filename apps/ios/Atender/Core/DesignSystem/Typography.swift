@@ -1,16 +1,35 @@
 import SwiftUI
 
-// Minor Third (1.20) scale. mirror of apps/web/src/styles.css --text-* tokens.
-// NOTE: Inter is not bundled in Phase iOS-1, so we use the system font at fixed sizes.
-// Dynamic Type (relativeTo:) returns once Inter is bundled via Font.custom(_:size:relativeTo:).
 extension Font {
-    static var atenderXs: Font { .system(size: 11) }
-    static var atenderSm: Font { .system(size: 13) }
-    static var atenderBase: Font { .system(size: 14) }
-    static var atenderLg: Font { .system(size: 17) }
-    static var atenderXl: Font { .system(size: 20) }
-    static var atender2xl: Font { .system(size: 24) }
-    static var atender3xl: Font { .system(size: 30) }
-    static var atender4xl: Font { .system(size: 36) }
-    static var atender5xl: Font { .system(size: 44) }
+    static func atender(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .custom(interPostScriptName(for: weight), size: size, relativeTo: .body)
+    }
+
+    private static func interPostScriptName(for weight: Font.Weight) -> String {
+        switch weight {
+        case .medium: return "Inter-Medium"
+        case .semibold: return "Inter-SemiBold"
+        case .bold: return "Inter-Bold"
+        case .black, .heavy: return "Inter-Black"
+        default: return "Inter-Regular"
+        }
+    }
+
+    static var atenderXs: Font { atender(11) }
+    static var atenderSm: Font { atender(13) }
+    static var atenderBase: Font { atender(14) }
+    static var atenderLg: Font { atender(17) }
+    static var atenderXl: Font { atender(20) }
+    static var atender2xl: Font { atender(24) }
+    static var atender3xl: Font { atender(30) }
+    static var atender4xl: Font { atender(36) }
+    static var atender5xl: Font { atender(44) }
+}
+
+enum Leading {
+    static let tight: CGFloat = 1.1
+    static let snug: CGFloat = 1.2
+    static let normal: CGFloat = 1.4
+    static let body: CGFloat = 1.4
+    static let relaxed: CGFloat = 1.5
 }

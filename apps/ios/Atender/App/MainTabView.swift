@@ -1,29 +1,80 @@
 import SwiftUI
 
+enum MainTab: Int, Hashable, CaseIterable {
+    case home
+    case semester
+    case rooms
+    case friends
+    case settings
+
+    var label: String {
+        switch self {
+        case .home: return "ホーム"
+        case .semester: return "学期・科目"
+        case .rooms: return "ルーム"
+        case .friends: return "友達"
+        case .settings: return "設定"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .home: return "calendar"
+        case .semester: return "graduationcap"
+        case .rooms: return "person.2"
+        case .friends: return "person.crop.circle"
+        case .settings: return "gearshape"
+        }
+    }
+}
+
 struct MainTabView: View {
+    @Environment(AppRouter.self) private var router
+    @State private var keyboardVisible = false
+
     var body: some View {
-        TabView {
-            NavigationStack {
-                TodayView()
+        @Bindable var bindableRouter = router
+        ZStack(alignment: .bottom) {
+            Group {
+                switch router.selectedTab {
+                case .home:
+                    NavigationStack(path: $bindableRouter.homePath) {
+                        HomePlaceholderView()
+                    }
+                case .semester:
+                    NavigationStack(path: $bindableRouter.semesterPath) {
+                        SemesterPlaceholderView()
+                    }
+                case .rooms:
+                    NavigationStack(path: $bindableRouter.roomsPath) {
+                        RoomsPlaceholderView()
+                    }
+                case .friends:
+                    NavigationStack(path: $bindableRouter.friendsPath) {
+                        FriendsPlaceholderView()
+                    }
+                case .settings:
+                    NavigationStack(path: $bindableRouter.settingsPath) {
+                        SettingsPlaceholderView()
+                    }
+                }
             }
-            .tabItem {
-                Label("今日", systemImage: "checklist")
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            NavigationStack {
-                TimetableView()
-            }
-            .tabItem {
-                Label("時間割", systemImage: "calendar")
-            }
-
-            NavigationStack {
-                SettingsView()
-            }
-            .tabItem {
-                Label("設定", systemImage: "gearshape")
+            if !keyboardVisible {
+                BottomTabBar(selected: router.selectedTab) { tab in
+                    router.selectedTab = tab
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .tint(.accent)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardVisible = false
+        }
+        .animation(.easeOut(duration: 0.18), value: keyboardVisible)
     }
 }

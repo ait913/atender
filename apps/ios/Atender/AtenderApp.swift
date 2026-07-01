@@ -3,21 +3,19 @@ import SwiftUI
 @main
 struct AtenderApp: App {
     @State private var environment = AppEnvironment()
-    @AppStorage("themePreference") private var themePreference = "system"
+    @AppStorage("atender.theme") private var themePreference = ThemePreference.dark.rawValue
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(environment)
-                .preferredColorScheme(colorScheme)
+                .environment(environment.toastCenter)
+                .environment(environment.appRouter)
+                .preferredColorScheme(themePreferenceValue.colorScheme)
         }
     }
 
-    private var colorScheme: ColorScheme? {
-        switch themePreference {
-        case "dark": return .dark
-        case "light": return .light
-        default: return nil
-        }
+    private var themePreferenceValue: ThemePreference {
+        ThemePreference(rawValue: themePreference) ?? .dark
     }
 }

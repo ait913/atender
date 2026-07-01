@@ -1,25 +1,32 @@
 import Foundation
 
-// mirror of packages/shared/src/schemas/me.ts MeResponseDto
-struct MeResponse: Codable, Equatable {
-    let user: User
-    let setupStatus: SetupStatus
+struct ErrorResponse: Codable, Equatable {
+    let error: Body
 
-    struct User: Codable, Equatable {
-        let id: String
-        let email: String
-        let name: String?
-        let image: String?
-        let handle: String?
-        let inviteCode: String?
-        let defaultSemesterId: String?
-        let schoolId: String?
-        let departmentId: String?
-        let requiredAttendanceRate: Int
+    struct Body: Codable, Equatable {
+        let code: String
+        let message: String
     }
 }
 
-// mirror of packages/shared/src/schemas/me.ts MeResponseDto.setupStatus
+struct UserDto: Codable, Equatable, Identifiable {
+    let id: String
+    let email: String
+    let name: String?
+    let image: String?
+    let handle: String?
+    let inviteCode: String?
+    let defaultSemesterId: String?
+    let schoolId: String?
+    let departmentId: String?
+    let requiredAttendanceRate: Int
+}
+
+struct MeResponse: Codable, Equatable {
+    let user: UserDto
+    let setupStatus: SetupStatus
+}
+
 struct SetupStatus: Codable, Equatable {
     let hasSchool: Bool
     let hasDepartment: Bool
@@ -28,7 +35,15 @@ struct SetupStatus: Codable, Equatable {
     let isComplete: Bool
 }
 
-// mirror of packages/shared/src/schemas/semester.ts SemesterDto
+struct MeUpdateInput: Codable, Equatable {
+    var schoolId: String?
+    var departmentId: String?
+    var defaultSemesterId: String?
+    var name: String?
+    var handle: String?
+    var requiredAttendanceRate: Int?
+}
+
 struct SemesterDto: Codable, Equatable, Identifiable {
     let id: String
     let name: String
@@ -36,7 +51,13 @@ struct SemesterDto: Codable, Equatable, Identifiable {
     let endDate: String
 }
 
-// mirror of packages/shared/src/schemas/semester.ts SemesterOverviewDto
+struct AttendanceDaySummary: Codable, Equatable, Identifiable {
+    var id: String { date }
+    let date: String
+    let status: AttendanceDayStatus
+    let occurrenceCount: Int
+}
+
 struct SemesterOverviewDto: Codable, Equatable {
     let semesterId: String
     let semesterName: String
@@ -52,29 +73,31 @@ struct SemesterOverviewDto: Codable, Equatable {
         let effectiveNumerator: Double
         let effectiveDenominator: Double
         let attendanceRate: Double?
-        let toDate: AttendanceRateToDate
+        let toDate: ToDate
         let unrecordedCount: Int
         let remainingCount: Int
         let allowedAbsences: Int?
     }
+
+    struct ToDate: Codable, Equatable {
+        let effectiveNumerator: Double
+        let effectiveDenominator: Double
+        let attendanceRate: Double?
+    }
 }
 
-// mirror of toDate object in stats.ts CourseStatsDto / semester.ts SemesterOverviewDto.overall
-struct AttendanceRateToDate: Codable, Equatable {
-    let effectiveNumerator: Double
-    let effectiveDenominator: Double
-    let attendanceRate: Double?
+struct SemesterCreateInput: Codable, Equatable {
+    let name: String
+    let startDate: String
+    let endDate: String
 }
 
-// mirror of packages/shared/src/schemas/semester.ts AttendanceDaySummary
-struct AttendanceDaySummary: Codable, Equatable, Identifiable {
-    var id: String { date }
-    let date: String
-    let status: AttendanceDayStatus
-    let occurrenceCount: Int
+struct SemesterUpdateInput: Codable, Equatable {
+    var name: String?
+    var startDate: String?
+    var endDate: String?
 }
 
-// mirror of packages/shared/src/schemas/stats.ts CourseStatsDto
 struct CourseStatsDto: Codable, Equatable, Identifiable {
     var id: String { courseId }
     let courseId: String
@@ -86,7 +109,7 @@ struct CourseStatsDto: Codable, Equatable, Identifiable {
     let effectiveDenominator: Double
     let attendanceRate: Double?
     let separateCounts: [String: Int]?
-    let toDate: AttendanceRateToDate
+    let toDate: ToDate
     let remainingCount: Int
     let allowedAbsences: Int?
     let maxDayPeriods: Int
@@ -102,58 +125,20 @@ struct CourseStatsDto: Codable, Equatable, Identifiable {
         let suspended: Int
         let unrecorded: Int
     }
+
+    struct ToDate: Codable, Equatable {
+        let effectiveNumerator: Double
+        let effectiveDenominator: Double
+        let attendanceRate: Double?
+    }
 }
 
-// mirror of packages/shared/src/schemas/userTimetable.ts UserTimetableDto
-struct UserTimetableDto: Codable, Equatable, Identifiable {
-    let id: String
-    let userId: String
+struct StatsResponse: Codable, Equatable {
     let semesterId: String
-    let title: String
-    let sourceTemplateId: String?
-    let daysOfWeek: [Int]
-    let daySlots: [DaySlotDto]
-    let courses: [CourseDto]
-    let meetings: [MeetingDto]
-    let createdAt: String
-    let updatedAt: String
+    let requiredAttendanceRate: Int
+    let courses: [CourseStatsDto]
 }
 
-// mirror of GET /api/user-timetables response envelope
-struct UserTimetableListResponse: Codable, Equatable {
-    let userTimetables: [UserTimetableDto]
-}
-
-// mirror of packages/shared/src/schemas/template.ts DaySlotDto
-struct DaySlotDto: Codable, Equatable, Identifiable {
-    var id: Int { periodIndex }
-    let periodIndex: Int
-    let label: String
-    let startMinute: Int
-    let endMinute: Int
-    let isBreak: Bool
-}
-
-// mirror of packages/shared/src/schemas/template.ts CourseDto
-struct CourseDto: Codable, Equatable, Identifiable {
-    let id: String
-    let name: String
-    let teacher: String?
-    let color: String?
-    let note: String?
-}
-
-// mirror of packages/shared/src/schemas/template.ts MeetingDto
-struct MeetingDto: Codable, Equatable, Identifiable {
-    let id: String
-    let courseId: String
-    let dayOfWeek: Int
-    let startPeriodIndex: Int
-    let periodCount: Int
-    let room: String?
-}
-
-// mirror of packages/shared/src/schemas/attendance.ts OccurrenceDto
 struct OccurrenceDto: Codable, Equatable, Identifiable {
     let id: String
     let meetingId: String
@@ -170,36 +155,758 @@ struct OccurrenceDto: Codable, Equatable, Identifiable {
     var status: AttendanceStatus?
 }
 
-// mirror of packages/shared/src/schemas/attendance.ts TodayResponse
 struct TodayResponse: Codable, Equatable {
     let date: String
-    let occurrences: [OccurrenceDto]
+    var occurrences: [OccurrenceDto]
 }
 
-// mirror of packages/shared/src/schemas/attendance.ts MarkAttendanceInput
 struct MarkAttendanceInput: Codable, Equatable {
     let status: AttendanceStatus
-    let note: String?
+    var note: String?
 }
 
-// mirror of packages/shared/src/schemas/attendance.ts MarkAllPresentInput
 struct MarkAllPresentInput: Codable, Equatable {
-    let date: String?
+    var date: String?
+    var status: AttendanceStatus?
 }
 
-// mirror of packages/shared/src/schemas/attendance.ts MarkAllPresentResponse
 struct MarkAllPresentResponse: Codable, Equatable {
     let date: String
     let markedCount: Int
     let skippedCount: Int
 }
 
-// mirror of packages/shared/src/schemas/api.ts ErrorResponse
-struct ErrorResponse: Codable, Equatable {
-    let error: APIErrorBody
+struct AttendanceRecordResponse: Codable, Equatable {
+    let record: Record
 
-    struct APIErrorBody: Codable, Equatable {
-        let code: String
-        let message: String
+    struct Record: Codable, Equatable {
+        let occurrenceId: String
+        let status: AttendanceStatus?
+        let note: String?
+        let updatedAt: String
     }
+}
+
+struct BulkMarkAttendanceInput: Codable, Equatable {
+    let dates: [String]
+    let status: AttendanceStatus
+    let mode: BulkMode
+}
+
+struct BulkMarkAttendanceResponse: Codable, Equatable {
+    let upsertedCount: Int
+    let skippedExistingCount: Int
+    let skippedSuspendedCount: Int
+    let noOccurrenceDates: [String]
+}
+
+struct BulkClearAttendanceInput: Codable, Equatable {
+    let dates: [String]
+}
+
+struct BulkClearAttendanceResponse: Codable, Equatable {
+    let deletedCount: Int
+}
+
+struct DaySlotDto: Codable, Equatable, Identifiable {
+    var id: Int { periodIndex }
+    let periodIndex: Int
+    let label: String
+    let startMinute: Int
+    let endMinute: Int
+    let isBreak: Bool
+}
+
+struct CourseDto: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String
+    let teacher: String?
+    let color: String?
+    let note: String?
+}
+
+struct MeetingDto: Codable, Equatable, Identifiable {
+    let id: String
+    let courseId: String
+    let dayOfWeek: Int
+    let startPeriodIndex: Int
+    let periodCount: Int
+    let room: String?
+}
+
+struct TemplateDto: Codable, Equatable, Identifiable {
+    let id: String
+    let authorUserId: String
+    let schoolId: String
+    let departmentId: String
+    let title: String
+    let description: String?
+    let year: Int?
+    let term: String?
+    let isPublic: Bool
+    let copyCount: Int
+    let daySlots: [DaySlotDto]
+    let courses: [CourseDto]
+    let meetings: [MeetingDto]
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct TemplateSearchQuery: Equatable {
+    var schoolId: String?
+    var departmentId: String?
+    var q: String?
+    var limit: Int = 20
+    var cursor: String?
+}
+
+struct TemplateCreateInput: Codable, Equatable {
+    let schoolId: String
+    let departmentId: String
+    let title: String
+    var description: String?
+    var year: Int?
+    var term: String?
+    var isPublic: Bool = true
+    var daySlots: [DaySlotCreateInput]
+    var courses: [CourseTemplateInput]
+    var meetings: [MeetingTemplateInput]
+
+    struct DaySlotCreateInput: Codable, Equatable {
+        let periodIndex: Int
+        let label: String
+        let startMinute: Int
+        let endMinute: Int
+        var isBreak: Bool = false
+    }
+
+    struct CourseTemplateInput: Codable, Equatable {
+        let tempId: String
+        let name: String
+        var teacher: String?
+        var color: String?
+        var note: String?
+    }
+
+    struct MeetingTemplateInput: Codable, Equatable {
+        let courseTempId: String
+        let dayOfWeek: Int
+        let startPeriodIndex: Int
+        var periodCount: Int = 1
+        var room: String?
+    }
+}
+
+struct TemplateCopyInput: Codable, Equatable {
+    let semesterId: String
+    var title: String?
+}
+
+struct CourseCreateInput: Codable, Equatable {
+    let userTimetableId: String
+    let name: String
+    var teacher: String?
+    var color: String?
+    var note: String?
+}
+
+struct CourseUpdateInput: Codable, Equatable {
+    var name: String?
+    var teacher: String?
+    var color: String?
+    var note: String?
+}
+
+struct CourseSuspensionDto: Codable, Equatable, Identifiable {
+    let id: String
+    let courseId: String
+    let date: String
+    let reason: String?
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct CourseSuspensionCreateInput: Codable, Equatable {
+    let date: String
+    var reason: String?
+}
+
+struct MeetingBulkCreateInput: Codable, Equatable {
+    let userTimetableId: String
+    let courseId: String
+    let dayOfWeek: Int
+    let startPeriodIndexes: [Int]
+    var room: String?
+}
+
+struct MeetingUpdateInput: Codable, Equatable {
+    var dayOfWeek: Int?
+    var startPeriodIndex: Int?
+    var periodCount: Int?
+    var room: String?
+}
+
+struct UserTimetableDto: Codable, Equatable, Identifiable {
+    let id: String
+    let userId: String
+    let semesterId: String
+    let title: String
+    let sourceTemplateId: String?
+    let daysOfWeek: [Int]
+    let daySlots: [DaySlotDto]
+    let courses: [CourseDto]
+    let meetings: [MeetingDto]
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct UserTimetableCreateInput: Codable, Equatable {
+    let semesterId: String
+    let title: String
+    var description: String?
+    var year: Int?
+    var term: String?
+    var daySlots: [TemplateCreateInput.DaySlotCreateInput]
+    var courses: [TemplateCreateInput.CourseTemplateInput]
+    var meetings: [TemplateCreateInput.MeetingTemplateInput]
+}
+
+struct UserTimetablePatchInput: Codable, Equatable {
+    var title: String?
+    var daysOfWeek: [Int]?
+    var daySlots: [TemplateCreateInput.DaySlotCreateInput]?
+    var courses: [CoursePatchInput]?
+    var meetings: [MeetingPatchInput]?
+
+    struct CoursePatchInput: Codable, Equatable {
+        var id: String?
+        var tempId: String?
+        let name: String
+        var teacher: String?
+        var color: String?
+        var note: String?
+    }
+
+    struct MeetingPatchInput: Codable, Equatable {
+        var id: String?
+        var courseId: String?
+        var courseTempId: String?
+        let dayOfWeek: Int
+        let startPeriodIndex: Int
+        var periodCount: Int = 1
+        var room: String?
+    }
+}
+
+struct TimetableSuspensionDto: Codable, Equatable, Identifiable {
+    let id: String
+    let userTimetableId: String
+    let date: String
+    let reason: String?
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct TimetableSuspensionCreateInput: Codable, Equatable {
+    let date: String
+    var reason: String?
+}
+
+struct BulkTimetableSuspensionInput: Codable, Equatable {
+    let dates: [String]
+    var reason: String?
+}
+
+struct BulkTimetableSuspensionResponse: Codable, Equatable {
+    let createdCount: Int
+    let skippedCount: Int
+}
+
+struct BulkTimetableSuspensionRemoveInput: Codable, Equatable {
+    let dates: [String]
+}
+
+struct BulkTimetableSuspensionRemoveResponse: Codable, Equatable {
+    let removedCount: Int
+}
+
+struct PersonalEventDto: Codable, Equatable, Identifiable {
+    let id: String
+    let semesterId: String?
+    let date: String
+    let title: String
+    let isAllDay: Bool
+    let startMinute: Int?
+    let endMinute: Int?
+    let color: String?
+    let note: String?
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct PersonalEventCreateInput: Codable, Equatable {
+    var semesterId: String?
+    let date: String
+    let title: String
+    var isAllDay: Bool = true
+    var startMinute: Int?
+    var endMinute: Int?
+    var color: String?
+    var note: String?
+}
+
+struct PersonalEventUpdateInput: Codable, Equatable {
+    var semesterId: String?
+    var date: String?
+    var title: String?
+    var isAllDay: Bool?
+    var startMinute: Int?
+    var endMinute: Int?
+    var color: String?
+    var note: String?
+}
+
+struct DayDetailDto: Codable, Equatable {
+    let date: String
+    let occurrences: [OccurrenceDto]
+    let courseSuspensions: [CourseSuspensionDto]
+    let timetableSuspension: TimetableSuspensionDto?
+    let personalEvents: [PersonalEventDto]
+}
+
+struct FriendshipUserDto: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String?
+    let handle: String?
+    let image: String?
+}
+
+struct FriendshipDto: Codable, Equatable, Identifiable {
+    let id: String
+    let sender: FriendshipUserDto
+    let receiver: FriendshipUserDto
+    let status: FriendshipStatus
+    let createdAt: String
+    let acceptedAt: String?
+}
+
+struct CreateFriendshipInput: Codable, Equatable {
+    var receiverHandle: String?
+    var receiverInviteCode: String?
+    var receiverId: String?
+}
+
+struct UserSearchDto: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String?
+    let handle: String?
+    let image: String?
+    let friendshipStatus: FriendshipStatus?
+}
+
+struct RoomSummaryDto: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String
+    let description: String?
+    let showMemberTimetables: Bool
+    let memberCount: Int
+    let myRole: RoomRole
+    let upcomingEvent: UpcomingEvent?
+    let createdAt: String
+
+    struct UpcomingEvent: Codable, Equatable {
+        let id: String
+        let title: String
+        let start: String
+    }
+}
+
+struct RoomDto: Codable, Equatable, Identifiable {
+    let id: String
+    let name: String
+    let description: String?
+    let showMemberTimetables: Bool
+    let memberCount: Int
+    let myRole: RoomRole
+    let upcomingEvent: RoomSummaryDto.UpcomingEvent?
+    let createdAt: String
+    let inviteCode: String
+    let inviteExpiresAt: String?
+}
+
+struct RoomMemberDto: Codable, Equatable, Identifiable {
+    var id: String { userId }
+    let userId: String
+    let name: String?
+    let handle: String?
+    let image: String?
+    let role: RoomRole
+    let joinedAt: String
+}
+
+struct RoomEventDto: Codable, Equatable, Identifiable {
+    let id: String
+    let seriesId: String
+    let roomId: String
+    let authorId: String
+    let title: String
+    let rawTitle: String?
+    let description: String?
+    let start: String
+    let end: String
+    let isAllDay: Bool
+    let color: String?
+    let source: RoomEventSource
+    let visibilityMode: VisibilityMode
+    let isRecurringOccurrence: Bool
+    let recurrenceRule: String?
+    let occurrenceDate: String
+    let overrideId: String?
+    let googleSyncId: String?
+    let googleEventId: String?
+    let googleRecurringEventId: String?
+    let createdAt: String
+}
+
+struct RoomWeekDto: Codable, Equatable {
+    let weekStart: String
+    let weekEnd: String
+    let members: [Member]
+    let meetings: [Meeting]
+    let roomEvents: [RoomEventDto]
+
+    struct Member: Codable, Equatable, Identifiable {
+        var id: String { userId }
+        let userId: String
+        let name: String?
+        let handle: String?
+        let image: String?
+        let color: String
+    }
+
+    struct Meeting: Codable, Equatable {
+        let userId: String
+        let occurrenceId: String
+        let courseId: String
+        let courseName: String
+        let courseColor: String?
+        let date: String
+        let startMinute: Double
+        let endMinute: Double
+    }
+}
+
+struct CreateRoomInput: Codable, Equatable {
+    let name: String
+    var description: String?
+    var showMemberTimetables: Bool?
+}
+
+struct UpdateRoomInput: Codable, Equatable {
+    var name: String?
+    var description: String?
+    var showMemberTimetables: Bool?
+}
+
+struct CreateRoomEventInput: Codable, Equatable {
+    let title: String
+    var description: String?
+    let start: String
+    let end: String
+    var isAllDay: Bool = false
+    var color: String?
+    var recurrence: Recurrence?
+    var visibilityMode: VisibilityMode = .normal
+
+    struct Recurrence: Codable, Equatable {
+        let rrule: String
+        var exDates: [String] = []
+        var rDates: [String] = []
+    }
+}
+
+struct UpdateRoomEventInput: Codable, Equatable {
+    var title: String?
+    var description: String?
+    var start: String?
+    var end: String?
+    var isAllDay: Bool?
+    var color: String?
+    var recurrence: CreateRoomEventInput.Recurrence?
+    var visibilityMode: VisibilityMode?
+    var editScope: String = "all"
+    var originalDate: String?
+}
+
+struct SchoolDto: Codable, Equatable, Identifiable {
+    let id: String
+    let mextCode: String?
+    let kind: SchoolKind
+    let name: String
+    let nameKana: String?
+    let prefecture: String?
+}
+
+struct DepartmentDto: Codable, Equatable, Identifiable {
+    let id: String
+    let schoolId: String
+    let name: String
+    let nameKana: String?
+}
+
+struct SchoolSearchQuery: Equatable {
+    var q: String?
+    var prefecture: String?
+    var kind: SchoolKind?
+    var limit: Int = 20
+}
+
+struct SchoolCreateInput: Codable, Equatable {
+    let name: String
+    var nameKana: String?
+    let kind: SchoolKind
+    var prefecture: String?
+}
+
+struct DepartmentCreateInput: Codable, Equatable {
+    let name: String
+    var nameKana: String?
+}
+
+struct AttendanceRuleDto: Codable, Equatable, Identifiable {
+    let id: String
+    let schoolId: String
+    let departmentId: String
+    let userId: String?
+    let excusedStrategy: RuleStrategy
+    let tardyStrategy: RuleStrategy
+    let earlyLeaveStrategy: RuleStrategy
+}
+
+struct AttendanceRuleUpsertInput: Codable, Equatable {
+    let excusedStrategy: RuleStrategy
+    let tardyStrategy: RuleStrategy
+    let earlyLeaveStrategy: RuleStrategy
+}
+
+struct EffectiveRuleResponse: Codable, Equatable {
+    let `default`: AttendanceRuleDto?
+    let userOverride: AttendanceRuleDto?
+    let effective: Effective
+
+    struct Effective: Codable, Equatable {
+        let excusedStrategy: RuleStrategy
+        let tardyStrategy: RuleStrategy
+        let earlyLeaveStrategy: RuleStrategy
+    }
+}
+
+struct GoogleCalendarConnectionDto: Codable, Equatable, Identifiable {
+    let id: String
+    let googleEmail: String
+    let scope: String
+    let status: GoogleConnectionStatus
+    let lastError: String?
+    let lastSyncedAt: String?
+    let createdAt: String
+}
+
+struct GoogleListedCalendarDto: Codable, Equatable, Identifiable {
+    let id: String
+    let summary: String
+    let timeZone: String
+    let accessRole: GoogleAccessRole
+    let primary: Bool
+    let backgroundColor: String?
+}
+
+struct GoogleCalendarSyncDto: Codable, Equatable, Identifiable {
+    let id: String
+    let googleCalendarId: String
+    let calendarSummary: String
+    let calendarTimeZone: String
+    let visibilityMode: VisibilityMode
+    let status: GoogleSyncStatus
+    let lastError: String?
+    let lastSyncedAt: String?
+    let enabled: Bool
+    let createdAt: String
+    let hasSyncToken: Bool
+}
+
+struct CreateGoogleSyncInput: Codable, Equatable {
+    let googleCalendarId: String
+    var visibilityMode: VisibilityMode?
+}
+
+struct UpdateGoogleSyncInput: Codable, Equatable {
+    var visibilityMode: VisibilityMode?
+    var enabled: Bool?
+}
+
+struct IcsImportDto: Codable, Equatable, Identifiable {
+    let id: String
+    let filename: String?
+    let source: IcsSource
+    let status: IcsImportStatus
+    let parsedEventCount: Int
+    let committedEventCount: Int
+    let skippedEventCount: Int
+    let errorMessage: String?
+    let committedAt: String?
+    let createdAt: String
+}
+
+struct IcsImportPreviewItem: Codable, Equatable, Identifiable {
+    var id: String { uid }
+    let uid: String
+    let rawTitle: String
+    let mappedTitle: String
+    let visibilityMode: VisibilityMode
+    let ruleId: String?
+    let start: String
+    let end: String
+    let isRecurring: Bool
+    let rrule: String?
+}
+
+struct IcsImportPreview: Codable, Equatable {
+    let importId: String
+    let events: [IcsImportPreviewItem]
+}
+
+struct IcsImportCommitResult: Codable, Equatable {
+    let committed: Int
+    let skipped: Int
+    let errors: [String]
+}
+
+struct IcsTitleRuleDto: Codable, Equatable, Identifiable {
+    let id: String
+    let matchType: IcsMatchType
+    let pattern: String
+    let replaceWith: String?
+    let visibilityMode: VisibilityMode
+    let priority: Int
+    let isDefault: Bool
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct UserTimetableListResponse: Codable, Equatable {
+    let userTimetables: [UserTimetableDto]
+}
+
+struct UserTimetableResponse: Codable, Equatable {
+    let userTimetable: UserTimetableDto
+}
+
+struct SemestersResponse: Codable, Equatable {
+    let semesters: [SemesterDto]
+}
+
+struct SemesterResponse: Codable, Equatable {
+    let semester: SemesterDto
+}
+
+struct SchoolsResponse: Codable, Equatable {
+    let schools: [SchoolDto]
+}
+
+struct DepartmentsResponse: Codable, Equatable {
+    let departments: [DepartmentDto]
+}
+
+struct TemplatesResponse: Codable, Equatable {
+    let templates: [TemplateDto]
+    let nextCursor: String?
+}
+
+struct TemplateResponse: Codable, Equatable {
+    let template: TemplateDto
+}
+
+struct CourseResponse: Codable, Equatable {
+    let course: CourseDto
+}
+
+struct MeetingResponse: Codable, Equatable {
+    let meeting: MeetingDto
+}
+
+struct MeetingsResponse: Codable, Equatable {
+    let meetings: [MeetingDto]
+}
+
+struct CourseSuspensionsResponse: Codable, Equatable {
+    let suspensions: [CourseSuspensionDto]
+}
+
+struct CourseSuspensionResponse: Codable, Equatable {
+    let suspension: CourseSuspensionDto
+}
+
+struct TimetableSuspensionsResponse: Codable, Equatable {
+    let suspensions: [TimetableSuspensionDto]
+}
+
+struct TimetableSuspensionResponse: Codable, Equatable {
+    let suspension: TimetableSuspensionDto
+}
+
+struct PersonalEventsResponse: Codable, Equatable {
+    let events: [PersonalEventDto]
+}
+
+struct PersonalEventResponse: Codable, Equatable {
+    let event: PersonalEventDto
+}
+
+struct FriendshipsResponse: Codable, Equatable {
+    let friendships: [FriendshipDto]
+}
+
+struct FriendshipResponse: Codable, Equatable {
+    let friendship: FriendshipDto
+}
+
+struct UsersSearchResponse: Codable, Equatable {
+    let users: [UserSearchDto]
+}
+
+struct RoomsResponse: Codable, Equatable {
+    let rooms: [RoomSummaryDto]
+}
+
+struct RoomResponse: Codable, Equatable {
+    let room: RoomDto
+}
+
+struct RoomMembersResponse: Codable, Equatable {
+    let members: [RoomMemberDto]
+}
+
+struct RoomEventsResponse: Codable, Equatable {
+    let events: [RoomEventDto]
+}
+
+struct RoomEventResponse: Codable, Equatable {
+    let event: RoomEventDto
+}
+
+struct RoomInviteResponse: Codable, Equatable {
+    let inviteCode: String
+    let inviteExpiresAt: String
+}
+
+struct IcsImportsResponse: Codable, Equatable {
+    let imports: [IcsImportDto]
+}
+
+struct IcsTitleRulesResponse: Codable, Equatable {
+    let rules: [IcsTitleRuleDto]
+}
+
+struct IcsTitleRuleResponse: Codable, Equatable {
+    let rule: IcsTitleRuleDto
 }

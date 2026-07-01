@@ -1,0 +1,79 @@
+import Foundation
+
+enum Mutation: Equatable {
+    case markAllPresent
+    case patchAttendance
+    case deleteAttendance
+    case bulkAttendance
+    case courseSuspension(courseId: String)
+    case timetableSuspension(date: String?)
+    case personalEvent(date: String?)
+    case userTimetableCreate
+    case userTimetableEdit
+    case userTimetablePublish
+    case userTimetableDelete
+    case meUpdate
+    case semesterCreate
+    case semesterUpdate
+    case semesterDelete
+    case roomCreate
+    case roomUpdate(id: String)
+    case roomJoin(id: String)
+    case roomLeave(id: String)
+    case roomDelete(id: String)
+    case roomEvent(id: String)
+    case icsImport(roomId: String)
+    case friendshipAction
+    case friendshipAdd
+}
+
+func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
+    switch mutation {
+    case .markAllPresent, .patchAttendance:
+        return [.stats(), .semesters(), .dayPrefix()]
+    case .deleteAttendance:
+        return [.today(), .stats(), .semesters(), .dayPrefix()]
+    case .bulkAttendance:
+        return [.semesters(), .stats(), .dayPrefix(), .today(), .timetableSuspensions()]
+    case .courseSuspension(let courseId):
+        return [.courseSuspensions(courseId), .semesters(), .stats(), .dayPrefix()]
+    case .timetableSuspension(let date):
+        return compactKeys([.timetableSuspensions(), .dayPrefix(), .semesters(), .stats(), .today(), date.map { .dayDetail($0) }])
+    case .personalEvent(let date):
+        return compactKeys([.personalEvents(), .dayPrefix(), date.map { .dayDetail($0) }])
+    case .userTimetableCreate:
+        return [.userTimetables(), .today(), .semesters()]
+    case .userTimetableEdit:
+        return [.userTimetables(), .today(), .stats(), .semesters(), .rooms()]
+    case .userTimetablePublish:
+        return [.userTimetables(), .me()]
+    case .userTimetableDelete:
+        return [.userTimetables(), .today(), .stats(), .semesters()]
+    case .meUpdate:
+        return [.usersSearch(), .semesters(), .stats()]
+    case .semesterCreate, .semesterUpdate:
+        return [.semesters()]
+    case .semesterDelete:
+        return [.semesters(), .stats(), .dayPrefix(), .today(), .userTimetables()]
+    case .roomCreate:
+        return [.rooms()]
+    case .roomUpdate(let id):
+        return [.rooms(), .room(id)]
+    case .roomJoin(let id):
+        return [.rooms(), .roomMembers(id), .room(id)]
+    case .roomLeave(let id), .roomDelete(let id):
+        return [.rooms(), .room(id)]
+    case .roomEvent(let id):
+        return [.roomEvents(id), .roomWeek(id)]
+    case .icsImport(let roomId):
+        return [.roomWeek(roomId), .icsImports(roomId)]
+    case .friendshipAction:
+        return [.friendships(), .usersSearch()]
+    case .friendshipAdd:
+        return [.friendships()]
+    }
+}
+
+private func compactKeys(_ keys: [QueryKey?]) -> [QueryKey] {
+    keys.compactMap { $0 }
+}

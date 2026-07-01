@@ -6,4 +6,5 @@ enum Radius {
     static let lg: CGFloat = 24
     static let xl: CGFloat = 28
     static let timetableCell: CGFloat = 8
+    static let full: CGFloat = 9999
 }
