@@ -117,6 +117,7 @@
 		EBD3C40773E42B8B40E95C55 /* AtenderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32BCCF2DC4BA83E0E8030C7E /* AtenderApp.swift */; };
 		ECF0E5019F3AF4DA7ED767B1 /* PeriodChips.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BCD033818AF2AEC5CF09C02 /* PeriodChips.swift */; };
 		EECFED294E0214316018E541 /* roomSummary.json in Resources */ = {isa = PBXBuildFile; fileRef = AC78DDCEAAA553794876860D /* roomSummary.json */; };
+		EFEF94CCE4F87AB0FE161FA7 /* SemesterLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18A8D2BA38DA5164644FFF2D /* SemesterLogicTests.swift */; };
 		F081906D47797709F99A3763 /* roomWeek.json in Resources */ = {isa = PBXBuildFile; fileRef = F54EF63887E2E4E8F24861D1 /* roomWeek.json */; };
 		F0E76D8B446B530F6D3B8F5D /* BottomTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87136901C644817D886771CB /* BottomTabBar.swift */; };
 		F2D5C38F549D5C2F8AF57786 /* DTODecodingPhaseBTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A317F2FADAC6E64B0A781A1 /* DTODecodingPhaseBTests.swift */; };
@@ -155,6 +156,7 @@
 		0BAEE0133D4B5E9D8C9119CC /* DesignTokenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignTokenTests.swift; sourceTree = "<group>"; };
 		0F29845C441C1E2999B863E3 /* TimetableLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableLogic.swift; sourceTree = "<group>"; };
 		17960E6CCBC01FE299C843E9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		18A8D2BA38DA5164644FFF2D /* SemesterLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemesterLogicTests.swift; sourceTree = "<group>"; };
 		1A24A8C1959C4D4435E3EFFD /* BottomSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomSheet.swift; sourceTree = "<group>"; };
 		1BCD033818AF2AEC5CF09C02 /* PeriodChips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodChips.swift; sourceTree = "<group>"; };
 		1C08D6F5D0436E34DFB893A7 /* Space.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space.swift; sourceTree = "<group>"; };
@@ -455,6 +457,7 @@
 				567745C3E0772E461B7A5C70 /* PeriodGroupingTests.swift */,
 				6C0D695AE23C44220A411212 /* QueryCacheTests.swift */,
 				5F3E27E92977B661270F973D /* SelfTimetableViewModelTests.swift */,
+				18A8D2BA38DA5164644FFF2D /* SemesterLogicTests.swift */,
 				8AEEACC6FAE82768F83CAAC2 /* SemesterOverviewDisplayLogicTests.swift */,
 				D1A3ABAEE5BF9ECC900F4899 /* SmokeTests.swift */,
 				364C818185FC6D41FC11436F /* TimetableCoalesceTests.swift */,
@@ -775,6 +778,7 @@
 				062B27EBBC96CD8BFBFCD115 /* PeriodGroupingTests.swift in Sources */,
 				D4C571F308D7B1B06A41D7A9 /* QueryCacheTests.swift in Sources */,
 				A84CAF37140527F110180739 /* SelfTimetableViewModelTests.swift in Sources */,
+				EFEF94CCE4F87AB0FE161FA7 /* SemesterLogicTests.swift in Sources */,
 				7EF23456F2A571F4ADD4CD0A /* SemesterOverviewDisplayLogicTests.swift in Sources */,
 				A2692C86E6F4DD03DAE8694A /* SmokeTests.swift in Sources */,
 				CB44666D5BEB206779AF0DB2 /* TimetableCoalesceTests.swift in Sources */,
