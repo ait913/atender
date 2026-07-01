@@ -59,6 +59,18 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         TARGETED_DEVICE_FAMILY: 1
 
+  AtenderUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - AtenderUITests
+    dependencies:
+      - target: Atender
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: 1
+
 schemes:
   Atender:
     build:
@@ -71,3 +83,14 @@ schemes:
       config: Debug
       targets:
         - AtenderTests
+  AtenderUITests:
+    build:
+      targets:
+        AtenderUITests: all
+    run:
+      config: Debug
+      executable: Atender
+    test:
+      config: Debug
+      targets:
+        - AtenderUITests
