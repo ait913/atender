@@ -178,4 +178,21 @@ final class PersonalEventRepository {
         cache.setData(response.events, for: .personalEvents())
         return response.events
     }
+
+    func createPersonalEvent(_ input: PersonalEventCreateInput) async throws -> PersonalEventDto {
+        let response = try await client.send(Endpoints.createPersonalEvent(input), as: PersonalEventResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: input.date)))
+        return response.event
+    }
+
+    func updatePersonalEvent(id: String, _ input: PersonalEventUpdateInput) async throws -> PersonalEventDto {
+        let response = try await client.send(Endpoints.updatePersonalEvent(id: id, input), as: PersonalEventResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: input.date)))
+        return response.event
+    }
+
+    func deletePersonalEvent(id: String, date: String) async throws {
+        try await client.send(Endpoints.deletePersonalEvent(id: id))
+        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: date)))
+    }
 }

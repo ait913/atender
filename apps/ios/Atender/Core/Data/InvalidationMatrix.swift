@@ -5,9 +5,12 @@ enum Mutation: Equatable {
     case patchAttendance
     case deleteAttendance
     case bulkAttendance
+    case bulkClearAttendance
     case courseSuspension(courseId: String)
     case timetableSuspension(date: String?)
+    case bulkTimetableSuspension
     case personalEvent(date: String?)
+    case deleteCourse
     case userTimetableCreate
     case userTimetableEdit
     case userTimetablePublish
@@ -35,12 +38,18 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return [QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .bulkAttendance:
         return [.semesters(), QueryKey(["stats"]), .dayPrefix(), QueryKey(["today"]), .timetableSuspensions()]
+    case .bulkClearAttendance:
+        return [.semesters(), QueryKey(["stats"]), .dayPrefix(), QueryKey(["today"])]
     case .courseSuspension(let courseId):
         return [.courseSuspensions(courseId), .semesters(), QueryKey(["stats"]), .dayPrefix()]
     case .timetableSuspension(let date):
         return compactKeys([.timetableSuspensions(), .dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"]), date.map { .dayDetail($0) }])
+    case .bulkTimetableSuspension:
+        return [.timetableSuspensions(), .dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"])]
     case .personalEvent(let date):
         return compactKeys([.personalEvents(), .dayPrefix(), date.map { .dayDetail($0) }])
+    case .deleteCourse:
+        return [.userTimetables(), QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .userTimetableCreate:
         return [.userTimetables(), QueryKey(["today"]), .semesters()]
     case .userTimetableEdit:

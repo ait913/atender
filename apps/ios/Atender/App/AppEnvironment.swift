@@ -14,6 +14,8 @@ final class AppEnvironment {
     let timetableRepository: TimetableRepository
     let attendanceRepository: AttendanceRepository
     let personalEventRepository: PersonalEventRepository
+    let dayRepository: DayRepository
+    let courseRepository: CourseRepository
 
     init() {
         #if DEBUG
@@ -33,6 +35,8 @@ final class AppEnvironment {
         self.timetableRepository = TimetableRepository(client: self.apiClient, cache: queryClient)
         self.attendanceRepository = AttendanceRepository(client: self.apiClient, cache: queryClient, toast: self.toastCenter)
         self.personalEventRepository = PersonalEventRepository(client: self.apiClient, cache: queryClient)
+        self.dayRepository = DayRepository(client: self.apiClient, cache: queryClient)
+        self.courseRepository = CourseRepository(client: self.apiClient, cache: queryClient)
         authStore.onLocalSignOut = { [queryClient] in
             queryClient.removeAll()
         }

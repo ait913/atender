@@ -4,26 +4,27 @@ import Observation
 @MainActor
 @Observable
 final class SemesterOverviewViewModel {
-    private let apiClient: APIClient
-    private let semesterId: String
-
+    @ObservationIgnored private let env: AppEnvironment
     private(set) var overview: SemesterOverviewDto?
     private(set) var isLoading = false
     var alertMessage: String?
 
-    init(apiClient: APIClient, semesterId: String) {
-        self.apiClient = apiClient
-        self.semesterId = semesterId
+    init(env: AppEnvironment) {
+        self.env = env
     }
 
-    func load() async {
+    func load(semesterId: String, force: Bool = false) async {
         isLoading = true
         defer { isLoading = false }
 
         do {
-            overview = try await apiClient.send(APIEndpoint(path: "/api/semesters/\(semesterId)/overview", method: .get), as: SemesterOverviewDto.self)
+            overview = try await env.semesterRepository.semesterOverview(id: semesterId, force: force)
         } catch {
             alertMessage = error.userFacingMessage
         }
+    }
+
+    func reload(semesterId: String) async {
+        await load(semesterId: semesterId, force: true)
     }
 }

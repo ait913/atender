@@ -5,7 +5,7 @@ struct HomePlaceholderView: View {
 }
 
 struct SemesterPlaceholderView: View {
-    var body: some View { PlaceholderScreen(title: "学期・科目", subtitle: "準備中") }
+    var body: some View { SemesterOverviewView() }
 }
 
 struct RoomsPlaceholderView: View {
