@@ -113,6 +113,7 @@ struct EventTile: View {
     let color: String
     var subtitle: String? = nil
     var meta: String? = nil
+    var leadingSystemImage: String? = nil
     var onTap: (() -> Void)? = nil
 
     var body: some View {
@@ -132,6 +133,11 @@ struct EventTile: View {
             Capsule()
                 .fill(Color(hexString: color))
                 .frame(width: 3)
+            if let leadingSystemImage {
+                Image(systemName: leadingSystemImage)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(Color(hexString: color))
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.atender(12, .semibold))

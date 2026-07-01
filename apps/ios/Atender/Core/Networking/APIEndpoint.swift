@@ -108,7 +108,9 @@ enum Endpoints {
     static func deleteRoom(id: String) -> APIEndpoint { .init(path: "/api/rooms/\(id)", method: .delete) }
     static func joinRoom(inviteCode: String) -> APIEndpoint { .init(path: "/api/rooms/join", method: .post, body: ["inviteCode": inviteCode]) }
     static func leaveRoom(id: String) -> APIEndpoint { .init(path: "/api/rooms/\(id)/leave", method: .post) }
+    static func regenerateRoomInvite(id: String) -> APIEndpoint { .init(path: "/api/rooms/\(id)/invite", method: .post) }
     static func roomMembers(id: String) -> APIEndpoint { .init(path: "/api/rooms/\(id)/members", method: .get) }
+    static func removeRoomMember(id: String, userId: String) -> APIEndpoint { .init(path: "/api/rooms/\(id)/members/\(userId)", method: .delete) }
     static func roomWeek(id: String, weekStart: String) -> APIEndpoint { .init(path: "/api/rooms/\(id)/week", method: .get, query: ["weekStart": weekStart]) }
     static func roomEvents(id: String, from: String? = nil, to: String? = nil) -> APIEndpoint {
         .init(path: "/api/rooms/\(id)/events", method: .get, query: compactQuery(["from": from, "to": to]))

@@ -16,6 +16,11 @@ final class AppEnvironment {
     let personalEventRepository: PersonalEventRepository
     let dayRepository: DayRepository
     let courseRepository: CourseRepository
+    let roomRepository: RoomRepository
+    let roomEventRepository: RoomEventRepository
+    let friendshipRepository: FriendshipRepository
+    let templateRepository: TemplateRepository
+    let icsImportRepository: IcsImportRepository
 
     init() {
         #if DEBUG
@@ -37,6 +42,11 @@ final class AppEnvironment {
         self.personalEventRepository = PersonalEventRepository(client: self.apiClient, cache: queryClient)
         self.dayRepository = DayRepository(client: self.apiClient, cache: queryClient)
         self.courseRepository = CourseRepository(client: self.apiClient, cache: queryClient)
+        self.roomRepository = RoomRepository(client: self.apiClient, cache: queryClient)
+        self.roomEventRepository = RoomEventRepository(client: self.apiClient, cache: queryClient)
+        self.friendshipRepository = FriendshipRepository(client: self.apiClient, cache: queryClient)
+        self.templateRepository = TemplateRepository(client: self.apiClient, cache: queryClient)
+        self.icsImportRepository = IcsImportRepository(client: self.apiClient, cache: queryClient)
         authStore.onLocalSignOut = { [queryClient] in
             queryClient.removeAll()
         }

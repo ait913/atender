@@ -893,6 +893,10 @@ struct RoomMembersResponse: Codable, Equatable {
     let members: [RoomMemberDto]
 }
 
+struct RoomWeekResponse: Codable, Equatable {
+    let week: RoomWeekDto
+}
+
 struct RoomEventsResponse: Codable, Equatable {
     let events: [RoomEventDto]
 }
@@ -908,6 +912,16 @@ struct RoomInviteResponse: Codable, Equatable {
 
 struct IcsImportsResponse: Codable, Equatable {
     let imports: [IcsImportDto]
+}
+
+struct IcsUploadResponse: Codable, Equatable {
+    struct ImportRef: Codable, Equatable {
+        let id: String
+    }
+
+    let `import`: ImportRef
+    let parsedCount: Int
+    let dedup: Bool
 }
 
 struct IcsTitleRulesResponse: Codable, Equatable {

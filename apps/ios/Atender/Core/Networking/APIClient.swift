@@ -52,6 +52,55 @@ final class APIClient {
         }
     }
 
+    func upload<T: Decodable>(
+        path: String,
+        fileData: Data,
+        filename: String,
+        fieldName: String = "file",
+        contentType: String = "text/calendar",
+        as type: T.Type
+    ) async throws -> T {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        let cleanPath = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let url = APIConfig.baseURL.appending(path: cleanPath)
+        var request = URLRequest(url: url)
+        request.httpMethod = HTTPMethod.post.rawValue
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        if let token = authStore.token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        var body = Data()
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
+
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.transport("Invalid HTTP response")
+            }
+            if httpResponse.statusCode == 401 {
+                authStore.handleUnauthorized()
+                throw APIError.unauthorized
+            }
+            guard (200...299).contains(httpResponse.statusCode) else {
+                throw decodeHTTPError(data: data, status: httpResponse.statusCode)
+            }
+            return try decoder.decode(T.self, from: data)
+        } catch let error as APIError {
+            throw error
+        } catch let error as DecodingError {
+            throw APIError.decoding(error.localizedDescription)
+        } catch {
+            throw APIError.transport(error.localizedDescription)
+        }
+    }
+
     private func perform(_ endpoint: APIEndpoint) async throws -> (Data, HTTPURLResponse) {
         let request: URLRequest
         do {

@@ -24,10 +24,12 @@ enum Mutation: Equatable {
     case roomJoin(id: String)
     case roomLeave(id: String)
     case roomDelete(id: String)
+    case roomMemberRemove(id: String)
     case roomEvent(id: String)
     case icsImport(roomId: String)
     case friendshipAction
     case friendshipAdd
+    case templateCopy
 }
 
 func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
@@ -72,6 +74,8 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return [.rooms(), .roomMembers(id), .room(id)]
     case .roomLeave(let id), .roomDelete(let id):
         return [.rooms(), .room(id)]
+    case .roomMemberRemove(let id):
+        return [.rooms(), .roomMembers(id), .room(id)]
     case .roomEvent(let id):
         return [.roomEvents(id), .roomWeek(id)]
     case .icsImport(let roomId):
@@ -80,6 +84,8 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return [.friendships(), .usersSearch()]
     case .friendshipAdd:
         return [.friendships()]
+    case .templateCopy:
+        return [.userTimetables(), .me()]
     }
 }
 

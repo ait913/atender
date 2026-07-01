@@ -84,7 +84,7 @@ enum TimetableCoalesce {
     }
 }
 
-enum CalendarEventKind: Equatable { case meeting, personal }
+enum CalendarEventKind: Equatable { case meeting, personal, roomEvent }
 
 struct CalendarEvent: Equatable, Identifiable {
     let kind: CalendarEventKind
@@ -96,6 +96,8 @@ struct CalendarEvent: Equatable, Identifiable {
     let color: String
     let subtitle: String
     let courseId: String?
+    var ownerId: String? = nil
+    var source: RoomEventSource? = nil
 }
 
 enum MemberColor {

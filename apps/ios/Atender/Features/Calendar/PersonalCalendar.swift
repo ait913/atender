@@ -357,7 +357,7 @@ struct CalendarDay: View {
                     let top = CGFloat(max(540, item.event.startMinute) - 540) / 720 * height
                     let eventHeight = max(28, CGFloat(min(1260, item.event.endMinute) - max(540, item.event.startMinute)) / 720 * height)
                     let laneWidth = (proxy.size.width - 62) / CGFloat(max(1, item.laneCount))
-                    EventTile(title: item.event.title, color: item.event.color, subtitle: "自分 · \(TimeFormatting.minutesToTime(item.event.startMinute))")
+                    EventTile(title: item.event.title, color: item.event.color, subtitle: "\(item.event.subtitle) · \(TimeFormatting.minutesToTime(item.event.startMinute))", leadingSystemImage: item.event.source == .googleOauth ? "cloud.fill" : (item.event.source == .icsFile || item.event.source == .icsUrl ? "calendar.badge.arrow.down" : nil))
                         .frame(width: laneWidth - 2, height: eventHeight)
                         .position(x: 58 + laneWidth * CGFloat(item.lane) + laneWidth / 2, y: top + eventHeight / 2)
                 }

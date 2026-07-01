@@ -27,7 +27,25 @@ struct RootView: View {
         .task {
             await environment.authStore.bootstrap()
         }
+        .onOpenURL { url in
+            environment.appRouter.handleDeepLink(url, canNavigate: canNavigate)
+        }
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+            if let url = activity.webpageURL {
+                environment.appRouter.handleDeepLink(url, canNavigate: canNavigate)
+            }
+        }
+        .onChange(of: canNavigate) { _, value in
+            environment.appRouter.applyPendingDeepLinkIfPossible(canNavigate: value)
+        }
         .preferredColorScheme((ThemePreference(rawValue: themePreference) ?? .dark).colorScheme)
+    }
+
+    private var canNavigate: Bool {
+        if case .signedIn = environment.authStore.state {
+            return environment.authStore.me?.setupStatus.isComplete != false
+        }
+        return false
     }
 
     private var splash: some View {

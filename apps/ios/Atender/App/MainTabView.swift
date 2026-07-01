@@ -47,11 +47,27 @@ struct MainTabView: View {
                     }
                 case .rooms:
                     NavigationStack(path: $bindableRouter.roomsPath) {
-                        RoomsPlaceholderView()
+                        RoomsView()
+                            .navigationDestination(for: RoomsRoute.self) { route in
+                                switch route {
+                                case .detail(let id):
+                                    RoomDetailView(roomId: id)
+                                case .join(let code):
+                                    JoinRoomView(inviteCode: code)
+                                case .templates:
+                                    TemplatesView()
+                                }
+                            }
                     }
                 case .friends:
                     NavigationStack(path: $bindableRouter.friendsPath) {
-                        FriendsPlaceholderView()
+                        FriendsView()
+                            .navigationDestination(for: FriendsRoute.self) { route in
+                                switch route {
+                                case .addByInvite(let code):
+                                    AddFriendByInviteCodeView(inviteCode: code)
+                                }
+                            }
                     }
                 case .settings:
                     NavigationStack(path: $bindableRouter.settingsPath) {
