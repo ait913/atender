@@ -1,0 +1,17 @@
+{
+  "default": {
+    "id": "rule_01",
+    "schoolId": "school_01",
+    "departmentId": "department_01",
+    "userId": null,
+    "excusedStrategy": "COUNT_AS_PRESENT",
+    "tardyStrategy": "HALF_PRESENT",
+    "earlyLeaveStrategy": "COUNT_AS_ABSENT"
+  },
+  "userOverride": null,
+  "effective": {
+    "excusedStrategy": "COUNT_AS_PRESENT",
+    "tardyStrategy": "HALF_PRESENT",
+    "earlyLeaveStrategy": "COUNT_AS_ABSENT"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "id": "template_01",
+  "authorUserId": "user_01",
+  "schoolId": "school_01",
+  "departmentId": "department_01",
+  "title": "春学期テンプレート",
+  "description": null,
+  "year": null,
+  "term": "spring",
+  "isPublic": true,
+  "copyCount": 12,
+  "daySlots": [
+    {
+      "periodIndex": 1,
+      "label": "1限",
+      "startMinute": 540,
+      "endMinute": 630,
+      "isBreak": false
+    },
+    {
+      "periodIndex": 2,
+      "label": "2限",
+      "startMinute": 640,
+      "endMinute": 730,
+      "isBreak": false
+    }
+  ],
+  "courses": [
+    {
+      "id": "course_01",
+      "name": "情報デザイン",
+      "teacher": null,
+      "color": "#f97316",
+      "note": null
+    }
+  ],
+  "meetings": [
+    {
+      "id": "meeting_01",
+      "courseId": "course_01",
+      "dayOfWeek": 1,
+      "startPeriodIndex": 1,
+      "periodCount": 1,
+      "room": null
+    }
+  ],
+  "createdAt": "2026-06-01T00:00:00.000Z",
+  "updatedAt": "2026-06-01T00:00:00.000Z"
+}

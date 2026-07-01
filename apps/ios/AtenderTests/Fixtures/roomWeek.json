@@ -1,0 +1,50 @@
+{
+  "weekStart": "2026-06-08",
+  "weekEnd": "2026-06-14",
+  "members": [
+    {
+      "userId": "user_01",
+      "name": "Touri",
+      "handle": "touri",
+      "image": null,
+      "color": "#f97316"
+    }
+  ],
+  "meetings": [
+    {
+      "userId": "user_01",
+      "occurrenceId": "occ_room_01",
+      "courseId": "course_01",
+      "courseName": "情報デザイン",
+      "courseColor": null,
+      "date": "2026-06-08",
+      "startMinute": 540,
+      "endMinute": 630
+    }
+  ],
+  "roomEvents": [
+    {
+      "id": "room_event_01",
+      "seriesId": "series_01",
+      "roomId": "room_01",
+      "authorId": "user_01",
+      "title": "打ち合わせ",
+      "rawTitle": null,
+      "description": null,
+      "start": "2026-06-08T10:00:00.000Z",
+      "end": "2026-06-08T11:00:00.000Z",
+      "isAllDay": false,
+      "color": null,
+      "source": "MANUAL",
+      "visibilityMode": "NORMAL",
+      "isRecurringOccurrence": false,
+      "recurrenceRule": null,
+      "occurrenceDate": "2026-06-08",
+      "overrideId": null,
+      "googleSyncId": null,
+      "googleEventId": null,
+      "googleRecurringEventId": null,
+      "createdAt": "2026-06-01T00:00:00.000Z"
+    }
+  ]
+}

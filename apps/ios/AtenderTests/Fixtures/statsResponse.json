@@ -1,0 +1,38 @@
+{
+  "semesterId": "sem_2026_spring",
+  "requiredAttendanceRate": 80,
+  "courses": [
+    {
+      "courseId": "course_stats_01",
+      "courseName": "情報デザイン",
+      "teacher": "佐藤先生",
+      "generatedOccurrences": 18,
+      "counts": {
+        "present": 12,
+        "absent": 2,
+        "excused": 1,
+        "tardy": 1,
+        "earlyLeave": 0,
+        "cancelled": 1,
+        "suspended": 1,
+        "unrecorded": 1
+      },
+      "effectiveNumerator": 13.5,
+      "effectiveDenominator": 16,
+      "attendanceRate": 0.84375,
+      "separateCounts": {
+        "PRESENT": 12
+      },
+      "toDate": {
+        "effectiveNumerator": 10.5,
+        "effectiveDenominator": 13,
+        "attendanceRate": 0.8076923077
+      },
+      "remainingCount": 7,
+      "allowedAbsences": null,
+      "maxDayPeriods": 2,
+      "allowedAbsenceDays": null,
+      "totalSessions": 99
+    }
+  ]
+}

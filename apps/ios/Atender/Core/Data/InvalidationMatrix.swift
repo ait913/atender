@@ -30,31 +30,31 @@ enum Mutation: Equatable {
 func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
     switch mutation {
     case .markAllPresent, .patchAttendance:
-        return [.stats(), .semesters(), .dayPrefix()]
+        return [QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .deleteAttendance:
-        return [.today(), .stats(), .semesters(), .dayPrefix()]
+        return [QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .bulkAttendance:
-        return [.semesters(), .stats(), .dayPrefix(), .today(), .timetableSuspensions()]
+        return [.semesters(), QueryKey(["stats"]), .dayPrefix(), QueryKey(["today"]), .timetableSuspensions()]
     case .courseSuspension(let courseId):
-        return [.courseSuspensions(courseId), .semesters(), .stats(), .dayPrefix()]
+        return [.courseSuspensions(courseId), .semesters(), QueryKey(["stats"]), .dayPrefix()]
     case .timetableSuspension(let date):
-        return compactKeys([.timetableSuspensions(), .dayPrefix(), .semesters(), .stats(), .today(), date.map { .dayDetail($0) }])
+        return compactKeys([.timetableSuspensions(), .dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"]), date.map { .dayDetail($0) }])
     case .personalEvent(let date):
         return compactKeys([.personalEvents(), .dayPrefix(), date.map { .dayDetail($0) }])
     case .userTimetableCreate:
-        return [.userTimetables(), .today(), .semesters()]
+        return [.userTimetables(), QueryKey(["today"]), .semesters()]
     case .userTimetableEdit:
-        return [.userTimetables(), .today(), .stats(), .semesters(), .rooms()]
+        return [.userTimetables(), QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .rooms()]
     case .userTimetablePublish:
         return [.userTimetables(), .me()]
     case .userTimetableDelete:
-        return [.userTimetables(), .today(), .stats(), .semesters()]
+        return [.userTimetables(), QueryKey(["today"]), QueryKey(["stats"]), .semesters()]
     case .meUpdate:
-        return [.usersSearch(), .semesters(), .stats()]
+        return [.usersSearch(), .semesters(), QueryKey(["stats"])]
     case .semesterCreate, .semesterUpdate:
         return [.semesters()]
     case .semesterDelete:
-        return [.semesters(), .stats(), .dayPrefix(), .today(), .userTimetables()]
+        return [.semesters(), QueryKey(["stats"]), .dayPrefix(), QueryKey(["today"]), .userTimetables()]
     case .roomCreate:
         return [.rooms()]
     case .roomUpdate(let id):

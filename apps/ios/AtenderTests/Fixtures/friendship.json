@@ -1,0 +1,18 @@
+{
+  "id": "friendship_01",
+  "sender": {
+    "id": "user_01",
+    "name": null,
+    "handle": "sender",
+    "image": null
+  },
+  "receiver": {
+    "id": "user_02",
+    "name": "Receiver",
+    "handle": "receiver",
+    "image": null
+  },
+  "status": "PENDING",
+  "createdAt": "2026-06-01T00:00:00.000Z",
+  "acceptedAt": null
+}

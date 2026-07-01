@@ -4,6 +4,10 @@ import XCTest
 // Reviewer 生成: 設計doc §4 (DTO/Enums) + Fixtures/*.json を根拠にデコード検証。
 // 実装コードは未読。型名・フィールドは設計 §4 と Fixtures JSON を正典とする。
 
+private struct EnumDecodingWrapper<Value: Decodable>: Decodable {
+    let x: Value
+}
+
 final class DTODecodingTests: XCTestCase {
 
     // 設計 §2.3: keyDecodingStrategy = .useDefaultKeys (camelCase 直)、dateDecodingStrategy 不使用。
@@ -186,5 +190,247 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertEqual(response.userTimetables.count, 1)
         XCTAssertEqual(response.userTimetables[0].id, "timetable_01")
         XCTAssertEqual(response.userTimetables[0].courses.count, 2)
+    }
+
+    // MARK: - Phase A DTO Decoding Coverage
+
+    func testDecodeCourseStatsAndStatsResponsePhaseAFields() throws {
+        let course = try makeDecoder().decode(CourseStatsDto.self, from: try loadFixture("courseStats"))
+
+        XCTAssertEqual(course.courseId, "course_stats_01")
+        XCTAssertEqual(course.generatedOccurrences, 18)
+        XCTAssertEqual(course.counts.present, 12)
+        XCTAssertEqual(course.counts.suspended, 1)
+        XCTAssertEqual(course.effectiveNumerator, 13.5, accuracy: 0.0001)
+        XCTAssertEqual(course.effectiveDenominator, 16, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(course.attendanceRate), 0.84375, accuracy: 0.0001)
+        XCTAssertEqual(course.separateCounts?["PRESENT"], 12)
+        XCTAssertEqual(course.toDate.effectiveNumerator, 10.5, accuracy: 0.0001)
+        XCTAssertEqual(course.toDate.effectiveDenominator, 13, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(course.toDate.attendanceRate), 0.8076923077, accuracy: 0.0001)
+        XCTAssertEqual(course.remainingCount, 7)
+        XCTAssertNil(course.allowedAbsences)
+        XCTAssertEqual(course.maxDayPeriods, 2)
+        XCTAssertNil(course.allowedAbsenceDays)
+
+        let response = try makeDecoder().decode(StatsResponse.self, from: try loadFixture("statsResponse"))
+        XCTAssertEqual(response.semesterId, "sem_2026_spring")
+        XCTAssertEqual(response.requiredAttendanceRate, 80)
+        XCTAssertEqual(response.courses.count, 1)
+        XCTAssertEqual(response.courses[0].courseId, "course_stats_01")
+    }
+
+    func testDecodeOccurrenceNullsKnownAndUnknownStatus() throws {
+        let nullStatus = try makeDecoder().decode(OccurrenceDto.self, from: Data("""
+        {
+          "id": "occ_null",
+          "meetingId": "meeting_01",
+          "courseId": "course_01",
+          "courseName": "情報デザイン",
+          "teacher": null,
+          "room": null,
+          "color": null,
+          "date": "2026-06-08",
+          "periodIndex": 1,
+          "periodOffset": 0,
+          "startMinute": 540,
+          "endMinute": 630,
+          "status": null
+        }
+        """.utf8))
+        XCTAssertNil(nullStatus.teacher)
+        XCTAssertNil(nullStatus.room)
+        XCTAssertNil(nullStatus.color)
+        XCTAssertNil(nullStatus.status)
+
+        let present = try makeDecoder().decode(OccurrenceDto.self, from: Data("""
+        {
+          "id": "occ_present",
+          "meetingId": "meeting_01",
+          "courseId": "course_01",
+          "courseName": "情報デザイン",
+          "teacher": "佐藤先生",
+          "room": "A-201",
+          "color": "#f97316",
+          "date": "2026-06-08",
+          "periodIndex": 1,
+          "periodOffset": 0,
+          "startMinute": 540,
+          "endMinute": 630,
+          "status": "PRESENT"
+        }
+        """.utf8))
+        XCTAssertEqual(present.status, .present)
+
+        let unknown = try makeDecoder().decode(OccurrenceDto.self, from: Data("""
+        {
+          "id": "occ_unknown",
+          "meetingId": "meeting_01",
+          "courseId": "course_01",
+          "courseName": "情報デザイン",
+          "teacher": null,
+          "room": null,
+          "color": null,
+          "date": "2026-06-08",
+          "periodIndex": 1,
+          "periodOffset": 0,
+          "startMinute": 540,
+          "endMinute": 630,
+          "status": "FOO"
+        }
+        """.utf8))
+        XCTAssertEqual(unknown.status, .unknown)
+    }
+
+    func testDecodeDayDetailEmptyAndPopulated() throws {
+        let empty = try makeDecoder().decode(DayDetailDto.self, from: try loadFixture("dayDetailEmpty"))
+        XCTAssertEqual(empty.date, "2026-06-09")
+        XCTAssertTrue(empty.occurrences.isEmpty)
+        XCTAssertTrue(empty.courseSuspensions.isEmpty)
+        XCTAssertNil(empty.timetableSuspension)
+        XCTAssertTrue(empty.personalEvents.isEmpty)
+
+        let populated = try makeDecoder().decode(DayDetailDto.self, from: try loadFixture("dayDetail"))
+        XCTAssertEqual(populated.date, "2026-06-08")
+        XCTAssertEqual(populated.occurrences.count, 1)
+        XCTAssertEqual(populated.courseSuspensions.count, 1)
+        XCTAssertNotNil(populated.timetableSuspension)
+        XCTAssertEqual(populated.personalEvents.count, 1)
+    }
+
+    func testDecodePersonalEventAllDayNullTimes() throws {
+        let event = try makeDecoder().decode(PersonalEventDto.self, from: try loadFixture("personalEvent"))
+        XCTAssertEqual(event.id, "personal_01")
+        XCTAssertNil(event.semesterId)
+        XCTAssertTrue(event.isAllDay)
+        XCTAssertNil(event.startMinute)
+        XCTAssertNil(event.endMinute)
+    }
+
+    func testDecodeRoomSummaryAndRoomNulls() throws {
+        let summary = try makeDecoder().decode(RoomSummaryDto.self, from: try loadFixture("roomSummary"))
+        XCTAssertEqual(summary.id, "room_01")
+        XCTAssertNil(summary.description)
+        XCTAssertNil(summary.upcomingEvent)
+        XCTAssertEqual(summary.myRole, .owner)
+
+        let room = try makeDecoder().decode(RoomDto.self, from: try loadFixture("room"))
+        XCTAssertEqual(room.id, "room_01")
+        XCTAssertNil(room.description)
+        XCTAssertNil(room.upcomingEvent)
+        XCTAssertEqual(room.inviteCode, "ROOMCODE")
+        XCTAssertNil(room.inviteExpiresAt)
+    }
+
+    func testDecodeRoomWeekIntegerMinutesAsDouble() throws {
+        let week = try makeDecoder().decode(RoomWeekDto.self, from: try loadFixture("roomWeek"))
+        XCTAssertEqual(week.weekStart, "2026-06-08")
+        XCTAssertEqual(week.members.count, 1)
+        XCTAssertEqual(week.meetings.count, 1)
+        XCTAssertEqual(week.meetings[0].startMinute, 540, accuracy: 0.0001)
+        XCTAssertEqual(week.meetings[0].endMinute, 630, accuracy: 0.0001)
+        XCTAssertEqual(week.roomEvents.count, 1)
+        XCTAssertEqual(week.roomEvents[0].source, .manual)
+        XCTAssertEqual(week.roomEvents[0].visibilityMode, .normal)
+    }
+
+    func testDecodeFriendshipStatusesAndUnknownFallback() throws {
+        let friendship = try makeDecoder().decode(FriendshipDto.self, from: try loadFixture("friendship"))
+        XCTAssertEqual(friendship.id, "friendship_01")
+        XCTAssertEqual(friendship.status, .pending)
+        XCTAssertNil(friendship.acceptedAt)
+        XCTAssertNil(friendship.sender.name)
+
+        for (raw, expected) in [
+            ("PENDING", FriendshipStatus.pending),
+            ("ACCEPTED", .accepted),
+            ("DECLINED", .declined),
+            ("BLOCKED", .blocked),
+            ("UNKNOWN_XXX", .unknown),
+        ] {
+            struct Wrapper: Decodable { let x: FriendshipStatus }
+            let decoded = try makeDecoder().decode(Wrapper.self, from: Data(#"{ "x": "\#(raw)" }"#.utf8))
+            XCTAssertEqual(decoded.x, expected)
+        }
+    }
+
+    func testDecodeRepresentativePhaseADtos() throws {
+        let courseSuspension = try makeDecoder().decode(CourseSuspensionDto.self, from: try loadFixture("courseSuspension"))
+        XCTAssertEqual(courseSuspension.id, "course_susp_01")
+        XCTAssertNil(courseSuspension.reason)
+
+        let timetableSuspension = try makeDecoder().decode(TimetableSuspensionDto.self, from: try loadFixture("timetableSuspension"))
+        XCTAssertEqual(timetableSuspension.id, "tt_susp_01")
+        XCTAssertEqual(timetableSuspension.reason, "創立記念日")
+
+        let template = try makeDecoder().decode(TemplateDto.self, from: try loadFixture("template"))
+        XCTAssertEqual(template.id, "template_01")
+        XCTAssertNil(template.description)
+        XCTAssertNil(template.year)
+        XCTAssertEqual(template.daySlots.count, 2)
+        XCTAssertEqual(template.courses.count, 1)
+        XCTAssertEqual(template.meetings.count, 1)
+
+        let school = try makeDecoder().decode(SchoolDto.self, from: try loadFixture("school"))
+        XCTAssertEqual(school.id, "school_01")
+        XCTAssertNil(school.mextCode)
+        XCTAssertEqual(school.kind, .university)
+
+        let department = try makeDecoder().decode(DepartmentDto.self, from: try loadFixture("department"))
+        XCTAssertEqual(department.id, "department_01")
+        XCTAssertNil(department.nameKana)
+
+        let rule = try makeDecoder().decode(AttendanceRuleDto.self, from: try loadFixture("attendanceRule"))
+        XCTAssertEqual(rule.id, "rule_01")
+        XCTAssertNil(rule.userId)
+        XCTAssertEqual(rule.excusedStrategy, .countAsPresent)
+
+        let effective = try makeDecoder().decode(EffectiveRuleResponse.self, from: try loadFixture("effectiveRule"))
+        XCTAssertNil(effective.userOverride)
+        XCTAssertEqual(effective.effective.tardyStrategy, .halfPresent)
+    }
+
+    func testDecodePhaseAEnumsUnknownFallback() throws {
+        func decode<T: Decodable>(_ type: T.Type, raw: String) throws -> T {
+            try makeDecoder().decode(EnumDecodingWrapper<T>.self, from: Data(#"{ "x": "\#(raw)" }"#.utf8)).x
+        }
+
+        XCTAssertEqual(try decode(RoomRole.self, raw: "OWNER"), .owner)
+        XCTAssertEqual(try decode(RoomRole.self, raw: "UNKNOWN_XXX"), .unknown)
+        XCTAssertEqual(try decode(RuleStrategy.self, raw: "COUNT_AS_PRESENT"), .countAsPresent)
+        XCTAssertEqual(try decode(RuleStrategy.self, raw: "UNKNOWN_XXX"), .unknown)
+        XCTAssertEqual(try decode(SchoolKind.self, raw: "UNIVERSITY"), .university)
+        XCTAssertEqual(try decode(SchoolKind.self, raw: "UNKNOWN_XXX"), .unknown)
+        XCTAssertEqual(try decode(VisibilityMode.self, raw: "BUSY_ONLY"), .busyOnly)
+        XCTAssertEqual(try decode(VisibilityMode.self, raw: "UNKNOWN_XXX"), .unknown)
+        XCTAssertEqual(try decode(GoogleSyncStatus.self, raw: "OK"), .ok)
+        XCTAssertEqual(try decode(GoogleSyncStatus.self, raw: "UNKNOWN_XXX"), .unknown)
+        XCTAssertEqual(try decode(IcsImportStatus.self, raw: "PARTIAL_ERROR"), .partialError)
+        XCTAssertEqual(try decode(IcsImportStatus.self, raw: "UNKNOWN_XXX"), .unknown)
+        XCTAssertEqual(try decode(RoomEventSource.self, raw: "ICS_URL"), .icsUrl)
+        XCTAssertEqual(try decode(RoomEventSource.self, raw: "UNKNOWN_XXX"), .unknown)
+    }
+
+    func testDecodeRequiredFieldMissingThrowsAndErrorResponse() throws {
+        XCTAssertThrowsError(try makeDecoder().decode(OccurrenceDto.self, from: Data("""
+        {
+          "meetingId": "meeting_01",
+          "courseId": "course_01",
+          "courseName": "情報デザイン",
+          "teacher": null,
+          "room": null,
+          "color": null,
+          "date": "2026-06-08",
+          "periodIndex": 1,
+          "periodOffset": 0,
+          "startMinute": 540,
+          "endMinute": 630,
+          "status": null
+        }
+        """.utf8)))
+
+        let error = try makeDecoder().decode(ErrorResponse.self, from: try loadFixture("errorResponse"))
+        XCTAssertEqual(error.error.code, "BAD_REQUEST")
+        XCTAssertEqual(error.error.message, "入力内容を確認してください")
     }
 }

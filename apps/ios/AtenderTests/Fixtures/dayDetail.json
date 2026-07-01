@@ -1,0 +1,53 @@
+{
+  "date": "2026-06-08",
+  "occurrences": [
+    {
+      "id": "occ_day_01",
+      "meetingId": "meeting_01",
+      "courseId": "course_01",
+      "courseName": "情報デザイン",
+      "teacher": "佐藤先生",
+      "room": "A-201",
+      "color": "#f97316",
+      "date": "2026-06-08",
+      "periodIndex": 1,
+      "periodOffset": 0,
+      "startMinute": 540,
+      "endMinute": 630,
+      "status": "PRESENT"
+    }
+  ],
+  "courseSuspensions": [
+    {
+      "id": "course_susp_01",
+      "courseId": "course_01",
+      "date": "2026-06-08",
+      "reason": null,
+      "createdAt": "2026-06-01T00:00:00.000Z",
+      "updatedAt": "2026-06-01T00:00:00.000Z"
+    }
+  ],
+  "timetableSuspension": {
+    "id": "tt_susp_01",
+    "userTimetableId": "timetable_01",
+    "date": "2026-06-08",
+    "reason": "創立記念日",
+    "createdAt": "2026-06-01T00:00:00.000Z",
+    "updatedAt": "2026-06-01T00:00:00.000Z"
+  },
+  "personalEvents": [
+    {
+      "id": "personal_01",
+      "semesterId": null,
+      "date": "2026-06-08",
+      "title": "課題締切",
+      "isAllDay": true,
+      "startMinute": null,
+      "endMinute": null,
+      "color": "#34d399",
+      "note": null,
+      "createdAt": "2026-06-01T00:00:00.000Z",
+      "updatedAt": "2026-06-01T00:00:00.000Z"
+    }
+  ]
+}
