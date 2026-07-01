@@ -1,3 +1,4 @@
-ATENDER_API_SCHEME = https:
+// scheme/host は別キーで持つ。`//` は xcconfig コメントなので BASE_URL を組まない。
+// APIConfig.swift が scheme + host を結合する。
+ATENDER_API_SCHEME = https
 ATENDER_API_HOST = atender-api.appily.run
-ATENDER_API_BASE_URL = $(ATENDER_API_SCHEME)//$(ATENDER_API_HOST)

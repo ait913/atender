@@ -30,7 +30,10 @@ targets:
     info:
       path: Atender/Info.plist
       properties:
-        ATENDER_API_BASE_URL: $(ATENDER_API_BASE_URL)
+        ATENDER_API_SCHEME: $(ATENDER_API_SCHEME)
+        ATENDER_API_HOST: $(ATENDER_API_HOST)
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         CFBundleURLTypes:
           - CFBundleURLName: net.appily.atender.auth
             CFBundleURLSchemes:
