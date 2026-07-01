@@ -3,10 +3,20 @@
   "semesterName": "2026 前期",
   "startDate": "2026-04-01",
   "endDate": "2026-07-31",
+  "today": "2026-06-04",
+  "requiredAttendanceRate": 80,
   "overall": {
     "effectiveNumerator": 18,
     "effectiveDenominator": 20,
-    "attendanceRate": 0.9
+    "attendanceRate": 0.9,
+    "toDate": {
+      "effectiveNumerator": 17,
+      "effectiveDenominator": 19,
+      "attendanceRate": 0.8947368421
+    },
+    "unrecordedCount": 1,
+    "remainingCount": 10,
+    "allowedAbsences": 4
   },
   "days": [
     { "date": "2026-06-01", "status": "ALL_PRESENT", "occurrenceCount": 2 },
@@ -20,7 +30,6 @@
       "courseId": "course_01",
       "courseName": "情報デザイン",
       "teacher": "佐藤先生",
-      "totalSessions": 15,
       "generatedOccurrences": 10,
       "counts": {
         "present": 9,
@@ -37,13 +46,21 @@
       "attendanceRate": 0.95,
       "separateCounts": {
         "TARDY": 1
-      }
+      },
+      "toDate": {
+        "effectiveNumerator": 9.5,
+        "effectiveDenominator": 10,
+        "attendanceRate": 0.95
+      },
+      "remainingCount": 5,
+      "allowedAbsences": 2,
+      "maxDayPeriods": 1,
+      "allowedAbsenceDays": 2
     },
     {
       "courseId": "course_02",
       "courseName": "英語表現",
       "teacher": null,
-      "totalSessions": 15,
       "generatedOccurrences": 10,
       "counts": {
         "present": 8,
@@ -57,7 +74,16 @@
       },
       "effectiveNumerator": 8,
       "effectiveDenominator": 9,
-      "attendanceRate": 0.8888888889
+      "attendanceRate": 0.8888888889,
+      "toDate": {
+        "effectiveNumerator": 0,
+        "effectiveDenominator": 0,
+        "attendanceRate": null
+      },
+      "remainingCount": 0,
+      "allowedAbsences": null,
+      "maxDayPeriods": 0,
+      "allowedAbsenceDays": null
     }
   ]
 }

@@ -53,7 +53,7 @@ final class AuthStoreTests: XCTestCase {
     func testBootstrapTokenValidSignsIn() async throws {
         let keychain = freshKeychain()
         try keychain.save(token: "valid_tok")
-        let meBody = #"{"user":{"id":"u1","email":"a@b.c","name":"A","image":null,"handle":"a","inviteCode":"X","defaultSemesterId":"s1","schoolId":"sc1","departmentId":"d1"},"setupStatus":{"hasSchool":true,"hasDepartment":true,"hasSemester":true,"hasUserTimetable":true,"isComplete":true}}"#.data(using: .utf8)!
+        let meBody = #"{"user":{"id":"u1","email":"a@b.c","name":"A","image":null,"handle":"a","inviteCode":"X","defaultSemesterId":"s1","schoolId":"sc1","departmentId":"d1","requiredAttendanceRate":80},"setupStatus":{"hasSchool":true,"hasDepartment":true,"hasSemester":true,"hasUserTimetable":true,"isComplete":true}}"#.data(using: .utf8)!
         let store = AuthStore(keychain: keychain, session: stubSession(status: 200, body: meBody))
 
         await store.bootstrap()

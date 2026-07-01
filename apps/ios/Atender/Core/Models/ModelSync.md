@@ -1,6 +1,6 @@
 # Model Sync
 
-Last synced: 2026-06-08
+Last synced: 2026-06-26
 
 | Swift type | Source schema |
 |---|---|
@@ -8,9 +8,11 @@ Last synced: 2026-06-08
 | `SetupStatus` | `packages/shared/src/schemas/me.ts` `MeResponseDto.setupStatus` |
 | `SemesterDto` | `packages/shared/src/schemas/semester.ts` `SemesterDto` |
 | `SemesterOverviewDto` | `packages/shared/src/schemas/semester.ts` `SemesterOverviewDto` |
+| `AttendanceRateToDate` | `packages/shared/src/schemas/stats.ts` `CourseStatsDto.toDate`; `packages/shared/src/schemas/semester.ts` `SemesterOverviewDto.overall.toDate` |
 | `AttendanceDaySummary` | `packages/shared/src/schemas/semester.ts` `AttendanceDaySummary` |
 | `CourseStatsDto` | `packages/shared/src/schemas/stats.ts` `CourseStatsDto` |
 | `UserTimetableDto` | `packages/shared/src/schemas/userTimetable.ts` `UserTimetableDto` |
+| `UserTimetableListResponse` | `apps/api/src/routes/userTimetables.ts` `GET /api/user-timetables` |
 | `DaySlotDto` | `packages/shared/src/schemas/template.ts` `DaySlotDto` |
 | `CourseDto` | `packages/shared/src/schemas/template.ts` `CourseDto` |
 | `MeetingDto` | `packages/shared/src/schemas/template.ts` `MeetingDto` |

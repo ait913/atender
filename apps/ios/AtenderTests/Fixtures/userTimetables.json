@@ -1,0 +1,28 @@
+{
+  "userTimetables": [
+    {
+      "id": "timetable_01",
+      "userId": "user_01",
+      "semesterId": "sem_2026_spring",
+      "title": "2026 前期",
+      "sourceTemplateId": null,
+      "daysOfWeek": [1, 2, 3, 4, 5],
+      "daySlots": [
+        { "periodIndex": 1, "label": "1限", "startMinute": 540, "endMinute": 630, "isBreak": false },
+        { "periodIndex": 2, "label": "2限", "startMinute": 640, "endMinute": 730, "isBreak": false },
+        { "periodIndex": 3, "label": "昼", "startMinute": 730, "endMinute": 780, "isBreak": true },
+        { "periodIndex": 4, "label": "3限", "startMinute": 780, "endMinute": 870, "isBreak": false }
+      ],
+      "courses": [
+        { "id": "course_01", "name": "情報デザイン", "teacher": "佐藤先生", "color": "#F97316", "note": null },
+        { "id": "course_02", "name": "英語表現", "teacher": null, "color": "#5AA9FF", "note": "小テストあり" }
+      ],
+      "meetings": [
+        { "id": "meeting_01", "courseId": "course_01", "dayOfWeek": 1, "startPeriodIndex": 1, "periodCount": 1, "room": "A-201" },
+        { "id": "meeting_02", "courseId": "course_02", "dayOfWeek": 3, "startPeriodIndex": 2, "periodCount": 2, "room": "B-102" }
+      ],
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-06-08T00:00:00.000Z"
+    }
+  ]
+}

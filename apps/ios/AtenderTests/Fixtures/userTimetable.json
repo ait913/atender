@@ -12,8 +12,8 @@
     { "periodIndex": 4, "label": "3限", "startMinute": 780, "endMinute": 870, "isBreak": false }
   ],
   "courses": [
-    { "id": "course_01", "name": "情報デザイン", "teacher": "佐藤先生", "color": "#F97316", "totalSessions": 15, "note": null },
-    { "id": "course_02", "name": "英語表現", "teacher": null, "color": "#5AA9FF", "totalSessions": 15, "note": "小テストあり" }
+    { "id": "course_01", "name": "情報デザイン", "teacher": "佐藤先生", "color": "#F97316", "note": null },
+    { "id": "course_02", "name": "英語表現", "teacher": null, "color": "#5AA9FF", "note": "小テストあり" }
   ],
   "meetings": [
     { "id": "meeting_01", "courseId": "course_01", "dayOfWeek": 1, "startPeriodIndex": 1, "periodCount": 1, "room": "A-201" },

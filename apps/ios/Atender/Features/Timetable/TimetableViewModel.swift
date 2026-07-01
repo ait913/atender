@@ -21,7 +21,11 @@ final class TimetableViewModel {
         defer { isLoading = false }
 
         do {
-            let timetables = try await apiClient.send(APIEndpoint(path: "/api/user-timetables", method: .get), as: [UserTimetableDto].self)
+            let response = try await apiClient.send(
+                APIEndpoint(path: "/api/user-timetables", method: .get),
+                as: UserTimetableListResponse.self
+            )
+            let timetables = response.userTimetables
             if let defaultSemesterId, let match = timetables.first(where: { $0.semesterId == defaultSemesterId }) {
                 timetable = match
             } else {

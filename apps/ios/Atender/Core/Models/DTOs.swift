@@ -15,6 +15,7 @@ struct MeResponse: Codable, Equatable {
         let defaultSemesterId: String?
         let schoolId: String?
         let departmentId: String?
+        let requiredAttendanceRate: Int
     }
 }
 
@@ -41,6 +42,8 @@ struct SemesterOverviewDto: Codable, Equatable {
     let semesterName: String
     let startDate: String
     let endDate: String
+    let today: String
+    let requiredAttendanceRate: Int
     let overall: Overall
     let days: [AttendanceDaySummary]
     let courses: [CourseStatsDto]
@@ -49,7 +52,18 @@ struct SemesterOverviewDto: Codable, Equatable {
         let effectiveNumerator: Double
         let effectiveDenominator: Double
         let attendanceRate: Double?
+        let toDate: AttendanceRateToDate
+        let unrecordedCount: Int
+        let remainingCount: Int
+        let allowedAbsences: Int?
     }
+}
+
+// mirror of toDate object in stats.ts CourseStatsDto / semester.ts SemesterOverviewDto.overall
+struct AttendanceRateToDate: Codable, Equatable {
+    let effectiveNumerator: Double
+    let effectiveDenominator: Double
+    let attendanceRate: Double?
 }
 
 // mirror of packages/shared/src/schemas/semester.ts AttendanceDaySummary
@@ -66,13 +80,17 @@ struct CourseStatsDto: Codable, Equatable, Identifiable {
     let courseId: String
     let courseName: String
     let teacher: String?
-    let totalSessions: Int
     let generatedOccurrences: Int
     let counts: Counts
     let effectiveNumerator: Double
     let effectiveDenominator: Double
     let attendanceRate: Double?
     let separateCounts: [String: Int]?
+    let toDate: AttendanceRateToDate
+    let remainingCount: Int
+    let allowedAbsences: Int?
+    let maxDayPeriods: Int
+    let allowedAbsenceDays: Int?
 
     struct Counts: Codable, Equatable {
         let present: Int
@@ -101,6 +119,11 @@ struct UserTimetableDto: Codable, Equatable, Identifiable {
     let updatedAt: String
 }
 
+// mirror of GET /api/user-timetables response envelope
+struct UserTimetableListResponse: Codable, Equatable {
+    let userTimetables: [UserTimetableDto]
+}
+
 // mirror of packages/shared/src/schemas/template.ts DaySlotDto
 struct DaySlotDto: Codable, Equatable, Identifiable {
     var id: Int { periodIndex }
@@ -117,7 +140,6 @@ struct CourseDto: Codable, Equatable, Identifiable {
     let name: String
     let teacher: String?
     let color: String?
-    let totalSessions: Int
     let note: String?
 }
 

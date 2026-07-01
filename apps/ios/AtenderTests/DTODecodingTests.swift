@@ -96,9 +96,17 @@ final class DTODecodingTests: XCTestCase {
         let dto = try makeDecoder().decode(SemesterOverviewDto.self, from: data)
 
         XCTAssertEqual(dto.semesterId, "sem_2026_spring")
+        XCTAssertEqual(dto.today, "2026-06-04")
+        XCTAssertEqual(dto.requiredAttendanceRate, 80)
         XCTAssertEqual(try XCTUnwrap(dto.overall.attendanceRate), 0.9, accuracy: 0.0001)
         XCTAssertEqual(dto.overall.effectiveNumerator, 18, accuracy: 0.0001)
         XCTAssertEqual(dto.overall.effectiveDenominator, 20, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(dto.overall.toDate.attendanceRate), 0.8947368421, accuracy: 0.0001)
+        XCTAssertEqual(dto.overall.toDate.effectiveNumerator, 17, accuracy: 0.0001)
+        XCTAssertEqual(dto.overall.toDate.effectiveDenominator, 19, accuracy: 0.0001)
+        XCTAssertEqual(dto.overall.unrecordedCount, 1)
+        XCTAssertEqual(dto.overall.remainingCount, 10)
+        XCTAssertEqual(try XCTUnwrap(dto.overall.allowedAbsences), 4)
 
         XCTAssertEqual(dto.days.count, 5)
         // days[].status は enum (AttendanceDayStatus) にミラーされている。rawValue で検証。
@@ -111,9 +119,23 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(c1.attendanceRate), 0.95, accuracy: 0.0001)
         XCTAssertEqual(c1.counts.present, 9)
         XCTAssertEqual(c1.counts.tardy, 1)
+        XCTAssertEqual(try XCTUnwrap(c1.toDate.attendanceRate), 0.95, accuracy: 0.0001)
+        XCTAssertEqual(c1.toDate.effectiveNumerator, 9.5, accuracy: 0.0001)
+        XCTAssertEqual(c1.toDate.effectiveDenominator, 10, accuracy: 0.0001)
+        XCTAssertEqual(c1.remainingCount, 5)
+        XCTAssertEqual(try XCTUnwrap(c1.allowedAbsences), 2)
+        XCTAssertEqual(c1.maxDayPeriods, 1)
+        XCTAssertEqual(try XCTUnwrap(c1.allowedAbsenceDays), 2)
 
         // teacher null の course
         XCTAssertNil(dto.courses[1].teacher)
+        XCTAssertNil(dto.courses[1].allowedAbsences)
+        XCTAssertNil(dto.courses[1].allowedAbsenceDays)
+        XCTAssertNil(dto.courses[1].toDate.attendanceRate)
+        XCTAssertEqual(dto.courses[1].maxDayPeriods, 0)
+        XCTAssertEqual(dto.courses[1].remainingCount, 0)
+
+        // totalSessions キー無しでも SemesterOverviewDto の decode が成功することを担保する。
     }
 
     // MARK: - MeResponse / SetupStatus
@@ -127,6 +149,7 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertEqual(res.user.name, "Touri")
         XCTAssertNil(res.user.image, "image: null は Optional nil")
         XCTAssertEqual(res.user.defaultSemesterId, "sem_2026_spring")
+        XCTAssertEqual(res.user.requiredAttendanceRate, 80)
 
         // §4.4: SetupStatus 5 フラグ
         XCTAssertTrue(res.setupStatus.hasSchool)
@@ -154,5 +177,14 @@ final class DTODecodingTests: XCTestCase {
         let decoded = try makeDecoder().decode(Wrapper.self, from: json)
         XCTAssertEqual(decoded.status, .unknown,
                        "API 側 enum 追加で即クラッシュしないよう未知値は .unknown に畳む (§4.2)")
+    }
+
+    func testDecodeUserTimetableList() throws {
+        let data = try loadFixture("userTimetables")
+        let response = try makeDecoder().decode(UserTimetableListResponse.self, from: data)
+
+        XCTAssertEqual(response.userTimetables.count, 1)
+        XCTAssertEqual(response.userTimetables[0].id, "timetable_01")
+        XCTAssertEqual(response.userTimetables[0].courses.count, 2)
     }
 }

@@ -8,7 +8,8 @@
     "inviteCode": "ATD123",
     "defaultSemesterId": "sem_2026_spring",
     "schoolId": "school_01",
-    "departmentId": "department_01"
+    "departmentId": "department_01",
+    "requiredAttendanceRate": 80
   },
   "setupStatus": {
     "hasSchool": true,

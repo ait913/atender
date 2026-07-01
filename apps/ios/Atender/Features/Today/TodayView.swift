@@ -59,7 +59,7 @@ struct TodayView: View {
     @ViewBuilder
     private func content(_ model: TodayViewModel) -> some View {
         if model.setupRequired {
-            ContentUnavailableView("初期設定が必要です", systemImage: "person.crop.badge.exclamationmark", description: Text("Web で初期設定を完了してから再読み込みしてください。"))
+            ContentUnavailableView("初期設定が必要です", systemImage: "person.crop.badge.exclamationmark", description: Text("学校・学科・学期・時間割の初期設定は現在 Web (atender.appily.run) で行います。設定後にこの画面を再読み込みしてください。"))
                 .background(Color.bgBase)
         } else if model.isLoading && model.occurrences.isEmpty {
             ProgressView()

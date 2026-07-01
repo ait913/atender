@@ -32,7 +32,9 @@
 		63ACA7CFBFFAA79FF6344A1B /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FCEC5BF722DA44ED1DEB05E /* RootView.swift */; };
 		6C3471B96A75ADD281B4A404 /* APIConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6ED9EED39711A335BD04CE7A /* APIConfig.swift */; };
 		6FE20590EA8244E0360B3D3D /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658450DB41372B75A43E0294 /* KeychainStore.swift */; };
+		7EF23456F2A571F4ADD4CD0A /* SemesterOverviewDisplayLogicTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEEACC6FAE82768F83CAAC2 /* SemesterOverviewDisplayLogicTests.swift */; };
 		7F8D5E39D0F09321D05FE16A /* me.json in Resources */ = {isa = PBXBuildFile; fileRef = F57B32791B937CB743326B52 /* me.json */; };
+		80EB26C902FDE4F05D236252 /* userTimetables.json in Resources */ = {isa = PBXBuildFile; fileRef = C6ABA9B777954F9E44DC2327 /* userTimetables.json */; };
 		86FD7AA12BC2DC79CD71CFC4 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55546AF3CBFD1EDF9F470BD5 /* TodayView.swift */; };
 		8C14CAA2B35F52E8CF5A4670 /* KeychainStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836299631DD36EA914ACC5EC /* KeychainStoreTests.swift */; };
 		9378D7EDB212155A7DDE2102 /* AtenderButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25ED159BA849DB2D616341A4 /* AtenderButton.swift */; };
@@ -94,6 +96,7 @@
 		82F38E1305B6594E6D75846C /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
 		836299631DD36EA914ACC5EC /* KeychainStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStoreTests.swift; sourceTree = "<group>"; };
 		8770F92C47DD0EC0F3444D5D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		8AEEACC6FAE82768F83CAAC2 /* SemesterOverviewDisplayLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemesterOverviewDisplayLogicTests.swift; sourceTree = "<group>"; };
 		8B67165AFB4B7A3A030C57E0 /* APIEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIEndpoint.swift; sourceTree = "<group>"; };
 		96354A41914EF086814257BE /* Error+UserFacing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Error+UserFacing.swift"; sourceTree = "<group>"; };
 		A2ABC351608AF95255690A65 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 		BD092C02EA4CD0CED22FBB19 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
 		C18F2B99101B809D3C9A203E /* SemesterOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemesterOverviewView.swift; sourceTree = "<group>"; };
 		C51A60D13CCFB9AD0F2CAD82 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		C6ABA9B777954F9E44DC2327 /* userTimetables.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = userTimetables.json; sourceTree = "<group>"; };
 		C887A363C5C2499A01F51693 /* MeetingBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingBlock.swift; sourceTree = "<group>"; };
 		CAA03C4DE7F2E78085D51CE6 /* semesterOverview.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = semesterOverview.json; sourceTree = "<group>"; };
 		D1A3ABAEE5BF9ECC900F4899 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
@@ -187,6 +191,7 @@
 				CAA03C4DE7F2E78085D51CE6 /* semesterOverview.json */,
 				E2A75B3BA5E52CFF54AF17CB /* today.json */,
 				21E93B41B6FC741D73169F66 /* userTimetable.json */,
+				C6ABA9B777954F9E44DC2327 /* userTimetables.json */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -208,6 +213,7 @@
 				AA381FEAC92EC17871634239 /* AuthStoreTests.swift */,
 				EF0EC02F88F72059608DDE10 /* DTODecodingTests.swift */,
 				836299631DD36EA914ACC5EC /* KeychainStoreTests.swift */,
+				8AEEACC6FAE82768F83CAAC2 /* SemesterOverviewDisplayLogicTests.swift */,
 				D1A3ABAEE5BF9ECC900F4899 /* SmokeTests.swift */,
 				4459ED8CAC26B8E0F1B2135D /* TodayViewModelTests.swift */,
 				510C6A8FE31785E91EDEFE42 /* Fixtures */,
@@ -398,6 +404,7 @@
 				03E96037AD35FD7762FC7802 /* semesterOverview.json in Resources */,
 				D0470931136B5931B5378DC0 /* today.json in Resources */,
 				C6DCB01221DD7D337D4CD418 /* userTimetable.json in Resources */,
+				80EB26C902FDE4F05D236252 /* userTimetables.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -421,6 +428,7 @@
 				1352075BCDF0900698F46803 /* AuthStoreTests.swift in Sources */,
 				AC98C4C558FC0F147E83DC84 /* DTODecodingTests.swift in Sources */,
 				8C14CAA2B35F52E8CF5A4670 /* KeychainStoreTests.swift in Sources */,
+				7EF23456F2A571F4ADD4CD0A /* SemesterOverviewDisplayLogicTests.swift in Sources */,
 				A2692C86E6F4DD03DAE8694A /* SmokeTests.swift in Sources */,
 				1D6A18D466B5E636AFE24FEA /* TodayViewModelTests.swift in Sources */,
 			);

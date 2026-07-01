@@ -47,6 +47,12 @@ extension Color {
         case .noClass, .unknown: return .bgMuted
         }
     }
+
+    // mirror of apps/web/src/lib/attendanceRateColor.ts rateColor
+    static func forRate(pct: Int?, required: Int) -> Color {
+        guard let pct else { return .textTertiary }
+        return pct >= required ? .accent : .statusAbsent
+    }
 }
 
 private extension UIColor {
