@@ -43,6 +43,7 @@ struct CourseEditModal: View {
                     Text(error).font(.atenderSm).foregroundStyle(Color.statusAbsent)
                 }
             }
+            .onAppear { initialize() }
             .onChange(of: isPresented) { _, open in if open { initialize() } }
         } footer: {
             HStack(spacing: Space.s3) {

@@ -68,6 +68,7 @@ struct MeetingEditModal: View {
                             .foregroundStyle(Color.statusAbsent)
                     }
                 }
+                .onAppear { initialize() }
                 .onChange(of: isPresented) { _, open in
                     if open { initialize() }
                 }

@@ -99,6 +99,7 @@ struct PersonalCalendar: View {
     @Environment(AppEnvironment.self) private var environment
     let semesterId: String?
     @State private var viewModel: PersonalCalendarViewModel?
+    @State private var loadRevision = 0
 
     var body: some View {
         Group {
@@ -106,11 +107,16 @@ struct PersonalCalendar: View {
                 Panel { Text("学期を選択してください。").foregroundStyle(Color.textSecondary) }
             } else if let model = viewModel {
                 content(model)
+            } else {
+                Color.clear
+                    .frame(height: 0)
+                    .accessibilityHidden(true)
             }
         }
         .task(id: semesterId) {
             if viewModel == nil { viewModel = PersonalCalendarViewModel(environment: environment) }
             await viewModel?.load(semesterId: semesterId)
+            loadRevision += 1
         }
     }
 

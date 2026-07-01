@@ -7,7 +7,7 @@ final class ScreenshotFlow: XCTestCase {
 
     override func setUp() {
         continueAfterFailure = true
-        app.launchEnvironment["ATENDER_DEBUG_BEARER_TOKEN"] = "demo-bearer-token-ios-resync-0001"
+        app.launchEnvironment["ATENDER_UI_TEST_BEARER_TOKEN"] = "demo-bearer-token-ios-resync-0001"
     }
 
     private func snap(_ name: String) {

@@ -109,6 +109,7 @@ struct TimetableSettingsSheet: View {
                         .foregroundStyle(message.contains("できません") || message.contains("してください") ? Color.statusAbsent : Color.textSecondary)
                 }
             }
+            .onAppear { initialize() }
             .onChange(of: isPresented) { _, open in if open { initialize() } }
         } footer: {
             HStack(spacing: Space.s3) {

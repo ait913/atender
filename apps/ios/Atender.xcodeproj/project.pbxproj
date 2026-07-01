@@ -21,6 +21,7 @@
 		115BC2E8919117232C10AC0D /* Radius.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06CF492600752A538A3ACBF9 /* Radius.swift */; };
 		1170BC5806249C189360EE02 /* AppleSignIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D662CF03BD81A2E6F1A5C71 /* AppleSignIn.swift */; };
 		1352075BCDF0900698F46803 /* AuthStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA381FEAC92EC17871634239 /* AuthStoreTests.swift */; };
+		14C1E8A3B751C49F6A960089 /* ScreenshotFlow.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71CC09BB40AC92C94BF9C77 /* ScreenshotFlow.swift */; };
 		191F2E8E6F8A1ADF1939AD7B /* SemesterOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C18F2B99101B809D3C9A203E /* SemesterOverviewView.swift */; };
 		19321EF888648C2B5335CDDB /* QueryClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4561C9D201C4128FED2798B5 /* QueryClient.swift */; };
 		1D6A18D466B5E636AFE24FEA /* TodayViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4459ED8CAC26B8E0F1B2135D /* TodayViewModelTests.swift */; };
@@ -121,6 +122,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		043777DDEC78DFE5CAAAD243 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F73488109D3F7288A07C1286 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6ECD16E52BA6B8D5336086A6;
+			remoteInfo = Atender;
+		};
 		1CB116D67B1571814EE1E9F1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = F73488109D3F7288A07C1286 /* Project object */;
@@ -169,6 +177,7 @@
 		54D777E1863FD03334E4B157 /* CourseEditModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CourseEditModal.swift; sourceTree = "<group>"; };
 		55546AF3CBFD1EDF9F470BD5 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		567745C3E0772E461B7A5C70 /* PeriodGroupingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeriodGroupingTests.swift; sourceTree = "<group>"; };
+		58122B4B8EC7C1B07166DB3E /* AtenderUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AtenderUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		58BD6B6B4E592A456E19B60E /* InvalidationMatrix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvalidationMatrix.swift; sourceTree = "<group>"; };
 		5D1B0E017AEF3EF9ED8A3E95 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
 		5F3E27E92977B661270F973D /* SelfTimetableViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTimetableViewModelTests.swift; sourceTree = "<group>"; };
@@ -235,6 +244,7 @@
 		DECB716EFB9F86E4D7BF8E03 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		E0E5C54CB4060E325F7882A2 /* AttendanceOptimistic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttendanceOptimistic.swift; sourceTree = "<group>"; };
 		E2A75B3BA5E52CFF54AF17CB /* today.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = today.json; sourceTree = "<group>"; };
+		E71CC09BB40AC92C94BF9C77 /* ScreenshotFlow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotFlow.swift; sourceTree = "<group>"; };
 		EA9996CC30CE6290D2BE2C24 /* PersonalCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalCalendar.swift; sourceTree = "<group>"; };
 		EAC6C9AA67EF9F61229C0954 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
 		EBEB852E957E4C97E97E9A5A /* Chip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Chip.swift; sourceTree = "<group>"; };
@@ -484,6 +494,7 @@
 			children = (
 				63D9A2BA5DE9E15325F04E21 /* Atender */,
 				5CBC80EF0D9B4443ED577743 /* AtenderTests */,
+				F923FBB17A348034A5010D4F /* AtenderUITests */,
 				20CDEA81EB3A900D3A8FB475 /* Config */,
 				8E65962C86665D2A7E0C7B22 /* Products */,
 			);
@@ -494,6 +505,7 @@
 			children = (
 				D7ABD35D19F232BAC7E0281B /* Atender.app */,
 				7E7434FA2C7C3262522C0019 /* AtenderTests.xctest */,
+				58122B4B8EC7C1B07166DB3E /* AtenderUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -564,6 +576,14 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		F923FBB17A348034A5010D4F /* AtenderUITests */ = {
+			isa = PBXGroup;
+			children = (
+				E71CC09BB40AC92C94BF9C77 /* ScreenshotFlow.swift */,
+			);
+			path = AtenderUITests;
+			sourceTree = "<group>";
+		};
 		FBB39E9834CD14E065D67BCC /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -594,6 +614,24 @@
 			productReference = 7E7434FA2C7C3262522C0019 /* AtenderTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		56F42EB66A2F92E5F9EB3CFD /* AtenderUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 155DCDD14C469E4F03722DAC /* Build configuration list for PBXNativeTarget "AtenderUITests" */;
+			buildPhases = (
+				173BBB8364F3EE9FDE0E4176 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A49A2E6BE6E07C6D89E9A621 /* PBXTargetDependency */,
+			);
+			name = AtenderUITests;
+			packageProductDependencies = (
+			);
+			productName = AtenderUITests;
+			productReference = 58122B4B8EC7C1B07166DB3E /* AtenderUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		6ECD16E52BA6B8D5336086A6 /* Atender */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2BA78C99844447DEC8F00157 /* Build configuration list for PBXNativeTarget "Atender" */;
@@ -621,6 +659,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					56F42EB66A2F92E5F9EB3CFD = {
+						TestTargetID = 6ECD16E52BA6B8D5336086A6;
+					};
 				};
 			};
 			buildConfigurationList = 6D20DDA90679B17E0B92A889 /* Build configuration list for PBXProject "Atender" */;
@@ -639,6 +680,7 @@
 			targets = (
 				6ECD16E52BA6B8D5336086A6 /* Atender */,
 				34F33AAE366A098326F57DC0 /* AtenderTests */,
+				56F42EB66A2F92E5F9EB3CFD /* AtenderUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -719,6 +761,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		173BBB8364F3EE9FDE0E4176 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				14C1E8A3B751C49F6A960089 /* ScreenshotFlow.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		2C0FA117CA99B4FA9156AD10 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -793,6 +843,11 @@
 			isa = PBXTargetDependency;
 			target = 6ECD16E52BA6B8D5336086A6 /* Atender */;
 			targetProxy = 1CB116D67B1571814EE1E9F1 /* PBXContainerItemProxy */;
+		};
+		A49A2E6BE6E07C6D89E9A621 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6ECD16E52BA6B8D5336086A6 /* Atender */;
+			targetProxy = 043777DDEC78DFE5CAAAD243 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -977,6 +1032,40 @@
 			};
 			name = Debug;
 		};
+		CA4262412A2E900E9D2FB8A7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = net.appily.AtenderUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Atender;
+			};
+			name = Debug;
+		};
+		E6A9E727936FDC188ED5F5B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = net.appily.AtenderUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = Atender;
+			};
+			name = Release;
+		};
 		EED6B0245D28C45CAF07EF83 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -997,6 +1086,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		155DCDD14C469E4F03722DAC /* Build configuration list for PBXNativeTarget "AtenderUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA4262412A2E900E9D2FB8A7 /* Debug */,
+				E6A9E727936FDC188ED5F5B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		2BA78C99844447DEC8F00157 /* Build configuration list for PBXNativeTarget "Atender" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
