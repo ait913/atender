@@ -49,23 +49,30 @@ struct SelfTodayCTA: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var viewModel: SelfTodayViewModel?
     @State private var expanded = false
+    @State private var loadRevision = 0
 
     var body: some View {
         Group {
-            if let viewModel, !viewModel.isLoading, !viewModel.occurrences.isEmpty {
+            let occurrences = viewModel?.occurrences ?? []
+            if let viewModel, !viewModel.isLoading, !occurrences.isEmpty {
                 MainAttendanceCTA(
-                    occurrences: viewModel.occurrences,
+                    occurrences: occurrences,
                     expanded: expanded,
                     onToggle: { expanded.toggle() },
                     onMarkAll: { status in Task { await viewModel.markAll(status) } },
                     onChangeStatus: { id, status in Task { await viewModel.patch(id, status: status) } },
                     pending: viewModel.pending
                 )
+            } else {
+                Color.clear
+                    .frame(height: 0)
+                    .accessibilityHidden(true)
             }
         }
         .task {
             if viewModel == nil { viewModel = SelfTodayViewModel(environment: environment) }
             await viewModel?.load()
+            loadRevision += 1
         }
     }
 }
