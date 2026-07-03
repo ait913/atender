@@ -67,7 +67,7 @@ enum RoomCalendarLogic {
 
     static func memberName(name: String?, handle: String?) -> String {
         if let name, !name.isEmpty { return name }
-        if let handle, !handle.isEmpty { return "@\(handle)" }
+        if let handle, !handle.isEmpty { return handle }
         return "No name"
     }
 }
