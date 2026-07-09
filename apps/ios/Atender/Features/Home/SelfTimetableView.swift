@@ -94,7 +94,7 @@ final class SelfTimetableViewModel {
                 dayOfWeek: DayConvention.jsToDisplay(meeting.dayOfWeek),
                 startPeriodIndex: meeting.startPeriodIndex,
                 periodCount: meeting.periodCount,
-                color: course?.color ?? "#F97316",
+                color: course?.color ?? "#1E96E6",
                 title: course?.name ?? "授業",
                 subtitle: meeting.room,
                 mergeKey: meeting.courseId

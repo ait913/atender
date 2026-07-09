@@ -4,7 +4,7 @@ import { useCreatePersonalEvent, useUpdatePersonalEvent } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { Button, Field, Input, Textarea } from "@/components/ui";
 
-const colors = ["#10b981", "#60a5fa", "#f472b6", "#8b5cf6", "#f59e0b"];
+const colors = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"];
 
 type Props = {
   open: boolean;

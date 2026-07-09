@@ -11,7 +11,7 @@ export function Button({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size; children?: ReactNode }) {
   const variants: Record<Variant, string> = {
-    primary: "bg-accent-500 text-fg-on-accent shadow-glow-soft hover:bg-accent-600 hover:shadow-glow active:scale-[0.97]",
+    primary: "bg-accent-500 [background-image:var(--color-accent-gradient)] text-fg-on-accent shadow-glow-soft hover:brightness-105 hover:shadow-glow active:scale-[0.97]",
     secondary: "bg-fg-primary/8 text-fg-primary hover:bg-fg-primary/12 active:scale-[0.97]",
     destructive: "bg-status-absent text-white hover:opacity-90 active:scale-[0.97] focus-visible:outline-status-absent",
     danger: "bg-status-absent text-white hover:opacity-90 active:scale-[0.97] focus-visible:outline-status-absent",

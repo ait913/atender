@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppEnvironment.self) private var environment
-    @AppStorage("themePreference") private var themePreference = "system"
+    @AppStorage("atender.theme") private var themePreference = ThemePreference.light.rawValue
     @State private var isSigningOut = false
 
     var body: some View {
@@ -29,9 +29,9 @@ struct SettingsView: View {
 
             Section("テーマ") {
                 Picker("テーマ", selection: $themePreference) {
-                    Text("System").tag("system")
-                    Text("Dark").tag("dark")
-                    Text("Light").tag("light")
+                    ForEach(ThemePreference.allCases, id: \.rawValue) { pref in
+                        Text(pref.label).tag(pref.rawValue)
+                    }
                 }
                 .pickerStyle(.segmented)
             }

@@ -101,7 +101,7 @@ struct CalendarEvent: Equatable, Identifiable {
 }
 
 enum MemberColor {
-    private static let palette = ["#10b981", "#60a5fa", "#f472b6", "#8b5cf6", "#f59e0b"]
+    private static let palette = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"]
 
     static func memberColor(_ seed: String) -> String {
         guard !seed.isEmpty else { return palette[0] }

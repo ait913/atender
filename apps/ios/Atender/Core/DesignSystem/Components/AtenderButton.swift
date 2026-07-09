@@ -80,7 +80,7 @@ struct AtenderButton: View {
             .padding(.vertical, verticalPadding)
             .padding(.horizontal, horizontalPadding)
             .foregroundStyle(foreground)
-            .background(background)
+            .background { backgroundFill }
             .overlay {
                 if showsBorder {
                     Capsule().stroke(Color.borderDefault, lineWidth: 1)
@@ -129,12 +129,13 @@ struct AtenderButton: View {
         }
     }
 
-    private var background: Color {
+    @ViewBuilder
+    private var backgroundFill: some View {
         switch variant {
-        case .primary: return .accent500
-        case .secondary: return .bgElevated
-        case .destructive, .danger: return .statusAbsent
-        case .ghost: return .clear
+        case .primary: Color.accentGradient   // 軽いグラデ
+        case .secondary: Color.bgElevated
+        case .destructive, .danger: Color.statusAbsent
+        case .ghost: Color.clear
         }
     }
 

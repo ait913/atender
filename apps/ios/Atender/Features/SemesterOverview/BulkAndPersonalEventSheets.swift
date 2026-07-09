@@ -202,7 +202,7 @@ struct PersonalEventEditModalContent: View {
     @State private var note = ""
     @State private var isPending = false
     @State private var errorMessage: String?
-    private let colors = ["#10b981", "#60a5fa", "#f472b6", "#8b5cf6", "#f59e0b"]
+    private let colors = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {

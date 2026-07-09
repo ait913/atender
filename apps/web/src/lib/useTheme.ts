@@ -14,7 +14,7 @@ export function readStored(): Theme {
 
 export function resolveTheme(theme: Theme): "light" | "dark" {
   if (theme === "light" || theme === "dark") return theme;
-  if (typeof window === "undefined" || !window.matchMedia) return "dark";
+  if (typeof window === "undefined" || !window.matchMedia) return "light";
   return window.matchMedia(MQ).matches ? "dark" : "light";
 }
 

@@ -24,29 +24,49 @@ extension Color {
     static let borderEmphasis = dynamic(dark: UIColor.white.withAlphaComponent(0.28), light: UIColor.hex(0x0F172A, 0.30))
     static let borderSettings = dynamic(dark: UIColor.white.withAlphaComponent(0.12), light: UIColor.hex(0x0F172A, 0.08))
 
-    static let accent50 = dynamic(dark: UIColor.hex(0xF97316, 0.12), light: UIColor.hex(0xEA580C, 0.10))
-    static let accent100 = dynamic(dark: UIColor.hex(0xF97316, 0.20), light: UIColor.hex(0xEA580C, 0.18))
-    static let accent500 = dynamic(dark: UIColor(hex: 0xF97316), light: UIColor(hex: 0xEA580C))
-    static let accent600 = dynamic(dark: UIColor(hex: 0xFB923C), light: UIColor(hex: 0xC2410C))
-    static let accent700 = dynamic(dark: UIColor(hex: 0xFDBA74), light: UIColor(hex: 0x9A3412))
+    // accent = 水色 azure (#2E8CFF を少しシアン側へ / light 基準)
+    static let accent50 = dynamic(dark: UIColor.hex(0x3DA9F0, 0.12), light: UIColor.hex(0x1E96E6, 0.10))
+    static let accent100 = dynamic(dark: UIColor.hex(0x3DA9F0, 0.20), light: UIColor.hex(0x1E96E6, 0.18))
+    static let accent500 = dynamic(dark: UIColor(hex: 0x3DA9F0), light: UIColor(hex: 0x1E96E6))
+    static let accent600 = dynamic(dark: UIColor(hex: 0x63BEF5), light: UIColor(hex: 0x147FCC))
+    static let accent700 = dynamic(dark: UIColor(hex: 0x90D2F8), light: UIColor(hex: 0x0F6399))
     static let accent = accent500
 
-    static let statusPresent = dynamic(dark: UIColor(hex: 0x34D399), light: UIColor(hex: 0x16A34A))
-    static let statusAbsent = dynamic(dark: UIColor(hex: 0xFF5C7A), light: UIColor(hex: 0xDC2626))
-    static let statusExcused = dynamic(dark: UIColor(hex: 0x5AA9FF), light: UIColor(hex: 0x2563EB))
-    static let statusTardy = dynamic(dark: UIColor(hex: 0xFFC93C), light: UIColor(hex: 0xD97706))
-    static let statusEarly = dynamic(dark: UIColor(hex: 0xC685FF), light: UIColor(hex: 0x9333EA))
+    // 軽いグラデ (accent ボタン・FAB・出席率リング等の要所のみ)
+    static let accentGradient = LinearGradient(
+        colors: [
+            Color.dynamic(dark: UIColor(hex: 0x4FB4F6), light: UIColor(hex: 0x37A8F0)),
+            Color.dynamic(dark: UIColor(hex: 0x2E90DE), light: UIColor(hex: 0x147FCC)),
+        ],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    // status (出席状態) — 中間彩度
+    static let statusPresent = dynamic(dark: UIColor(hex: 0x34D8A0), light: UIColor(hex: 0x12B172))
+    static let statusAbsent = dynamic(dark: UIColor(hex: 0xFF6384), light: UIColor(hex: 0xF0435F))
+    static let statusExcused = dynamic(dark: UIColor(hex: 0x6BA3FF), light: UIColor(hex: 0x4C82F5))
+    static let statusTardy = dynamic(dark: UIColor(hex: 0xFFC93C), light: UIColor(hex: 0xF59E28))
+    static let statusEarly = dynamic(dark: UIColor(hex: 0xB98BFF), light: UIColor(hex: 0x9E5AEE))
     static let statusCancelled = dynamic(dark: UIColor.white.withAlphaComponent(0.30), light: UIColor.hex(0x0F172A, 0.40))
     static let statusSuspended = dynamic(dark: UIColor(hex: 0x94A3B8), light: UIColor(hex: 0x64748B))
     static let statusNone = dynamic(dark: UIColor.white.withAlphaComponent(0.18), light: UIColor.hex(0x0F172A, 0.18))
 
-    static let friendshipPending = dynamic(dark: UIColor(hex: 0xFFC93C), light: UIColor(hex: 0xD97706))
-    static let friendshipAccepted = dynamic(dark: UIColor(hex: 0x34D399), light: UIColor(hex: 0x16A34A))
-    static let friendshipBlocked = dynamic(dark: UIColor(hex: 0xFF5C7A), light: UIColor(hex: 0xDC2626))
+    static let friendshipPending = dynamic(dark: UIColor(hex: 0xFFC93C), light: UIColor(hex: 0xF59E28))
+    static let friendshipAccepted = dynamic(dark: UIColor(hex: 0x34D8A0), light: UIColor(hex: 0x12B172))
+    static let friendshipBlocked = dynamic(dark: UIColor(hex: 0xFF6384), light: UIColor(hex: 0xF0435F))
 
-    static let roomEvent = dynamic(dark: UIColor(hex: 0xC685FF), light: UIColor(hex: 0x9333EA))
-    static let roomAvailabilityEmpty = dynamic(dark: UIColor.hex(0xF97316, 0.16), light: UIColor.hex(0xEA580C, 0.14))
+    static let roomEvent = dynamic(dark: UIColor(hex: 0xB98BFF), light: UIColor(hex: 0x9E5AEE))
+    static let roomAvailabilityEmpty = dynamic(dark: UIColor.hex(0x3DA9F0, 0.16), light: UIColor.hex(0x1E96E6, 0.12))
     static let eventMixTarget = dynamic(dark: UIColor.white, light: UIColor.black)
+
+    // brand ring (ロゴ/キャラ由来・科目色パレット)
+    static let brandTeal = Color(UIColor(hex: 0x56D8C3))
+    static let brandBlue = Color(UIColor(hex: 0x568CFC))
+    static let brandIndigo = Color(UIColor(hex: 0x8F7EFC))
+    static let brandViolet = Color(UIColor(hex: 0xA978FA))
+    static let brandMagenta = Color(UIColor(hex: 0xFC6ABF))
+    static let brandCoral = Color(UIColor(hex: 0xFD728E))
 
     static func forStatus(_ status: AttendanceStatus?) -> Color {
         switch status {

@@ -3,7 +3,7 @@ import SwiftUI
 @main
 struct AtenderApp: App {
     @State private var environment = AppEnvironment()
-    @AppStorage("atender.theme") private var themePreference = ThemePreference.dark.rawValue
+    @AppStorage("atender.theme") private var themePreference = ThemePreference.light.rawValue
 
     var body: some Scene {
         WindowGroup {
@@ -16,6 +16,6 @@ struct AtenderApp: App {
     }
 
     private var themePreferenceValue: ThemePreference {
-        ThemePreference(rawValue: themePreference) ?? .dark
+        ThemePreference(rawValue: themePreference) ?? .light
     }
 }

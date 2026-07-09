@@ -6,6 +6,16 @@ struct AmbientBackground: View {
     var body: some View {
         ZStack {
             Color.bgBase
+            if colorScheme != .dark {
+                RadialGradient(
+                    colors: [.accent500.opacity(0.08), .accent500.opacity(0.0)],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: 420
+                )
+                .blur(radius: 60)
+                .offset(y: -60)
+            }
             if colorScheme == .dark {
                 RadialGradient(
                     colors: [.accent500.opacity(0.20), .accent500.opacity(0.0)],

@@ -107,7 +107,7 @@ function CTAButtons({
   const disabled = pending || unrecorded === 0;
   const triggerClasses = unrecorded === 0
     ? "bg-fg-primary/8 text-fg-primary hover:bg-fg-primary/12 active:scale-[0.97] border-fg-primary/15"
-    : "bg-accent-500 text-fg-on-accent shadow-glow-soft hover:bg-accent-600 hover:shadow-glow active:scale-[0.97] border-fg-on-accent/25";
+    : "bg-accent-500 [background-image:var(--color-accent-gradient)] text-fg-on-accent shadow-glow-soft hover:brightness-105 hover:shadow-glow active:scale-[0.97] border-fg-on-accent/25";
 
   function markAll(status: BulkAttendanceStatus) {
     setMenuOpen(false);
