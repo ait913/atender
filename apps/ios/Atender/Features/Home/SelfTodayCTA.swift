@@ -1,5 +1,10 @@
 import SwiftUI
 
+private struct AttendancePanelHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 @MainActor
 @Observable
 final class SelfTodayViewModel {
@@ -86,6 +91,7 @@ struct MainAttendanceCTA: View {
     var pending = false
     @State private var menuOpen = false
     @State private var keyboardVisible = false
+    @State private var panelHeight: CGFloat = 0
 
     private let bulkStatuses: [AttendanceStatus] = [.absent, .excused, .tardy, .earlyLeave]
     private let allStatuses: [AttendanceStatus] = [.present, .absent, .excused, .tardy, .earlyLeave, .cancelled]
@@ -98,7 +104,7 @@ struct MainAttendanceCTA: View {
             }
             .padding(.horizontal, Space.pagePxMobile)
             .padding(.vertical, Space.s2)
-            .padding(.bottom, Space.tabBarHeight)
+            .padding(.bottom, Space.tabBarHeight + safeAreaBottom())
             .background(.ultraThinMaterial)
             .background(Color.bgBase.opacity(0.85))
             .overlay(alignment: .top) { Rectangle().fill(Color.textPrimary.opacity(0.08)).frame(height: 1) }
@@ -127,7 +133,7 @@ struct MainAttendanceCTA: View {
                         }
                         .font(.atenderBase)
                         .fontWeight(.bold)
-                        HStack(spacing: Space.s3) {
+                        HStack(spacing: Space.s2) {
                             ForEach(allStatuses) { status in
                                 let selected = occurrence.status == status
                                 Button {
@@ -136,8 +142,7 @@ struct MainAttendanceCTA: View {
                                     Text(shortLabel(status))
                                         .font(.atender(12, .bold))
                                         .foregroundStyle(selected ? Color.textOnAccent : Color.textPrimary)
-                                        .frame(minWidth: 40, minHeight: 40)
-                                        .padding(.horizontal, Space.s2)
+                                        .frame(maxWidth: .infinity, minHeight: 40)
                                         .background(selected ? Color.accent500 : Color.textPrimary.opacity(0.08))
                                         .clipShape(Capsule())
                                 }
@@ -145,12 +150,20 @@ struct MainAttendanceCTA: View {
                                 .conditional(selected) { $0.atenderShadow(.glowSoft) }
                             }
                         }
+                        .frame(maxWidth: .infinity)
                     }
                 }
             }
             .padding(Space.s3)
+            .background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: AttendancePanelHeightKey.self, value: proxy.size.height)
+                }
+            )
         }
-        .frame(maxHeight: UIScreen.main.bounds.height * 0.36)
+        // 中身(コマ数)に合わせて高さを詰める。cap (画面 36%) を上限に、超える分だけ内部スクロール。
+        .frame(height: min(panelHeight == 0 ? UIScreen.main.bounds.height * 0.36 : panelHeight, UIScreen.main.bounds.height * 0.36))
+        .onPreferenceChange(AttendancePanelHeightKey.self) { panelHeight = $0 }
         .background(Color.bgElevated)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         .atenderShadow(.card)
@@ -223,6 +236,7 @@ struct MainAttendanceCTA: View {
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("cta-expand-toggle")
         }
     }
 
@@ -248,5 +262,13 @@ struct MainAttendanceCTA: View {
         case .cancelled: return "休講"
         case .unknown: return "未記録"
         }
+    }
+
+    // タブバーは tabBarHeight + safe-area 分の高さを占めるため、CTA の下パディングも
+    // safe-area を足さないと下端がタブバーに潜り込む。
+    private func safeAreaBottom() -> CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow?.safeAreaInsets.bottom }
+            .first ?? 0
     }
 }

@@ -61,8 +61,12 @@ final class ScreenshotFlow: XCTestCase {
         tapAt(0.5, 0.05)
         sleep(2)
 
-        // 出欠CTA 展開 (Go Up chevron)
-        let upOK = tapButton("Go Up", timeout: 2)
+        // 出欠CTA 展開 (∧ トグル → 出欠パネル)
+        var upOK = false
+        let expandToggle = app.buttons["cta-expand-toggle"].firstMatch
+        if expandToggle.waitForExistence(timeout: 3), expandToggle.isHittable {
+            expandToggle.tap(); upOK = true
+        }
         sleep(2)
         snap("06-cta-expanded_ok=\(upOK)")
 
@@ -88,6 +92,41 @@ final class ScreenshotFlow: XCTestCase {
         d.name = name
         d.lifetime = .keepAlways
         add(d)
+    }
+
+    func testCtaExpanded() {
+        app.launch()
+        sleep(6)
+        snap("X00-home-before-expand")
+        let toggle = app.buttons["cta-expand-toggle"].firstMatch
+        var ok = false
+        if toggle.waitForExistence(timeout: 5) {
+            toggle.tap(); ok = true
+        }
+        sleep(2)
+        snap("X01-cta-expanded_ok=\(ok)")
+        // 一括メニュー (chevron.up.chevron.down) も開く
+        let bulk = app.buttons["今日は全出席 (1)"].firstMatch
+        _ = bulk
+        snap("X02-cta-expanded-again")
+    }
+
+    func testFormSheet() {
+        app.launch()
+        sleep(6)
+        tapButton("学期・科目")
+        sleep(4)
+        var dayOK = false
+        for d in ["9", "10", "8"] {
+            let db = app.buttons[d].firstMatch
+            if db.waitForExistence(timeout: 2) { db.tap(); dayOK = true; break }
+        }
+        sleep(3)
+        snap("F00-day-detail_ok=\(dayOK)")
+        // 予定を追加フォーム (テキスト入力を含む BottomSheet)
+        let addOK = tapButton("追加", timeout: 3)
+        sleep(2)
+        snap("F01-personal-event-form_ok=\(addOK)")
     }
 
     func testDayDetailOnly() {
@@ -142,5 +181,35 @@ final class ScreenshotFlow: XCTestCase {
         let multiOK = tapButton("複数選択", timeout: 2)
         sleep(2)
         snap("C04-multiselect_ok=\(multiOK)")
+    }
+
+    func testPhaseDFlow() {
+        app.launch()
+        sleep(6)
+        // ルームタブ
+        tapButton("ルーム")
+        sleep(3)
+        snap("E01-rooms-list")
+        dump("E00-rooms-dump")
+
+        // ルームを開く (CONTAINS でカード)
+        let roomBtn = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "情報処理科")).firstMatch
+        var roomOK = false
+        if roomBtn.waitForExistence(timeout: 3) { roomBtn.tap(); roomOK = true }
+        sleep(3)
+        snap("E02-room-detail_ok=\(roomOK)")
+        // 時間割トグル
+        _ = tapButton("時間割", timeout: 2)
+        sleep(2)
+        snap("E03-room-timetable")
+        // 戻る
+        tapAt(0.06, 0.05)
+        sleep(2)
+
+        // 友達タブ
+        tapButton("友達")
+        sleep(3)
+        snap("E04-friends")
+        dump("E04b-friends-dump")
     }
 }

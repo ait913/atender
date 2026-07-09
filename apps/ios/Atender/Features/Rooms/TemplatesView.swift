@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TemplatesView: View {
     @Environment(AppEnvironment.self) private var environment
+    @Environment(\.dismiss) private var dismiss
     @State private var schoolId = ""
     @State private var departmentId = ""
     @State private var query = ""
@@ -18,6 +19,7 @@ struct TemplatesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s6) {
+                BackHeaderButton { dismiss() }
                 VStack(alignment: .leading, spacing: Space.s1) {
                     Text("みんなの時間割").font(.atender2xl).fontWeight(.bold).foregroundStyle(Color.textPrimary)
                     Text("共有テンプレ検索").font(.atenderSm).foregroundStyle(Color.textSecondary)
@@ -44,6 +46,8 @@ struct TemplatesView: View {
             .padding(Space.pagePxMobile)
         }
         .background(Color.bgBase)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .task { await bootstrap() }
         .task(id: "\(schoolId)-\(departmentId)-\(query)") {
             try? await Task.sleep(nanoseconds: 300_000_000)

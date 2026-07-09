@@ -92,6 +92,7 @@
 		95B42E50804056704133EC3D /* ModelSync.md in Resources */ = {isa = PBXBuildFile; fileRef = 70DA82CEAE614300F95AA944 /* ModelSync.md */; };
 		970ABFACBD8A3291947C313A /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 805551291DFFB877417CF9AE /* Typography.swift */; };
 		9739C040E531332734F800D8 /* RoomsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFFB764930F10314165F696C /* RoomsView.swift */; };
+		9AF365ABA2929AC866754E05 /* BackHeaderButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C5248CAD0EB76E7E620DD25 /* BackHeaderButton.swift */; };
 		A0F9E651930A9F16BBCB6775 /* CalendarRangeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C171571049FAF9AE7886F025 /* CalendarRangeTests.swift */; };
 		A0FF9FFA456505A155140AD7 /* template.json in Resources */ = {isa = PBXBuildFile; fileRef = 2C13EC0CF821F3870D0E28AC /* template.json */; };
 		A148A3DD04B91F51E7E0EEF5 /* QueryKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69209D504085F39AAE82171A /* QueryKey.swift */; };
@@ -229,6 +230,7 @@
 		75AF36A364A705E7F9AB459B /* friendship.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = friendship.json; sourceTree = "<group>"; };
 		7A317F2FADAC6E64B0A781A1 /* DTODecodingPhaseBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTODecodingPhaseBTests.swift; sourceTree = "<group>"; };
 		7ABDD80CD28696BD17849D8A /* TimetableGridPhaseB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableGridPhaseB.swift; sourceTree = "<group>"; };
+		7C5248CAD0EB76E7E620DD25 /* BackHeaderButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackHeaderButton.swift; sourceTree = "<group>"; };
 		7E6C88B5D8655E5F3B23AFA8 /* Color+Atender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Atender.swift"; sourceTree = "<group>"; };
 		7E7434FA2C7C3262522C0019 /* AtenderTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = AtenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		805551291DFFB877417CF9AE /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
@@ -644,6 +646,7 @@
 			isa = PBXGroup;
 			children = (
 				25ED159BA849DB2D616341A4 /* AtenderButton.swift */,
+				7C5248CAD0EB76E7E620DD25 /* BackHeaderButton.swift */,
 				1A24A8C1959C4D4435E3EFFD /* BottomSheet.swift */,
 				EBEB852E957E4C97E97E9A5A /* Chip.swift */,
 				C05C5180C5838017015D293B /* ConfirmDialog.swift */,
@@ -872,6 +875,7 @@
 				6167C1FAD84F9C73A39EDFCB /* AttendanceOptimistic.swift in Sources */,
 				5FF857EB9DDB4D6822127119 /* AuthStore.swift in Sources */,
 				4DEF4B3CFBE24A6B1DCFA412 /* AuthView.swift in Sources */,
+				9AF365ABA2929AC866754E05 /* BackHeaderButton.swift in Sources */,
 				104EF81AC69634762509A549 /* BottomSheet.swift in Sources */,
 				F0E76D8B446B530F6D3B8F5D /* BottomTabBar.swift in Sources */,
 				69E272A7AFE579D290A3A899 /* BulkAndPersonalEventSheets.swift in Sources */,

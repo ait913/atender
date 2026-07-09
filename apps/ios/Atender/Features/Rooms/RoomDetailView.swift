@@ -25,6 +25,7 @@ final class RoomDetailViewModel {
 struct RoomDetailView: View {
     let roomId: String
     @Environment(AppEnvironment.self) private var environment
+    @Environment(\.dismiss) private var dismiss
     @State private var model: RoomDetailViewModel?
     @State private var tab: RoomDetailTab = .calendar
     @State private var settingsOpen = false
@@ -35,6 +36,7 @@ struct RoomDetailView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
+            BackHeaderButton { dismiss() }
             header
             tabPicker
             Group {
@@ -46,8 +48,10 @@ struct RoomDetailView: View {
             }
         }
         .padding(Space.pagePxMobile)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.bgBase)
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             if model == nil { model = RoomDetailViewModel(env: environment, roomId: roomId) }
             await model?.load()
