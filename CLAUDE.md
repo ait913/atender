@@ -41,7 +41,46 @@
 
 ## 主要ワークフロー
 
-<!-- TODO: 実装着手後、頻出操作 (ローカル起動 / デプロイ / DB migration 等) を追記 -->
+### iOS をシミュレータで動作確認 (実データ + ログインスキップ)
+
+iOS の Debug ビルドは `localhost:8787` を叩く。ログインは OAuth なので、**デモ seed + bearer 注入でログイン画面をスキップ**して実データで確認するのが定石。
+
+```sh
+# 1. API 起動 (--env-file 必須。`pnpm dev` 単体は env 未読込で起動失敗する)
+cd apps/api
+pnpm exec tsx watch --env-file=.env src/index.ts      # → http://localhost:8787 (health: /healthz)
+
+# 2. デモユーザー seed → bearer token 出力 (冪等)
+pnpm exec tsx --env-file=.env scripts/seed-demo-user.ts
+#    → token: demo-bearer-token-ios-resync-0001 (user/時間割/科目/出欠まで作る)
+
+# 3. iOS ビルド
+cd ../ios
+/opt/homebrew/bin/xcodegen generate
+xcodebuild -project Atender.xcodeproj -scheme Atender -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' build
+
+# 4. token 注入で起動 → ログイン画面スキップ (AppEnvironment が #if DEBUG で keychain へ save)
+SIMCTL_CHILD_ATENDER_UI_TEST_BEARER_TOKEN=demo-bearer-token-ios-resync-0001 \
+  xcrun simctl launch <SIM_UDID> net.appily.atender
+xcrun simctl io <SIM_UDID> screenshot out.png
+```
+
+- **注意**: AI がバックグラウンドで起動した API は**ターン終了で harness に kill される**。腰を据えて触るなら Touri 自身のターミナルで API を立てる。デモデータは `apps/api/prisma/dev.db` に永続化されるので API さえ立てれば再ログイン不要
+- ユニットテスト: `xcodebuild test -scheme Atender ...` (157 GREEN 基準)
+
+### 全画面・全モーダルのスクショ収集 (デザイン検証)
+
+`AtenderUITests/ScreenshotFlow.swift` が token 注入で各画面/操作を辿りスクショを attachment 化する検証ハーネス。
+
+```sh
+xcodebuild test -project Atender.xcodeproj -scheme AtenderUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -resultBundlePath run.xcresult
+xcrun xcresulttool export attachments --path run.xcresult --output-path shots   # manifest.json で名前復元
+```
+
+### 実機で動かす (Developer Program 認証後)
+
+Xcode で: 署名(Automatically manage signing + Team選択) → **Scheme を Release 構成**(Debug=localhost で実機から繋がらない。Release=`atender-api.appily.run` 本番) → デバイス選択 → ⌘R。無料 Apple ID だと `Associated Domains` entitlement で署名が通らない(有料限定)ため一時除去が要る。有料なら不要。
 
 ## デプロイ / 外部リソース
 
