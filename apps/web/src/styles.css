@@ -333,3 +333,8 @@ input[type="time"]::-webkit-date-and-time-value {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
+
+/* ヘッダーのワードマーク: テーマで navy/white を出し分け (data-theme 基準) */
+.wordmark-dark { display: none; }
+:root[data-theme="dark"] .wordmark-light { display: none; }
+:root[data-theme="dark"] .wordmark-dark { display: inline-block; }

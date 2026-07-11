@@ -9,9 +9,10 @@ export function TopBar({ leading, title, trailing }: { leading?: ReactNode; titl
     >
       <div className="flex min-w-0 items-center gap-2">
         {leading ?? (
-          <Link to="/" className="flex items-center gap-1.5 md:hidden">
+          <Link to="/" className="flex items-center gap-1.5 md:hidden" aria-label="Atender">
             <img src="/logo-mark.png" srcSet="/logo-mark.png 1x, /logo-mark@2x.png 2x" alt="" width={22} height={22} className="shrink-0" />
-            <span className="text-lg font-black tracking-tight text-fg-primary">atender</span>
+            <img src="/wordmark-navy.png" alt="Atender" className="wordmark-light h-[18px] w-auto" />
+            <img src="/wordmark-white.png" alt="Atender" className="wordmark-dark h-[18px] w-auto" />
           </Link>
         )}
         {title ? <h1 className="truncate text-[15px] font-bold text-fg-primary">{title}</h1> : null}
