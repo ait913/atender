@@ -1,3 +1,4 @@
+import { createPrivateKey, sign as cryptoSign } from "node:crypto";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { bearer, magicLink } from "better-auth/plugins";
@@ -9,12 +10,54 @@ const resend = new Resend(env.RESEND_API_KEY);
 
 type Auth = ReturnType<typeof betterAuth>;
 
+export function normalizeApplePem(raw: string): string {
+  return raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
+}
+
+export function buildAppleClientSecret(
+  input: { teamId: string; keyId: string; privateKeyPem: string; clientId: string },
+  now: Date = new Date(),
+): string {
+  const iat = Math.floor(now.getTime() / 1000);
+  const exp = iat + 60 * 60 * 24 * 180;
+  const b64url = (buffer: Buffer) => buffer.toString("base64url");
+  const header = b64url(Buffer.from(JSON.stringify({ alg: "ES256", kid: input.keyId, typ: "JWT" })));
+  const payload = b64url(Buffer.from(JSON.stringify({
+    iss: input.teamId,
+    iat,
+    exp,
+    aud: "https://appleid.apple.com",
+    sub: input.clientId,
+  })));
+  const signingInput = `${header}.${payload}`;
+  const key = createPrivateKey(normalizeApplePem(input.privateKeyPem));
+  const signature = cryptoSign("sha256", Buffer.from(signingInput), { key, dsaEncoding: "ieee-p1363" });
+  return `${signingInput}.${b64url(signature)}`;
+}
+
 function getAppleProviderConfig() {
-  const { APPLE_CLIENT_ID, APPLE_CLIENT_SECRET, APPLE_APP_BUNDLE_ID } = env;
-  if (!APPLE_CLIENT_ID || !APPLE_CLIENT_SECRET || !APPLE_APP_BUNDLE_ID) return null;
+  const {
+    APPLE_CLIENT_ID,
+    APPLE_CLIENT_SECRET,
+    APPLE_APP_BUNDLE_ID,
+    APPLE_TEAM_ID,
+    APPLE_KEY_ID,
+    APPLE_PRIVATE_KEY,
+  } = env;
+  if (!APPLE_CLIENT_ID || !APPLE_APP_BUNDLE_ID) return null;
+  const clientSecret = APPLE_CLIENT_SECRET ??
+    (APPLE_TEAM_ID && APPLE_KEY_ID && APPLE_PRIVATE_KEY
+      ? buildAppleClientSecret({
+          teamId: APPLE_TEAM_ID,
+          keyId: APPLE_KEY_ID,
+          privateKeyPem: APPLE_PRIVATE_KEY,
+          clientId: APPLE_CLIENT_ID,
+        })
+      : null);
+  if (!clientSecret) return null;
   return {
     clientId: APPLE_CLIENT_ID,
-    clientSecret: APPLE_CLIENT_SECRET,
+    clientSecret,
     appBundleIdentifier: APPLE_APP_BUNDLE_ID,
   };
 }

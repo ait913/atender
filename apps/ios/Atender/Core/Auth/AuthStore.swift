@@ -80,7 +80,15 @@ final class AuthStore {
         return payload.url
     }
 
-    func completeGoogleSignIn(callbackURL: URL) throws {
+    func startMagicLink(email: String) async throws {
+        let body = MagicLinkBody(email: email, callbackURL: nativeCallbackURL().absoluteString)
+        let (data, response) = try await authRequestWithData(path: "/api/auth/sign-in/magic-link", body: body)
+        guard (200...299).contains(response.statusCode) else {
+            throw decodeHTTPError(data: data, status: response.statusCode)
+        }
+    }
+
+    func completeTokenSignIn(callbackURL: URL) throws {
         guard callbackURL.scheme == APIConfig.authCallbackScheme else {
             throw APIError.api(status: 400, code: "INVALID_CALLBACK", message: "Invalid auth callback scheme.")
         }
@@ -93,6 +101,10 @@ final class AuthStore {
         try keychain.save(token: token)
         storedToken = token
         state = .signedIn
+    }
+
+    func isAuthCallback(_ url: URL) -> Bool {
+        url.scheme == APIConfig.authCallbackScheme && url.host == "auth"
     }
 
     func handleUnauthorized() {
@@ -224,6 +236,11 @@ private struct GoogleSignInBody: Encodable {
 private struct GoogleSignInResponse: Decodable {
     let url: URL
     let redirect: Bool
+}
+
+private struct MagicLinkBody: Encodable {
+    let email: String
+    let callbackURL: String
 }
 
 private struct EmptyBody: Encodable {}

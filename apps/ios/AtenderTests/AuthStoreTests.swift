@@ -2,7 +2,7 @@ import XCTest
 @testable import Atender
 
 // Reviewer 生成: 設計doc §3.4 (AuthStore) を根拠に検証。
-// §3.4 の public メソッド: bootstrap() async / completeGoogleSignIn(callbackURL:) throws /
+// §3.4 の public メソッド: bootstrap() async / completeTokenSignIn(callbackURL:) throws /
 //   handleUnauthorized() / signOut() async。State: unknown/signedOut/signedIn。
 //
 // !! 設計の食い違い (報告):
@@ -83,26 +83,26 @@ final class AuthStoreTests: XCTestCase {
         XCTAssertNil(store.token, "token は破棄される")
     }
 
-    // §3.4 completeGoogleSignIn: atender://auth#token=abc 解析 → Keychain 保存 → signedIn
-    func testCompleteGoogleSignInParsesFragmentTokenAndSignsIn() throws {
+    // §3.4 completeTokenSignIn: atender://auth#token=abc 解析 → Keychain 保存 → signedIn
+    func testCompleteTokenSignInParsesFragmentTokenAndSignsIn() throws {
         let keychain = freshKeychain()
         let store = AuthStore(keychain: keychain, session: StubURLProtocol.makeSession())
 
         let url = URL(string: "atender://auth#token=abc")!
-        try store.completeGoogleSignIn(callbackURL: url)
+        try store.completeTokenSignIn(callbackURL: url)
 
         XCTAssertEqual(store.state, .signedIn, "fragment の token を取り込み signedIn (§3.4)")
         XCTAssertEqual(store.token, "abc", "fragment token=abc を Keychain に保存")
         XCTAssertEqual(try keychain.load(), "abc", "Keychain に保存される")
     }
 
-    // §3.4 completeGoogleSignIn: token が fragment に無ければ throw (signedIn にしない)
-    func testCompleteGoogleSignInMissingTokenThrows() throws {
+    // §3.4 completeTokenSignIn: token が fragment に無ければ throw (signedIn にしない)
+    func testCompleteTokenSignInMissingTokenThrows() throws {
         let keychain = freshKeychain()
         let store = AuthStore(keychain: keychain, session: StubURLProtocol.makeSession())
 
         let url = URL(string: "atender://auth")!
-        XCTAssertThrowsError(try store.completeGoogleSignIn(callbackURL: url),
+        XCTAssertThrowsError(try store.completeTokenSignIn(callbackURL: url),
                              "token fragment が無ければ throw するはず")
         XCTAssertNotEqual(store.state, .signedIn)
     }

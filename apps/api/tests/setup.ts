@@ -24,7 +24,7 @@ if (fs.existsSync(envTestPath)) {
 process.env.NODE_ENV = "test";
 process.env.BETTER_AUTH_SECRET ??= "test-secret-32-bytes-minimum-value";
 process.env.BETTER_AUTH_URL ??= "http://localhost:3000";
-process.env.BETTER_AUTH_TRUSTED_ORIGINS ??= "http://localhost:5173,https://atender.appily.run";
+process.env.BETTER_AUTH_TRUSTED_ORIGINS ??= "http://localhost:5173,https://atender.appily.run,atender://auth";
 process.env.BETTER_AUTH_COOKIE_DOMAIN ??= ".appily.run";
 process.env.PUBLIC_WEB_URL ??= "http://localhost:5173";
 process.env.RESEND_API_KEY ??= "re_test";

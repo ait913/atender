@@ -28,6 +28,13 @@ struct RootView: View {
             await environment.authStore.bootstrap()
         }
         .onOpenURL { url in
+            if environment.authStore.isAuthCallback(url) {
+                Task {
+                    try? environment.authStore.completeTokenSignIn(callbackURL: url)
+                    await environment.authStore.refreshMe()
+                }
+                return
+            }
             environment.appRouter.handleDeepLink(url, canNavigate: canNavigate)
         }
         .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
