@@ -78,9 +78,40 @@ xcodebuild test -project Atender.xcodeproj -scheme AtenderUITests \
 xcrun xcresulttool export attachments --path run.xcresult --output-path shots   # manifest.json で名前復元
 ```
 
-### 実機で動かす (Developer Program 認証後)
+### TestFlight に配布 (CLI 完結・Xcode GUI 不要)
 
-Xcode で: 署名(Automatically manage signing + Team選択) → **Scheme を Release 構成**(Debug=localhost で実機から繋がらない。Release=`atender-api.appily.run` 本番) → デバイス選択 → ⌘R。無料 Apple ID だと `Associated Domains` entitlement で署名が通らない(有料限定)ため一時除去が要る。有料なら不要。
+有料 Developer Program (Team ID `2J3HYGP2K8`) 認証済。ASC API キーで CLI から archive → export → upload まで一気通貫。**署名周りは project.yml に焼き込み済** (`DEVELOPMENT_TEAM: 2J3HYGP2K8` / `CODE_SIGN_STYLE: Automatic`)。
+
+**ASC API キー**: `~/.appstoreconnect/private_keys/AuthKey_973AZ487M3.p8` (**Admin ロール必須**。App Manager だと cloud-managed distribution certificate が 403 で作れず export で詰まる)。Issuer ID `a3955ee4-936a-4c78-b9d1-9d1c559885af`。バックアップは `.tmp/atender/`。
+
+```sh
+cd apps/ios
+/opt/homebrew/bin/xcodegen generate
+
+# 1. Archive (Release=本番API。generic/platform=iOS)
+xcodebuild archive -project Atender.xcodeproj -scheme Atender -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath build/Atender.xcarchive \
+  -allowProvisioningUpdates \
+  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_973AZ487M3.p8 \
+  -authenticationKeyID 973AZ487M3 -authenticationKeyIssuerID a3955ee4-936a-4c78-b9d1-9d1c559885af
+
+# 2. Export (build/ExportOptions.plist: method=app-store-connect, teamID, signingStyle=automatic)
+#    ここで distribution 証明書を cloud 生成し再署名 (archive 自体は開発署名でよい)
+xcodebuild -exportArchive -archivePath build/Atender.xcarchive \
+  -exportOptionsPlist build/ExportOptions.plist -exportPath build/export \
+  -allowProvisioningUpdates \
+  -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_973AZ487M3.p8 \
+  -authenticationKeyID 973AZ487M3 -authenticationKeyIssuerID a3955ee4-936a-4c78-b9d1-9d1c559885af
+
+# 3. Upload (--validate-app で事前検証も可)
+xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
+  --apiKey 973AZ487M3 --apiIssuer a3955ee4-936a-4c78-b9d1-9d1c559885af
+```
+
+- バージョン更新: 次ビルドは `Atender/Info.plist` の `CFBundleVersion` をインクリメント (`CFBundleShortVersionString` は表示版数)
+- 暗号化コンプライアンス: `ITSAppUsesNonExemptEncryption=false` を Info.plist に入れ済 → TestFlight の輸出質問はスキップ
+- アップロード後 Apple 側処理 15〜30分 → ASC の TestFlight タブにビルド出現 → 内部テスター追加 (Beta App Review 不要)。外部テスターは Beta App Review + Test Information 記入が要る
+- Xcode GUI サインインは不要 (API キーが署名・アップロード両方を担う)
 
 ## デプロイ / 外部リソース
 

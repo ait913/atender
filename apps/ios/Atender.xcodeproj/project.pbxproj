@@ -746,6 +746,10 @@
 					56F42EB66A2F92E5F9EB3CFD = {
 						TestTargetID = 6ECD16E52BA6B8D5336086A6;
 					};
+					6ECD16E52BA6B8D5336086A6 = {
+						DevelopmentTeam = 2J3HYGP2K8;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 6D20DDA90679B17E0B92A889 /* Build configuration list for PBXProject "Atender" */;
@@ -982,6 +986,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Atender/Atender.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2J3HYGP2K8;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Atender/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1061,6 +1067,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Atender/Atender.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 2J3HYGP2K8;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Atender/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
