@@ -11,7 +11,15 @@ const resend = new Resend(env.RESEND_API_KEY);
 type Auth = ReturnType<typeof betterAuth>;
 
 export function normalizeApplePem(raw: string): string {
-  return raw.includes("\\n") ? raw.replace(/\\n/g, "\n") : raw;
+  const s = raw.trim();
+  // PEM が直接入っている場合: エスケープ改行 (\n) を実改行へ復元
+  if (s.includes("BEGIN")) {
+    return s.includes("\\n") ? s.replace(/\\n/g, "\n") : s;
+  }
+  // ヘッダが無い = base64 化された .p8 本文。Coolify の env 注入は backslash 二重化 /
+  // 実改行 truncate のどちらかで PEM を壊すため、base64 (単一行・記号なし) で格納し
+  // ここで復号する。復号結果は BEGIN/END 付きの PEM テキスト。
+  return Buffer.from(s, "base64").toString("utf8");
 }
 
 export function buildAppleClientSecret(
