@@ -22,19 +22,26 @@ enum ContextChipItem: Equatable, Identifiable {
     }
 }
 
+enum HomeChips {
+    static func items(rooms: [RoomSummaryDto]) -> [ContextChipItem] {
+        [.selfChip(label: "自分")] + rooms.map { .room(roomId: $0.id, roomName: $0.name) }
+    }
+}
+
 struct HomeView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var context: HomeContext = .self
     @State private var mode: HomeViewMode = .timetable
     @State private var semesterId: String?
     @State private var didApplyDefaultSemester = false
+    @State private var rooms: [RoomSummaryDto] = []
 
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(spacing: Space.s3) {
                     ContextChips(
-                        items: [.selfChip(label: "自分")],
+                        items: HomeChips.items(rooms: rooms),
                         selected: context,
                         onChange: { context = $0 },
                         onAddRoom: { environment.appRouter.selectedTab = .rooms }
@@ -57,6 +64,7 @@ struct HomeView: View {
         .background(Color.clear)
         .navigationBarHidden(true)
         .task {
+            rooms = (try? await environment.roomRepository.rooms()) ?? []
             if let cached: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) {
                 applyDefaultSemester(cached)
                 return
@@ -259,18 +267,10 @@ struct HomeBody: View {
             SelfTimetableView(semesterId: $semesterId)
         case (.self, .calendar):
             PersonalCalendar(semesterId: semesterId)
-        case (.room, .timetable):
-            RoomTimetablePlaceholder()
-        case (.room, .calendar):
-            RoomCalendarPlaceholder()
+        case (.room(let roomId), .timetable):
+            RoomTimetable(roomId: roomId)
+        case (.room(let roomId), .calendar):
+            RoomCalendar(roomId: roomId)
         }
     }
-}
-
-struct RoomTimetablePlaceholder: View {
-    var body: some View { Panel { Text("ルーム表示は準備中").foregroundStyle(Color.textSecondary) } }
-}
-
-struct RoomCalendarPlaceholder: View {
-    var body: some View { Panel { Text("ルーム表示は準備中").foregroundStyle(Color.textSecondary) } }
 }
