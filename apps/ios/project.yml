@@ -33,6 +33,8 @@ targets:
         ATENDER_API_SCHEME: $(ATENDER_API_SCHEME)
         ATENDER_API_HOST: $(ATENDER_API_HOST)
         ITSAppUsesNonExemptEncryption: false
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "2"
         UILaunchScreen: {}
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
