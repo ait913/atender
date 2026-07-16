@@ -17,4 +17,11 @@ final class MeRepository {
         cache.setData(response, for: .me())
         return response
     }
+
+    func updateMe(_ input: MeUpdateInput) async throws -> MeResponse {
+        let response = try await client.send(Endpoints.updateMe(input), as: MeResponse.self)
+        cache.setData(response, for: .me())
+        cache.invalidate(prefixes: invalidationTargets(for: .meUpdate))
+        return response
+    }
 }

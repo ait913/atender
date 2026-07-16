@@ -29,6 +29,23 @@ final class SemesterRepository {
         cache.setData(response, for: .semesterOverview(id))
         return response
     }
+
+    func createSemester(_ input: SemesterCreateInput) async throws -> SemesterDto {
+        let response = try await client.send(Endpoints.createSemester(input), as: SemesterResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .semesterCreate))
+        return response.semester
+    }
+
+    func updateSemester(id: String, _ input: SemesterUpdateInput) async throws -> SemesterDto {
+        let response = try await client.send(Endpoints.updateSemester(id: id, input), as: SemesterResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .semesterUpdate))
+        return response.semester
+    }
+
+    func deleteSemester(id: String) async throws {
+        try await client.send(Endpoints.deleteSemester(id: id))
+        cache.invalidate(prefixes: invalidationTargets(for: .semesterDelete))
+    }
 }
 
 @MainActor

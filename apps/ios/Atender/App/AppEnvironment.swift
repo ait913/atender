@@ -21,6 +21,8 @@ final class AppEnvironment {
     let friendshipRepository: FriendshipRepository
     let templateRepository: TemplateRepository
     let icsImportRepository: IcsImportRepository
+    let ruleRepository: RuleRepository
+    let schoolRepository: SchoolRepository
 
     init() {
         #if DEBUG
@@ -47,6 +49,8 @@ final class AppEnvironment {
         self.friendshipRepository = FriendshipRepository(client: self.apiClient, cache: queryClient)
         self.templateRepository = TemplateRepository(client: self.apiClient, cache: queryClient)
         self.icsImportRepository = IcsImportRepository(client: self.apiClient, cache: queryClient)
+        self.ruleRepository = RuleRepository(client: self.apiClient, cache: queryClient)
+        self.schoolRepository = SchoolRepository(client: self.apiClient, cache: queryClient)
         authStore.onLocalSignOut = { [queryClient] in
             queryClient.removeAll()
         }

@@ -72,6 +72,12 @@ enum Endpoints {
     static func markAllPresent(_ body: MarkAllPresentInput) -> APIEndpoint { .init(path: "/api/attendance/mark-all-present", method: .post, body: body) }
     static func bulkAttendance(_ body: BulkMarkAttendanceInput) -> APIEndpoint { .init(path: "/api/attendance/bulk", method: .post, body: body) }
     static func bulkClearAttendance(_ body: BulkClearAttendanceInput) -> APIEndpoint { .init(path: "/api/attendance/bulk-clear", method: .post, body: body) }
+    static func attendanceRules(schoolId: String?, departmentId: String?) -> APIEndpoint {
+        .init(path: "/api/attendance-rules", method: .get, query: compactQuery(["schoolId": schoolId, "departmentId": departmentId]))
+    }
+    static func upsertAttendanceRule(type: String, _ body: AttendanceRuleUpsertBody) -> APIEndpoint {
+        .init(path: "/api/attendance-rules/\(type)", method: .patch, body: body)
+    }
 
     static func dayDetail(date: String) -> APIEndpoint { .init(path: "/api/day/\(date)", method: .get) }
     static func stats(semesterId: String?) -> APIEndpoint { .init(path: "/api/stats", method: .get, query: compactQuery(["semesterId": semesterId])) }
