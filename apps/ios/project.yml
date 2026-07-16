@@ -34,7 +34,7 @@ targets:
         ATENDER_API_HOST: $(ATENDER_API_HOST)
         ITSAppUsesNonExemptEncryption: false
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "2"
+        CFBundleVersion: "3"
         UILaunchScreen: {}
         # バンドル済フォントの登録。値は **バンドル内のファイル名** (PostScript 名ではない)。
         # Resources/Fonts/ 配下だが、ビルド時に .app 直下へフラットにコピーされるためパスは付けない。
