@@ -43,7 +43,7 @@ targets:
         GIDClientID: 562309257902-30d4j2sil5pd7sm0ph6sha6lmh3qg8ll.apps.googleusercontent.com
         ITSAppUsesNonExemptEncryption: false
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "4"
+        CFBundleVersion: "5"
         UILaunchScreen: {}
         # バンドル済フォントの登録。値は **バンドル内のファイル名** (PostScript 名ではない)。
         # Resources/Fonts/ 配下だが、ビルド時に .app 直下へフラットにコピーされるためパスは付けない。
