@@ -1,4 +1,5 @@
 export * from "./Button";
+export * from "./AuthProviderButton";
 export * from "./Input";
 export * from "./Field";
 export * from "./NumberStepper";

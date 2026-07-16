@@ -42,6 +42,14 @@ targets:
           - CFBundleURLName: net.appily.atender.auth
             CFBundleURLSchemes:
               - atender
+        UIAppFonts:
+          - Inter-Regular.ttf
+          - Inter-Medium.ttf
+          - Inter-SemiBold.ttf
+          - Inter-Bold.ttf
+          - Inter-Black.ttf
+          - NotoSansJP-VariableFont_wght.ttf
+          - GoogleSans-Medium-Latin.ttf
     settings:
       base:
         GENERATE_INFOPLIST_FILE: false

@@ -130,6 +130,7 @@
 		DF1697585120FB001735A1EF /* DayConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00C8A17EB915F333EB02E29C /* DayConventionTests.swift */; };
 		E3CB22605BAC332E0061D5A8 /* MeetingExpansionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A4AD77319A144A80D51838 /* MeetingExpansionTests.swift */; };
 		E83E817D2623AA87AE1E7F86 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8770F92C47DD0EC0F3444D5D /* SettingsView.swift */; };
+		E8D1CB410AB135E1CFA81E3E /* GoogleSans-Medium-Latin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1E0767B71FC416983B03E552 /* GoogleSans-Medium-Latin.ttf */; };
 		EB1CE3F61F3612D24F67C1E3 /* EmptyState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0219357DC5D40255EB0127F4 /* EmptyState.swift */; };
 		EB4EC20097639FE9FA632959 /* courseStats.json in Resources */ = {isa = PBXBuildFile; fileRef = 72BBF5C3B9425FC5DE7F8350 /* courseStats.json */; };
 		EBD3C40773E42B8B40E95C55 /* AtenderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32BCCF2DC4BA83E0E8030C7E /* AtenderApp.swift */; };
@@ -142,6 +143,7 @@
 		F5E1755AA692AF9A96D7E756 /* CalendarEventDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61F5FEB219F50B6DA7A46B52 /* CalendarEventDisplayTests.swift */; };
 		F7100F06413272459F9A29BB /* SemesterLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8663A60CE3A396E8662825E1 /* SemesterLogic.swift */; };
 		F8AD4D7681881919F3A177AE /* courseSuspension.json in Resources */ = {isa = PBXBuildFile; fileRef = 4CFCEF848D4A987CB2932B70 /* courseSuspension.json */; };
+		F98EE0FC48C81A994AC8D6C2 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = FA3DC40D2F17354217489940 /* OFL.txt */; };
 		FDB1EADF225E9214AC644840 /* DayRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E877951DB9A4B6E8475BBA0 /* DayRepository.swift */; };
 		FF2AFC7E13A976FDEF9170F7 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52422D6892F5F22F5FBA88AC /* Theme.swift */; };
 		FF6A3DEE3B6F8BAD7AB46ED1 /* effectiveRule.json in Resources */ = {isa = PBXBuildFile; fileRef = 9C7C9C21BF5DBEB9439DAAA4 /* effectiveRule.json */; };
@@ -184,6 +186,7 @@
 		1C08D6F5D0436E34DFB893A7 /* Space.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space.swift; sourceTree = "<group>"; };
 		1CB80AC5B344C4C329C33930 /* TimetableSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimetableSettingsSheet.swift; sourceTree = "<group>"; };
 		1D20A2141D633BF7DA54EA7F /* MeRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeRepository.swift; sourceTree = "<group>"; };
+		1E0767B71FC416983B03E552 /* GoogleSans-Medium-Latin.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "GoogleSans-Medium-Latin.ttf"; sourceTree = "<group>"; };
 		21E93B41B6FC741D73169F66 /* userTimetable.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = userTimetable.json; sourceTree = "<group>"; };
 		25ED159BA849DB2D616341A4 /* AtenderButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtenderButton.swift; sourceTree = "<group>"; };
 		2BBF2B26BEAC2662548B9526 /* FriendLogicTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FriendLogicTests.swift; sourceTree = "<group>"; };
@@ -308,6 +311,7 @@
 		F57B32791B937CB743326B52 /* me.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = me.json; sourceTree = "<group>"; };
 		F7B18BBAB34C2418B29E305C /* SelfTimetableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTimetableView.swift; sourceTree = "<group>"; };
 		F7B97B956D017B950AE52C29 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		FA3DC40D2F17354217489940 /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		FBA6EC6729BBC154D9DF7893 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
 		FE29F7FBACF3A6C80F478A2C /* AmbientBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmbientBackground.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -418,12 +422,14 @@
 		463D6D3F69C74583D081FBCF /* Fonts */ = {
 			isa = PBXGroup;
 			children = (
+				1E0767B71FC416983B03E552 /* GoogleSans-Medium-Latin.ttf */,
 				C6F5C65A87B6A24571CDEC43 /* Inter-Black.ttf */,
 				093F3D51376F7845C4A57971 /* Inter-Bold.ttf */,
 				F2956E4A92BA278B35E684C6 /* Inter-Medium.ttf */,
 				EAC6C9AA67EF9F61229C0954 /* Inter-Regular.ttf */,
 				D9A1833B2CF8340C0F3CBBDD /* Inter-SemiBold.ttf */,
 				C3FE45BC52B3B0AF5D3F7D5C /* NotoSansJP-VariableFont_wght.ttf */,
+				FA3DC40D2F17354217489940 /* OFL.txt */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -820,6 +826,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4001AF40AE6C017F7AAAAA9 /* Assets.xcassets in Resources */,
+				E8D1CB410AB135E1CFA81E3E /* GoogleSans-Medium-Latin.ttf in Resources */,
 				D1524B4029E6498FF58B0537 /* Inter-Black.ttf in Resources */,
 				7A3AB2F3CE38FF687A324133 /* Inter-Bold.ttf in Resources */,
 				677B189B5C2F62FF7820DBE9 /* Inter-Medium.ttf in Resources */,
@@ -827,6 +834,7 @@
 				64AB3BA9C4A91644D343420D /* Inter-SemiBold.ttf in Resources */,
 				95B42E50804056704133EC3D /* ModelSync.md in Resources */,
 				600D13AE8054DB825F29E6D9 /* NotoSansJP-VariableFont_wght.ttf in Resources */,
+				F98EE0FC48C81A994AC8D6C2 /* OFL.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -10,26 +10,29 @@ struct AuthView: View {
 }
 
 private struct AuthViewContent: View {
-    @Environment(\.colorScheme) private var colorScheme
     @State private var viewModel: AuthViewModel
 
-    private let appleResultBox: AppleResultBox
+    private let appleSignIn: AppleSignIn
 
     init(authStore: AuthStore) {
         let googleSignIn = GoogleSignIn()
-        let appleResultBox = AppleResultBox()
-        self.appleResultBox = appleResultBox
+        let appleSignIn = AppleSignIn()
+        self.appleSignIn = appleSignIn
         self._viewModel = State(initialValue: AuthViewModel(
             sendMagicLink: { email in
                 try await authStore.startMagicLink(email: email)
             },
             signInApple: {
-                guard let result = appleResultBox.result else {
-                    throw APIError.api(status: 400, code: "APPLE_RESULT_MISSING", message: "Apple sign-in result is missing.")
+                let token: String
+                do {
+                    token = try await appleSignIn.signIn()
+                } catch {
+                    if let authorizationError = error as? ASAuthorizationError,
+                       authorizationError.code == .canceled {
+                        return
+                    }
+                    throw error
                 }
-                appleResultBox.result = nil
-                let authorization = try result.get()
-                let token = try AppleSignIn.identityToken(from: authorization)
                 try await authStore.signInWithApple(idToken: token)
             },
             signInGoogle: {
@@ -57,18 +60,16 @@ private struct AuthViewContent: View {
                     appleButton
 
                     AuthProviderButton(
+                        kind: .google,
                         title: "Google で続ける",
-                        leadingAssetName: "google-g",
-                        fill: .outline,
                         isLoading: viewModel.isGoogleLoading
                     ) {
                         Task { await viewModel.tapGoogle() }
                     }
 
                     AuthProviderButton(
+                        kind: .email,
                         title: "メールで続ける",
-                        leadingSystemImage: "envelope.fill",
-                        fill: .accent
                     ) {
                         viewModel.openEmail()
                     }
@@ -115,17 +116,13 @@ private struct AuthViewContent: View {
     }
 
     private var appleButton: some View {
-        SignInWithAppleButton(.continue) { request in
-            AppleSignIn.makeRequest(request)
-        } onCompletion: { result in
-            appleResultBox.result = result
+        AuthProviderButton(
+            kind: .apple,
+            title: "Appleで続ける",
+            isLoading: viewModel.isAppleLoading
+        ) {
             Task { await viewModel.tapApple() }
         }
-        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-        .frame(height: Space.s12)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-        .disabled(viewModel.isAppleLoading)
-        .opacity(viewModel.isAppleLoading ? 0.52 : 1)
     }
 
     private var emailForm: some View {
@@ -138,17 +135,17 @@ private struct AuthViewContent: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .padding(.horizontal, Space.s4)
-                .frame(height: Space.s12)
+                .frame(height: 44)
                 .background(Color.bgElevated)
                 .overlay {
                     RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-                        .stroke(Color.borderDefault, lineWidth: 1)
+                        .strokeBorder(Color.borderDefault, lineWidth: 1)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
 
-            AuthProviderButton(
+            AtenderButton(
                 title: viewModel.emailPhase == .sent ? "再送する" : "ログインリンクを送る",
-                fill: .outline,
+                variant: .primary,
                 isLoading: viewModel.isSendingLink,
                 isEnabled: viewModel.canSendLink
             ) {
@@ -164,9 +161,4 @@ private struct AuthViewContent: View {
             }
         }
     }
-}
-
-@MainActor
-private final class AppleResultBox {
-    var result: Result<ASAuthorization, Error>?
 }

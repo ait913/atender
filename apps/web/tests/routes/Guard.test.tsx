@@ -16,7 +16,7 @@ describe("route guards", () => {
     const { path } = await renderApp({ initialPath: "/" });
 
     await waitFor(() => expect(path()).toMatch(/^\/(?:login|signin)$/));
-    expect(await screen.findByRole("button", { name: /ログインリンクを送る/ })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /メールで続ける/ })).toBeInTheDocument();
   });
 
   it("redirects incomplete setup users from / to /setup", async () => {
