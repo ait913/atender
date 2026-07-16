@@ -16,10 +16,6 @@ struct FriendsPlaceholderView: View {
     var body: some View { PlaceholderScreen(title: "友達", subtitle: "準備中") }
 }
 
-struct SettingsPlaceholderView: View {
-    var body: some View { PlaceholderScreen(title: "設定", subtitle: "準備中") }
-}
-
 private struct PlaceholderScreen: View {
     let title: String
     let subtitle: String

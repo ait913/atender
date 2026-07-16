@@ -696,6 +696,18 @@ struct AttendanceRuleUpsertInput: Codable, Equatable {
     let earlyLeaveStrategy: RuleStrategy
 }
 
+struct AttendanceRuleUpsertBody: Codable, Equatable {
+    let excusedStrategy: RuleStrategy
+    let tardyStrategy: RuleStrategy
+    let earlyLeaveStrategy: RuleStrategy
+    let schoolId: String?
+    let departmentId: String?
+}
+
+struct AttendanceRuleResponse: Codable, Equatable {
+    let rule: AttendanceRuleDto
+}
+
 struct EffectiveRuleResponse: Codable, Equatable {
     let `default`: AttendanceRuleDto?
     let userOverride: AttendanceRuleDto?
@@ -820,8 +832,16 @@ struct SchoolsResponse: Codable, Equatable {
     let schools: [SchoolDto]
 }
 
+struct SchoolResponse: Codable, Equatable {
+    let school: SchoolDto
+}
+
 struct DepartmentsResponse: Codable, Equatable {
     let departments: [DepartmentDto]
+}
+
+struct DepartmentResponse: Codable, Equatable {
+    let department: DepartmentDto
 }
 
 struct TemplatesResponse: Codable, Equatable {

@@ -71,7 +71,7 @@ struct MainTabView: View {
                     }
                 case .settings:
                     NavigationStack(path: $bindableRouter.settingsPath) {
-                        SettingsPlaceholderView()
+                        SettingsView()
                     }
                 }
             }

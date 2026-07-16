@@ -16,9 +16,12 @@ enum Mutation: Equatable {
     case userTimetablePublish
     case userTimetableDelete
     case meUpdate
+    case attendanceRuleUpsert
     case semesterCreate
     case semesterUpdate
     case semesterDelete
+    case schoolCreate
+    case departmentCreate(schoolId: String)
     case roomCreate
     case roomUpdate(id: String)
     case roomJoin(id: String)
@@ -62,10 +65,16 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return [.userTimetables(), QueryKey(["today"]), QueryKey(["stats"]), .semesters()]
     case .meUpdate:
         return [.usersSearch(), .semesters(), QueryKey(["stats"])]
+    case .attendanceRuleUpsert:
+        return [.rules()]
     case .semesterCreate, .semesterUpdate:
         return [.semesters()]
     case .semesterDelete:
         return [.semesters(), QueryKey(["stats"]), .dayPrefix(), QueryKey(["today"]), .userTimetables()]
+    case .schoolCreate:
+        return [.schools()]
+    case .departmentCreate(let schoolId):
+        return [.departments(schoolId)]
     case .roomCreate:
         return [.rooms()]
     case .roomUpdate(let id):
