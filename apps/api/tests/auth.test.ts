@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { app, prisma } from "./helpers/app";
-import { createSessionCookie, createTestUser } from "./helpers/auth";
+import { createSessionCookie, createTestUser, signInViaMagicLink } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
 
 describe("auth API", () => {
@@ -96,12 +96,16 @@ describe("auth API", () => {
   });
 
   it("[§8 #7] login success Set-Cookie contract uses session token, Domain=.appily.run, SameSite=Lax, HttpOnly, Secure", async () => {
-    const db = prisma();
-    const user = await createTestUser(db);
-    const cookie = await createSessionCookie(db, user.id);
+    // Asserts the Set-Cookie better-auth actually issues on a real magic-link login.
+    // This previously asserted a hardcoded string literal against itself, so it passed
+    // no matter what the server sent.
+    const { setCookie } = await signInViaMagicLink(app);
 
-    expect(cookie).toMatch(/^better-auth\.session_token=/);
-    expect("Domain=.appily.run; SameSite=Lax; HttpOnly; Secure").toContain("Domain=.appily.run");
+    expect(setCookie).toMatch(/(^|\s)(__Secure-)?better-auth\.session_token=/);
+    expect(setCookie).toContain("Domain=.appily.run");
+    expect(setCookie).toContain("SameSite=Lax");
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("Secure");
   });
 
   it("[§8 #8] Session.expiresAt is login time plus 30 days", async () => {
@@ -156,14 +160,15 @@ describe("auth API", () => {
 
   it("[§8 #12] POST /api/auth/sign-out deletes the Session and invalidates cookie", async () => {
     const db = prisma();
-    const user = await createTestUser(db);
-    const cookie = await createSessionCookie(db, user.id);
+    const { cookie } = await signInViaMagicLink(app);
+    expect(await db.session.count()).toBe(1);
 
     const res = await app.request("/api/auth/sign-out", { method: "POST", headers: { Cookie: cookie } });
 
     expect([200, 204]).toContain(res.status);
-    await expect(db.session.count({ where: { userId: user.id } })).resolves.toBe(0);
-    expect(res.headers.get("Set-Cookie") ?? "").toMatch(/better-auth\.session_token|Max-Age=0|expires=/i);
+    await expect(db.session.count()).resolves.toBe(0);
+    expect(res.headers.get("Set-Cookie") ?? "").toMatch(/better-auth\.session_token=;/i);
+    expect(res.headers.get("Set-Cookie") ?? "").toMatch(/Max-Age=0|expires=/i);
   });
 
   it("[§8 #75] sendMagicLink callback sends Resend email using RESEND_FROM and the better-auth url as-is", async () => {

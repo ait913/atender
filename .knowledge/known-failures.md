@@ -7,6 +7,49 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 
 ## API (apps/api, Vitest)
 
+### ★ 実測ベースライン (2026-07-16, commit `f30391f`, Developer / fix/web-logout)
+
+`cd apps/api ; pnpm exec vitest run` → **Test Files 9 failed | 22 passed (31) / Tests 17 failed | 273 passed | 1 skipped (291)**
+
+台帳の教訓どおり測った日・commit・失敗数を併記する。fix/web-logout の変更 (手書き sign-out 削除 + テスト追補) 適用前後で**失敗テスト名の集合が完全一致** (`diff` exit 0) = 本 feature による regression は 0。
+
+内訳: 下記「テスト陳腐化 (Magic Link)」4 件 + 以下 13 件。**未分類 0**。
+
+### 旧「未分類 13 件」→ 全件分類済 (2026-07-16, Developer / fix/web-logout)
+
+**「テスト間 DB 状態リーク / seed 重複」仮説は棄却**: 各失敗ファイルを単独実行しても同一に失敗する (`pnpm exec vitest run tests/friendship.test.ts` 等)。`createTestDb` は beforeEach で template.db を copy し直しており分離は健全。**13 件は独立**。ただし A6/A7 は共通原因を持つ。
+
+**★ 過半 (8/13) が「テストが正しく、実装が設計doc の仕様番号に違反している」= 実装バグ。** ベースラインの山に本物のバグが隠れていた (CLAUDE.md がこの規約を持つ理由の実例)。
+
+#### A. 実装バグ (テストが正しい) — 8 件 → **要 Leader/Touri 裁定。fix/web-logout では直していない**
+
+| # | テスト | 実測 | 根拠 (設計doc `20260526-v3-rooms-friends.md`) |
+|---|---|---|---|
+| A1 | `room > enforces membership...` | 非メンバーの `GET /api/rooms/:id` が **403** | **#383**「メンバーでない user が叩くと `404 NOT_MEMBER` (存在を露呈しない、**403 ではない**)」→ **room の存在露呈。セキュリティ寄り** |
+| A2 | `room > orders members...` | OWNER が**末尾** | **#435**「`members` は **OWNER 先頭**、それ以外は joinedAt 昇順」 |
+| A3 | `roomEvent > allows any room member...` | member の PATCH が **403** | **#413**「PATCH は **room member なら誰でも編集可** (author 限定でない、TimeTree 方式)」。#414 (DELETE) も同様 |
+| A4 | `roomWeek > rejects non-members and invalid weekStart` | 不正 weekStart が **200** | **#431**「weekStart は月曜限定。それ以外は `400 INVALID_WEEK_START`」= **バリデーション不在** |
+| A5 | `friendship > handles create idempotency...` | 既存 PENDING への再申請が **201** | **#342**「再申請は**冪等** (新規行を作らず既存行を返す、**200**)」。service は冪等なのに `routes/friendships.ts:31` が **201 ベタ書き**で created/existing を区別できない |
+| A6 | `semesters [§8 #22]` | 400 だが body が `{"success":false,"error":{"issues":[...],"name":"ZodError"}}` | 期待は `{error:{code:"VALIDATION_ERROR"}}`。**zValidator が raw ZodError を素通しし、アプリの ErrorResponse 契約を破っている** |
+| A7 | `roomEvent > validates ranges...` | 同上 (`code` が undefined) | **#411**「start >= end は `400 { code: "INVALID_RANGE" }`」。**A6 と同一原因** |
+| A8 | `room > regenerates invites...` | 再発行コードが 32 hex | 設計 §23「招待は `Room.inviteCode` 直書き (**cuid**)」+ schema `@default(cuid())`。`room.service.ts:190` の `randomUUID().replaceAll("-","")` のみ逸脱。**機能影響なし・軽微** — cuid に寄せるかテストを緩めるかは裁定事項 |
+
+→ **A6/A7 は単一原因** (zValidator の error envelope)。web の `api()` は `ErrorResponse.safeParse` に失敗すると**実メッセージを捨てて generic `HTTP_ERROR` にフォールバック**するため、**全バリデーションエラーの UX を劣化させている実バグ**。
+
+#### B. テスト側の不備 (実装が正しい) — 5 件
+
+| # | テスト | 分類 / 原因 |
+|---|---|---|
+| B1 | `friendship > accepts, declines, cancels...` | **テストのバグ**。`friendship.test.ts:192` が `declineTarget` (#312 どおり DECLINED で**行は残る**) を削除せず同じ (senderId,receiverId) を再 create → `@@unique([senderId,receiverId])` (phase4_init から存在) 違反。直前 183 行目は `delete` してから create しており、**192 だけ delete が抜けている** |
+| B2 | `user-timetables [§8 #35]` | **陳腐化**。`daySlots: []` が現行 schema の `min(1)` に違反し **400** で弾かれ、409 重複判定に到達しない |
+| B3 | `occurrence-gen [§8 #68]` | **陳腐化**。「period 5 の DaySlot が無い」前提だが `createUserTimetable` helper は **periodIndex 1〜12 を seed** するので period 5 は存在し、正常生成される |
+| B4 | `auth-apple > normalizeApplePem...` | **陳腐化**。impl は `raw.trim()` する仕様。テストは末尾改行込みの**バイト一致** (`toBe(pem)`) を要求。実契約 (`createPrivateKey` が通る) は別 assert で担保済み |
+| B5 | `roomWeek > returns stable member colors...` | **陳腐化 + 設計の矛盾**。テストは v3 §1447 の `hsl(h, 65%, 55%)` を期待、impl は `hsl(h 70% 45%)` (`cuidToHsl.ts:7`)。**後発 v6 設計 §53/§1417 は `hsl(h, 70%, 55%)`** で、impl は**どちらの設計とも不一致**。どれを正とするかは裁定事項 |
+
+#### 原因コミットを特定できない理由
+
+**本 worktree では `git log` / `git blame` に pathspec を付けるとハングする** (iCloud `~/Documents` 配下。pathspec 無しの `git log --oneline` は即返る)。陳腐化の起点コミット特定は断念した。必要なら iCloud 外へ clone して調べること。
+
 ### テスト陳腐化 (better-auth 1.6.11 の挙動変化。feature 非依存・親コミットでも同一)
 
 これらは `tests/auth.test.ts` の Magic Link 系。**送信自体は正常** (probe で 200 + Verification 1 行 + Resend 1 回を確認)。旧テストが better-auth の旧挙動を前提にしている。

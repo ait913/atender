@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import type { PrismaClient, SchoolKind } from "@prisma/client";
+import type { Hono } from "hono";
 
 export async function createTestUser(
   prisma: PrismaClient,
@@ -181,4 +182,37 @@ export async function createOccurrence(
       endMinute: args.endMinute ?? 630,
     },
   });
+}
+
+/**
+ * Signs in for real through better-auth's magic-link flow and returns the genuine
+ * Set-Cookie it issues.
+ *
+ * Prefer this over createSessionCookie() whenever the code under test consumes the
+ * cookie through better-auth itself. createSessionCookie() forges a DB row whose
+ * token equals the whole cookie value, but a real better-auth cookie is
+ * `<token>.<signature>` while Session.token stores only `<token>`. Tests built on the
+ * forged shape silently agree with implementations that do the same wrong thing.
+ */
+export async function signInViaMagicLink(app: Hono, email = `real_${randomUUID()}@example.test`) {
+  await app.request("/api/auth/sign-in/magic-link", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, callbackURL: "https://atender.appily.run/verify" }),
+  });
+
+  const calls = globalThis.__resendSendMock.mock.calls;
+  const html = calls[calls.length - 1]?.[0]?.html as string | undefined;
+  const href = html ? /href="([^"]*magic-link\/verify[^"]*)"/.exec(html)?.[1] : undefined;
+  if (!href) throw new Error("magic link verify URL not found in the sent email");
+
+  const link = new URL(href.replace(/&amp;/g, "&"));
+  const verify = await app.request(`${link.pathname}${link.search}`, { redirect: "manual" });
+  const setCookie = verify.headers.get("Set-Cookie") ?? "";
+  const cookie = setCookie.split(";")[0];
+  if (!cookie.includes("session_token=")) {
+    throw new Error(`magic link verify did not set a session cookie (status ${verify.status})`);
+  }
+
+  return { email, cookie, setCookie, verifyStatus: verify.status };
 }
