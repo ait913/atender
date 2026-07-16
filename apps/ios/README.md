@@ -8,6 +8,9 @@ cd apps/ios
 xcodebuild -project Atender.xcodeproj -scheme Atender -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 16' build
 ```
 
+Builds must run `xcodegen generate` first.
+`.xcodeproj` is generated output; edits made directly to it are not reflected in `project.yml` and are lost on the next generation.
+
 ## Test
 
 ```sh

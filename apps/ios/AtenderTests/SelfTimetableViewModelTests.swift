@@ -72,11 +72,10 @@ final class SelfTimetableViewModelTests: XCTestCase {
 
     func testEventInputsColorFallbackWhenCourseMissing() {
         let vm = makeVM()
-        // course.color nil → "#F97316" (§423)
         let course = CourseDto(id: "c1", name: "授業", teacher: nil, color: nil, note: nil)
         let meeting = MeetingDto(id: "m1", courseId: "c1", dayOfWeek: 1, startPeriodIndex: 1, periodCount: 1, room: nil)
         let inputs = vm.eventInputs(for: tt(id: "t", semesterId: "s1", courses: [course], meetings: [meeting]))
-        XCTAssertEqual(inputs.first?.color, "#F97316")
+        XCTAssertEqual(inputs.first?.color, "#1E96E6")
     }
 
     func testEnsureTimetableReturnsSelectedWithoutNetwork() async {

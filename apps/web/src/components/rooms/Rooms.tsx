@@ -14,11 +14,18 @@ export function Rooms() {
   const list = rooms.data?.rooms ?? [];
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <h1 className="text-2xl font-bold">ルーム</h1>
-        <div className="flex gap-3">
-          <Button type="button" onClick={() => setJoinOpen(true)}>リンクで参加</Button>
-          <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>作成</Button>
+      <div className="space-y-2">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <h1 className="text-2xl font-bold">ルーム</h1>
+          <div className="flex gap-3">
+            <Button type="button" onClick={() => setJoinOpen(true)}>リンクで参加</Button>
+            <Button type="button" variant="primary" onClick={() => setCreateOpen(true)}>作成</Button>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button type="button" className="text-xs text-fg-tertiary hover:text-fg-secondary" onClick={() => void navigate({ to: "/templates" })}>
+            みんなの時間割
+          </button>
         </div>
       </div>
       {rooms.isLoading ? (
