@@ -9,7 +9,7 @@ final class APIClient {
     @ObservationIgnored private let decoder: JSONDecoder
     @ObservationIgnored private let encoder: JSONEncoder
 
-    init(session: URLSession = .shared, authStore: AuthStore) {
+    init(session: URLSession = APIConfig.apiSession, authStore: AuthStore) {
         self.session = session
         self.authStore = authStore
         self.decoder = JSONDecoder()
