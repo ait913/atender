@@ -22,8 +22,22 @@ export function Settings() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const user = me.data?.user;
 
+  const [signOutError, setSignOutError] = useState(false);
+
   async function signOut() {
-    await api("/api/auth/sign-out", { method: "POST" }).catch(() => undefined);
+    setSignOutError(false);
+    try {
+      // body: {} は必須。api() は body がある時しか Content-Type を付けず、
+      // better-auth の sign-out は Content-Type 無しだと 415 / 付いていて body が
+      // 無いと 500 を返す。
+      await api("/api/auth/sign-out", { method: "POST", body: {} });
+    } catch {
+      // 失敗を握り潰して /signin へ進めてはいけない。cookie は HttpOnly で JS から
+      // 消せないため、サーバ側セッションが生きたまま「ログアウトできた」ように
+      // 見えてしまう (この握り潰しが実際にバグを長期間隠していた)。
+      setSignOutError(true);
+      return;
+    }
     queryClient.clear();
     await navigate({ to: "/signin" });
   }
@@ -76,6 +90,9 @@ export function Settings() {
 
       <SettingsSection title="その他">
         <SettingsRow label="ログアウト" danger onClick={() => void signOut()} />
+        {signOutError ? (
+          <p className="px-3 pb-2 text-sm text-status-absent">ログアウトできませんでした。通信状況を確認してもう一度お試しください</p>
+        ) : null}
       </SettingsSection>
 
       <ProfileEditSheet open={sheet === "profile"} onClose={() => setSheet(null)} />
