@@ -48,6 +48,7 @@
 		<string>Inter-Bold.ttf</string>
 		<string>Inter-Black.ttf</string>
 		<string>NotoSansJP-VariableFont_wght.ttf</string>
+		<string>GoogleSans-Medium-Latin.ttf</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

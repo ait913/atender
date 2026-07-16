@@ -45,6 +45,7 @@ targets:
           - Inter-Bold.ttf
           - Inter-Black.ttf
           - NotoSansJP-VariableFont_wght.ttf
+          - GoogleSans-Medium-Latin.ttf
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         CFBundleURLTypes:
