@@ -80,7 +80,17 @@ TestFlight 実機で iOS 認証が全滅している。原因は (1) API `truste
 
 **統一する軸 (全3ボタン共通)**: full-width / 高さ `Space.s12` (48pt, ≥44 tap target) / 角丸 `Radius.sm` (10) / leading アイコン + 中央ラベル / ラベル `atenderLg` (17) SemiBold。
 
-**統一できない軸 (制約明記)**: Apple 純正 `SignInWithAppleButton` は Apple 指定フォント固定でありアプリ側フォントに変更不可。→ フォントは Apple ボタンのみ純正、Google/メールは Inter SemiBold。「統一感」は**同一ジオメトリ (高さ・角丸・幅・アイコン左/ラベル中央) と等間隔スタック**で担保する。App Store 審査 4.8/HIG 対策として Apple は純正ボタンを維持 (自前ボタンで Apple ロゴを描くと審査リスク)。
+> **⚠ 本節は 2026-07-16 に是正済。この節の設計は [`20260716-login-unify.md`](20260716-login-unify.md) に置き換えられた。**
+
+**（是正）Apple のフォント/自前ボタンに関する旧記述は誤りだった。** 旧記述は「Apple 純正 `SignInWithAppleButton` は Apple 指定フォント固定でアプリ側フォントに変更不可 → フォント統一は諦める」「自前ボタンで Apple ロゴを描くと審査リスク」としていたが、**HIG はカスタムボタンを明示的に許可している**。HIG 原文:
+
+> *"If your interface requires it, you can create a custom Sign in with Apple button for iOS, macOS, or the web. For example, you may want to **align logos across multiple sign-in buttons**, use buttons that display only a logo, or **adjust the button's font**, bezel, or background appearance to coordinate with your UI."*
+> *"Always make sure that people can instantly identify your custom button as a Sign in with Apple button."*
+> *"**App Review evaluates all custom Sign in with Apple buttons.**"*
+
+つまり「フォント固定」は `SignInWithAppleButton` を使った場合の**実装上の制約**であって、**規約上の制約ではない**。カスタムボタン + アプリ側フォントは規約に適合する (審査対象にはなる)。
+
+正しい制約と、規約上「原理的に統一できない軸 (= ラベルのフォントサイズ)」の証明・確定値は **`20260716-login-unify.md`** を参照。**本節の以下の記述 (純正ボタン維持 / 高さ48 / 中央ラベル / 3塗り) は同 doc の設計 (カスタムボタン / 高さ44 / 左揃えラベル / 白系2+accent1) に置換されている。**
 
 **各ボタンの塗り** (provider 慣習に従う。3塗りは §4「prominent 1-2」からの逸脱: 各 provider のブランド規定 + Web parity(メール=primary) が理由):
 
@@ -450,5 +460,6 @@ Team ID = `2J3HYGP2K8` (既知)。以下を作成:
 - **Apple client secret を静的 JWT で手動投入 (`APPLE_CLIENT_SECRET`)**: Apple の client secret は最長6ヶ月で失効し、忘れると Apple ログインが突然死する運用地雷。動的生成 (boot 時に180日 JWT を都度生成) で失効管理が消える。静的は脱出口として残すのみ。→ 動的生成を primary 採用。
 - **client secret 生成に jose を追加依存**: `getAuth()` を async 化する必要が出る (jose の SignJWT は async) が、`auth` は同期 Proxy で全 route から呼ばれ影響が広い。node:crypto の `sign(…, {dsaEncoding:"ieee-p1363"})` で ES256 を同期生成でき、依存追加ゼロ・async 化ゼロ。→ node:crypto 同期実装採用。
 - **Google をネイティブ SDK (GoogleSignIn-iOS) に置換**: 既存の ASWebAuthenticationSession + native/callback 中継が trustedOrigins 修正だけで通る。SDK 追加は依存増 + Web と別経路になり保守が割れる。→ 現行方式維持 (env 修正のみ)。
-- **Apple ボタンも自前描画で font 統一**: Apple ロゴを自前ボタンに描くと審査 4.8/HIG 違反リスク。純正ボタンを維持し、統一はジオメトリ (高さ/角丸/幅) で担保。→ 純正ボタン + 幾何統一。
+- ~~**Apple ボタンも自前描画で font 統一**: Apple ロゴを自前ボタンに描くと審査 4.8/HIG 違反リスク。純正ボタンを維持し、統一はジオメトリ (高さ/角丸/幅) で担保。→ 純正ボタン + 幾何統一。~~
+  **(2026-07-16 是正: 却下理由が誤りだった)** HIG は *"you can create a custom Sign in with Apple button ... adjust the button's font"* とカスタムボタンを明示的に許可しており、「自前ボタン = 審査違反リスク」は成立しない (Apple Design Resources のロゴアートワークを使う限り)。**この案は `20260716-login-unify.md` で正式採用された**。
 - **メールを常時表示フィールドにする (Web と同一)**: iOS の要望はミニマル (ロゴ+誘導文+3ボタン)。メールを3ボタンの1つにし progressive disclosure で展開する方が要望4に忠実。→ 展開式採用 (Web からの必然的変換)。
