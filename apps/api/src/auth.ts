@@ -85,7 +85,7 @@ export function getAuth(): Auth {
       baseURL: env.BETTER_AUTH_URL,
       socialProviders: {
         google: {
-          clientId: env.GOOGLE_CLIENT_ID,
+          clientId: env.GOOGLE_IOS_CLIENT_ID ? [env.GOOGLE_CLIENT_ID, env.GOOGLE_IOS_CLIENT_ID] : env.GOOGLE_CLIENT_ID,
           clientSecret: env.GOOGLE_CLIENT_SECRET,
           accessType: "offline",
           prompt: "consent",

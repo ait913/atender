@@ -55,7 +55,7 @@ final class AuthStore {
     }
 
     func signInWithApple(idToken: String) async throws {
-        let body = AppleSignInBody(provider: "apple", idToken: IDTokenBody(token: idToken))
+        let body = SocialIDTokenSignInBody(provider: "apple", idToken: IDTokenBody(token: idToken))
         let response = try await authRequest(path: "/api/auth/sign-in/social", body: body)
         guard let token = response.value(forHTTPHeaderField: "set-auth-token"), !token.isEmpty else {
             throw APIError.api(status: response.statusCode, code: "TOKEN_MISSING", message: "Authentication token was not returned.")
@@ -66,18 +66,16 @@ final class AuthStore {
         state = .signedIn
     }
 
-    func startGoogleSignIn() async throws -> URL {
-        let callback = nativeCallbackURL()
-        let body = GoogleSignInBody(provider: "google", callbackURL: callback.absoluteString)
-        let (data, response) = try await authRequestWithData(path: "/api/auth/sign-in/social", body: body)
-        guard (200...299).contains(response.statusCode) else {
-            throw decodeHTTPError(data: data, status: response.statusCode)
+    func signInWithGoogle(idToken: String) async throws {
+        let body = SocialIDTokenSignInBody(provider: "google", idToken: IDTokenBody(token: idToken))
+        let response = try await authRequest(path: "/api/auth/sign-in/social", body: body)
+        guard let token = response.value(forHTTPHeaderField: "set-auth-token"), !token.isEmpty else {
+            throw APIError.api(status: response.statusCode, code: "TOKEN_MISSING", message: "Authentication token was not returned.")
         }
-        let payload = try decoder.decode(GoogleSignInResponse.self, from: data)
-        guard payload.redirect else {
-            throw APIError.api(status: response.statusCode, code: "REDIRECT_EXPECTED", message: "Google sign-in did not return a redirect URL.")
-        }
-        return payload.url
+        try keychain.save(token: token)
+        storedToken = token
+        me = try await fetchMe(token: token)
+        state = .signedIn
     }
 
     func startMagicLink(email: String) async throws {
@@ -223,19 +221,9 @@ private struct IDTokenBody: Encodable {
     let token: String
 }
 
-private struct AppleSignInBody: Encodable {
+private struct SocialIDTokenSignInBody: Encodable {
     let provider: String
     let idToken: IDTokenBody
-}
-
-private struct GoogleSignInBody: Encodable {
-    let provider: String
-    let callbackURL: String
-}
-
-private struct GoogleSignInResponse: Decodable {
-    let url: URL
-    let redirect: Bool
 }
 
 private struct MagicLinkBody: Encodable {

@@ -1,4 +1,5 @@
 import AuthenticationServices
+import GoogleSignIn
 import SwiftUI
 
 struct AuthView: View {
@@ -36,10 +37,17 @@ private struct AuthViewContent: View {
                 try await authStore.signInWithApple(idToken: token)
             },
             signInGoogle: {
-                let url = try await authStore.startGoogleSignIn()
-                let callbackURL = try await googleSignIn.start(url: url)
-                try authStore.completeTokenSignIn(callbackURL: callbackURL)
-                await authStore.refreshMe()
+                let idToken: String
+                do {
+                    idToken = try await googleSignIn.signIn()
+                } catch {
+                    if (error as NSError).code == GIDSignInError.canceled.rawValue,
+                       (error as NSError).domain == kGIDSignInErrorDomain {
+                        return
+                    }
+                    throw error
+                }
+                try await authStore.signInWithGoogle(idToken: idToken)
             }
         ))
     }

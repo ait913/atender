@@ -1,3 +1,4 @@
+import GoogleSignIn
 import SwiftUI
 
 struct RootView: View {
@@ -28,6 +29,9 @@ struct RootView: View {
             await environment.authStore.bootstrap()
         }
         .onOpenURL { url in
+            if GIDSignIn.sharedInstance.handle(url) {
+                return
+            }
             if environment.authStore.isAuthCallback(url) {
                 Task {
                     try? environment.authStore.completeTokenSignIn(callbackURL: url)
