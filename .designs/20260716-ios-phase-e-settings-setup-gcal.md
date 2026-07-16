@@ -27,9 +27,23 @@ Web にあって iOS に無い残り全機能 — **設定タブ全体 (現状�
 
 1 doc に収めるが、**各フェーズが独立に実装・レビュー可能な単位**に切る。各フェーズは「1 worktree = 1 ブランチ = 1 developer + 1 reviewer」で回せる。
 
+### ★ 実行単位は 3 つに統合される (Touri 承認済)
+
+下表の E0〜E6 は**設計上の単位**であり、**実行 (worktree / ブランチ / developer・reviewer 召集) の単位は 3 つ**に統合された。後続の Developer / Reviewer はこちらを実行単位とする。
+
+| 実行フェーズ | 含む設計フェーズ | ブランチ想定 |
+|---|---|---|
+| **P1** | **E0 + E1** | `feature/ios-phase-e-p1-cleanup-home` |
+| **P2** | **E2 + E3 + E4** | `feature/ios-phase-e-p2-settings-setup` |
+| **P3** | **E5 + E6** | `feature/ios-phase-e-p3-calendar-google` |
+
+- 実行順は **P1 → P2 → P3** (P2 は E2→E3→E4 の内部依存、P3 は E5→E6 の内部依存を持つため、フェーズ内は順序どおりに実装する)。
+- **P3 の E6 着手前に Touri 承認ゲートを再度置く** (認証 + migration。下記 §E6 注記)。
+- **★ P1 は login-unify feature と `project.yml` で衝突する**。P1 の E0-5 が `UIAppFonts` を新規追加し、並走中の login-unify が**同じ `UIAppFonts` に Google Sans (Latin サブセット) を 1 行足す**。**P1 が先にマージされ、login-unify が既存リストに追記する**前提で書いてある。P1 の Developer は `UIAppFonts` キーを**新規作成**するだけでよく、Google Sans を含めない。逆順にマージされた場合はキーの重複でなく**行の追加**で解決すること (どちらかがキーごと上書きしてはならない)。
+
 | # | フェーズ | 依存 | 主な成果物 | 規模 |
 |---|---|---|---|---|
-| **E0** | 掃除 (死にコード削除 / xcodeproj 追跡 / Web `/templates` リンク) | **なし** | 削除 + `.gitignore` + Web 1 ファイル | 小 |
+| **E0** | 掃除 (死にコード削除 / xcodeproj 追跡 / **`UIAppFonts` 登録** / Web `/templates` リンク) | **なし** | 削除 + `.gitignore` + `project.yml` + Web 1 ファイル | 小 |
 | **E1** | Home ルームコンテキスト | **なし** | `HomeCore.swift` の chips + HomeBody 実配線 | 小 |
 | **E2** | Settings シェル + アカウント + 表示 + その他 | E0 (掃除後の木で作業) — **実質独立** | `SettingsView` 全面新規 / `SettingsSection`/`SettingsRow` / `ProfileEditSheet` / `SchoolDeptEditSheet` / `RequiredRateSheet` / テーマ / ログアウト / `MeRepository.updateMe` / `SheetScaffold`・`LabeledInput` の Core 移設 | 中 |
 | **E3** | 出欠ルール + 学期管理 | **E2** (シェルの行に生える) | `AttendanceRuleSheet` (**Endpoints から新規**) / `SemesterListSheet` / `RuleRepository` 新規 / `SemesterRepository` に CRUD 追加 | 中 |
@@ -334,6 +348,69 @@ apps/web/src/lib/timetableNormalize.ts
 - 文言・配置・トーン (`text-xs` / `text-fg-tertiary` / 右寄せ) は iOS の `.atenderXs` + `.textTertiary` + `VStack(alignment:.trailing)` と 1:1。
 - **タブは増やさない**。`navItems.ts` は変更しない。
 - **iOS 側は一切変更しない** (`RoomsView.swift` は正)。
+
+### E0-5 `UIAppFonts` 登録 (★アプリ全体が SF Pro で描かれているバグの修正)
+
+**確認済の事実** (Leader が独立検証 + 本設計で font ファイルを直接パースして確認):
+
+- `apps/ios/Atender/Resources/Fonts/` に Inter 5 種 + NotoSansJP 可変フォントが**実在**し `.app` にコピーもされている。
+- しかし `project.yml` / `Info.plist` に **`UIAppFonts` が無く**、`CTFontManagerRegisterFontsForURL` 等の実行時登録も無い。
+- `Typography.swift:4-16` は `Font.custom("Inter-Medium", …)` 等を呼ぶ。**`Font.custom` は名前解決に失敗すると黙ってシステムフォントにフォールバックする** (`UIFont(name:)` と違い nil にならない) → 誰も気付かないまま**全画面が SF Pro で描画**されていた。
+- Touri 裁定: 別 feature でなく **P1 (E0) で即直す**。理由「これを放置するとログイン画面のフォント統一議論自体が空論になる (今どの画面も Inter で描いていない)」。
+
+#### PostScript 名の実測 (推測でなく `name` テーブルを直接パース)
+
+`UIAppFonts` に書くのは**バンドル内のファイル名**だが、`Font.custom` / `UIFont(name:)` が要求するのは **PostScript 名 (name テーブル nameID 6)**。両者は一致する保証がないため全 6 ファイルを実測した:
+
+| ファイル | PostScript 名 (nameID 6) | family (1) | `Typography.swift` の文字列 | 一致 |
+|---|---|---|---|---|
+| `Inter-Regular.ttf` | `Inter-Regular` | `Inter` | `"Inter-Regular"` | ✅ |
+| `Inter-Medium.ttf` | `Inter-Medium` | `Inter Medium` | `"Inter-Medium"` | ✅ |
+| `Inter-SemiBold.ttf` | `Inter-SemiBold` | `Inter SemiBold` | `"Inter-SemiBold"` | ✅ |
+| `Inter-Bold.ttf` | `Inter-Bold` | `Inter` | `"Inter-Bold"` | ✅ |
+| `Inter-Black.ttf` | `Inter-Black` | `Inter Black` | `"Inter-Black"` | ✅ |
+| `NotoSansJP-VariableFont_wght.ttf` | **`NotoSansJP-Thin`** | `Noto Sans JP Thin` | (参照なし) | — |
+
+→ **Inter 5 種は PostScript 名が `Typography.swift` の文字列と完全一致する。`Typography.swift` の修正は不要** (登録するだけで直る)。
+
+★ **NotoSansJP の罠 (実測)**: 可変フォントで `wght` 軸は `min=100 / **default=100** / max=900`、PostScript 名は `NotoSansJP-Thin`。fvar の 9 named instance (Thin〜Black) は **PostScript 名を持たない** (psNameID 不在) ため、`UIFont(name:)` で解決できる名前は **`NotoSansJP-Thin` (= ヘアライン) だけ**。よって:
+
+- **`NotoSansJP-*` を名前で参照するコードを書いてはならない** (書くと日本語が極細で描画される)。本 Phase の Typography は Inter のみを参照するので現状は安全。
+- 登録しても**自動で日本語にカスケードはしない** (iOS は任意の登録フォントへ自動フォールバックしない)。日本語グリフは従来どおりシステムフォント (ヒラギノ) にフォールバックする。これは `.designs/20260701-ios-faithful-port-architecture.md` §1.1.1 が既に受け入れた挙動であり、**本 Phase はこれを変えない**。
+- それでも Touri 指示どおり 6 ファイルすべてを登録する (登録自体は無害で、将来のカスケード実装の前提になる)。**「登録した = 日本語が Noto Sans JP になる」ではない**点を Reviewer に明示する。
+
+#### `project.yml` 差分 (`targets.Atender.info.properties` に追加)
+
+```yaml
+    info:
+      path: Atender/Info.plist
+      properties:
+        ATENDER_API_SCHEME: $(ATENDER_API_SCHEME)
+        ATENDER_API_HOST: $(ATENDER_API_HOST)
+        ITSAppUsesNonExemptEncryption: false
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "2"
+        UILaunchScreen: {}
+        # ★追加: バンドル済フォントの登録。値は **バンドル内のファイル名** (PostScript 名ではない)。
+        #   Resources/Fonts/ 配下だが、ビルド時に .app 直下へフラットにコピーされるためパスは付けない。
+        UIAppFonts:
+          - Inter-Regular.ttf
+          - Inter-Medium.ttf
+          - Inter-SemiBold.ttf
+          - Inter-Bold.ttf
+          - Inter-Black.ttf
+          - NotoSansJP-VariableFont_wght.ttf
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        CFBundleURLTypes:
+          - CFBundleURLName: net.appily.atender.auth
+            CFBundleURLSchemes:
+              - atender
+```
+
+- `Info.plist` を直接編集**しない** (`project.yml:30-44` の `info.properties` が正典で、`xcodegen generate` が Info.plist を生成するため直接編集は次回生成で消える)。
+- ★ **ファイルが `.app` 直下にフラットコピーされる前提が崩れていないかを Developer が実測すること**: `xcodebuild build` 後に `find <DerivedData>/…/Atender.app -name '*.ttf'` で配置を確認する。サブディレクトリ (`Resources/Fonts/Inter-Regular.ttf`) に入る場合は `UIAppFonts` の値を**その相対パスに合わせる**。値が実配置と 1 文字でも違えば**無言で登録されず、`Font.custom` が無言でフォールバックして今と同じ症状に戻る** (このバグの再発経路そのもの)。E0-5 の受け入れは下記 §挙動仕様のテストで機械的に担保する。
+- `Typography.swift` の**唯一の変更**: Reviewer がマッピングを検証できるよう `private static func interPostScriptName(for:)` の `private` を外し **internal** にする (`static func interPostScriptName(for weight: Font.Weight) -> String`)。本体ロジックは 1 文字も変えない。
 
 ---
 
@@ -1234,6 +1311,22 @@ E5-2 の 1. を有効化: `TitleRuleEditor` の**上**に `Panel { GoogleCalenda
 - `updateBody(form: .init(name:"後期", …同), current:)` → `name` のみ非 nil。
 - `updateBody(form: .init(name:"", startDate:"2026-05-01", endDate:"2026-09-30"), current: name:"前期", start:"2026-04-01")` → `name` は nil (空は送らない)、`startDate` のみ非 nil。
 
+### フォント登録 (E0-5)
+
+`Font.custom` は解決失敗を**無言でフォールバック**するのでテストに使えない。`UIFont(name:size:)` は**解決失敗で nil を返す**ので、これを登録の真偽判定に使う。
+
+- **負の対照 (assert に牙があることの証明。これを先に置く)**: `UIFont(name: "ThisFontIsNotRegistered-XYZ", size: 14) == nil`。★ これが nil でない環境ならテスト全体が無意味になるので必ず入れる。
+- `UIFont(name: "Inter-Regular", size: 14) != nil` — 同様に `Inter-Medium` / `Inter-SemiBold` / `Inter-Bold` / `Inter-Black` の 5 名すべて非 nil。
+- `UIFont(name: "Inter-Bold", size: 14)?.fontName == "Inter-Bold"` (要求名がそのまま返る = 別フォントに化けていない)。
+- **マッピングと登録の結合テスト (今回のバグそのものを検出する)**: `[Font.Weight.regular, .medium, .semibold, .bold, .black, .heavy]` の各 `w` について
+  `XCTAssertNotNil(UIFont(name: Font.interPostScriptName(for: w), size: 14), "\(w) の PostScript 名が未登録")`。
+  → `Typography.swift` が参照する名前と実際に登録された名前の**不一致を機械的に検出**する。`.heavy` は `.black` と同じ `Inter-Black` に落ちる (`Typography.swift:13`)。
+- `Font.interPostScriptName(for: .light) == "Inter-Regular"` (default 分岐)、`(for: .heavy) == "Inter-Black"`、`(for: .semibold) == "Inter-SemiBold"`。
+- `UIFont(name: "NotoSansJP-Thin", size: 14) != nil` (登録されたこと自体の確認)。
+  ★ **`UIFont(name: "NotoSansJP-Regular", size: 14) == nil` を assert する** — 可変フォントの named instance は PostScript 名を持たず解決できない (実測)。「Regular が取れるはず」という誤解を設計として封じる。
+- **plist の値そのものの確認 (副次)**: `(Bundle.main.object(forInfoDictionaryKey: "UIAppFonts") as? [String])` が 6 要素を含む。
+  ★ 注意: `AtenderTests` は `project.yml:57-67` で `dependencies: [target: Atender]` を持つホスト付き unit-test バンドルのため `Bundle.main` はアプリ本体を指す想定。**もし nil を返す環境なら plist 検査の方を捨て、`UIFont(name:)` の assert を真とする** (登録の真偽は plist でなく実際に解決できるかで決まる)。
+
 ### HomeChips.items
 
 - `items(rooms: [])` → 1 要素、`.selfChip(label: "自分")`。
@@ -1317,10 +1410,46 @@ E5-2 の 1. を有効化: `TitleRuleEditor` の**上**に `Panel { GoogleCalenda
   - `AtenderTests/GoogleFormatTests.swift`: `GoogleFormat` 3 関数 (**JST 固定なので期待値も JST**。gotcha `api-test-date-fixtures-must-match-production-normalization`)
   - `AtenderTests/InvalidationMatrixTests.swift`: **既存ファイルに追記** — 新 8 case + 既存 case の回帰
   - `AtenderTests/IcsTitleRuleInputTests.swift`: `JSONEncoder` 出力の `replaceWith: null` 検証
+  - `AtenderTests/TypographyRegistrationTests.swift`: **E0-5 の全 assert** (上記 §フォント登録)。`UIKit` を import する。純粋関数でないが `UIFont(name:)` は同期・副作用なしなので通常の XCTest で足りる (シミュレータ実行が前提)
   - `AtenderTests/TodayViewModelTests.swift`: **E0 で削除**
 - **ベースライン**: 現行 **157 GREEN** (CLAUDE.md)。E0 で `TodayViewModelTests` 分だけ減る → **新ベースラインを `.knowledge/known-failures.md` の iOS 節に置換記載**。以降のフェーズは (新ベースライン + 追加分) が全 GREEN であることが受け入れ条件。**未分類の失敗を残したままマージ不可** (CLAUDE.md)。
 - **API (E6)**: Vitest。`apps/api/tests/native-link.test.ts` を新規。既存 `tests/ios-api.test.ts §8.4` (native/callback) と同じ helper (`tests/helpers/`) を使う。★ known-failures.md §環境依存 のとおり **dev `.env` が `.env.test` を上書きする harness 事故**が既知 — Reviewer は実行前に `trustedOrigins` の実値を probe で確認すること。
 - **Web (E0)**: `pnpm --filter @atender/web build` (tsc) が通ること。削除以外の変更は `Rooms.tsx` の 1 ファイルのみ。
+### ★ E0-5 の視覚回帰 (全画面の書体が SF Pro → Inter に変わる横断的変更)
+
+ユニットテストは「登録された」ことしか言わない。**書体が変わることでレイアウトが壊れていない**ことは別途スクショで見る。Inter は SF Pro とメトリクスが違うため、**文字送りが伸びて clipping / 折り返し / truncation が起きる**のが典型的な壊れ方。
+
+手順 (`CLAUDE.md`「全画面・全モーダルのスクショ収集」と既存ハーネスをそのまま使う):
+
+```sh
+cd apps/ios
+# ① before: E0-5 を当てる前の木で取得 (P1 ブランチの親コミット)
+git stash -u                       # or 親コミットを checkout
+/opt/homebrew/bin/xcodegen generate
+xcodebuild test -project Atender.xcodeproj -scheme AtenderUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -resultBundlePath before.xcresult
+xcrun xcresulttool export attachments --path before.xcresult --output-path shots-before
+
+# ② after: E0-5 適用後
+git stash pop
+/opt/homebrew/bin/xcodegen generate
+xcodebuild test -project Atender.xcodeproj -scheme AtenderUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2' -resultBundlePath after.xcresult
+xcrun xcresulttool export attachments --path after.xcresult --output-path shots-after
+# manifest.json で名前復元 → 同名ファイルを 1 対 1 で目視比較
+```
+
+- **既存の `testPhaseBFlow` / `testPhaseCFlow` / `testPhaseDFlow` をそのまま使う** (Phase E の新規画面はまだ無いので、既存フローが全画面カバレッジになる)。新規テストは書かない。
+- **合格条件は「全ペアで書体が Inter に変わっており、かつ下記の破綻がゼロ」**。ピクセル完全一致は**求めない** (書体が変わるのだから当然全ペアが差分になる)。自動ピクセル比較はここでは無意味なので**目視**とし、その旨を Reviewer が報告に明記する。
+- **重点確認箇所** (メトリクス差で壊れやすい順。Reviewer はここを名指しで確認する):
+  1. `BottomTabBar` のラベル (10px bold、幅が最も詰まっている) — 5 タブとも省略記号が出ていないか
+  2. 時間割グリッドの曜日ヘッダ (11px semibold) / セル内 `EventTile` の 2 行 clamp — 行数が増えてセルから溢れていないか
+  3. 出席率ヒーローの `text-5xl font-black tabular-nums` (44px) — 数字幅が変わって `%` が折り返していないか
+  4. **`.monospacedDigit()` が custom font 上で効いているか** — 出席率・限数の数字が等幅で揃っているか。効いていなければ数字が揺れる (Inter の tabular figures 機能が `.monospacedDigit()` 経由で引けるかは未確認。**壊れていたら Leader に報告**。本 Phase で修正案を先回りして書かない)
+  5. `SettingsRow` / `CourseListItem` の固定高さ行 — 縦のクリッピング
+  6. **日本語テキストが従来と変わっていないこと** (Inter にグリフが無くシステムフォントにフォールバックするため、日本語は before/after で**同一のはず**。ここが変わっていたら想定外 = 報告事項)
+- ★ P1 の Developer/Reviewer は **before スクショを先に取ってから**実装に入ること (実装後に「元がどうだったか」は取り直せるが、二度手間になる)。
+
 - **XCUITest**: 既存ハーネス `AtenderUITests/ScreenshotFlow.swift` に `testPhaseEFlow()` を追加 (既存 `testPhaseB/C/DFlow` と同型)。`ATENDER_UI_TEST_BEARER_TOKEN` 注入で起動。Setup フローの検証には **setupStatus 未完了のデモユーザー seed が別途要る** (`apps/api/scripts/seed-demo-user.ts` に `--incomplete` 相当のモードを足すか、専用 seed を追加する。Developer は seed スクリプトの現物を読んで最小の追加で済ませる)。
   - `accessibilityIdentifier`: `settings-view` / `settings-row-profile` / `settings-row-school` / `settings-row-requiredRate` / `settings-row-rules` / `settings-row-semesters` / `settings-row-google` / `settings-row-calendar` / `settings-row-signout` / `profile-edit-sheet` / `school-dept-sheet` / `required-rate-sheet` / `attendance-rule-sheet` / `semester-list-sheet` / `setup-flow` / `settings-calendar` / `title-rule-editor` / `google-calendar-section` / `google-connect-sheet` / `google-selector-sheet` / `room-google-sync-section` / `context-chips` (既存)
   - スクショ比較は `xcrun simctl` / XCUITest。**chrome-devtools MCP は使わない** (iOS ネイティブのため)。
@@ -1335,6 +1464,10 @@ E5-2 の 1. を有効化: `TitleRuleEditor` の**上**に `Panel { GoogleCalenda
 - **中継 URL に session token を直接載せる (`?token=<sessionToken>`)**: 却下。ticket テーブルを省ける代わり、**30 日有効の session token が Nginx / Coolify のアクセスログに平文で残る**。単回・120 秒の ticket なら露出が有界。
 - **ticket を better-auth の `verification` テーブルに相乗りさせる**: 却下。migration を回避できるが、他人 (better-auth) のテーブルに独自 identifier prefix で書き込む結合が生まれ、ライブラリ更新でいつ壊れてもおかしくない。専用モデル 1 つの追加 migration の方が安い。
 - **GoogleSignIn SDK / 自前 OAuth code flow で calendar scope を取り、Account 行を自前 upsert**: 却下。`completeGoogleLink` (`googleCalendarSync.service.ts:16-21`) は better-auth の `Account.scope` を単一の真実として読む。better-auth を迂回して Account を書くと refresh token のライフサイクル管理 (`auth.api.getAccessToken`) が二重化し、cron 同期 (`pattern/better-auth-incremental-scope-and-cron-token`) との整合が崩れる。
+- **`UIAppFonts` 欠落の修正を別 feature に切り出す**: 却下 (**Touri 裁定**)。当初は「Phase E のスコープ外」と判断しかけたが、放置すると並走中の login-unify のフォント統一議論が空論になる (現状どの画面も Inter で描いていない)。P1 = E0 で即直す。
+- **`Typography.swift` の `Font.custom(...)` を `UIFont(name:)` ベースに書き換えて解決失敗を検出可能にする**: 却下。`Font.custom` の無言フォールバックは確かに今回のバグを隠したが、書き換えは全画面のフォント生成経路を変える大改修になる。**検出はテスト側 (`UIFont(name:)` による登録 assert) で担保**すれば十分で、プロダクトコードを歪めない。
+- **`NotoSansJP` の日本語カスケード (`UIFontDescriptor` の `cascadeList`) を組む**: 却下。`.designs/20260701-ios-faithful-port-architecture.md` §1.1.1 が「Phase A ではカスケードを組まず、日本語はシステムフォント (ヒラギノ) にフォールバックする挙動を許容」と既に確定済。E0-5 は**登録漏れというバグの修正**であって、確定済の設計判断を覆す場ではない。カスケードをやるなら独立 feature。
+- **`NotoSansJP-VariableFont_wght.ttf` を `UIAppFonts` から外す**: 却下 (Touri 指示は 6 ファイル登録)。実測上どうせ名前で引けるのは Thin だけでカスケードも組まないので**視覚的効果はゼロ**だが、登録自体は無害で将来のカスケード実装の前提になる。ただし「登録した = 日本語が Noto Sans JP になる」ではない旨を §E0-5 に明記した。
 - **`Atender.xcodeproj` の追跡を維持し `.gitignore` に "Atender [0-9]*.xcodeproj" だけ足す**: 却下。複製の症状だけ隠して原因 (生成物を追跡していること) が残る。CI ゼロ・scheme は project.yml 宣言済という実測から、追跡をやめても失うものが無い。
 - **`components/today/` を丸ごと削除**: 却下。`MainAttendanceCTA.tsx` は `components/home/SelfTodayCTA.tsx:8` が import している**生きたファイル**。指示の「components/today/*」を字面どおり実行するとホームの出欠 CTA が壊れる。削除は `Today.tsx` / `TodayGreeting.tsx` の 2 つのみ。
 - **孤児化する歌詞 UI (`TimetableScroll` / `OccurrenceLyricCard` / `ReturnToNowFAB`) も削除**: 却下 (本 Phase では)。tracked かつ「作った UI を捨てるか」というプロダクト判断であり、Architect の裁量でない。E0 で孤児化する事実を Leader に申告し Touri 判断に上げる。
