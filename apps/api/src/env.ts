@@ -12,6 +12,7 @@ const EnvSchema = z.object({
   RESEND_FROM: z.string().min(1),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
+  GOOGLE_IOS_CLIENT_ID: OptionalNonEmptyString,
   APPLE_CLIENT_ID: OptionalNonEmptyString,
   APPLE_CLIENT_SECRET: OptionalNonEmptyString,
   APPLE_APP_BUNDLE_ID: OptionalNonEmptyString,
