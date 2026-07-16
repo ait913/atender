@@ -140,7 +140,7 @@ final class MeetingExpansionTests: XCTestCase {
 
 // §MemberColor: hash パレット選択。設計はパレットからの決定的選択のみ規定 → 決定性 + パレット所属を検証。
 final class MemberColorTests: XCTestCase {
-    private let palette = ["#10b981", "#60a5fa", "#f472b6", "#8b5cf6", "#f59e0b"]
+    private let palette = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"]
 
     func testDeterministic() {
         XCTAssertEqual(MemberColor.memberColor("course-abc"), MemberColor.memberColor("course-abc"))

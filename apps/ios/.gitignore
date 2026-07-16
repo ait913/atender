@@ -1,6 +1,8 @@
 # Xcode
 build/
 DerivedData/
+# xcodegen 生成物。project.yml が正典。`xcodegen generate` で再生成する。
+*.xcodeproj/
 *.xcuserstate
 xcuserdata/
 *.xcscmblueprint

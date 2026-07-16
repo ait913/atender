@@ -5,7 +5,7 @@ extension Font {
         .custom(interPostScriptName(for: weight), size: size, relativeTo: .body)
     }
 
-    private static func interPostScriptName(for weight: Font.Weight) -> String {
+    static func interPostScriptName(for weight: Font.Weight) -> String {
         switch weight {
         case .medium: return "Inter-Medium"
         case .semibold: return "Inter-SemiBold"
