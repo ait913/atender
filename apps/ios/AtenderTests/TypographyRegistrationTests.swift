@@ -42,12 +42,25 @@ final class TypographyRegistrationTests: XCTestCase {
             "Inter-SemiBold.ttf",
             "Inter-Bold.ttf",
             "Inter-Black.ttf",
-            "NotoSansJP-VariableFont_wght.ttf"
+            "NotoSansJP-VariableFont_wght.ttf",
+            "GoogleSans-Medium-Latin.ttf"
         ]
 
-        XCTAssertEqual(fontFiles.count, 6)
         for file in expectedFontFiles {
             XCTAssertTrue(fontFiles.contains(file), "UIAppFonts に \(file) が含まれていない")
+        }
+
+        // 件数のマジックナンバーでなく「全エントリが実在ファイルを指す」不変条件で検証する。
+        // UIAppFonts の値は .app 直下のベアファイル名でなければならず、パス付き
+        // (例 "Resources/Fonts/X.ttf") にすると iOS は例外も警告も出さずに未登録のまま
+        // システムフォントへフォールバックする。この assert がその誤りを検出する。
+        for file in fontFiles {
+            let name = (file as NSString).deletingPathExtension
+            let ext = (file as NSString).pathExtension
+            XCTAssertEqual(file, (file as NSString).lastPathComponent,
+                           "UIAppFonts の値にパスが含まれている: \(file) — .app 直下のファイル名のみにすること")
+            XCTAssertNotNil(Bundle.main.url(forResource: name, withExtension: ext),
+                            "UIAppFonts の \(file) がバンドル内に実在しない")
         }
     }
 }
