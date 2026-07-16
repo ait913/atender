@@ -22,7 +22,7 @@ final class AuthStore {
 
     var token: String? { storedToken }
 
-    init(keychain: KeychainStore = KeychainStore(), session: URLSession = .shared) {
+    init(keychain: KeychainStore = KeychainStore(), session: URLSession = APIConfig.apiSession) {
         self.keychain = keychain
         self.session = session
         self.decoder = JSONDecoder()

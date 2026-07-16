@@ -98,8 +98,8 @@ struct AuthProviderButton: View {
 
     private var titleFont: Font {
         switch kind {
-        case .apple: return .atender(19, .semibold)
-        case .google: return .custom("GoogleSans-Medium", size: 14, relativeTo: .body)
+        case .apple: return .atender(17, .semibold)
+        case .google: return .custom("GoogleSans-Medium", size: 17, relativeTo: .body)
         case .email: return .atender(17, .semibold)
         }
     }
