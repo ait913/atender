@@ -40,17 +40,6 @@ async function resolveSessionToken(headers: Headers) {
 }
 
 export function registerAuthRoutes(app: Hono) {
-  app.post("/api/auth/sign-out", async (c) => {
-    const token = readCookie(c.req.raw.headers, "better-auth.session_token");
-    if (token) await getPrisma().session.deleteMany({ where: { token } });
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Set-Cookie": "better-auth.session_token=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax",
-      },
-    });
-  });
-
   app.get("/api/auth/native/callback", async (c) => {
     const next = c.req.query("next") ?? "atender://auth";
     if (!trustedOrigins.includes(next)) {
