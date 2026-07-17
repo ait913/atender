@@ -149,6 +149,20 @@ rrulestr は `DTSTART;TZID=...` 形式なら食えるが `DTSTART:...Z` 形式�
 - この harness では `prisma migrate deploy` / `prisma` CLI が起動時ハングする (schema-engine バイナリ直叩きは即動作)。テスト実行時は `tests/helpers/db.ts ensureTemplateDb` の `npx prisma migrate deploy` をシムで差し替え、既知の正しい `template.db` を復元して回避した (スキーマは本 feature で不変)。
 - Vitest 実行は `CHECKPOINT_DISABLE=1` + シム PATH + サンドボックス無効が必要。
 
+### iOS 26.5 の「iPhone 16」は既定で存在しない (2026-07-17)
+
+UI 刷新の設計 §10.1 は Liquid Glass の目視検証に `-destination 'platform=iOS Simulator,name=iPhone 16,OS=26.5'` を指定するが、**iOS 26.x ランタイムに既定で入っているデバイスは iPhone 17 Pro / 17 Pro Max / 17e だけ**で、この destination は解決しない。
+
+ただし **26.5 ランタイムは iPhone 16 を「デバイス型として」対応している** (対応 65 種に含まれる)。インスタンスが無いだけなので、作れば設計のコマンドがそのまま動く:
+
+```sh
+xcrun simctl create "iPhone 16" \
+  "com.apple.CoreSimulator.SimDeviceType.iPhone-16" \
+  "com.apple.CoreSimulator.SimRuntime.iOS-26-5"
+```
+
+**iPhone 17 Pro で代用しない** — 画面寸法が変わると §10.1 が要求する「P2 前後の同一スクショ比較」が成立しなくなる (18.2 側は iPhone 16 のため)。名前が同じでも OS が違えば destination は一意に解決する。
+
 ## iOS (apps/ios, XCTest)
 
 **ベースライン: 263 GREEN / 0 RED** (main = `4dfd3a9` = UI 刷新 P1 マージ後、2026-07-17 Leader 実測)。
