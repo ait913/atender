@@ -46,8 +46,15 @@
 iOS の Debug ビルドは `localhost:8787` を叩く。ログインは OAuth なので、**デモ seed + bearer 注入でログイン画面をスキップ**して実データで確認するのが定石。
 
 ```sh
-# 1. API 起動 (--env-file 必須。`pnpm dev` 単体は env 未読込で起動失敗する)
+# 0. 依存 + Prisma client (node_modules を作り直した後は必須)
+pnpm install
 cd apps/api
+pnpm exec prisma generate
+#    postinstall フックが無いので install だけでは client が生成されない。忘れると起動時に
+#    `SyntaxError: @prisma/client does not provide an export named 'PrismaClient'`
+#    — コードのバグに見えるが、未生成なだけ
+
+# 1. API 起動 (--env-file 必須。`pnpm dev` 単体は env 未読込で起動失敗する)
 pnpm exec tsx watch --env-file=.env src/index.ts      # → http://localhost:8787 (health: /healthz)
 
 # 2. デモユーザー seed → bearer token 出力 (冪等)
