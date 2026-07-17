@@ -5,6 +5,7 @@ import Observation
 @Observable
 final class AppEnvironment {
     let authStore: AuthStore
+    let versionStore: VersionStore
     let apiClient: APIClient
     let queryClient: QueryClient
     let toastCenter: ToastCenter
@@ -32,11 +33,13 @@ final class AppEnvironment {
         #endif
         let authStore = AuthStore()
         let queryClient = QueryClient()
+        let versionStore = VersionStore()
         self.authStore = authStore
+        self.versionStore = versionStore
         self.queryClient = queryClient
         self.toastCenter = ToastCenter()
         self.appRouter = AppRouter()
-        self.apiClient = APIClient(authStore: authStore)
+        self.apiClient = APIClient(authStore: authStore, versionStore: versionStore)
         self.meRepository = MeRepository(client: self.apiClient, cache: queryClient)
         self.semesterRepository = SemesterRepository(client: self.apiClient, cache: queryClient)
         self.timetableRepository = TimetableRepository(client: self.apiClient, cache: queryClient)

@@ -6,12 +6,14 @@ import Observation
 final class APIClient {
     @ObservationIgnored private let session: URLSession
     @ObservationIgnored private let authStore: AuthStore
+    @ObservationIgnored private let versionStore: VersionStore
     @ObservationIgnored private let decoder: JSONDecoder
     @ObservationIgnored private let encoder: JSONEncoder
 
-    init(session: URLSession = APIConfig.apiSession, authStore: AuthStore) {
+    init(session: URLSession = APIConfig.apiSession, authStore: AuthStore, versionStore: VersionStore = VersionStore()) {
         self.session = session
         self.authStore = authStore
+        self.versionStore = versionStore
         self.decoder = JSONDecoder()
         self.decoder.keyDecodingStrategy = .useDefaultKeys
         self.encoder = JSONEncoder()
@@ -21,6 +23,11 @@ final class APIClient {
     func send<T: Decodable>(_ endpoint: APIEndpoint, as type: T.Type) async throws -> T {
         let (data, response) = try await perform(endpoint)
         let status = response.statusCode
+
+        if status == 426 {
+            versionStore.handleUpgradeRequired()
+            throw APIError.upgradeRequired
+        }
 
         if status == 401 {
             authStore.handleUnauthorized()
@@ -41,6 +48,11 @@ final class APIClient {
     func send(_ endpoint: APIEndpoint) async throws {
         let (data, response) = try await perform(endpoint)
         let status = response.statusCode
+
+        if status == 426 {
+            versionStore.handleUpgradeRequired()
+            throw APIError.upgradeRequired
+        }
 
         if status == 401 {
             authStore.handleUnauthorized()
@@ -83,6 +95,10 @@ final class APIClient {
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw APIError.transport("Invalid HTTP response")
+            }
+            if httpResponse.statusCode == 426 {
+                versionStore.handleUpgradeRequired()
+                throw APIError.upgradeRequired
             }
             if httpResponse.statusCode == 401 {
                 authStore.handleUnauthorized()

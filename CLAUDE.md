@@ -117,6 +117,7 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
 
 - **バージョン更新: 版数の正典は `project.yml` の `info.properties` 一択** (現在 `CFBundleVersion: "5"` / `CFBundleShortVersionString: "1.0"`)。次ビルドはここをインクリメントする
   - **`Atender/Info.plist` を手編集してはいけない。** XcodeGen は `info:` 指定があると Info.plist を**毎回生成し直す** ("Plists are created on disk on every generation of the project") ので、必須手順の `xcodegen generate` が手編集を**黙って巻き戻す**。Info.plist は git 管理下にあるため、xcodegen を走らせるまでは手編集が効いているように見えるのが厄介。詳細: `Muraki/knowledge/gotcha/xcodegen-info-plist-regenerated-every-run.md`
+- 互換を壊す変更を含む場合は、`project.yml` の `CFBundleVersion` を N に上げたうえで `apps/api/src/lib/clientVersion.ts` の `MIN_IOS_BUILD` を N に上げる。`MIN_IOS_BUILD > 今から配る CFBundleVersion` にすると、配った直後に全員が 426 で自滅するため、必ず `MIN_IOS_BUILD <= これから配る CFBundleVersion` を確認する
 - 暗号化コンプライアンス: `ITSAppUsesNonExemptEncryption: false` を `project.yml` の `info.properties` で宣言済 (→ 生成される Info.plist に入る) → TestFlight の輸出質問はスキップ
 - アップロード後 Apple 側処理 15〜30分 → ASC の TestFlight タブにビルド出現 → 内部テスター追加 (Beta App Review 不要)。外部テスターは Beta App Review + Test Information 記入が要る
 - Xcode GUI サインインは不要 (API キーが署名・アップロード両方を担う)
