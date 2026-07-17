@@ -165,8 +165,16 @@ xcrun simctl create "iPhone 16" \
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 263 GREEN / 0 RED** (main = `4dfd3a9` = UI 刷新 P1 マージ後、2026-07-17 Leader 実測)。
-`Executed 263 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。
+**ベースライン: 264 GREEN / 0 RED** (main = `dc0ef53` = UI 刷新 P2 マージ後、2026-07-17 Leader 実測)。
+`Executed 264 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。
+
+### ★ このスイートは「壊れた画面」を検出しない (2026-07-17 の教訓)
+
+UI 刷新 P2 で `RoomDetailView` のタブピッカーがタップ不能に壊れていた状態でも、UI テストハーネスは **`Executed 6 tests, 0 failures` / `TEST SUCCEEDED`** を返した。**合否は無情報だった。**
+
+- 設計 §9.4 自身が「本設計の中心的主張 (native 部品にすると Liquid Glass が出る) をユニットテストは 1 ミリも検証しない」と明記している
+- 見た目・可達性の判定は**ピクセルと目視**でしか行えない。`0 failures` を根拠にしない
+- 有効だった手法: 連続スクショの **byte 一致 = その間の tap が no-op だった証拠**。ただし「ハーネスが別画面で迷子」でも byte 一致するので、**先に画面が正しいことを示してから**主張する (`Muraki/knowledge/gotcha/screenshot-byte-identity-conflates-noop-tap-with-lost-harness.md`)
 
 件数の追跡 (件数だけの台帳は failure を隠す — 下記「この台帳自体が失敗を隠していた」参照):
 
