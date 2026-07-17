@@ -151,12 +151,29 @@ rrulestr は `DTSTART;TZID=...` 形式なら食えるが `DTSTART:...Z` 形式�
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 201 GREEN / 0 RED** (`feature/version-management` = `3c9e85b` + Reviewer 追記、実測 2026-07-17)。
-内訳: 183 (`fix/room-week-contract` = `eb96e8a`、2026-07-17 実測) + **version-management 18**
-(`VersionGateTests` = Codex 生成 16 + Reviewer 追記 2)。
-`Executed 201 tests, with 0 failures (0 unexpected)`。**未分類の失敗 0**。
-前々回 174 (feature/phase-e-p1、2026-07-16) → +9 (`RoomWeekContractTests`) → 183 → +18 = 201 で件数が繋がる。
+**ベースライン: 263 GREEN / 0 RED** (main = `4dfd3a9` = UI 刷新 P1 マージ後、2026-07-17 Leader 実測)。
+`Executed 263 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。
+
+件数の追跡 (件数だけの台帳は failure を隠す — 下記「この台帳自体が失敗を隠していた」参照):
+
+| 時点 | 件数 | 増減の内訳 |
+|---|---|---|
+| feature/phase-e-p1 (2026-07-16) | 174 | — |
+| `eb96e8a` fix/room-week-contract | 183 | +9 (`RoomWeekContractTests`) |
+| `3c9e85b` feature/version-management | 201 | +18 (`VersionGateTests` = Codex 生成 16 + Reviewer 追記 2) |
+| **`4dfd3a9` main (UI 刷新 P1)** | **263** | **+62** — −1 (`DayConventionTests.testTodayDayOfWeekJsRoundsWeekendToMonday` を §9.2 で削除) / +3 (`TypographyRegistrationTests` 2→5、#S4-#S8 に全面書き換え) / +2 (`NavigationTests` 2→4、#S10 + 負の対照) / +58 (新規 7 ファイル: SchoolClock 7 / TodayTimeline 17 / NowNextText 6 / TimetableGridLayout 12 / CalendarLayout 10 / Localization 3 / ScreenMetrics 3) |
+
 実行: `xcodegen generate` → `xcodebuild test -project Atender.xcodeproj -scheme Atender -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2'`
+
+### ★ 資源を削除した後は `-derivedDataPath` で隔離して測る (2026-07-17 の教訓)
+
+UI 刷新 P1 でバンドル済フォントを削除した後、**共有 DerivedData の増分ビルドが古い登録状態のまま走り、`TypographyRegistrationTests.testGoogleSansRemainsRegistered` が偽の RED を出した** (Leader が Reviewer の GREEN を疑い、危うく Developer に差し戻すところだった)。
+
+- 静的検査 6 つ (フォント実体 / PostScript 名 / `project.yml` / 生成 `Info.plist` / `.app` 内 `.ttf` / `.app` 内 `Info.plist`) が**全て正しい**のに実行時だけ落ちる = 環境の徴候
+- 副次的徴候: `25 tests skipped` が偽 RED の run にだけ現れた
+- `-derivedDataPath <scratchpad>/dd-clean` を付けて隔離すれば即 GREEN。既存の DerivedData を壊さないので `rm -rf` より安全
+
+詳細: `Muraki/knowledge/gotcha/stale-deriveddata-false-red-after-resource-deletion.md`
 
 ### ★ この台帳自体が失敗を隠していた (2026-07-16 の教訓)
 

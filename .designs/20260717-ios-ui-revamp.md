@@ -25,14 +25,18 @@
 | **DTO 契約テスト** | 版数管理 doc §10 が別テーマとして切り出し済 |
 | **`MemberColor.palette` / 科目色 / status 色 / accent の値** | **本設計は色の「値」を一切変えない** (§9.3 の地雷回避) |
 
-### 前提 (P)
+### 前提 (P) — **2026-07-17 更新: P1 は着地済 (`4dfd3a9`)**
 
-- **P1: `feature/version-management` が先に着地する。** 本設計は `RootView.swift` / `project.yml` を触るので衝突する。
-  **本 doc 執筆中に同ブランチが `f4da366` としてコミットされた** (未マージ)。§4.4 の目標状態は**その実物と突合済**で、`RootView` の着地形 (version gate 分岐 + `.task` 2 本 + `AmbientBackground()` + `?? .light`) は §4.4 の前提どおり。Developer は §4.4 の形を作れば順序に関係なく正しくなる
-- **P2: iOS ベースラインは 183 GREEN / 0 RED** (`.knowledge/known-failures.md`、`eb96e8a` 時点)。**未分類の失敗 0**。
-  ただし `f4da366` がテストを追加しているので、**P1 のマージ後にベースラインを測り直してから着手すること** (件数だけの台帳は failure を隠す — 台帳の教訓)
-- **P3: main は `970e52d`。** 本 doc の「現状」の記述・行番号・grep 結果はこの commit 時点のもの。
-  `2ddd1f8` → `970e52d` の差分は knowledge の訂正のみで **iOS コードは 1 行も動いていない**ことを確認済 (Space.swift の `selfTtChrome = 352` / `tabBarHeight = 64`、`project.yml` に `developmentLanguage` 無し、`RootView` の `AmbientBackground()` 1 箇所 — すべて doc 完成時点で再確認)
+- **P1: `feature/version-management` は着地済** (`60a127e`)。`RootView.swift` / `project.yml` の衝突懸念は解消。
+  §4.4 の目標状態は着地後の実物と突合済 — `RootView` の現状は version gate 分岐 + `.task` 2 本 + `?? .light`。**`AmbientBackground()` の行は本設計 P1 で既に除去済**なので、P2 に残る `RootView` の変更は 2 点だけ (§4.4)
+- **P2: iOS ベースラインは 263 GREEN / 0 RED** (`4dfd3a9` = 本設計 P1 のマージ、2026-07-17 実測)。**未分類の失敗 0**。
+  内訳: 201 (version-management 着地時) + P1 の新規 62 = 263。
+  - ★ **各フェーズ着手前にベースラインを測り直すこと。** 件数だけを信じない (`Executed N tests, with M failures` の M まで読む — 台帳の教訓)
+  - ★ **台帳 `.knowledge/known-failures.md` の iOS 節が正典** (2026-07-17 に Leader が実走記録付きで 263 へ更新済)。本節の数値は執筆時点のスナップショットなので、**食い違ったら台帳を採る**
+  - ★ **資源 (フォント / アセット / `Info.plist` のキー) を削除・変更したフェーズの検証は `-derivedDataPath` で隔離して測る。** 共有 DerivedData の増分ビルドは古い登録状態のまま走り**偽の RED** を出す (P1 で実際に踏んだ)。詳細は台帳の同名節 / `Muraki/knowledge/gotcha/stale-deriveddata-false-red-after-resource-deletion.md`
+- **P3: main は `4dfd3a9`** (本設計 P1 のマージ済)。
+  - **§3 (デザイントークンの土台) と §7.1/§7.2/§5.3・§5.5 の純粋ロジックは実装済。** これらの節は**実装指示ではなく着地済の契約の記述**として読む
+  - §4 (P2) / §5 (P3) の「現状」記述・file:line は **`4dfd3a9` で全件 re-grep して一致を確認済** (2026-07-17)。P1 は `Space` の 4 トークン削除 / `pagePxMobile` 12→16 / `Typography` 全面置換 / 中立色置換 / `AmbientBackground.swift` 削除 / `SchoolClock` 新設 + `todayString` 11 箇所置換を行ったが、**P2/P3 が触る行の行番号を動かしていない** (例外は §3.6 表の `SelfTodayCTA.swift:165` → **:166**、訂正済)
 
 ---
 
@@ -131,7 +135,7 @@ findings が「決めろ」と名指しした 3 択のうち **(a) SF Pro に寄
 
 | 項目 | 変更 |
 |---|---|
-| `Font.atender(_ size:_ weight:)` | **削除** (`Font.custom("Inter-*")` の入口)。呼び出し 17 箇所は §3.2 の表で変換 |
+| `Font.atender(_ size:_ weight:)` | **削除** (`Font.custom("Inter-*")` の入口)。呼び出し **18 箇所**は §3.2 の表で変換 |
 | `Font.interPostScriptName(for:)` | **削除** |
 | `project.yml` `UIAppFonts` | `Inter-*.ttf` 5 件と `NotoSansJP-VariableFont_wght.ttf` を**削除**。**`GoogleSans-Medium-Latin.ttf` は残す** |
 | `Resources/Fonts/` の `.ttf` | 上と同じ 6 ファイルを**削除** (未登録の ttf を .app に同梱する意味がない) |
@@ -173,7 +177,9 @@ enum Leading {                                    // 現状のまま (呼び出�
 - **数値の逸脱**: `atender5xl` は 44 → 34。iOS の text style に 44 の段が無いため。hero 数値は `.largeTitle` + `.fontWeight(.bold)` で表す
 - **`.fontWeight(.black)` を使っている箇所は `.bold` に落とす** (HIG §1: Black/Heavy は段として使わない。Regular/Medium/Semibold/Bold の 4 つで組む)
 
-**`Font.atender(size:weight:)` 呼び出し 17 箇所の変換表** (生成規則: **8/9/10/11 → `.caption2` / 12 → `.caption` / 17 → `.headline`**。weight 指定は `.fontWeight(_:)` として残す):
+**`Font.atender(size:weight:)` 呼び出し 18 箇所の変換表** (生成規則: **8/9/10/11 → `.caption2` / 12 → `.caption` / 17 → `.headline`**。weight 指定は `.fontWeight(_:)` として残す):
+
+**★ P1 で実施済** (`4dfd3a9` 時点で `Font.atender(` の残存 0 箇所)。以下は着地済の変換記録。
 
 | file:line | 現状 | 変換後 |
 |---|---|---|
@@ -225,39 +231,52 @@ static let borderSettings = Color(uiColor: .separator)
 
 **触らないもの** (= §9.3 の地雷を踏まないため): `accent50/100/500/600/700` / `accentGradient` / `status*` / `friendship*` / `roomEvent` / `roomAvailabilityEmpty` / `eventMixTarget` / `brand*` / `MemberColor.palette` / `forStatus` / `forDayStatus` / `forFriendship` / `forRate` / `Color.dynamic(dark:light:)` ヘルパ / `UIColor(hex:)` ヘルパ。
 
-### 3.4 `AmbientBackground` の削除
+### 3.4 `AmbientBackground` の削除 — **P1 で実施済**
 
 `Core/DesignSystem/AmbientBackground.swift` を**ファイルごと削除**。参照は `RootView.swift:10` の 1 箇所のみ。
+
+**★ P1 で完了** (`4dfd3a9`): ファイル削除 + `RootView` から `AmbientBackground()` の行を除去。
+**`RootView` に残る変更は §4.4 の (2)(3) だけ** — 本節と §4.4 は当初 `RootView.swift:10` の同じ 1 行を両方が要求していたが、その行は P1 が消した。**P2 の Developer は §4.4 の 2 点のみを行う。**
 
 理由 (findings ★8): 放射グラデ + `blur(radius: 60)` は Web の手法。**Liquid Glass は背後の「実コンテンツ」を屈折させて成立するので、全面に敷いたぼかしグラデの上では濁る。** system background に置き換える (§3.3 で `bgBase` が `.systemGroupedBackground` になるので、`RootView` は背景指定を持たなくてよい)。
 
 ### 3.5 `Space` の整理
 
-**4pt グリッド (`s0_5`..`s20`) は維持する** — 良い土台であり、Web 由来という理由だけで壊す必要はない。削除するのは**画面寸法を先読みする定数**だけ:
+**4pt グリッド (`s0_5`..`s20`) は維持する** — 良い土台であり、Web 由来という理由だけで壊す必要はない。削除するのは**画面寸法を先読みする定数**だけ。
 
-| token | 処遇 | 理由 |
-|---|---|---|
-| `selfTtChrome` (352) | **削除** | §5.3。グリッドが画面高を知る必要をなくす |
-| `roomTtChromeTop` (168) | **削除** | 同上 (使用 1 箇所) |
-| `roomTtChromeBottom` (64) | **削除** | 使用 0 箇所 (死にトークン) |
-| `tabBarHeight` (64) | **削除** | タブバーの高さはシステムの所有物になる。使用 9 箇所は §4.2 で処理 |
-| `tabBarContent` (48) | **削除** | `BottomTabBar` 専用 (使用 1 箇所)。同ファイルごと削除 |
-| `topbarHeightMobile` (48) | **維持** | `FullScreenModal.swift:37` が使う (スコープ外) |
-| `topbarHeightDesktop` (56) | **削除** | 使用 0 箇所 |
-| `pagePxDesktop` (24) / `pagePadding` | **削除** | 使用 0 箇所 |
-| `pagePxMobile` (12) | **16 に変更** | HIG のシステムマージン。使用 12 箇所は値の変更のみで追従 |
+**★ トークンの削除は「最後の本番参照が消えるフェーズ」でしか行えない。** 定数を先に消せばコンパイルが通らない。したがって §3 は**「P1 で全部消す」ではない** — 下表の「削除 Phase」は参照元から機械的に決まる。
+
+| token | 処遇 | 最後の本番参照 | 削除 Phase |
+|---|---|---|---|
+| `roomTtChromeBottom` (64) | 削除 | **無し** (死にトークン) | **P1 済** |
+| `topbarHeightDesktop` (56) | 削除 | **無し** | **P1 済** |
+| `pagePxDesktop` (24) / `pagePadding` | 削除 | **無し** | **P1 済** |
+| `pagePxMobile` (12) | **16 に変更** | (使用 12 箇所は値の変更のみで追従) | **P1 済** |
+| `topbarHeightMobile` (48) | **維持** | `FullScreenModal.swift:37` (スコープ外) + `PlaceholderViews.swift:52` (P2 でファイルごと削除) → **P2 後も `FullScreenModal` が残るので維持** | — |
+| `tabBarContent` (48) | 削除 | `BottomTabBar.swift:35` → §4.1 で**ファイルごと削除** | **P2** |
+| `tabBarHeight` (64) | 削除 | **本番 9 箇所** (§4.2 の表)。**うち 7 箇所は P2 で外れるが、`SelfTodayCTA.swift:107` (§5.4) と `RoomDetailView.swift:386` (§5.3) が P3 まで残る** | **P3** |
+| `selfTtChrome` (352) | 削除 | `TimetableGridPhaseB.swift:17` → §5.3 | **P3** |
+| `roomTtChromeTop` (168) | 削除 | `RoomDetailView.swift:386` → §5.3 | **P3** |
+
+**★ `tabBarHeight` が P2 で消えない理由** (P2 の Developer が消そうとして詰まらないように): §4.2 の 9 行のうち 2 行 (`SelfTodayCTA.swift:107` / `RoomDetailView.swift:386`) は §5.4 / §5.3 = **P3 の作業**で消える。
+→ **P2 では `Space.tabBarHeight` の定義を残したまま、§4.2 の他 7 箇所のパディングだけを外す。定義の削除は P3。**
+これは `selfTtChrome` / `roomTtChromeTop` も同じ構図 (どちらも §5.3 = P3 が最後の参照を消す)。**§3.5 で消えるトークンのうち P1 で消せるのは「本番参照が最初から 0 だった 4 つ」だけ。**
 
 **逸脱なし**: `pagePxMobile` 12 → 16 は HIG のシステムマージンに合わせる (ui-ux-design-perspectives §2)。
 
 ### 3.6 `ScreenMetrics` (F8 の帰結)
 
 ```swift
-// apps/ios/Atender/Core/DesignSystem/ScreenMetrics.swift (新規)
+// apps/ios/Atender/Core/DesignSystem/ScreenMetrics.swift (新規) — P1 で着地済
 import UIKit
 
 /// UIScreen.main は iOS 26.0 で deprecated (代替として Apple が windowScene.screen を名指し)。
 /// deployment target 17 では警告が出ないため、放置すると 26 に上げた日に一斉に噴く。
 enum ScreenMetrics {
+    /// ★ @MainActor 必須。UIApplication.shared は @MainActor 隔離なので、
+    ///   nonisolated static var から触ると strict concurrency で 4 件のエラーになる:
+    ///   "main actor-isolated static property 'height' can not be referenced from a nonisolated context"
+    @MainActor
     static var height: CGFloat {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
@@ -266,14 +285,20 @@ enum ScreenMetrics {
 }
 ```
 
+**呼び出し契約**: `ScreenMetrics.height` は **`@MainActor` からしか読めない**。設計が名指しした唯一の消費者 `BottomSheet.swift:37` は SwiftUI の `View` = 既に `@MainActor` なので**実害ゼロ**。将来 nonisolated な文脈から画面高が要るとなったら、それは `ScreenMetrics` の穴ではなく**呼び出し側が View 層の値を非 UI 文脈へ引きずり出している**サインなので、`@MainActor` を外して回避しない。
+
+**値の契約** (`@MainActor` の有無で変わらない): 最初の `UIWindowScene` の `screen.bounds.height`。window scene が無ければ **`0`** (クラッシュ・負値にしない)。
+
 **`UIScreen.main` 4 箇所の処遇** (3 つは構造的に消え、残る 1 つだけがこのヘルパを使う):
 
-| site | 処遇 |
-|---|---|
-| `TimetableGridPhaseB.swift:17` | **消滅** — `GeometryReader` の `available` に置換 (§5.3) |
-| `RoomDetailView.swift:386` | **消滅** — 同上 (`height:` 引数を渡さなくなる) |
-| `SelfTodayCTA.swift:165` | **消滅** — 展開パネルが `.sheet` + `presentationDetents` になる (§5.4) |
-| `BottomSheet.swift:37` | **`ScreenMetrics.height` に置換** (1 行。BottomSheet 自体はスコープ外のまま) |
+| site | 処遇 | Phase |
+|---|---|---|
+| `TimetableGridPhaseB.swift:17` | **消滅** — `GeometryReader` の `available` に置換 (§5.3) | P3 |
+| `RoomDetailView.swift:386` | **消滅** — 同上 (`height:` 引数を渡さなくなる) | P3 |
+| `SelfTodayCTA.swift:166` | **消滅** — 展開パネルが `.sheet` + `presentationDetents` になる (§5.4) | P3 |
+| `BottomSheet.swift:37` | **`ScreenMetrics.height` に置換** (1 行。BottomSheet 自体はスコープ外のまま) | P4 |
+
+**★ `ScreenMetrics` は P1 で新設したが、消費者が付くのは P4 (`BottomSheet`)。** P1〜P3 の間は本番参照 0 のまま存在する (テストのみが叩く) — これは意図した状態。
 
 ---
 
@@ -339,17 +364,21 @@ struct MainTabView: View {
 
 タブバーの高さはシステムの所有物になるので、**自前で下パディングを積むのをやめる**。native `TabView` は各タブの content に safe area inset を自動で入れる。
 
-| file:line | 現状 | 処遇 |
-|---|---|---|
-| `App/BottomTabBar.swift:44` | `.frame(minHeight: Space.tabBarHeight)` | ファイルごと削除 |
-| `App/PlaceholderViews.swift:36` | `.padding(.bottom, Space.tabBarHeight)` | ファイルごと削除 |
-| `Components/Toast.swift:38` | `.padding(.bottom, Space.tabBarHeight + Space.s4)` | **`.padding(.bottom, Space.s4)` に変更** (Toast は `RootView` の `ZStack` にいるので safe area 外。タブバー分は system が入れないため `Space.s16` の実測退避が要る → **`.padding(.bottom, Space.s16)`**) |
-| `Features/Settings/SettingsView.swift:39` | `.padding(.bottom, Space.tabBarHeight)` | **削除** (system の inset に任せる) |
-| `Features/Home/SelfTodayCTA.swift:107` | `.padding(.bottom, Space.tabBarHeight + safeAreaBottom())` | §5.4 で `safeAreaInset` になり消滅 |
-| `Features/SemesterOverview/SemesterOverviewView.swift:21` | `.padding(.bottom, Space.tabBarHeight + Space.s3)` | **`.padding(.bottom, Space.s3)`** |
-| `Features/SemesterOverview/SemesterOverviewView.swift:78` | `.padding(.bottom, Space.s6 + Space.tabBarHeight)` | **`.padding(.bottom, Space.s6)`** |
-| `Features/Rooms/RoomDetailView.swift:208` | `.padding(.bottom, Space.tabBarHeight + Space.s6)` | **`.padding(.bottom, Space.s6)`** |
-| `Features/Rooms/RoomDetailView.swift:386` | `height:` 引数の一部 | §5.3 で消滅 |
+**★ P2 で外れるのは下表の 7 箇所。`Space.tabBarHeight` の*定義*は P3 まで残す** — 残り 2 箇所 (`SelfTodayCTA.swift:107` / `RoomDetailView.swift:386`) が P3 の作業 (§5.4 / §5.3) で消えるまで、定義を消すとコンパイルが通らない (§3.5)。
+
+| file:line | 現状 | 処遇 | Phase |
+|---|---|---|---|
+| `App/BottomTabBar.swift:44` | `.frame(minHeight: Space.tabBarHeight)` | ファイルごと削除 (§4.1) | **P2** |
+| `App/PlaceholderViews.swift:36` | `.padding(.bottom, Space.tabBarHeight)` | ファイルごと削除 (§4.1) | **P2** |
+| `Components/Toast.swift:38` | `.padding(.bottom, Space.tabBarHeight + Space.s4)` | **`.padding(.bottom, Space.s16)` に変更** (下の「Toast だけ例外な理由」を参照。`Space.s4` ではない) | **P2** |
+| `Features/Settings/SettingsView.swift:39` | `.padding(.bottom, Space.tabBarHeight)` | **行ごと削除** (system の inset に任せる) | **P2** |
+| `Features/SemesterOverview/SemesterOverviewView.swift:21` | `.padding(.bottom, Space.tabBarHeight + Space.s3)` | **`.padding(.bottom, Space.s3)`** | **P2** |
+| `Features/SemesterOverview/SemesterOverviewView.swift:78` | `.padding(.bottom, Space.s6 + Space.tabBarHeight)` | **`.padding(.bottom, Space.s6)`** | **P2** |
+| `Features/Rooms/RoomDetailView.swift:208` | `.padding(.bottom, Space.tabBarHeight + Space.s6)` | **`.padding(.bottom, Space.s6)`** | **P2** |
+| `Features/Home/SelfTodayCTA.swift:107` | `.padding(.bottom, Space.tabBarHeight + safeAreaBottom())` | §5.4 で `safeAreaInset` になり消滅 (**P2 では触らない**) | **P3** |
+| `Features/Rooms/RoomDetailView.swift:386` | `height:` 引数の一部 | §5.3 で消滅 (**P2 では触らない**) | **P3** |
+
+**`Space.tabBarContent` (48) は P2 で定義ごと削除できる** — 唯一の参照 `BottomTabBar.swift:35` が同フェーズでファイルごと消えるため。
 
 **`Toast` だけ例外な理由**: `ToastOverlay()` は `RootView` の `ZStack` 直下にいて `TabView` の外なので、システムの tab bar inset を受け取らない。ここだけは実測退避 (`Space.s16` = 64) が要る。**これは「タブバーの高さの決め打ち」が 1 箇所だけ残るということ**であり、ズレたらトーストがタブバーに重なる (機能影響なし・美観のみ)。
 
@@ -365,22 +394,23 @@ struct MainTabView: View {
 | `Features/SemesterOverview/SemesterOverviewView.swift:25` | `.navigationBarHidden(true)` | **削除** + `.navigationTitle("学期・科目")` |
 | `Features/Settings/SettingsView.swift:42` | `.navigationBarHidden(true)` | **削除** + `.navigationTitle("設定")` |
 | `Features/Rooms/RoomDetailView.swift:54` | `.toolbar(.hidden, for: .navigationBar)` + `.navigationBarBackButtonHidden(true)` (:53) | **両方削除** + `.navigationTitle(room?.name ?? "ルーム")` + `.navigationBarTitleDisplayMode(.inline)` |
-| `Features/Rooms/TemplatesView.swift:50` | `.toolbar(.hidden, for: .navigationBar)` | **削除** + `.navigationTitle("テンプレート")` |
+| `Features/Rooms/TemplatesView.swift:50` | `.toolbar(.hidden, for: .navigationBar)` + **`.navigationBarBackButtonHidden(true)` (:49)** | **両方削除** + `.navigationTitle("テンプレート")` |
 | `App/PlaceholderViews.swift:39` | `.navigationBarHidden(true)` | ファイルごと削除 |
 
-- `Core/DesignSystem/Components/BackHeaderButton.swift` を**ファイルごと削除**。呼び出しは `RoomDetailView.swift:39` と `TemplatesView.swift:22` の 2 箇所 (**grep で確定済**) — 行ごと削除する (system back が代わる)
+- `Core/DesignSystem/Components/BackHeaderButton.swift` を**ファイルごと削除**。呼び出しは `RoomDetailView.swift:39` と `TemplatesView.swift:22` の 2 箇所 (**`4dfd3a9` で再 grep して確定済**) — 行ごと削除する (system back が代わる)
+- **★ `.navigationBarBackButtonHidden(true)` を消し忘れると、自前 back を消した画面が「戻れない画面」になる。** `RoomDetailView:53` と `TemplatesView:49` の**両方**にある (上表)。`.toolbar(.hidden)` だけ外して満足しないこと — nav bar は出るが back ボタンだけが無い状態になる
 - `RoomsView` / `FriendsView` は既に nav bar を隠していない。`.navigationTitle` の有無を確認し、無ければ付ける
 - **`project.yml` に `options.developmentLanguage: ja` を追加** (F1)
 
-### 4.4 `RootView` の目標状態 (P1 との合流点)
+### 4.4 `RootView` の目標状態
 
-`feature/version-management` が同じファイルを触る。**マージ後にこうなっていること**を目標状態として定義する (どちらが先に入っても、Developer はこの形を作れば正しい):
+`feature/version-management` は着地済 (`60a127e`)。**`AmbientBackground()` の除去は本設計 P1 が実施済** (`4dfd3a9`)。下は P2 完了時の目標状態:
 
 ```swift
 // apps/ios/Atender/App/RootView.swift
 var body: some View {
     ZStack {
-        //  AmbientBackground() を削除 (§3.4)。背景は system に任せる
+        //  AmbientBackground() は P1 で除去済 (§3.4)。背景は system に任せる
         Group {
             if case let .blocked(minBuild) = environment.versionStore.state {     // ← version-management 由来
                 VersionGateView(currentBuild: environment.versionStore.currentBuild, minBuild: minBuild)
@@ -405,7 +435,16 @@ var body: some View {
 }
 ```
 
-**本設計が `RootView` に対して行う変更は 3 つだけ**: (1) `AmbientBackground()` の行を消す (2) `?? .light` → `?? .auto` (3) `@AppStorage` の既定値を `.auto` に。それ以外の行は version-management の成果物をそのまま残す。
+**本設計が `RootView` に対して行う変更は 3 つ。うち (1) は P1 で完了済**:
+
+| # | 変更 | Phase |
+|---|---|---|
+| 1 | `AmbientBackground()` の行を消す (§3.4) | **P1 済** (`4dfd3a9`) |
+| 2 | `.preferredColorScheme(... ?? .light)` → `?? .auto` (§4.6) | **P2** |
+| 3 | `@AppStorage("atender.theme")` の既定値を `ThemePreference.light.rawValue` → `.auto.rawValue` に (§4.6) | **P2** |
+
+→ **P2 の Developer が `RootView` で触るのは (2)(3) の 2 行だけ。** それ以外の行は version-management の成果物をそのまま残す。
+(`4dfd3a9` 時点の実物: `RootView.swift:6` が `= ThemePreference.light.rawValue`、末尾の `.preferredColorScheme` が `?? .light` — どちらも未変更。)
 
 **`project.yml` の分掌**: 本設計は `options.developmentLanguage` と `UIAppFonts` のみ触る。**`CFBundleVersion` には触らない** (version-management の領分。整数 1 個を巡ってマージで殴り合わないため)。TestFlight 配布時に Leader が別途上げる。
 
@@ -847,7 +886,9 @@ enum SchoolClock {
 ```
 
 **`CalendarRange.todayString()` は削除する。** 置換規則: `grep -rn 'CalendarRange.todayString()' Atender/` の全ヒットを `SchoolClock.todayString()` に置換する。
-`2ddd1f8` 時点のヒットは 11 箇所: `Settings/SemesterListSheet.swift:116` / `Calendar/PersonalCalendar.swift:8,9` / `SemesterOverview/CourseDetailModal.swift:92` / `Home/SelfTodayCTA.swift:25` / `SemesterOverview/SemesterOverviewComponents.swift:79` / `Rooms/RoomDetailView.swift:126,127,399` / `SemesterOverview/SemesterLogic.swift:131` / `Setup/SetupFlowView.swift:153`。
+
+**★ P1 で実施済** (`4dfd3a9`)。11 箇所 (`Settings/SemesterListSheet.swift:116` / `Calendar/PersonalCalendar.swift:8,9` / `SemesterOverview/CourseDetailModal.swift:92` / `Home/SelfTodayCTA.swift:25` / `SemesterOverview/SemesterOverviewComponents.swift:79` / `Rooms/RoomDetailView.swift:126,127,399` / `SemesterOverview/SemesterLogic.swift:131` / `Setup/SetupFlowView.swift:153`) は全て `SchoolClock.todayString()` に置換され、`CalendarRange.todayString` の残存は 0。
+**P2/P3 で新しく「今日」が要る箇所を書くときは `SchoolClock.todayString()` を使う。** `CalendarRange` に today を戻さない (F3 のバグの構造そのもの)。
 
 **`CalendarRange` の他の関数 (`parse` / `yyyyMMdd` / `addDays` / `mondayOf` / `monthFirst` / `format` / `utcCalendar` …) は触らない。** これらは「日付文字列の代数」であり UTC 暦で閉じているのが正しい (`"2026-07-17"` を UTC 正午として扱い、足し算して文字列に戻す)。**壊れていたのは代数ではなく「今日が何日か」を代数モジュールに聞いていたこと。**
 
@@ -947,11 +988,19 @@ Reviewer はここからテストを生成する。`#` 番号をテスト名に�
 
 すべて `Date` を注入して決定的に検証する (`Date()` の既定引数に頼らない)。
 
+**★ 標本時刻の規律 (時刻依存の挙動すべてに適用)**: **日付だけを書いた標本は禁止。必ず「時刻まで」指定する。**
+F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 12:00 = UTC 03:00) を標本に選ぶと**日付も曜日も UTC 暦と一致してしまう**ため、JST 暦を UTC 暦に戻す変異体を**検出できない** = テストが無害に緑になる。
+→ **JST の「今日」「曜日」に依存する assert は、必ず 00:00〜08:59 の窓に標本を 1 点以上置く。** 昼の標本だけで構成された時計テストは、**最も危険な窓が唯一の無検出窓**になる。
+
 - **#C1**: `todayString` — JST `2026-07-17 08:00` → `"2026-07-17"`。**★ 現行 `CalendarRange.todayString()` は同じ瞬間に `"2026-07-16"` を返す (実測 F3)。この 1 本が回帰の要**
 - **#C2**: `todayString` — JST `2026-07-17 00:00` / `08:59` / `09:00` / `23:59` → すべて `"2026-07-17"`
 - **#C3**: `todayString` — JST `2026-07-17 23:59` の 1 分後 (`2026-07-18 00:00`) → `"2026-07-18"`
 - **#C4**: `nowMinute` — JST `00:00` → `0` / `08:00` → `480` / `09:00` → `540` / `23:59` → `1439`
-- **#C5**: `displayDay` — 2026-07-13(月) → `1` / 07-17(金) → `5` / **07-18(土) → `6`** / **07-19(日) → `7`**。**週末を月曜に丸めない** (削除する `todayDayOfWeekJs` との違いがここ)
+- **#C5**: `displayDay` — **標本時刻を必ず書く**。JST `2026-07-13 12:00`(月) → `1` / `07-17 12:00`(金) → `5` / **`07-18 12:00`(土) → `6`** / **`07-19 12:00`(日) → `7`**。**週末を月曜に丸めない** (削除する `todayDayOfWeekJs` との違いがここ)
+- **#C5b**: `displayDay` の**早朝境界** — ★ **#C5 の昼の標本だけでは UTC 暦への変異を検出できない** (JST 12:00 = UTC 03:00 で曜日が変わらない)。`displayDay` は §5.3 の「今日の列」を決める関数であり、F3 の症状 (「月曜の 9 時前にルームの時間割が先週を読む」) は**まさにこの窓**で出る。以下を必須とする:
+  - JST `2026-07-13 08:00` (月) → `1` — UTC では日曜 23:00 なので、UTC 暦なら `7` を返して落ちる
+  - JST `2026-07-13 00:00` (月) → `1`
+  - JST `2026-07-18 00:30` (土) → `6` — UTC では金曜 15:30 なので、UTC 暦なら `5`
 - **#C6**: `SchoolClock.timeZone.identifier == "Asia/Tokyo"` かつ、デバイスの `TimeZone.current` に**依存しない** — テストは TZ を変えても同じ結果になること (`SchoolClock.calendar.timeZone` が固定であることの確認)
 - **#C7**: `CalendarRange.parse` / `addDays` / `mondayOf` / `monthFirst` / `format` の既存の挙動は**不変** (既存テストが緑のまま)
 
@@ -1059,11 +1108,14 @@ Reviewer はここからテストを生成する。`#` 番号をテスト名に�
   - `TimetableGridLayoutTests.swift` (#G1〜#G12)
   - `CalendarLayoutTests.swift` (#CA1〜#CA10)
   - `LocalizationTests.swift` (#S1〜#S3)
+  - `ScreenMetricsTests.swift` (§3.6 の値の契約。**P1 で着地済** — `@MainActor` 付きのテストクラスになる)
   - `HomeChipsTests.swift` に **#H1/#H2 を追記** (既存 3 本は触らない)
   - `TypographyRegistrationTests.swift` を **全面書き換え** (#S4〜#S8)
   - `NavigationTests.swift` に **#S10 を追記** (既存は触らない)
 - **実行**: `/opt/homebrew/bin/xcodegen generate` → `xcodebuild test -project Atender.xcodeproj -scheme Atender -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2'`
-- **ベースライン**: **183 GREEN / 0 RED** (`.knowledge/known-failures.md`、`eb96e8a`)。**未分類 0**
+- **ベースライン**: **263 GREEN / 0 RED** (`4dfd3a9` = 本設計 P1 のマージ、2026-07-17 実測)。**未分類 0**。
+  内訳: 201 (version-management 着地時) + P1 の新規 62。
+  ★ **`.knowledge/known-failures.md` は 201 (`3c9e85b`) のままで P1 分が未反映** — 台帳を数値の正典として引かず、**着手前に自分で測り直す** (§0 前提 P2)
 - **スクショ検証**: `AtenderUITests/ScreenshotFlow.swift` (`xcodebuild test -scheme AtenderUITests ... -resultBundlePath run.xcresult` → `xcrun xcresulttool export attachments`)。**刷新の before/after 比較の本体**。§5.4 のとおりラベルと accessibilityIdentifier を保存するので、ハーネスは無改修で動く
 
 **`Date` の注入**: `SchoolClock` / `TodayTimeline` の全関数は `Date` を引数で受ける (既定引数 `Date()` は本番用)。**テストは既定引数を使わない** — 使うと「テストを走らせた時刻」に依存して深夜に落ちる。
@@ -1078,13 +1130,15 @@ Reviewer はここからテストを生成する。`#` 番号をテスト名に�
 
 **findings は「9 件」と見積もっていたが、実際に本設計が壊すのは 3 本 (2 ファイル) だけ。** 残りは契約を保つ設計にしたので緑のまま。
 
-| # | テスト | 壊れる理由 | Reviewer の再生成方針 |
-|---|---|---|---|
-| 1 | `DesignTokenTests.testSpacingAndRadiusTokens` | `Space.selfTtChrome` と `Space.tabBarHeight` を**削除する**ので**コンパイルが通らない** (assert が落ちるのではない) | 該当 2 行を削除。`Radius.full == 9999` と `Space.s20 == 80` の 2 行は**そのまま維持** (これらのトークンは残る)。**削除したトークン名を新しい定数で assert し直さない** — 「消えた」ことはコンパイラが保証する |
-| 2 | `TypographyRegistrationTests.testRegisteredFontPostScriptNamesResolveWithUIFont` | `Font.interPostScriptName` を削除 + Inter/Noto を登録解除 | **#S4〜#S7 に全面書き換え**。「Inter が**無い**こと」を assert する側に反転させる |
-| 3 | `TypographyRegistrationTests.testUIAppFontsPlistContainsBundledFontFiles` | `UIAppFonts` が 7 件 → 1 件 | **#S8**。`expectedFontFiles` を `["GoogleSans-Medium-Latin.ttf"]` に。**「全エントリがパス無し + バンドル内に実在」の不変条件ループは価値が高いのでそのまま残す** |
+**★ どのフェーズで壊れるかは「削除するトークンの最後の参照が消えるフェーズ」に従う** (§3.5)。下表の Phase 列を守ること。
 
-**加えて削除するテスト 1 本**:
+| # | テスト | 壊れる Phase | 壊れる理由 | Reviewer の再生成方針 |
+|---|---|---|---|---|
+| 1 | `DesignTokenTests.testSpacingAndRadiusTokens` | **P3** | `Space.selfTtChrome` (:11) と `Space.tabBarHeight` (:10) を**削除する**ので**コンパイルが通らない** (assert が落ちるのではない)。**★ 両トークンとも削除は P3** — `selfTtChrome` は `TimetableGridPhaseB.swift:17` (§5.3)、`tabBarHeight` は `SelfTodayCTA.swift:107` (§5.4) と `RoomDetailView.swift:386` (§5.3) が最後の参照を握っている。したがって **P1 でも P2 でも本テストは緑のまま**が正しい (P1 実測で緑を確認済) | 該当 2 行を削除。`Radius.full == 9999` と `Space.s20 == 80` の 2 行は**そのまま維持** (これらのトークンは残る)。**削除したトークン名を新しい定数で assert し直さない** — 「消えた」ことはコンパイラが保証する |
+| 2 | `TypographyRegistrationTests.testRegisteredFontPostScriptNamesResolveWithUIFont` | **P1 済** | `Font.interPostScriptName` を削除 + Inter/Noto を登録解除 | **#S4〜#S7 に全面書き換え**。「Inter が**無い**こと」を assert する側に反転させる |
+| 3 | `TypographyRegistrationTests.testUIAppFontsPlistContainsBundledFontFiles` | **P1 済** | `UIAppFonts` が 7 件 → 1 件 | **#S8**。`expectedFontFiles` を `["GoogleSans-Medium-Latin.ttf"]` に。**「全エントリがパス無し + バンドル内に実在」の不変条件ループは価値が高いのでそのまま残す** |
+
+**加えて削除するテスト 1 本** (**P1 済**):
 
 | テスト | 理由 |
 |---|---|
@@ -1134,16 +1188,20 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 一方**「今」のロジック** (`SchoolClock` / `TodayTimeline` / `NowNextText` / `currentPeriodIndex`) は UI から完全に独立しており、いつ書いても捨てない。**しかも `SchoolClock` は既存バグ (F3: 朝 9 時前の日付ズレ / 月曜朝のルーム時間割が先週になる) の修正を含むので、単独で価値がある。**
 → **勝ち筋の中身 (ロジック + バグ修正) は最速で確定させ、その皮 (UI) だけを構造が固まった後に被せる。**
 
+**★ 「§N 全部を Phase X」という割り当ては誤り** (P1 の実装で判明)。**削除対象のトークン・ファイルは「最後の本番参照が消えるフェーズ」でしか消せない**ので、§3.5 の `Space` 整理は P1・P2・P3 に**またがる**。下表は節単位でなく**作業単位**で書く。
+
 | Phase | 内容 | 独立性 / 理由 |
 |---|---|---|
-| **P1 土台** | §3 全部 (書体 / フォントトークン / 中立色 / `AmbientBackground` 削除 / `Space` 整理 / `ScreenMetrics`) + §7.1 `SchoolClock` + §7.2 `TodayTimeline`・`NowNextText`・`AttendanceSummary` + §5.3 `TimetableGridLayout` + §5.5 `CalendarMonthLayout`・`CalendarDayStyle` + `project.yml` の `developmentLanguage`/`UIAppFonts` | **ビルド基盤に効く** (`project.yml` + xcodegen + フォント登録)。全画面に波及するが機械的。**新規ロジックは全部ここで、UI 無しで、テスト付きで着地する** |
-| **P2 シェル** | §4 全部 (native `TabView` / `BottomTabBar`・`PlaceholderViews` 削除 / nav bar 復活 / `BackHeaderButton` 削除 / `RootView` / Glass シム / dark 既定) | P1 の `ja` 設定に依存 (back が「戻る」になって初めて `BackHeaderButton` を消せる)。**`RootView` / `project.yml` で version-management と合流する点** (§4.4) |
-| **P3 ホーム** | §5 全部 (nav bar への畳み込み / `ContextChips` 条件表示 / グリッドが available を受け取る / 「今」の描画 / `NowNextBar` / カレンダー拡大) | **本命。** P2 のシェルに乗る。**「今」の UI とクローム再編は同じ場所 (`SelfTodayCTA` → `NowNextBar`) を触るので分けない** |
-| **P4 仕上げ** | §6 全部 (haptics / ジェスチャ / 遷移アニメ / `ContentUnavailableView` / `.redacted` / `Chip`・`StatusDot` 削除 / `BottomSheet` の `ScreenMetrics` 置換) | P3 の構造が固まった後。**単体で RED になっても本体は動く** = 最後に置くのが安全 |
+| **P1 土台** ✅ **着地済 (`4dfd3a9`)** | §3.1 書体 / §3.2 フォントトークン (呼び出し 18 箇所の変換) / §3.3 中立色 / §3.4 `AmbientBackground` 削除 (+ `RootView` の該当行) / **§3.5 のうち「本番参照 0 の 4 トークン削除 + `pagePxMobile` 12→16」だけ** / §3.6 `ScreenMetrics` 新設 (消費者は P4) + §7.1 `SchoolClock` + §7.2 `TodayTimeline`・`NowNextText`・`AttendanceSummary` + §5.3 `TimetableGridLayout` + §5.5 `CalendarMonthLayout`・`CalendarDayStyle` + `project.yml` の `developmentLanguage`/`UIAppFonts` | **ビルド基盤に効く** (`project.yml` + xcodegen + フォント登録)。全画面に波及するが機械的。**新規ロジックは全部ここで、UI 無しで、テスト付きで着地する** |
+| **P2 シェル** | §4 全部 (native `TabView` / `BottomTabBar`・`PlaceholderViews` 削除 / nav bar 復活 / `BackHeaderButton` 削除 / `RootView` の (2)(3) / Glass シム / dark 既定) + **§3.5 のうち `Space.tabBarContent` の定義削除** + **§4.2 の 7 箇所のパディング除去 (`tabBarHeight` の*定義*は残す)** | P1 の `ja` 設定に依存 (back が「戻る」になって初めて `BackHeaderButton` を消せる) |
+| **P3 ホーム** | §5 全部 (nav bar への畳み込み / `ContextChips` 条件表示 / グリッドが available を受け取る / 「今」の描画 / `NowNextBar` / カレンダー拡大) + **§3.5 のうち `Space.tabBarHeight`・`selfTtChrome`・`roomTtChromeTop` の定義削除** (§5.3/§5.4 が最後の参照を消した後) + **`DesignTokenTests` の 2 行削除** (§9.2 #1) | **本命。** P2 のシェルに乗る。**「今」の UI とクローム再編は同じ場所 (`SelfTodayCTA` → `NowNextBar`) を触るので分けない** |
+| **P4 仕上げ** | §6 全部 (haptics / ジェスチャ / 遷移アニメ / `ContentUnavailableView` / `.redacted` / `Chip`・`StatusDot` 削除) + **`BottomSheet.swift:37` の `UIScreen.main` → `ScreenMetrics.height`** (§3.6 で新設したヘルパに初めて消費者が付く) | P3 の構造が固まった後。**単体で RED になっても本体は動く** = 最後に置くのが安全 |
 
-**認証の再ゲート**: いずれのフェーズも**認証ロジックに触れない**。P1 が `AuthProviderButton` の**フォント指定 2 行**に触るのみ (§3.2)。`SignInWithAppleButton` への置換は**やらない** (§11)。
+**トークン削除の一覧は §3.5 の表が正典** (Phase 列付き)。本表と食い違ったら §3.5 を採る。
 
-**推奨マージ順**: `feature/version-management` → P1 → P2 → P3 → P4。
+**認証の再ゲート**: いずれのフェーズも**認証ロジックに触れない**。P1 が `AuthProviderButton` の**フォント指定 2 行**に触るのみ (§3.2、**実施済**)。`SignInWithAppleButton` への置換は**やらない** (§11)。
+
+**推奨マージ順**: ~~`feature/version-management`~~ (着地済 `60a127e`) → ~~P1~~ (着地済 `4dfd3a9`) → **P2** → P3 → P4。
 
 ### 10.1 実装後の必須検証 (doc の注記は実行されないが、これは実行される)
 
@@ -1155,7 +1213,8 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
    - **判定が成功/失敗で違う値になるか**: タブバーの背景が「不透明な `bgElevated` 85%」から「背後が屈折して見えるガラス」に変わる = **目視で区別可能**。変わっていなければ native 化が効いていない
 2. **P2 完了時**: 同じフローを **iOS 18.2** でも走らせる → **タブバーが普通に出ていること** (ガラスは出ない = 正しい。21% のユーザーの体験)
 3. **P3 完了時**: iPhone SE (小画面) と iPhone 16 の両方で `01-home-timetable` を撮り、**グリッドが溢れずに収まっている**こと (#G4/#G5 の実地確認)
-4. **P1 完了時**: **negative control** — `project.yml` から `developmentLanguage: ja` を一時的に外して `xcodegen generate` → **#S1/#S2/#S3 が赤くなること**を確認してから戻す。「GREEN は修正が作った」と言い切るため (F2 で Architect が実施済の手順をそのまま踏む)
+4. **P1 の negative control** — `project.yml` から `developmentLanguage: ja` を一時的に外して `xcodegen generate` → **#S1/#S2/#S3 が赤くなること**を確認してから戻す。「GREEN は修正が作った」と言い切るため (F2 で Architect が実施済の手順をそのまま踏む)
+   **★ P1 は既にマージ済 (`4dfd3a9`)。この手順の実施記録が無い場合は P2 の着手前に行う** — `ja` 化は P2 の `BackHeaderButton` 削除の前提 (back が「戻る」にならないまま自前 back を消すと英語の "Back" が出る)
 
 ---
 
@@ -1216,27 +1275,28 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 
 | path | Phase |
 |---|---|
-| `apps/ios/Atender/Core/Timetable/SchoolClock.swift` | P1 |
-| `apps/ios/Atender/Core/Timetable/TodayTimeline.swift` (`TodayState` / `TodayTimeline` / `NowNextText` / `AttendanceSummary`) | P1 |
-| `apps/ios/Atender/Core/Timetable/TimetableGridLayout.swift` | P1 |
-| `apps/ios/Atender/Core/Timetable/CalendarMonthLayout.swift` (`CalendarMonthLayout` / `CalendarDayEmphasis` / `CalendarDayStyle`) | P1 |
-| `apps/ios/Atender/Core/DesignSystem/ScreenMetrics.swift` | P1 |
+| `apps/ios/Atender/Core/Timetable/SchoolClock.swift` | P1 ✅ |
+| `apps/ios/Atender/Core/Timetable/TodayTimeline.swift` (`TodayState` / `TodayTimeline` / `NowNextText` / `AttendanceSummary`) | P1 ✅ |
+| `apps/ios/Atender/Core/Timetable/TimetableGridLayout.swift` | P1 ✅ |
+| `apps/ios/Atender/Core/Timetable/CalendarMonthLayout.swift` (`CalendarMonthLayout` / `CalendarDayEmphasis` / `CalendarDayStyle`) | P1 ✅ |
+| `apps/ios/Atender/Core/DesignSystem/ScreenMetrics.swift` | P1 ✅ (**消費者が付くのは P4** — §3.6) |
 | `apps/ios/Atender/Core/DesignSystem/Glass.swift` | P2 |
 | `apps/ios/Atender/Features/Home/NowNextBar.swift` (`NowNextBar` / `NowNextBarHost` / `TodayAttendanceSheet`) | P3 |
 | `apps/ios/AtenderTests/{SchoolClock,TodayTimeline,NowNextText,TimetableGridLayout,CalendarLayout,Localization}Tests.swift` | 各 Phase |
 
 ### 削除 (**1 ファイルずつ参照元を grep して確定済**)
 
-| path | 参照元 |
-|---|---|
-| `apps/ios/Atender/Core/DesignSystem/AmbientBackground.swift` | `RootView.swift:10` の 1 箇所のみ |
-| `apps/ios/Atender/App/BottomTabBar.swift` | `MainTabView.swift:81` の 1 箇所のみ |
-| `apps/ios/Atender/App/PlaceholderViews.swift` | `HomePlaceholderView`/`SemesterPlaceholderView` は `MainTabView` の 2 箇所 (直接呼びに置換)。**`RoomsPlaceholderView`/`FriendsPlaceholderView`/`PlaceholderScreen`/`TopBar` は参照 0** |
-| `apps/ios/Atender/Core/DesignSystem/Components/BackHeaderButton.swift` | `RoomDetailView.swift:39` / `TemplatesView.swift:22` の 2 箇所 (行ごと削除、system back が代わる) |
-| `apps/ios/Atender/Core/DesignSystem/Components/Chip.swift` | **参照 0** (`Chip(` の 3 ヒットは `selfChip(` の誤検出) |
-| `apps/ios/Atender/Core/DesignSystem/Components/StatusDot.swift` | **参照 0** |
-| `apps/ios/Atender/Resources/Fonts/Inter-{Regular,Medium,SemiBold,Bold,Black}.ttf` | `UIAppFonts` のみ (コードは `Font.interPostScriptName` 経由 → 削除) |
-| `apps/ios/Atender/Resources/Fonts/NotoSansJP-VariableFont_wght.ttf` | `UIAppFonts` のみ。**コードからの参照 0** |
+| path | 参照元 | Phase |
+|---|---|---|
+| `apps/ios/Atender/Core/DesignSystem/AmbientBackground.swift` | `RootView.swift:10` の 1 箇所のみ | P1 ✅ |
+| `apps/ios/Atender/Resources/Fonts/Inter-{Regular,Medium,SemiBold,Bold,Black}.ttf` | `UIAppFonts` のみ (コードは `Font.interPostScriptName` 経由 → 削除) | P1 ✅ |
+| `apps/ios/Atender/Resources/Fonts/NotoSansJP-VariableFont_wght.ttf` | `UIAppFonts` のみ。**コードからの参照 0** | P1 ✅ |
+| `apps/ios/Atender/App/BottomTabBar.swift` | `MainTabView.swift:81` の 1 箇所のみ | P2 |
+| `apps/ios/Atender/App/PlaceholderViews.swift` | `HomePlaceholderView`/`SemesterPlaceholderView` は `MainTabView` の 2 箇所 (直接呼びに置換)。**`RoomsPlaceholderView`/`FriendsPlaceholderView`/`PlaceholderScreen`/`TopBar` は参照 0** | P2 |
+| `apps/ios/Atender/Core/DesignSystem/Components/BackHeaderButton.swift` | `RoomDetailView.swift:39` / `TemplatesView.swift:22` の 2 箇所 (行ごと削除、system back が代わる)。**`.navigationBarBackButtonHidden(true)` (`RoomDetailView:53` / `TemplatesView:49`) も一緒に外す** (§4.3) | P2 |
+| `apps/ios/Atender/Core/DesignSystem/Components/Chip.swift` | **参照 0** (`Chip(` の 3 ヒットは `selfChip(` の誤検出) | P4 |
+| `apps/ios/Atender/Core/DesignSystem/Components/StatusDot.swift` | **参照 0** (ヒットは同ファイル内の `#Preview` のみ) | P4 |
+| `apps/ios/Atender/Features/Home/SelfTodayCTA.swift` | `NowNextBar.swift` に置換 (§5.4) | P3 |
 
 **★ `GoogleSans-Medium-Latin.ttf` は削除しない** — `AuthProviderButton.swift:102` が現に使用中。
 
@@ -1244,14 +1304,14 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 
 | path | 変更点 | Phase |
 |---|---|---|
-| `apps/ios/project.yml` | `options.developmentLanguage: ja` 追加 / `UIAppFonts` を GoogleSans 1 件に。**`CFBundleVersion` は触らない** | P1 |
-| `Core/DesignSystem/Typography.swift` | 全面置換 (§3.2) | P1 |
-| `Core/DesignSystem/Color+Atender.swift` | 中立色のみ置換 (§3.3)。**有彩色は 1 つも触らない** | P1 |
-| `Core/DesignSystem/Space.swift` | §3.5 の表 | P1 |
-| `Core/Timetable/TimetableLogic.swift` | `CalendarRange.todayString()` と `DayConvention.todayDayOfWeekJs` を削除。**それ以外は不変** | P1 |
-| `Core/DesignSystem/Components/BottomSheet.swift` | `UIScreen.main` → `ScreenMetrics.height` (1 行) | P4 |
+| `apps/ios/project.yml` | `options.developmentLanguage: ja` 追加 / `UIAppFonts` を GoogleSans 1 件に。**`CFBundleVersion` は触らない** | P1 ✅ |
+| `Core/DesignSystem/Typography.swift` | 全面置換 (§3.2) | P1 ✅ |
+| `Core/DesignSystem/Color+Atender.swift` | 中立色のみ置換 (§3.3)。**有彩色は 1 つも触らない** | P1 ✅ |
+| `Core/DesignSystem/Space.swift` | **§3.5 の表 (Phase 列付き)。3 フェーズにまたがる** — P1: 参照 0 の 4 トークン削除 + `pagePxMobile` 12→16 ✅ / P2: `tabBarContent` / P3: `tabBarHeight`・`selfTtChrome`・`roomTtChromeTop` | **P1 ✅, P2, P3** |
+| `Core/Timetable/TimetableLogic.swift` | `CalendarRange.todayString()` と `DayConvention.todayDayOfWeekJs` を削除。**それ以外は不変** | P1 ✅ |
+| `Core/DesignSystem/Components/BottomSheet.swift` | `UIScreen.main` → `ScreenMetrics.height` (1 行)。**`ScreenMetrics.height` は `@MainActor` だが `BottomSheet` は View なので追加対応不要** (§3.6) | P4 |
 | `App/MainTabView.swift` | 全面置換 (§4.1) | P2 |
-| `App/RootView.swift` | 3 点のみ (§4.4)。**version-management との合流点** | P2 |
+| `App/RootView.swift` | **P2 に残るのは 2 点のみ** (`?? .auto` + `@AppStorage` 既定値)。`AmbientBackground()` 除去は P1 済 (§4.4) | P1 ✅, P2 |
 | `Features/Home/HomeCore.swift` | `HomeView` 再構成 / `HomeViewModeTabs`・`HomeSemesterPicker` 削除 / `HomeChips.isVisible` 追加 | P3 |
 | `Features/Home/SelfTimetableView.swift` | 学期ピッカーと ⚙︎ を除去 / `available`・`showSettings` を受け取る | P3 |
 | `Features/Home/SelfTodayCTA.swift` | **`NowNextBar.swift` に置換して削除** | P3 |
