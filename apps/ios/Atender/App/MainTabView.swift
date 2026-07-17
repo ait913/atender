@@ -30,67 +30,57 @@ enum MainTab: Int, Hashable, CaseIterable {
 
 struct MainTabView: View {
     @Environment(AppRouter.self) private var router
-    @State private var keyboardVisible = false
 
     var body: some View {
         @Bindable var bindableRouter = router
-        ZStack(alignment: .bottom) {
-            Group {
-                switch router.selectedTab {
-                case .home:
-                    NavigationStack(path: $bindableRouter.homePath) {
-                        HomePlaceholderView()
-                    }
-                case .semester:
-                    NavigationStack(path: $bindableRouter.semesterPath) {
-                        SemesterPlaceholderView()
-                    }
-                case .rooms:
-                    NavigationStack(path: $bindableRouter.roomsPath) {
-                        RoomsView()
-                            .navigationDestination(for: RoomsRoute.self) { route in
-                                switch route {
-                                case .detail(let id):
-                                    RoomDetailView(roomId: id)
-                                case .join(let code):
-                                    JoinRoomView(inviteCode: code)
-                                case .templates:
-                                    TemplatesView()
-                                }
-                            }
-                    }
-                case .friends:
-                    NavigationStack(path: $bindableRouter.friendsPath) {
-                        FriendsView()
-                            .navigationDestination(for: FriendsRoute.self) { route in
-                                switch route {
-                                case .addByInvite(let code):
-                                    AddFriendByInviteCodeView(inviteCode: code)
-                                }
-                            }
-                    }
-                case .settings:
-                    NavigationStack(path: $bindableRouter.settingsPath) {
-                        SettingsView()
-                    }
-                }
+        TabView(selection: $bindableRouter.selectedTab) {
+            NavigationStack(path: $bindableRouter.homePath) {
+                HomeView()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .tabItem { Label(MainTab.home.label, systemImage: MainTab.home.symbol) }
+            .tag(MainTab.home)
 
-            if !keyboardVisible {
-                BottomTabBar(selected: router.selectedTab) { tab in
-                    router.selectedTab = tab
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+            NavigationStack(path: $bindableRouter.semesterPath) {
+                SemesterOverviewView()
             }
+            .tabItem { Label(MainTab.semester.label, systemImage: MainTab.semester.symbol) }
+            .tag(MainTab.semester)
+
+            NavigationStack(path: $bindableRouter.roomsPath) {
+                RoomsView()
+                    .navigationDestination(for: RoomsRoute.self) { route in
+                        switch route {
+                        case .detail(let id):
+                            RoomDetailView(roomId: id)
+                        case .join(let code):
+                            JoinRoomView(inviteCode: code)
+                        case .templates:
+                            TemplatesView()
+                        }
+                    }
+            }
+            .tabItem { Label(MainTab.rooms.label, systemImage: MainTab.rooms.symbol) }
+            .tag(MainTab.rooms)
+
+            NavigationStack(path: $bindableRouter.friendsPath) {
+                FriendsView()
+                    .navigationDestination(for: FriendsRoute.self) { route in
+                        switch route {
+                        case .addByInvite(let code):
+                            AddFriendByInviteCodeView(inviteCode: code)
+                        }
+                    }
+            }
+            .tabItem { Label(MainTab.friends.label, systemImage: MainTab.friends.symbol) }
+            .tag(MainTab.friends)
+
+            NavigationStack(path: $bindableRouter.settingsPath) {
+                SettingsView()
+            }
+            .tabItem { Label(MainTab.settings.label, systemImage: MainTab.settings.symbol) }
+            .tag(MainTab.settings)
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            keyboardVisible = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardVisible = false
-        }
-        .animation(.easeOut(duration: 0.18), value: keyboardVisible)
+        .tabBarMinimizeOnScroll()
+        .sensoryFeedback(.selection, trigger: router.selectedTab)
     }
 }

@@ -50,6 +50,7 @@ struct FriendsView: View {
             .padding(Space.pagePxMobile)
         }
         .background(Color.bgBase)
+        .navigationTitle("友達")
         .task {
             if model == nil { model = FriendsViewModel(env: environment) }
             await model?.load()

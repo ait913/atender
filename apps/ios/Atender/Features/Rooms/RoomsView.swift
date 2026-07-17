@@ -48,6 +48,7 @@ struct RoomsView: View {
             .padding(Space.pagePxMobile)
         }
         .background(Color.bgBase)
+        .navigationTitle("ルーム")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             if model == nil { model = RoomsViewModel(env: environment) }

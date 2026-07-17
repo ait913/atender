@@ -36,7 +36,6 @@ struct RoomDetailView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
-            BackHeaderButton { dismiss() }
             header
             tabPicker
             Group {
@@ -50,8 +49,8 @@ struct RoomDetailView: View {
         .padding(Space.pagePxMobile)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.bgBase)
-        .navigationBarBackButtonHidden(true)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle(model?.room?.name ?? "ルーム")
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             if model == nil { model = RoomDetailViewModel(env: environment, roomId: roomId) }
             await model?.load()
@@ -205,7 +204,7 @@ struct RoomCalendar: View {
                     .accessibilityIdentifier("room-fab-event")
                 }
                 .padding(.trailing, Space.s5)
-                .padding(.bottom, Space.tabBarHeight + Space.s6)
+                .padding(.bottom, Space.s6)
             }
         }
         .task(id: "\(viewMode.rawValue)-\(anchor)") {

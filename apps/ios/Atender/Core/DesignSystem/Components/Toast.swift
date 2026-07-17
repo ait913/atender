@@ -35,7 +35,7 @@ struct ToastOverlay: View {
                     .background(.ultraThinMaterial)
                     .clipShape(Capsule())
                     .overlay(Capsule().stroke(Color.borderDefault, lineWidth: 1))
-                    .padding(.bottom, Space.tabBarHeight + Space.s4)
+                    .padding(.bottom, Space.s16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
