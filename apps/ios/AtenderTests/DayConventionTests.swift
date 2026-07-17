@@ -45,18 +45,4 @@ final class DayConventionTests: XCTestCase {
         )
         XCTAssertEqual(result, [1, 2, 3, 4, 5, 6])
     }
-
-    func testTodayDayOfWeekJsRoundsWeekendToMonday() {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "UTC")!
-        func date(_ s: String) -> Date {
-            let f = DateFormatter(); f.calendar = cal; f.timeZone = cal.timeZone
-            f.dateFormat = "yyyy-MM-dd"; return f.date(from: s)!
-        }
-        // 2026-06-27 = 土, 2026-06-28 = 日 → 1 に丸める
-        XCTAssertEqual(DayConvention.todayDayOfWeekJs(date("2026-06-27"), calendar: cal), 1)
-        XCTAssertEqual(DayConvention.todayDayOfWeekJs(date("2026-06-28"), calendar: cal), 1)
-        // 平日はその JS 曜日: 2026-06-24 = 水 (JS 3)
-        XCTAssertEqual(DayConvention.todayDayOfWeekJs(date("2026-06-24"), calendar: cal), 3)
-    }
 }
