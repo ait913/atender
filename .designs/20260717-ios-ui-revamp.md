@@ -23,12 +23,12 @@
 | **`BottomSheet` / `SheetScaffold` の重複統合** | 21 箇所の呼び出しを持つ横断リファクタで、本設計のどの要望にも紐付かない。**新規シートは native `.sheet` + `presentationDetents`** と定め、既存の 2 実装は据え置く |
 | **`List` / `Form` への回帰 (設定・入力画面)** | 設定はスコープ外。`ContentUnavailableView` / `.redacted` は §6.3 で導入する |
 | **DTO 契約テスト** | 版数管理 doc §10 が別テーマとして切り出し済 |
-| **`MemberColor.palette` / 科目色 / status 色 / accent の値** | **本設計は色の「値」を一切変えない** (§9.3 の地雷回避) |
+| **`MemberColor.palette` / 科目色 / status 色 / accent の値** | **本設計はコードが描く色の「値」を一切変えない** (§9.3 の地雷回避)。**唯一の例外は `AccentColor.colorset` の是正** (§4.1) — 新しい色を決めるのではなく、**2026-07-09 の azure 決定 (`7ac596f`) から取り残された未移行の残骸を決定済の値へ追いつかせる**もの。**現在この asset を読む消費者は 0 なので、既存のピクセルは 1 つも変わらない** |
 
 ### 前提 (P) — **2026-07-17 更新: P1 は着地済 (`4dfd3a9`)**
 
 - **P1: `feature/version-management` は着地済** (`60a127e`)。`RootView.swift` / `project.yml` の衝突懸念は解消。
-  §4.4 の目標状態は着地後の実物と突合済 — `RootView` の現状は version gate 分岐 + `.task` 2 本 + `?? .light`。**`AmbientBackground()` の行は本設計 P1 で既に除去済**なので、P2 に残る `RootView` の変更は 2 点だけ (§4.4)
+  §4.4 の目標状態は着地後の実物と突合済 — `RootView` の現状は version gate 分岐 + `.task` 2 本 + `?? .light`。**`AmbientBackground()` の行は本設計 P1 で既に除去済**であり、**§4.6 (ダーク既定の `.auto` 化) は 2026-07-17 に Touri が撤回した**。→ **P2 は `RootView.swift` を 1 行も触らない** (§4.4)
 - **P2: iOS ベースラインは 263 GREEN / 0 RED** (`4dfd3a9` = 本設計 P1 のマージ、2026-07-17 実測)。**未分類の失敗 0**。
   内訳: 201 (version-management 着地時) + P1 の新規 62 = 263。
   - ★ **各フェーズ着手前にベースラインを測り直すこと。** 件数だけを信じない (`Executed N tests, with M failures` の M まで読む — 台帳の教訓)
@@ -210,6 +210,20 @@ enum Leading {                                    // 現状のまま (呼び出�
 
 根拠 (HIG §3): dark palette は light の単純反転ではない。iOS は base / elevated の 2 セットを持ち sheet・popover で自動昇格する。**カスタム背景色はこの奥行きを壊す**。Liquid Glass は背後の実コンテンツと system material に協調して初めて成立する。
 
+**★ ダーク既定の撤回 (§4.6) との整合** — **既定が `.light` のままでも本節の価値は落ちない。**
+当初 §12-#2 で「light 固定は semantic color の意味を殺す」と書いたが、**これは言い過ぎだった**。semantic color の効能を分解すると、撤回で失われるのは 1 つだけ:
+
+| semantic color の効能 | 既定 `.light` でも効くか |
+|---|---|
+| **Increased Contrast** (アクセシビリティ設定) への自動追従 | **効く** — appearance とは独立した trait |
+| Liquid Glass との協調 (system material が前提とする背景) | **効く** — light でもガラスは system background の上で成立する |
+| grouped background の階層 (base / secondary / tertiary) | **効く** — light でも 3 段は別の値を持つ |
+| ユーザーが設定で `.dark` を選んだとき、**正しい** dark palette が出る | **効く** — トグルは残る (§4.6) |
+| OS のダークモード設定に**自動で**追従する | **効かない** — ★ ここだけが撤回で失われる (Touri 裁定) |
+
+→ 失われたのは**「自動追従」だけ**。**かつ `.dark` が設定から到達可能である限り、semantic color の dark 側の値は死にコードではない。**
+→ これは §11「ダークモードのトグル自体を削除する」の却下理由を**弱めるのでなく強める**: 撤回後、**トグルは dark への唯一の経路**になった。
+
 ```swift
 // apps/ios/Atender/Core/DesignSystem/Color+Atender.swift (中立色のみ置換)
 static let bgBase      = Color(uiColor: .systemGroupedBackground)
@@ -236,7 +250,7 @@ static let borderSettings = Color(uiColor: .separator)
 `Core/DesignSystem/AmbientBackground.swift` を**ファイルごと削除**。参照は `RootView.swift:10` の 1 箇所のみ。
 
 **★ P1 で完了** (`4dfd3a9`): ファイル削除 + `RootView` から `AmbientBackground()` の行を除去。
-**`RootView` に残る変更は §4.4 の (2)(3) だけ** — 本節と §4.4 は当初 `RootView.swift:10` の同じ 1 行を両方が要求していたが、その行は P1 が消した。**P2 の Developer は §4.4 の 2 点のみを行う。**
+**本設計が `RootView` に対して行う変更はこれで全部** — 本節と §4.4 は当初 `RootView.swift:10` の同じ 1 行を両方が要求していたが、その行は P1 が消した。残っていた §4.4 の (2)(3) は **2026-07-17 に Touri が撤回** (§4.6)。**P2 の Developer は `RootView.swift` を 1 行も触らない。**
 
 理由 (findings ★8): 放射グラデ + `blur(radius: 60)` は Web の手法。**Liquid Glass は背後の「実コンテンツ」を屈折させて成立するので、全面に敷いたぼかしグラデの上では濁る。** system background に置き換える (§3.3 で `bgBase` が `.systemGroupedBackground` になるので、`RootView` は背景指定を持たなくてよい)。
 
@@ -313,6 +327,67 @@ enum ScreenMetrics {
 
 **`Tab(value:role:)` を使わない理由**: iOS 18.0+。deployment target 17 では使えない。**旧 `.tabItem` API でも Liquid Glass のタブバーは出る** (SDK リンクで決まるため — `knowledge/library/swiftui-liquid-glass-ios26.md`)。
 
+#### ★ native 化はブランド accent を orange に退行させる — asset を是正して止める
+
+**2026-07-17: P2 実装で Developer が実測 → Leader が現物確認 → Architect が re-grep と `actool` 実走で確定。**
+
+自前 `BottomTabBar` は `Color.accent500` (azure) を**明示描画**していた (`BottomTabBar.swift:17,30`)。**native 部品はそれを引かず、asset catalog の `AccentColor` を引く** (`project.yml:71` の `ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor`)。両者は一致していない:
+
+| | `AccentColor.colorset` (現状) | `Color.accent500` (コード) |
+|---|---|---|
+| light | **`#F97316`** (orange) | `#1E96E6` (azure) |
+| dark | **`#F97316`** (orange) | `#3DA9F0` (azure) |
+
+**この orange は死に資産。** `7ac596f` (2026-07-09「水色(azure)配色へ刷新」) が `Color+Atender.swift` の `accent*` から `0xF97316` / `0xEA580C` を消したが、**同じコミットが asset catalog を触っていない** — `git log -- AccentColor.colorset` の最終更新は足場コミット `ad12e5a` のままで、**一度も移行されていない**。当時これが露呈しなかったのは、**この asset を読む消費者が 1 つも無かった**から (**現在も 0** — `Color.accentColor` / `Color("AccentColor")` は grep で 0 件。`.accent` のヒットは全て `Color.accent` = `accent500` のエイリアス)。**native `TabView` と nav bar がその最初の消費者になる。**
+
+**決定: `.tint` を足すのではなく、`AccentColor.colorset` 自体を azure に是正する。**
+
+**§0「本設計はコードが描く色の『値』を一切変えない」と衝突しない理由** (2 点):
+1. **これは「変更」でなく「是正」。** accent = azure という**ブランド決定は `7ac596f` で既に下りている**。asset はその決定から取り残された残骸であり、保持している値は*同じコミットがコードから削除した当の hex*。azure を入れるのは新しい色を決める行為ではなく、**決定済の状態へ asset を追いつかせる**行為
+2. **既存のピクセルが 1 つも変わらない。** 今この asset を読む消費者は 0 なので、是正しても**現行 UI の見た目は不変**。値が効き始めるのは P2 が native 部品を入れた瞬間で、そこで初めて「azure が出るか orange が出るか」が決まる
+
+**なぜ `.tint` でないか**:
+- **`.tint` は漏れを追いかける手当てになる。** P2 は `TabView` だけでなく **nav bar も 5 画面で復活させる** (§4.3)。system back / toolbar も `AccentColor` を引くので、**`TabView` への `.tint` 1 個では back の chevron が orange のまま残る**
+- **根を残すので再発する。** §0 が次の doc に送った**ウィジェット target** は新しい root であり、`.tint` を撒く運用ではそこで orange が蘇る。asset は「このアプリの accent」の**単一の定義**であり、そこを直すのが構造的
+- **`RootView` に `.tint` を置く案も採らない** — §4.6 の撤回で **P2 は `RootView` を 1 行も触らない**と確定したため、ここへの再拡大になる。かつ**正典が 2 つ (asset と `.tint`) 並ぶ**状態を作る
+
+**変更内容**: `apps/ios/Atender/Assets.xcassets/AccentColor.colorset/Contents.json` を、`Color.accent500` の `dynamic(dark: 0x3DA9F0, light: 0x1E96E6)` と**同じ light/dark ペア**にする。**8-bit hex 表記を使う** (float に丸めるとコード側の hex との対応が読めなくなる)。
+★ **Architect が `actool` で実走検証済** — この JSON をコンパイルし `assetutil --info` で `AccentColor [(any)] -> #1E96E6` / `[UIAppearanceDark] -> #3DA9F0` が焼かれることを確認 (`0x` 表記が hex として解釈され、float に誤読されないことの実証)。
+
+```json
+{
+  "colors" : [
+    {
+      "color" : {
+        "color-space" : "srgb",
+        "components" : { "alpha" : "1.000", "blue" : "0xE6", "green" : "0x96", "red" : "0x1E" }
+      },
+      "idiom" : "universal"
+    },
+    {
+      "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ],
+      "color" : {
+        "color-space" : "srgb",
+        "components" : { "alpha" : "1.000", "blue" : "0xF0", "green" : "0xA9", "red" : "0x3D" }
+      },
+      "idiom" : "universal"
+    }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}
+```
+
+**★ ついで掃除の禁止 (§9.3 の延長)**: 是正するのは **`AccentColor.colorset` の 1 ファイルだけ**。`#F97316` はコードベースに**まだ他にも存在するが、それらは accent ではなく「科目・メンバーの色」= トークン系統が違う**もので、**触ると §9.3 の 5 件が壊れる**:
+
+| site | 正体 |
+|---|---|
+| `Rooms/RoomLogic.swift:179` (`meeting.courseColor ?? member?.color ?? "#F97316"`) | 科目色のフォールバック。**`RoomLogicTests.swift:334` が `"#F97316"` を assert している** |
+| `Timetable/MeetingSheets.swift:179,191` (`course?.color ?? "#F97316"`) | 同上 |
+| `Friends/FriendsView.swift:163` | メンバー色グラデのパレット |
+| `AtenderTests/Fixtures/*.json` / `DTODecodingTests.swift:254` | フィクスチャの科目色 |
+
+→ **これらは 1 文字も触らない。** 「orange を全部消す」は本設計の作業ではない。**accent の orange (asset) と 科目色の orange (コード) は別物。**
+
 ```swift
 // apps/ios/Atender/App/MainTabView.swift (全面置換)
 struct MainTabView: View {
@@ -357,6 +432,8 @@ struct MainTabView: View {
 - `.ignoresSafeArea(.keyboard, edges: .bottom)`
 - `MainTab` の `enum` / `label` / `symbol` / `allCases` は**そのまま**。`AppRouter` も**そのまま** (§9.2: `NavigationTests` は緑のまま)
 
+**★ `TabView` に `.tint(...)` を書かないこと。** accent の正典は `AccentColor` asset 1 つ (上記)。`.tint` を足すと正典が 2 つになり、asset 側の orange が温存されて nav bar / 将来のウィジェットで再発する。**選択タブが azure になるのは asset 是正の帰結であって、`.tint` の帰結ではない。**
+
 `App/PlaceholderViews.swift` の `HomePlaceholderView` / `SemesterPlaceholderView` は間に 1 枚挟むだけの中継なので、上のとおり `HomeView()` / `SemesterOverviewView()` を直接呼ぶ。
 **`RoomsPlaceholderView` / `FriendsPlaceholderView` / `PlaceholderScreen` / `TopBar` は死にコード** (grep で参照 0 を確認済) → `PlaceholderViews.swift` を**ファイルごと削除**。
 
@@ -393,7 +470,7 @@ struct MainTabView: View {
 | `Features/Home/HomeCore.swift:65` | `.navigationBarHidden(true)` | **削除** → §5.1 の toolbar を持つ |
 | `Features/SemesterOverview/SemesterOverviewView.swift:25` | `.navigationBarHidden(true)` | **削除** + `.navigationTitle("学期・科目")` |
 | `Features/Settings/SettingsView.swift:42` | `.navigationBarHidden(true)` | **削除** + `.navigationTitle("設定")` |
-| `Features/Rooms/RoomDetailView.swift:54` | `.toolbar(.hidden, for: .navigationBar)` + `.navigationBarBackButtonHidden(true)` (:53) | **両方削除** + `.navigationTitle(room?.name ?? "ルーム")` + `.navigationBarTitleDisplayMode(.inline)` |
+| `Features/Rooms/RoomDetailView.swift:54` | `.toolbar(.hidden, for: .navigationBar)` + `.navigationBarBackButtonHidden(true)` (:53) | **両方削除** + `.navigationTitle(model?.room?.name ?? "ルーム")` + `.navigationBarTitleDisplayMode(.inline)`。**★ 併せて §4.7 (溢れ止め) を同フェーズで行う** |
 | `Features/Rooms/TemplatesView.swift:50` | `.toolbar(.hidden, for: .navigationBar)` + **`.navigationBarBackButtonHidden(true)` (:49)** | **両方削除** + `.navigationTitle("テンプレート")` |
 | `App/PlaceholderViews.swift:39` | `.navigationBarHidden(true)` | ファイルごと削除 |
 
@@ -401,10 +478,13 @@ struct MainTabView: View {
 - **★ `.navigationBarBackButtonHidden(true)` を消し忘れると、自前 back を消した画面が「戻れない画面」になる。** `RoomDetailView:53` と `TemplatesView:49` の**両方**にある (上表)。`.toolbar(.hidden)` だけ外して満足しないこと — nav bar は出るが back ボタンだけが無い状態になる
 - `RoomsView` / `FriendsView` は既に nav bar を隠していない。`.navigationTitle` の有無を確認し、無ければ付ける
 - **`project.yml` に `options.developmentLanguage: ja` を追加** (F1)
+- **★ `RoomDetailView` の accessor は `model?.room` (`@State private var model: RoomDetailViewModel?`)。** `room?.name` という property は**存在しない** (旧版の本表はそう書いていた — 逐語で書くとコンパイルが通らない)。`header` (:69) が `model?.room?.name` を使っているのが実例
+- **★ nav bar の system back / toolbar は `AccentColor` asset を引く** → §4.1 の asset 是正が入っていないと **back の chevron が orange で出る**。§4.1 と本節は同じ P2 なので順序は問わないが、**両方入って初めて azure になる**
 
 ### 4.4 `RootView` の目標状態
 
-`feature/version-management` は着地済 (`60a127e`)。**`AmbientBackground()` の除去は本設計 P1 が実施済** (`4dfd3a9`)。下は P2 完了時の目標状態:
+`feature/version-management` は着地済 (`60a127e`)。**`AmbientBackground()` の除去は本設計 P1 が実施済** (`4dfd3a9`)。
+**★ §4.6 の撤回により、下の目標状態は `4dfd3a9` の現状と完全に一致する — P2 で `RootView` に加える変更は無い**:
 
 ```swift
 // apps/ios/Atender/App/RootView.swift
@@ -431,20 +511,20 @@ var body: some View {
     .onOpenURL { /* 現状のまま */ }
     .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { /* 現状のまま */ }
     .onChange(of: canNavigate) { /* 現状のまま */ }
-    .preferredColorScheme((ThemePreference(rawValue: themePreference) ?? .auto).colorScheme)   // ← .light から .auto へ (§4.6)
+    .preferredColorScheme((ThemePreference(rawValue: themePreference) ?? .light).colorScheme)  // ← 現状のまま (§4.6 は撤回済)
 }
 ```
 
-**本設計が `RootView` に対して行う変更は 3 つ。うち (1) は P1 で完了済**:
+**本設計が `RootView` に対して行う変更は当初 3 つだったが、(2)(3) は撤回された。残るのは P1 で完了済の (1) だけ**:
 
 | # | 変更 | Phase |
 |---|---|---|
 | 1 | `AmbientBackground()` の行を消す (§3.4) | **P1 済** (`4dfd3a9`) |
-| 2 | `.preferredColorScheme(... ?? .light)` → `?? .auto` (§4.6) | **P2** |
-| 3 | `@AppStorage("atender.theme")` の既定値を `ThemePreference.light.rawValue` → `.auto.rawValue` に (§4.6) | **P2** |
+| 2 | ~~`.preferredColorScheme(... ?? .light)` → `?? .auto`~~ | **撤回済** (2026-07-17 Touri 裁定 — §4.6) |
+| 3 | ~~`@AppStorage("atender.theme")` の既定値を `.auto.rawValue` に~~ | **撤回済** (同上) |
 
-→ **P2 の Developer が `RootView` で触るのは (2)(3) の 2 行だけ。** それ以外の行は version-management の成果物をそのまま残す。
-(`4dfd3a9` 時点の実物: `RootView.swift:6` が `= ThemePreference.light.rawValue`、末尾の `.preferredColorScheme` が `?? .light` — どちらも未変更。)
+→ **★ P2 の Developer は `RootView.swift` を 1 行も触らない。** ファイルごと変更対象外。
+**★ P2 の実装で既に (2)(3) を入れている場合は差し戻すこと。** `4dfd3a9` 時点の実物 = `RootView.swift:6` が `= ThemePreference.light.rawValue` / 末尾の `.preferredColorScheme` が `?? .light` — **この 2 行が正しい最終形**。
 
 **`project.yml` の分掌**: 本設計は `options.developmentLanguage` と `UIAppFonts` のみ触る。**`CFBundleVersion` には触らない** (version-management の領分。整数 1 個を巡ってマージで殴り合わないため)。TestFlight 配布時に Leader が別途上げる。
 
@@ -500,15 +580,126 @@ extension View {
 
 `GlassEffectContainer` / `glassEffectID` / `glassEffectUnion` は**使わない** (近接する複数のガラスを融合させる道具。ガラス面が 1 つしかないので出番がない。使わない API をシムに置かない)。
 
-### 4.6 ダークモードの既定を OS 追従へ
+### 4.6 ダークモードの既定 — ★ **`.light` のまま据え置く (2026-07-17 Touri 裁定で撤回)**
 
-現状 `RootView.swift:6` の `@AppStorage("atender.theme")` の既定が `ThemePreference.light` で、**`.preferredColorScheme(.light)` により OS のダークモード設定を上書きしている**。
+**当初の設計**: 既定を `.light` → `.auto` に変え、OS のダークモード設定に追従させる (HIG §3「アプリ内独自の appearance 切替 UI を作らない — OS 設定に従う」)。
+**撤回**: **2026-07-17 に Touri が取り下げた。既定は `.light` のまま。P2 はテーマ関連のコードを 1 行も触らない。**
 
-HIG §3: 「アプリ内独自の appearance 切替 UI を作らない — OS 設定に従う」。かつ **§3.3 で中立色を system semantic に移す以上、light 固定はその意味 (自動で dark に転ぶこと) を殺す。**
+#### 撤回の理由 — 「2 行」ではなく「3 ファイル」だったから
 
-- **既定値を `.auto` に変更** (`@AppStorage("atender.theme") private var themePreference = ThemePreference.auto.rawValue` + `?? .auto`)
-- **`ThemePreference` の enum と設定 UI (ライト/ダーク/自動) は残す** — 削除は「作った UI を捨てるか」というプロダクト判断であり Architect の裁量ではない。設定はスコープ外
-- **これはユーザーに見える挙動変化**: 一度も設定を触っていないダークモード利用者のアプリが、更新後にダークになる。**意図した変化**だが Touri の裁定余地がある → §12
+P2 実装中に Developer が実測、Leader が現物で確認。当初の §4.4 / 本節は「`RootView.swift:6` の `@AppStorage` 既定値と `:58` の `?? .light` を `.auto` に = **2 行**」で届くとしていた。**これは誤りだった。** `atender.theme` の `@AppStorage` は**同じ既定値 `.light` を持つ 3 箇所**に散っている:
+
+| file:line | 役割 |
+|---|---|
+| **`Atender/AtenderApp.swift:6` / `:14` / `:19`** | `WindowGroup` 直下 = **`RootView` の外側**で `.preferredColorScheme` を適用。**★ 外側が勝つので、ここが実効値を決めている** |
+| `Atender/App/RootView.swift:6` / `:58` | 当初の設計が名指ししていた場所。**外側の `AtenderApp` が既に適用済なので、ここを直しても効かない** |
+| `Atender/Features/Settings/SettingsView.swift:6` | 設定 UI の選択表示。直さないと本体が dark でも「ライト」が選択表示される不整合が残る |
+
+同一 sim での A/B: **設計どおり `RootView` だけ直す → LIGHT のまま / `AtenderApp` も直して初めて DARK。**
+→ 届けるには **§0 が「設定はスコープ外」と定めた `SettingsView` と、本設計が一度も言及していない `AtenderApp` へのスコープ拡大**が要る。**Touri は「それに見合わない」と判断。**
+
+#### 据え置き後も成立すること (§3.3 との整合)
+
+- **`SettingsView` のトグル (ライト/ダーク/自動) は残る** → ユーザーは**設定から `.dark` を選べる**。選べば `.preferredColorScheme(.dark)` が効き、§3.3 の semantic color は**正しい dark 値で解決する**。**dark palette は死にコードではない**
+- **§3.3 (中立色 → semantic system color、P1 実施済) の価値は落ちない。** 失われるのは**「OS 設定への自動追従」だけ**で、Increased Contrast 追従 / Liquid Glass との協調 / grouped 階層 / dark 選択時の正しい解決は全部生きている (内訳は §3.3 の表)
+- **§12-#2 の「light 固定は semantic color の意味を殺す」という当初の推奨根拠は言い過ぎだった** — 殺されるのは自動追従のみ。§3.3 を巻き戻す理由にはならない
+
+**逸脱** (HIG §3 に対して): 「アプリ内 appearance 切替を持ち、かつ OS 設定に従わない」状態が残る。**理由**: 是正に要するスコープ (3 ファイル / うち 2 つは本設計のスコープ外) が価値に見合わないと Touri が裁定した (2026-07-17)。
+
+#### ★ 将来この既定を直すときの注意 (同じ穴を踏まないため)
+
+**`grep -rn 'atender.theme' apps/ios/` で 3 箇所を全部拾ってから直す。** `RootView` だけ直して sim で確認すると「変わらない」ので**実装が間違っている**と誤診する (実際にそうなった)。実効値を決めているのは**最も外側の `.preferredColorScheme`** = `AtenderApp.swift:14`。
+**副次的な事実**: この重複により **`RootView.swift:58` の `.preferredColorScheme` は現在も効いていない (死んだ行)**。本設計では**触らない** — 撤去は別テーマ。
+
+### 4.7 ★ `RoomDetailView` の溢れ止め (§5.3 から P2 へ前倒し — 2026-07-17 Touri 裁定)
+
+**P2 を単独で `main` にマージすると、この画面だけが操作不能になる。** CLAUDE.md「**`main` は常にマージ可能・デプロイ可能**」に抵触するため、§5.3 (P3) のうち**この画面を壊さないための最小分だけ**を P2 に前倒しする。
+
+#### 実測された壊れ方
+
+Developer が発見 → Leader が 2 経路で再現 → Architect が本日 re-grep で確認:
+
+- **`RoomDetailView` は body に `ScrollView` を 1 つも持たない** VStack 構成 (`RoomDetailView.swift:37-58`)。**主要画面で唯一の例外** — `SettingsView` / `SemesterOverviewView` / `RoomsView` / `FriendsView` はいずれも 1 箇所持つ (`grep -c ScrollView` で確認済)
+- P2 が **nav bar を復活させ (44pt / §4.3)** + **native tab bar の safe area inset (~83pt / §4.1)** を入れると可用高が減り、`Group` (:42-48) 内の固定高コンテンツ (`TimetableGrid` は `.frame(height: max(360, …))` = iPhone 16 で 620pt) が入り切らず溢れる → **`tabPicker` (カレンダー/時間割、`:94`、`accessibilityIdentifier("room-detail-tabs")`) がバーの下に潜ってタップ不能**
+- 2 つの独立した撮影経路 (XCTAttachment / `simctl io screenshot`) で同一に再現。**連続スクショが byte-identical = その間の tap が no-op だった証拠**
+
+#### P2 でやること
+
+**`RoomDetailView` の 2 つのタブ内容 (`RoomCalendar` / `RoomTimetable`) に、それぞれ自前の `ScrollView` を持たせる。** `RoomDetailView` 側の `header` (:66) / `tabPicker` (:94) は**スクロールの外に固定で残す** (構造は現状のまま)。
+
+**★ `RoomDetailView.body` の `Group` (:42-48) を `ScrollView` で包んではいけない。** 一見それが最小に見えるが、**`RoomCalendar` の FAB が壊れる** — 下記「FAB の罠」参照。
+
+```swift
+// (1) apps/ios/Atender/Features/Rooms/RoomDetailView.swift  body の骨格 (P2 完了時)
+//     ★ ScrollView は足さない。§4.3 の nav bar 対応だけ。
+var body: some View {
+    VStack(alignment: .leading, spacing: Space.s3) {
+        //  BackHeaderButton { dismiss() } (:39) は §4.3 で削除済 (system back が代わる)
+        header
+        tabPicker                                      // ← スクロールの外 = 常にタップ可能
+        Group {
+            if tab == .calendar { RoomCalendar(roomId: roomId) }
+            else { RoomTimetable(roomId: roomId) }
+        }
+    }
+    .padding(Space.pagePxMobile)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    .background(Color.bgBase)
+    //  .navigationBarBackButtonHidden(true) (:53) / .toolbar(.hidden, for: .navigationBar) (:54) は §4.3 で削除
+    .navigationTitle(model?.room?.name ?? "ルーム")
+    .navigationBarTitleDisplayMode(.inline)
+    // .task (:55) / .sheet (:59) は現状のまま
+}
+
+// (2) RoomCalendar (:122) — VStack を ScrollView で包む。★ .overlay (FAB) は ScrollView の「外」に置く
+var body: some View {
+    // let events / eventMap / dayEvents は現状のまま
+    ScrollView {
+        VStack(spacing: Space.s3) { /* 現状の中身をそのまま */ }
+    }
+    .scrollBounceBehavior(.basedOnSize)                // 収まるときはバウンスしない (F7 で target 17 を通ることを確認済)
+    .accessibilityIdentifier("room-calendar")          // 現状のまま (ScreenshotFlow が掴む)
+    .overlay(alignment: .bottomTrailing) {             // ★ ScrollView に対する overlay = viewport 固定で浮く
+        if viewMode != .month { /* FAB 2 つ。現状のまま */ }
+    }
+    // .task / .sheet は現状のまま
+}
+
+// (3) RoomTimetable (:367) — Group を ScrollView で包む
+var body: some View {
+    ScrollView {
+        Group { /* 現状の中身をそのまま (Skeleton / Panel / EmptyState / TimetableGrid) */ }
+    }
+    .scrollBounceBehavior(.basedOnSize)
+    .accessibilityIdentifier("room-timetable")         // 現状のまま
+    .task { await load() }
+}
+```
+
+**なぜ `tabPicker` をスクロールの外に固定するか**: 壊れの本体は「**ピッカーに触れない**」ことなので、**ピッカーをスクロール領域に入れない**のが最短で確実な保証になる。スクロールするのは各タブの中身だけで、ピッカーはコンテンツが何 pt でも不変。
+
+#### ★ FAB の罠 (`Group` ごと包むと踏む)
+
+`RoomCalendar` は **`.overlay(alignment: .bottomTrailing)` で FAB 2 つ** (`room-fab-ics` / `room-fab-event`、`:180-208`) を自分の `VStack` に付けている。
+
+- **`RoomDetailView` の `Group` を `ScrollView` で包むと、この overlay はスクロールする*コンテンツ*に付いたまま**になり、**FAB がスクロールで流れて消える** (= 浮いているべきボタンが浮かなくなる機能後退)
+- **`RoomCalendar` の内側で `VStack` だけを `ScrollView` に入れ、`.overlay` を `ScrollView` に対して付ける**と、overlay は **viewport (可視領域) に固定**されるので FAB は浮いたまま
+- **ついでに現状のバグも直る**: 今の overlay は「溢れた VStack の下端」に付いているので、**FAB は既に画面外side に落ちている**。ScrollView 化で初めて正しい位置に来る
+- `.padding(.bottom, Space.tabBarHeight + Space.s6)` (`:208`) → **`.padding(.bottom, Space.s6)`** は §4.2 の表のとおり P2 で行う。ScrollView は safe area を尊重するので、system tab bar の分は自動で退く
+
+**★ この画面だけ `ScrollView` が 2 つになる** (タブごとに 1 つ) が、**同時に表示されるのは 1 つだけ**なので「1 画面 1 スクロール」の実質は保たれる。`RoomDetailView` 自身は 0 個のまま。
+
+#### ★ P2 で `TimetableGrid` の prop 契約を触らないこと
+
+前倒しの範囲は「**壊れを出さないための最小**」に限る。P3 の作り込みを引きずり込まない:
+
+- `TimetableGrid` の `height: CGFloat?` は **P2 では現状のまま**。`available: CGFloat` への必須化は **P3** (§5.3)
+- **理由**: `TimetableGrid` は **`SelfTimetableView.swift:137` と `RoomDetailView.swift:386` の 2 箇所から呼ばれる共有部品** (grep 済)。P2 で prop を必須化すると **`SelfTimetableView` (= P3 の `HomeView` 再構成の一部) を P2 に道連れにする**
+- **帰結**: P2 の間、グリッド高は `max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight)` = **クロームの実態と対応しない数値**のまま残る。**`ScrollView` の中にいるので無害** (溢れてもスクロールするだけ)。P3 の §5.3 が `available` を渡して概念ごと消す
+
+#### ★ P2 で消せるトークンは増えない
+
+`RoomDetailView.swift:386` を**触らない**ので、そこが最後の参照である **`Space.roomTtChromeTop` と `Space.tabBarHeight` の定義は P2 では消せない**。§3.5 の表 (両方 **P3**) は**変更なしが正しい**。`UIScreen.main` の 1 件 (:386) が消えるのも **P3** のまま (§3.6)。
 
 ---
 
@@ -684,7 +875,11 @@ struct TimetableGrid: View {
 
 **`currentPeriodIndex(daySlots:nowMinute:)` の規則**: `daySlots` を `periodIndex` 昇順にし、**最初に** `startMinute <= nowMinute && nowMinute < endMinute` を満たす slot の `periodIndex`。無ければ `nil`。`isBreak` の slot も対象に含む (休み時間も「今」の一部であり、グリッドはそれを行として描いているため)。
 
-**`RoomTimetable` の追従** (最小改修): `TimetableGrid(..., height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight))` → `available` を `GeometryReader` から渡す形に。`RoomDetailView` の `Group` に `.frame(maxHeight: .infinity)` を付けて残り高を与える。**ルームの時間割には `todayDisplayDay` を渡し、`currentPeriodIndex` も渡す** (メンバーの時間割でも「今」は同じ意味を持つ)。
+**`RoomTimetable` の追従** (**P3**): `TimetableGrid(..., height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight))` (`RoomDetailView.swift:386`) → `available` を `GeometryReader` から渡す形に。**§4.7 で `RoomTimetable` に入れた `ScrollView` を外し** (グリッドが `TimetableGridLayout` で内部スクロールを持つようになるため二重スクロールになる)、`RoomDetailView` の `Group` に `.frame(maxHeight: .infinity)` を付けて残り高を与える。**ルームの時間割には `todayDisplayDay` を渡し、`currentPeriodIndex` も渡す** (メンバーの時間割でも「今」は同じ意味を持つ)。
+**★ `RoomCalendar` 側の `ScrollView` (§4.7) は P3 でも残す** — §5.5 の `CalendarMonthLayout` はホームの `PersonalCalendar` を対象にした節であり、`RoomCalendar` は本設計のスコープ外 (§0「ルームは土台に追従する最小改修のみ」)。**FAB の overlay もそこに付いたまま**にする。
+これで `RoomDetailView.swift:386` の `UIScreen.main` / `Space.roomTtChromeTop` / `Space.tabBarHeight` が**同時に**消える (§3.5 / §3.6)。
+
+**★ ただし `RoomDetailView` が「溢れて操作不能」になるのは P2。** P2 単独マージを壊さないための**最小の手当てだけ**を前倒し済 → **§4.7** を参照。**本節 (grid の prop 契約変更) は P3 のまま。**
 
 ### 5.4 `NowNextBar` — 「次の授業」の常設表示 + 出欠
 
@@ -1081,6 +1276,11 @@ F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 
 - **#S8**: `UIAppFonts` の全エントリが (a) パスを含まない (b) バンドル内に実在する — **既存の不変条件テストをそのまま維持** (件数のマジックナンバーでは書かない)
 - **#S9**: `MainTab.allCases.count == 5` + 5 タブの label と symbol が現状のまま (既存 `NavigationTests` が緑のまま。F6)
 - **#S10**: `MainTab.allCases` の全 symbol が `UIImage(systemName:) != nil` — **F6 で `calendar.fill` の不在に刺されたので、symbol 名の実在を機械的に守る**
+- **#S11**: **`AccentColor` asset と `Color.accent500` が同じ色であること** (§4.1、**P2 で追加**)。`UIColor(named: "AccentColor")` を light / dark の `UITraitCollection` で `resolvedColor(with:)` し、`UIColor(Color.accent500)` を同じ trait で解決したものと **RGBA 成分で比較** (`XCTAssertEqual(_:_:accuracy: 0.001)`)。
+  - **★ hex をテストにベタ書きしない。** `#1E96E6` と書くと「asset とコードが一致している」でなく「asset が特定の hex である」を検証することになり、**次のリブランドで §9.3 と同じ置き去りが起きる**。**検証すべき不変条件は「2 つの正典が一致していること」**
+  - **★ これが `7ac596f` の再発防止そのもの**: あのコミットは `Color+Atender.swift` だけ azure にして asset を orange のまま残した。このテストがあれば当時落ちていた
+  - **API は Architect が typecheck 済** (`-target arm64-apple-ios17.0-simulator`)。`UIColor(Color.accent500)` の round-trip が dynamic を保たない環境に当たった場合のみ、`Color.accent500` 側も `UIColor { traits in ... }` として直接組み直してよい (hex のベタ書きに逃げない)
+- **#S12**: **#S11 の負の対照** — `UIColor(named: "AccentColor")!` の light 解決値と dark 解決値が**互いに異なる**こと。**これが無いと #S11 は vacuous になり得る** (両 trait が同じ値に解決されていても #S11 は緑になる)。現状の asset は light/dark とも `#F97316` = **この対照は今は落ちる**。**是正後に初めて両方緑になる**
 
 ### 8.8 UI の状態網羅 (ui-ux-design-perspectives §7-4)
 
@@ -1112,6 +1312,7 @@ F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 
   - `HomeChipsTests.swift` に **#H1/#H2 を追記** (既存 3 本は触らない)
   - `TypographyRegistrationTests.swift` を **全面書き換え** (#S4〜#S8)
   - `NavigationTests.swift` に **#S10 を追記** (既存は触らない)
+  - `DesignTokenTests.swift` に **#S11/#S12 を新メソッド `testAccentColorAssetMatchesToken` として追記** (**P2**。既存 2 メソッドは触らない — `testSpacingAndRadiusTokens` の 2 行削除は P3 / §9.2 #1)
 - **実行**: `/opt/homebrew/bin/xcodegen generate` → `xcodebuild test -project Atender.xcodeproj -scheme Atender -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2'`
 - **ベースライン**: **263 GREEN / 0 RED** (`4dfd3a9` = 本設計 P1 のマージ、2026-07-17 実測)。**未分類 0**。
   内訳: 201 (version-management 着地時) + P1 の新規 62。
@@ -1163,7 +1364,18 @@ F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 
 | `RoomLogicTests` (3 本 / `sourceColor` と `color`) | `#38bdf8` / `#94a3b8` / `#F97316` |
 
 **本設計はこれらの hex 値を 1 つも変えないので、5 件は全部緑のまま。**
-→ **Developer への指示**: **色の「値」を触るな。** §3.3 の中立色の置換対象は `bg*` / `text*` (ただし `textOnAccent`/`textOnDanger` を除く) / `border*` の**それだけ**。`MemberColor.palette` / `accent*` / `status*` / `brand*` / `SelfTimetableView` のフォールバック `#1E96E6` / `RoomCalendarLogic.sourceColor` の値に**ついで掃除で手を出さない**。ハードコード hex をトークンに寄せたくなるが、それは本設計の要望と無関係で、この 5 件を無言で壊す。
+→ **Developer への指示**: **コード中の色の「値」を触るな。** §3.3 の中立色の置換対象は `bg*` / `text*` (ただし `textOnAccent`/`textOnDanger` を除く) / `border*` の**それだけ**。`MemberColor.palette` / `accent*` / `status*` / `brand*` / `SelfTimetableView` のフォールバック `#1E96E6` / `RoomCalendarLogic.sourceColor` の値に**ついで掃除で手を出さない**。ハードコード hex をトークンに寄せたくなるが、それは本設計の要望と無関係で、この 5 件を無言で壊す。
+
+**★ `AccentColor.colorset` の是正 (§4.1) はこの禁止と衝突しない** — 混同すると事故るので境界を明示する:
+
+| | 触る | 理由 |
+|---|---|---|
+| `Assets.xcassets/AccentColor.colorset/Contents.json` | **○ 是正する** (P2) | **accent** の系統。`7ac596f` の azure 決定から取り残された未移行の残骸。**参照するテストは無く、消費者も現在 0** なので既存の 5 件に影響しない |
+| `RoomLogic.swift:179` / `MeetingSheets.swift:179,191` の `?? "#F97316"` | **× 触らない** | **科目・メンバー色**の系統 (accent ではない)。**`RoomLogicTests:334` が `"#F97316"` を assert している** |
+| `FriendsView.swift:163` の `#F97316` | **× 触らない** | メンバー色グラデのパレット |
+| `AtenderTests/Fixtures/*.json` の `#f97316` | **× 触らない** | フィクスチャの科目色 |
+
+→ **`#F97316` という文字列で grep して一括置換するな。** **accent の orange (asset 1 ファイル) と 科目色の orange (コード 4 箇所 + フィクスチャ) は別のトークン系統**であり、後者は今も現役の正しい値。**「orange を全部消す」は本設計の作業ではない。**
 
 **新しく書くコードの流儀**: 色は**必ずトークン名で比較する** (`Color.statusPresent` 等)。`CalendarEventDisplayTests` / `SemesterOverviewDisplayLogicTests` が正しい実例。
 
@@ -1193,8 +1405,8 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 | Phase | 内容 | 独立性 / 理由 |
 |---|---|---|
 | **P1 土台** ✅ **着地済 (`4dfd3a9`)** | §3.1 書体 / §3.2 フォントトークン (呼び出し 18 箇所の変換) / §3.3 中立色 / §3.4 `AmbientBackground` 削除 (+ `RootView` の該当行) / **§3.5 のうち「本番参照 0 の 4 トークン削除 + `pagePxMobile` 12→16」だけ** / §3.6 `ScreenMetrics` 新設 (消費者は P4) + §7.1 `SchoolClock` + §7.2 `TodayTimeline`・`NowNextText`・`AttendanceSummary` + §5.3 `TimetableGridLayout` + §5.5 `CalendarMonthLayout`・`CalendarDayStyle` + `project.yml` の `developmentLanguage`/`UIAppFonts` | **ビルド基盤に効く** (`project.yml` + xcodegen + フォント登録)。全画面に波及するが機械的。**新規ロジックは全部ここで、UI 無しで、テスト付きで着地する** |
-| **P2 シェル** | §4 全部 (native `TabView` / `BottomTabBar`・`PlaceholderViews` 削除 / nav bar 復活 / `BackHeaderButton` 削除 / `RootView` の (2)(3) / Glass シム / dark 既定) + **§3.5 のうち `Space.tabBarContent` の定義削除** + **§4.2 の 7 箇所のパディング除去 (`tabBarHeight` の*定義*は残す)** | P1 の `ja` 設定に依存 (back が「戻る」になって初めて `BackHeaderButton` を消せる) |
-| **P3 ホーム** | §5 全部 (nav bar への畳み込み / `ContextChips` 条件表示 / グリッドが available を受け取る / 「今」の描画 / `NowNextBar` / カレンダー拡大) + **§3.5 のうち `Space.tabBarHeight`・`selfTtChrome`・`roomTtChromeTop` の定義削除** (§5.3/§5.4 が最後の参照を消した後) + **`DesignTokenTests` の 2 行削除** (§9.2 #1) | **本命。** P2 のシェルに乗る。**「今」の UI とクローム再編は同じ場所 (`SelfTodayCTA` → `NowNextBar`) を触るので分けない** |
+| **P2 シェル** | §4 全部 — native `TabView` (§4.1) + **`AccentColor.colorset` の azure 是正 (§4.1)** / `BottomTabBar`・`PlaceholderViews` 削除 / nav bar 復活 + `BackHeaderButton` 削除 (§4.3) / Glass シム (§4.5) / **§4.7 `RoomDetailView` の溢れ止め (§5.3 から前倒し)** + **§3.5 のうち `Space.tabBarContent` の定義削除** + **§4.2 の 7 箇所のパディング除去 (`tabBarHeight` の*定義*は残す)** + **#S11/#S12 (§8.7)**。**★ `RootView` は 1 行も触らない (§4.4 / §4.6 撤回)** | P1 の `ja` 設定に依存 (back が「戻る」になって初めて `BackHeaderButton` を消せる)。**§4.7 が無いと `RoomDetailView` が操作不能のままマージされる** = 「`main` は常にデプロイ可能」に抵触 |
+| **P3 ホーム** | §5 全部 (nav bar への畳み込み / `ContextChips` 条件表示 / グリッドが available を受け取る = **`TimetableGrid` の prop 契約変更と §4.7 の `ScrollView` 撤去** / 「今」の描画 / `NowNextBar` / カレンダー拡大) + **§3.5 のうち `Space.tabBarHeight`・`selfTtChrome`・`roomTtChromeTop` の定義削除** (§5.3/§5.4 が最後の参照を消した後) + **`DesignTokenTests` の 2 行削除** (§9.2 #1) | **本命。** P2 のシェルに乗る。**「今」の UI とクローム再編は同じ場所 (`SelfTodayCTA` → `NowNextBar`) を触るので分けない**。**`TimetableGrid` は `SelfTimetableView` と `RoomDetailView` の共有部品なので、prop 契約の変更は両呼び出し側が揃うこのフェーズで行う** |
 | **P4 仕上げ** | §6 全部 (haptics / ジェスチャ / 遷移アニメ / `ContentUnavailableView` / `.redacted` / `Chip`・`StatusDot` 削除) + **`BottomSheet.swift:37` の `UIScreen.main` → `ScreenMetrics.height`** (§3.6 で新設したヘルパに初めて消費者が付く) | P3 の構造が固まった後。**単体で RED になっても本体は動く** = 最後に置くのが安全 |
 
 **トークン削除の一覧は §3.5 の表が正典** (Phase 列付き)。本表と食い違ったら §3.5 を採る。
@@ -1212,6 +1424,15 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
    → `01-home-timetable` のタブバーが**すりガラス状で背後のコンテンツが透けている**こと。**P2 前の同じスクショと比較する** (before は現行 main で 1 回撮っておく)
    - **判定が成功/失敗で違う値になるか**: タブバーの背景が「不透明な `bgElevated` 85%」から「背後が屈折して見えるガラス」に変わる = **目視で区別可能**。変わっていなければ native 化が効いていない
 2. **P2 完了時**: 同じフローを **iOS 18.2** でも走らせる → **タブバーが普通に出ていること** (ガラスは出ない = 正しい。21% のユーザーの体験)
+2b. **★ P2 完了時: accent の退行チェック** (§4.1)。`01-home-timetable` の**選択タブのピクセル**を実測する。
+   - **判定が成功/失敗で違う値になるか**: **なる** — 是正済なら `#1E96E6` (azure) / 未是正なら **`#F97316` (orange)**。この 2 値は目視でも判別可能で、**実際に未是正の P2 実装で `#F97316` が観測されている** (2026-07-17)
+   - **nav bar の back も見る** — `03-room-detail` の back chevron。`TabView` にだけ `.tint` を当てた場合、**タブは azure・back は orange** になる。**両方 azure でなければ asset を直していない**
+   - ユニット側は #S11/#S12 が同じ不変条件を機械的に守る (§8.7)
+2c. **★ P2 完了時: `RoomDetailView` の操作可能チェック** (§4.7)。**この画面が P2 で壊れたのを実測で見つけた経緯があるので、目視でなくタップで確かめる**。
+   - `ScreenshotFlow` で `room-detail-tabs` (`RoomDetailView.swift:94` の `accessibilityIdentifier`) の**両タブを実際にタップし、前後のスクショが変わること**を確認する
+   - **★ 「タップした」でなく「タップが効いた」を見る**: XCUITest の tap は**当たらなくても失敗しない** (ソフトタップ)。壊れていた時の症状は**連続スクショが byte-identical** だった。→ **カレンダー→時間割の切替でスクショの byte 差分が出ることを判定条件にする**。`app.buttons["room-detail-tabs"].isHittable` も併せて見る
+   - **FAB も見る** (§4.7「FAB の罠」): `room-fab-event` が**カレンダーの週/日表示で浮いたまま**であること。`.overlay` を `ScrollView` の内側に付けてしまうと**スクロールで流れて消える**ので、**スクロールした後のスクショで FAB が同じ位置にいる**ことを確認する
+   - iPhone 16 と **iPhone SE (小画面)** の両方で行う。SE の方が可用高が小さく、溢れが先に出る
 3. **P3 完了時**: iPhone SE (小画面) と iPhone 16 の両方で `01-home-timetable` を撮り、**グリッドが溢れずに収まっている**こと (#G4/#G5 の実地確認)
 4. **P1 の negative control** — `project.yml` から `developmentLanguage: ja` を一時的に外して `xcodegen generate` → **#S1/#S2/#S3 が赤くなること**を確認してから戻す。「GREEN は修正が作った」と言い切るため (F2 で Architect が実施済の手順をそのまま踏む)
    **★ P1 は既にマージ済 (`4dfd3a9`)。この手順の実施記録が無い場合は P2 の着手前に行う** — `ja` 化は P2 の `BackHeaderButton` 削除の前提 (back が「戻る」にならないまま自前 back を消すと英語の "Back" が出る)
@@ -1234,7 +1455,11 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 | **`BottomSheet` / `SheetScaffold` の重複統合** | 21 箇所の呼び出しを持つ横断リファクタ。本設計のどの要望にも紐付かない。**新規シートは native `.sheet` を使う**と定めれば重複は増えない |
 | **`matchedGeometryEffect` でモード切替を繋ぐ** | 時間割グリッドとカレンダーは**要素の対応関係が存在しない** (5×N のコマ ↔ 42 個の日セル)。繋ぐ対象がないところに `matchedGeometryEffect` を使うと、意味のない変形アニメになる。`.opacity` で十分 |
 | **`GlassEffectContainer` / `glassEffectID` / `glassEffectUnion`** | 近接する**複数の**ガラス面を融合させる道具。本設計のガラス面は `NowNextBar` の 1 つだけ。**使わない API をシムに置かない** |
-| **ダークモードのトグル自体を削除する** (HIG は OS 追従を求める) | 「作った UI を捨てるか」は**プロダクト判断で Architect の裁量ではない**。既定値を `.auto` に変える (§4.6) だけで HIG の実害 (OS 設定の無視) は消える |
+| **ダークモードのトグル自体を削除する** (HIG は OS 追従を求める) | 「作った UI を捨てるか」は**プロダクト判断で Architect の裁量ではない**。**★ 2026-07-17 の §4.6 撤回で却下理由が強まった**: 既定が `.light` に据え置かれた結果、**トグルは dark への唯一の経路**になった。消せば §3.3 で semantic color に移した中立色の **dark 側の値が到達不能な死にコードになる**。(旧版はここで「既定を `.auto` にすれば HIG の実害は消える」と書いていたが、**その前提は撤回された**) |
+| **`.tint(Color.accent500)` を `TabView` に付けて accent の退行を止める** (§4.1) | **漏れを追いかける手当てで、根 (`AccentColor` asset の orange) が残る。** (a) P2 は nav bar も 5 画面で復活させ、system back / toolbar も asset を引くので **`TabView` の `.tint` 1 個では back が orange のまま** (b) `RootView` に置く案は §4.6 撤回で「**P2 は `RootView` を 1 行も触らない**」と確定したためスコープ再拡大になる (c) **正典が 2 つ (asset と `.tint`) 並ぶ** (d) §0 が次の doc に送った**ウィジェット target** は新しい root なので、そこで orange が再発する。→ **asset を是正する** (§4.1)。「相手側の設定で回避する」でなく「自分側 = 単一の定義を正す」 |
+| **`#F97316` を grep して一括で azure に置換する** | **accent の orange と 科目色の orange は別のトークン系統。** 科目色側 (`RoomLogic.swift:179` 等 4 箇所 + フィクスチャ) は**今も現役の正しい値**で、`RoomLogicTests:334` が assert している。一括置換は §9.3 の 5 件を無言で壊す。**是正対象は `AccentColor.colorset` の 1 ファイルだけ** |
+| **§5.3 (グリッドが `available` を受け取る) を丸ごと P2 に前倒しする** (`RoomDetailView` の溢れを直すため) | **`TimetableGrid` は `SelfTimetableView` と `RoomDetailView` の共有部品**なので、prop 契約 (`height:` → `available:`) を P2 で変えると **`SelfTimetableView` = P3 の `HomeView` 再構成を P2 に道連れにする**。前倒しは「**壊れを出さないための最小**」に限り、**タブ内容への `ScrollView` (§4.7)** で止める |
+| **`RoomDetailView.body` の `Group` を `ScrollView` で包む** (§4.7 の一見最小な案) | **`RoomCalendar` の FAB (`.overlay`) がスクロールする*コンテンツ*側に付いたままになり、浮かずに流れて消える。** overlay を `ScrollView` の外に置くには、FAB の state (`viewMode` / `activeSheet`) を持つ `RoomCalendar` の内側で包むしかない。→ **タブ内容ごとに `ScrollView` を持たせる** (§4.7)。「1 枚で済む」は**行数の最小であって、壊さない最小ではない** |
 | **`ContextChips` を廃止して nav bar の `Menu` に畳む** | 40pt は消えるが、**「友達と会話しながらみんなの時間割を確認」が 1 タップ → 2 タップになる**。Touri が名指しした最頻ユースケースの interaction cost を上げてまで取る 40pt ではない。ルームが 0 個のとき**だけ**消す (§5.2) |
 | **`ContextChips` を `Picker(.segmented)` にする** | ルーム数が可変 (0〜N) で、segmented は要素数が増えると各セグメントが潰れる。`+` (追加導線) も segment に混ぜると「navigation に action を混ぜる」ことになる (HIG §4) |
 | **`.navigationTitle` に large title を使う** | 34pt + 余白で縦を大きく食う。「時間割とカレンダーを大きく」が最優先要望であり、**現在地は選択タブと segmented picker が示している**。`.inline` を採る |
@@ -1260,7 +1485,7 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 | # | 事項 | Architect の推奨 |
 |---|---|---|
 | 1 | **★ 規約の全面撤回** (§1)。「iOS は Web の忠実移植」「トークンを 1:1 で移植」を捨てる。これが承認ゲートの本体 | **撤回する。** Liquid Glass 採用と 1:1 移植は定義上両立しない。ただし **IA・機能・ブランド色・キャラクターは Web と共有し続ける** (§1.3) ので、捨てるのは「見た目の移植」だけ |
-| 2 | **ダークモードの既定が light → auto に変わる** (§4.6)。一度も設定を触っていないダークモード利用者のアプリが、更新後にダークになる | **auto にする。** HIG は OS 設定への追従を求めており、中立色を system semantic に移す (§3.3) 以上、light 固定はその意味を殺す。トグル自体は残すので、ライト固定したいユーザーは設定で戻せる |
+| 2 | ~~**ダークモードの既定が light → auto に変わる** (§4.6)~~ → **★ 撤回済 (2026-07-17 Touri 裁定)。既定は `.light` のまま。P2 はテーマ関連を 1 行も触らない** | ~~auto にする~~ → **撤回。** 理由: 設計は「`RootView` の 2 行」で届くとしていたが、**実測で `@AppStorage("atender.theme")` は 3 ファイルに散在**し (`AtenderApp.swift` が `RootView` の**外側**で `.preferredColorScheme` を適用しており、そちらが勝つ)、届けるには**スコープ外の `SettingsView` と未言及の `AtenderApp`** への拡大が要る。**Touri が「それに見合わない」と裁定。** ★ 当時の私の推奨根拠「light 固定は semantic color の意味を殺す」は**言い過ぎだった** — 殺されるのは *OS 設定への自動追従* だけで、Increased Contrast 追従 / Glass 協調 / grouped 階層 / **設定で `.dark` を選んだときの正しい解決**は全部生きている (§3.3 の表)。**§3.3 (P1 済) を巻き戻す必要は無い。** 詳細と再発防止は §4.6 |
 | 3 | **本文が 14pt → 17pt になる** (§3.2)。**全画面のレイアウトが動く。** 情報量は 1 画面あたり減る | **上げる。** 「廉価 Web アプリ感」の物理的実体がこれ。Touri の「情報量多いと使われなくなる」とも方向が一致する。ただし**スコープ外の画面 (設定・友達・学期) でも文字が大きくなる**ので、崩れは `ScreenshotFlow` で洗う必要がある |
 | 4 | **月セルの予定表示が 3 件 → 2 件に減る** (§5.5)。9pt → 11pt に上げた分の玉突き | **減らす。** 9pt は HIG の最小 11pt を割っており「読めない情報」は情報ではない。溢れは既存の `+N` 表示が担う |
 | 5 | **`Font.atender(17,.semibold)` の削除が認証画面 (`AuthProviderButton`) に触れる** (§3.2)。CLAUDE.md「設計が認証に触れる」に形式上該当 | **やる。** 認証ロジックには触れず、**フォント指定 2 行のみ**。かつ Apple のブランド規約は SF を求めるので Inter → SF は**是正**。ラベルは日本語なので視覚的にはほぼ no-op (Inter に日本語グリフが無いため既に Hiragino) |
@@ -1311,13 +1536,14 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 | `Core/Timetable/TimetableLogic.swift` | `CalendarRange.todayString()` と `DayConvention.todayDayOfWeekJs` を削除。**それ以外は不変** | P1 ✅ |
 | `Core/DesignSystem/Components/BottomSheet.swift` | `UIScreen.main` → `ScreenMetrics.height` (1 行)。**`ScreenMetrics.height` は `@MainActor` だが `BottomSheet` は View なので追加対応不要** (§3.6) | P4 |
 | `App/MainTabView.swift` | 全面置換 (§4.1) | P2 |
-| `App/RootView.swift` | **P2 に残るのは 2 点のみ** (`?? .auto` + `@AppStorage` 既定値)。`AmbientBackground()` 除去は P1 済 (§4.4) | P1 ✅, P2 |
+| `Assets.xcassets/AccentColor.colorset/Contents.json` | **`#F97316` (orange) → azure に是正** (light `#1E96E6` / dark `#3DA9F0` = `Color.accent500` と同ペア)。`7ac596f` から取り残された未移行の残骸。**native `TabView` / nav bar が最初の消費者になるので P2 で直す** (§4.1) | **P2** |
+| `App/RootView.swift` | **★ 触らない。** `AmbientBackground()` 除去は P1 で完了済 (§3.4)。**P2 に予定していた 2 点 (`?? .auto` + `@AppStorage` 既定値) は撤回済** (§4.4 / §4.6) | P1 ✅ のみ |
 | `Features/Home/HomeCore.swift` | `HomeView` 再構成 / `HomeViewModeTabs`・`HomeSemesterPicker` 削除 / `HomeChips.isVisible` 追加 | P3 |
 | `Features/Home/SelfTimetableView.swift` | 学期ピッカーと ⚙︎ を除去 / `available`・`showSettings` を受け取る | P3 |
 | `Features/Home/SelfTodayCTA.swift` | **`NowNextBar.swift` に置換して削除** | P3 |
 | `Features/Timetable/TimetableGridPhaseB.swift` | `available` / `todayDisplayDay` / `currentPeriodIndex` を受け取る。`UIScreen.main` 除去 | P3 |
 | `Features/Calendar/PersonalCalendar.swift` | 月グリッドの高さ / today セル / スワイプ | P3 |
-| `Features/Rooms/RoomDetailView.swift` | nav bar 復活 / `BackHeaderButton` 除去 / `RoomTimetable` の `available` / `todayString` 置換 | P2, P3 |
+| `Features/Rooms/RoomDetailView.swift` | **P2**: nav bar 復活 + `BackHeaderButton` 除去 (§4.3、`.navigationTitle` は **`model?.room?.name`**) + **溢れ止め = `RoomCalendar` / `RoomTimetable` に各 1 つ `ScrollView` を入れる (§4.7、★ FAB の `.overlay` は `ScrollView` の外)** + §4.2 の `:208` パディング。**P3**: `RoomTimetable` が `available` を受け取る + そちらの `ScrollView` のみ撤去 (§5.3)。`todayString` 置換は P1 済 | P2, P3 |
 | `Features/{Settings,SemesterOverview,Rooms,Friends,Setup}/*` | **土台追従の最小改修のみ** — `Space.tabBarHeight` パディング除去 (§4.2) / `Font.atender(size:)` 変換 (§3.2) / `todayString` 置換 (§7.1) / `.navigationBarHidden` 除去 (§4.3) | P1, P2 |
 
 ### 触らないもの
@@ -1325,5 +1551,6 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 - `apps/web` / `apps/api` / `packages/shared` — **1 ファイルも変更しない**
 - `Atender/Info.plist` (生成物。`project.yml` が正典 — `gotcha/xcodegen-info-plist-regenerated-every-run.md`)
 - version-management が新規追加する `Core/Version/` / `Features/Version/` / `Core/Networking/*`
-- 色の**値** (§9.3)
+- **コード中**の色の**値** (§9.3) — **`AccentColor.colorset` の是正 (§4.1) だけが例外**。`#F97316` の他 4 箇所 (科目・メンバー色) は**別系統なので触らない**
+- `Atender/AtenderApp.swift` / `Features/Settings/SettingsView.swift` のテーマ設定 — **§4.6 撤回によりスコープ外**
 - `AtenderUITests/ScreenshotFlow.swift` (§5.4 でラベルと identifier を保存するので無改修で動く)
