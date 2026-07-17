@@ -38,10 +38,12 @@ final class StubURLProtocol: URLProtocol {
     }
     override func stopLoading() {}
 
+    /// 設計 20260717-version-management.md §15「Reviewer への必須指示 1」:
+    /// 自前で URLSessionConfiguration を組むと httpAdditionalHeaders が付かず、
+    /// ヘッダのテストが「本番と違う経路」を検証してしまう (偽陰性)。
+    /// 本番と同じ APIConfig.makeSession(protocolClasses:) 経由で組むこと。
     static func makeSession() -> URLSession {
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [StubURLProtocol.self]
-        return URLSession(configuration: config)
+        APIConfig.makeSession(protocolClasses: [StubURLProtocol.self])
     }
 }
 
