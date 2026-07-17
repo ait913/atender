@@ -11,7 +11,7 @@ struct SetupFlowView: View {
                 VStack(alignment: .leading, spacing: Space.s2) {
                     Text("セットアップ")
                         .font(.atender3xl)
-                        .fontWeight(.black)
+                        .fontWeight(.bold)
                         .foregroundStyle(Color.textPrimary)
                     Text(model?.title ?? "Step 1/3: 学校を選ぶ")
                         .font(.atenderSm)
@@ -150,7 +150,7 @@ struct SetupFlowView: View {
                 .fontWeight(.bold)
                 .foregroundStyle(Color.textSecondary)
             DatePicker("", selection: Binding(
-                get: { CalendarRange.parse(date.wrappedValue) ?? CalendarRange.parse(CalendarRange.todayString()) ?? Date() },
+                get: { CalendarRange.parse(date.wrappedValue) ?? CalendarRange.parse(SchoolClock.todayString()) ?? Date() },
                 set: { date.wrappedValue = CalendarRange.yyyyMMdd($0) }
             ), displayedComponents: .date)
             .labelsHidden()

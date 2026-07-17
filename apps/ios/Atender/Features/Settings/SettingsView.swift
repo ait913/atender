@@ -83,7 +83,7 @@ struct SettingsView: View {
                         default:
                             Text(SettingsLogic.avatarInitial(user))
                                 .font(.atenderBase)
-                                .fontWeight(.black)
+                                .fontWeight(.bold)
                                 .foregroundStyle(Color.textOnAccent)
                         }
                     }
@@ -91,7 +91,7 @@ struct SettingsView: View {
                 } else {
                     Text(SettingsLogic.avatarInitial(user))
                         .font(.atenderBase)
-                        .fontWeight(.black)
+                        .fontWeight(.bold)
                         .foregroundStyle(Color.textOnAccent)
                 }
             }

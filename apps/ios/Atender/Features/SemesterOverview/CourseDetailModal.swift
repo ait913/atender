@@ -89,7 +89,7 @@ struct CourseSuspensionSection: View {
     let courseId: String
     @Environment(AppEnvironment.self) private var environment
     @State private var suspensions: [CourseSuspensionDto] = []
-    @State private var date = CalendarRange.todayString()
+    @State private var date = SchoolClock.todayString()
     @State private var reason = ""
     @State private var errorMessage: String?
     @State private var isPending = false

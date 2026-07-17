@@ -7,7 +7,6 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            AmbientBackground()
             Group {
                 if case let .blocked(minBuild) = environment.versionStore.state {
                     VersionGateView(currentBuild: environment.versionStore.currentBuild, minBuild: minBuild)

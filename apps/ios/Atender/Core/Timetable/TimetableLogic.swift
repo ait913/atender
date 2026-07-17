@@ -12,11 +12,6 @@ enum DayConvention {
         }
         return set.sorted()
     }
-
-    static func todayDayOfWeekJs(_ date: Date = Date(), calendar: Calendar = .current) -> Int {
-        let weekday = calendar.component(.weekday, from: date) - 1
-        return (weekday == 0 || weekday == 6) ? 1 : weekday
-    }
 }
 
 struct TimetableEventInput: Equatable, Identifiable {
@@ -243,8 +238,6 @@ enum CalendarRange {
         }
         return formatter.string(from: parsed)
     }
-
-    static func todayString() -> String { yyyyMMdd(Date()) }
 }
 
 enum CalendarLane {

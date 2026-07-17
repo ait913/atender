@@ -20,7 +20,7 @@ struct RequiredRateSheet: View {
                         NumberStepper(value: $value, min: 1, max: 100, label: "必要出席率")
                         Text("%")
                             .font(.atenderLg)
-                            .fontWeight(.black)
+                            .fontWeight(.bold)
                             .foregroundStyle(Color.textPrimary)
                     }
                 }

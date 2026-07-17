@@ -128,7 +128,7 @@ enum BulkToast {
 
 enum SemesterDateBinding {
     static func date(from value: String) -> Date {
-        CalendarRange.parse(value) ?? CalendarRange.parse(CalendarRange.todayString()) ?? Date()
+        CalendarRange.parse(value) ?? CalendarRange.parse(SchoolClock.todayString()) ?? Date()
     }
 
     static func string(from date: Date) -> String {

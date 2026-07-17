@@ -5,6 +5,7 @@ options:
     iOS: "17.0"
   bundleIdPrefix: net.appily
   createIntermediateGroups: true
+  developmentLanguage: ja
 
 configs:
   Debug: debug
@@ -50,12 +51,6 @@ targets:
         # バンドル済フォントの登録。値は **バンドル内のファイル名** (PostScript 名ではない)。
         # Resources/Fonts/ 配下だが、ビルド時に .app 直下へフラットにコピーされるためパスは付けない。
         UIAppFonts:
-          - Inter-Regular.ttf
-          - Inter-Medium.ttf
-          - Inter-SemiBold.ttf
-          - Inter-Bold.ttf
-          - Inter-Black.ttf
-          - NotoSansJP-VariableFont_wght.ttf
           - GoogleSans-Medium-Latin.ttf
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

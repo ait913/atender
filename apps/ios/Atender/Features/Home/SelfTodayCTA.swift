@@ -22,7 +22,7 @@ final class SelfTodayViewModel {
     }
 
     var date: String {
-        today?.date ?? CalendarRange.todayString()
+        today?.date ?? SchoolClock.todayString()
     }
 
     func load() async {
@@ -140,7 +140,8 @@ struct MainAttendanceCTA: View {
                                     onChangeStatus(occurrence.id, status)
                                 } label: {
                                     Text(shortLabel(status))
-                                        .font(.atender(12, .bold))
+                                        .font(.caption)
+                                        .fontWeight(.bold)
                                         .foregroundStyle(selected ? Color.textOnAccent : Color.textPrimary)
                                         .frame(maxWidth: .infinity, minHeight: 40)
                                         .background(selected ? Color.accent500 : Color.textPrimary.opacity(0.08))

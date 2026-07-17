@@ -113,7 +113,7 @@ struct SemesterListSheet: View {
                 .fontWeight(.bold)
                 .foregroundStyle(Color.textSecondary)
             DatePicker("", selection: Binding(
-                get: { CalendarRange.parse(date.wrappedValue) ?? CalendarRange.parse(CalendarRange.todayString()) ?? Date() },
+                get: { CalendarRange.parse(date.wrappedValue) ?? CalendarRange.parse(SchoolClock.todayString()) ?? Date() },
                 set: { date.wrappedValue = CalendarRange.yyyyMMdd($0) }
             ), displayedComponents: .date)
             .labelsHidden()
