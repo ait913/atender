@@ -36,9 +36,16 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 
 → **A6/A7 は単一原因** (zValidator の error envelope)。web の `api()` は `ErrorResponse.safeParse` に失敗すると**実メッセージを捨てて generic `HTTP_ERROR` にフォールバック**するため、**全バリデーションエラーの UX を劣化させている実バグ**。
 
-#### A9. ICS の `rrule` に DTSTART 行が混入する (2026-07-17 発見、Leader 実測)
+#### A9. ICS の `rrule` に DTSTART 行が混入する (2026-07-17 発見)
 
-**分類: 実装バグ (実害は美観と将来の脆さのみ。日付は壊れない)**。テストは無い (この経路は今まで到達不能だった)。
+**分類: 実装バグ。★ 終日 + RRULE で `expandBetween` / `validateRRule` が throw する (機能が死ぬ)。**
+テストは無い (この経路は今まで到達不能だった)。
+
+> **★ 訂正 (2026-07-17)**: 初版で Leader が「実害は美観と将来の脆さのみ。日付は壊れない」と分類したのは**誤り**。
+> Leader は `DTSTART;TZID=...` 形式**だけ**を測って「壊れない」と結論し、その範囲を明示せずに断言していた。
+> Developer の指摘を受けて形式別に再測定した結果、**終日イベント由来の `DTSTART:...Z` 形式では throw する**ことが判明。
+> 教訓: **範囲を区切って測った主張は、その外側全部に対する否定的主張になる**。範囲を明示せず断言しない
+> (`knowledge/role/developer.md` に同旨のノートあり)。
 
 `apps/api/src/lib/icsParse.ts:87` が `rrule.toString()` の戻りを `replace(/^RRULE:/i, "")` で処理しているが、
 実際の戻りは 2 行:
@@ -53,17 +60,22 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 **なぜ今まで露見しなかったか**: `parseICS` 自体が CJS/ESM interop で undefined だったため、
 **この経路は一度も実行されたことがなかった** (`fix/ics-esm-import` で parseICS が動くようになり初めて到達可能に)。
 
-**実測した影響範囲** (2026-07-17、`expandBetween` / `validateRRule` を実経路で計測):
+**実測した影響範囲** (2026-07-17、`expandBetween` / `validateRRule` を実経路で計測)。**混入する DTSTART の形式で結果が割れる**:
 
-| 検証 | 結果 |
-|---|---|
-| `validateRRule` が弾くか | **弾かない** (rrulestr が寛容) |
-| 展開日数・日付 | **正常な rrule と完全一致** (10 件 → UNTIL 追記後 7 件、日付も同一) |
-| 埋め込み DTSTART が外側に勝つか | **勝たない**。わざと 1 週間ズラしても展開結果は不変 = **外側の DTSTART が勝ちゴミ行は無視される** |
-| `appendOrReplaceUntil` (`;` split) を通した後 | 歪んだまま。ただし展開結果は正常と一致 |
+| 混入形式 | 由来 | `validateRRule` | `expandBetween` |
+|---|---|---|---|
+| `DTSTART;TZID=Asia/Tokyo:...` | TZID 付きの通常イベント | 通過 | **正常な rrule と完全一致** (3 件 → 同一日付)。埋め込み DTSTART は外側に負け、ゴミ行は無視される |
+| **`DTSTART:...Z`** | **終日イベント** | **THROW** `Unknown RRULE property 'DTSTART:20260709T000000Z'` | **THROW** (同上) |
 
-→ **データ破損ではない**ので `fix/ics-esm-import` のデプロイをブロックしない、と Leader が判断 (2026-07-17)。
-ただし DB と API に非仕様の値が残るので、**触るときに直す**。修正は `toString()` から `RRULE:` 行だけを
+rrulestr は `DTSTART;TZID=...` 形式なら食えるが `DTSTART:...Z` 形式は食えない、という非対称が原因。
+
+→ **終日 + 繰り返しの ICS は commit 経路 (`icsImport.service.ts:124`) で死ぬ。** 終日の繰り返し
+(毎週の休講、定例の終日予定) は実 ICS で一般的なので、**ICS 機能を出すなら A9 の修正が前提**。
+`fix/ics-esm-import` に含めてスコープに戻した (2026-07-17)。
+
+**HEAD でも同一 throw = 本修正による regression ではない** (もともと parseICS が動いていなかったので誰も到達していなかっただけ)。
+
+修正は `toString()` から `RRULE:` 行だけを
 取り出す形にする (`.split("\n")` して `RRULE:` で始まる行を拾う等)。
 
 #### B. テスト側の不備 (実装が正しい) — 5 件
