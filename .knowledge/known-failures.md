@@ -36,6 +36,36 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 
 → **A6/A7 は単一原因** (zValidator の error envelope)。web の `api()` は `ErrorResponse.safeParse` に失敗すると**実メッセージを捨てて generic `HTTP_ERROR` にフォールバック**するため、**全バリデーションエラーの UX を劣化させている実バグ**。
 
+#### A9. ICS の `rrule` に DTSTART 行が混入する (2026-07-17 発見、Leader 実測)
+
+**分類: 実装バグ (実害は美観と将来の脆さのみ。日付は壊れない)**。テストは無い (この経路は今まで到達不能だった)。
+
+`apps/api/src/lib/icsParse.ts:87` が `rrule.toString()` の戻りを `replace(/^RRULE:/i, "")` で処理しているが、
+実際の戻りは 2 行:
+
+```
+"DTSTART;TZID=Asia/Tokyo:20260707T130000\nRRULE:FREQ=WEEKLY;BYDAY=TU;COUNT=10"
+```
+
+先頭が `DTSTART` なので **replace が空振り**し、bare な `FREQ=...` にならない。この値がそのまま
+`recurrenceRule` として DB に保存され、preview レスポンスにも露出する。
+
+**なぜ今まで露見しなかったか**: `parseICS` 自体が CJS/ESM interop で undefined だったため、
+**この経路は一度も実行されたことがなかった** (`fix/ics-esm-import` で parseICS が動くようになり初めて到達可能に)。
+
+**実測した影響範囲** (2026-07-17、`expandBetween` / `validateRRule` を実経路で計測):
+
+| 検証 | 結果 |
+|---|---|
+| `validateRRule` が弾くか | **弾かない** (rrulestr が寛容) |
+| 展開日数・日付 | **正常な rrule と完全一致** (10 件 → UNTIL 追記後 7 件、日付も同一) |
+| 埋め込み DTSTART が外側に勝つか | **勝たない**。わざと 1 週間ズラしても展開結果は不変 = **外側の DTSTART が勝ちゴミ行は無視される** |
+| `appendOrReplaceUntil` (`;` split) を通した後 | 歪んだまま。ただし展開結果は正常と一致 |
+
+→ **データ破損ではない**ので `fix/ics-esm-import` のデプロイをブロックしない、と Leader が判断 (2026-07-17)。
+ただし DB と API に非仕様の値が残るので、**触るときに直す**。修正は `toString()` から `RRULE:` 行だけを
+取り出す形にする (`.split("\n")` して `RRULE:` で始まる行を拾う等)。
+
 #### B. テスト側の不備 (実装が正しい) — 5 件
 
 | # | テスト | 分類 / 原因 |
@@ -90,7 +120,9 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 174 GREEN / 0 RED** (feature/phase-e-p1 時点、Reviewer 実測 2026-07-16)。
+**ベースライン: 183 GREEN / 0 RED** (`fix/room-week-contract` = `eb96e8a` 時点、Reviewer 実測 2026-07-17)。
+内訳: 前回 174 (feature/phase-e-p1、2026-07-16 実測) + **Reviewer 新規 9** (`RoomWeekContractTests`)。
+`Executed 183 tests, with 0 failures (0 unexpected)`。**未分類の失敗 0**。
 実行: `xcodegen generate` → `xcodebuild test -project Atender.xcodeproj -scheme Atender -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2'`
 
 ### ★ この台帳自体が失敗を隠していた (2026-07-16 の教訓)
@@ -120,6 +152,20 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 - `-3`: `TodayViewModelTests` 削除 (E0-1 の死にコード削除。減少分が**全て**このファイル由来であることを親コミットの `func test` 数 = 3 で確認)
 - `+5`: Reviewer 新規 — `TypographyRegistrationTests` (2) / `HomeChipsTests` (3)
 - **172 − 3 + 5 = 174** (完全一致)
+
+### fix/room-week-contract (eb96e8a) で追加した配線テスト — 2026-07-17
+
+`RoomWeekContractTests` 9 件 (Reviewer 生成)。**既存 174 は全て pass のまま、regression 0**。
+
+追加理由: `GET /api/rooms/:id/week` の**幻のラッパー**バグが 174 GREEN の下を通り抜けていた。
+既存 `DTODecodingTests:326` が `decode(RoomWeekDto.self, from: fixture)` と**型直書き**で、
+repository が `as:` に渡す型を一度も実行していなかったため (DTO 層も APIClient 層も正しく、配線だけが無テスト)。
+
+- **負のコントロール実施済**: 実装を `eb96e8a^` (修正前) に戻すと **week 系 5 件が落ちる**
+  (特に `testRoomWeekRepositoryRejectsWrappedResponse` が `members=2` で decode 成功して落ちる
+  = 旧コードがラッパーを期待していた直接証拠)。兄弟 4 件は修正前でも pass = スコープが正しい。
+- スタブ JSON は実 API (localhost:8787) から採取した `Fixtures/*Live.json` を使用 (手打ち禁止)。
+- 詳細: `Muraki/knowledge/gotcha/dto-type-literal-decode-tests-bypass-repository-wiring.md`
 
 ### 未分類の失敗
 
