@@ -18,11 +18,11 @@ struct SemesterOverviewView: View {
                     activeSheet = .bulk
                 }, onCancel: clearSelection)
                 .padding(.horizontal, Space.s3)
-                .padding(.bottom, Space.tabBarHeight + Space.s3)
+                .padding(.bottom, Space.s3)
             }
         }
         .background(Color.bgBase.ignoresSafeArea())
-        .navigationBarHidden(true)
+        .navigationTitle("学期・科目")
         .task { await bootstrap() }
         .onChange(of: semesterId) { _, newValue in
             guard let newValue else { return }
@@ -75,7 +75,7 @@ struct SemesterOverviewView: View {
                         }
                     }
                     .padding(Space.pagePxMobile)
-                    .padding(.bottom, Space.s6 + Space.tabBarHeight)
+                    .padding(.bottom, Space.s6)
                 }
                 .refreshable {
                     if let semesterId { await model.reload(semesterId: semesterId) }

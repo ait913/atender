@@ -36,10 +36,9 @@ struct SettingsView: View {
                 ])
             }
             .padding(Space.pagePxMobile)
-            .padding(.bottom, Space.tabBarHeight)
         }
         .background(Color.bgBase)
-        .navigationBarHidden(true)
+        .navigationTitle("設定")
         .accessibilityIdentifier("settings-view")
         .task { await reloadUser() }
         .onChange(of: activeSheet) { _, value in

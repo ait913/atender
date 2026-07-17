@@ -62,7 +62,6 @@ struct HomeView: View {
             }
         }
         .background(Color.clear)
-        .navigationBarHidden(true)
         .task {
             rooms = (try? await environment.roomRepository.rooms()) ?? []
             if let cached: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) {
