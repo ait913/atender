@@ -913,10 +913,6 @@ struct RoomMembersResponse: Codable, Equatable {
     let members: [RoomMemberDto]
 }
 
-struct RoomWeekResponse: Codable, Equatable {
-    let week: RoomWeekDto
-}
-
 struct RoomEventsResponse: Codable, Equatable {
     let events: [RoomEventDto]
 }

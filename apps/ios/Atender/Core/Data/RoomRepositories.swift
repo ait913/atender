@@ -44,9 +44,9 @@ final class RoomRepository {
         if !force, !cache.isStale(key), let cached: RoomWeekDto = cache.data(for: key, as: RoomWeekDto.self) {
             return cached
         }
-        let response = try await client.send(Endpoints.roomWeek(id: id, weekStart: weekStart), as: RoomWeekResponse.self)
-        cache.setData(response.week, for: key)
-        return response.week
+        let week = try await client.send(Endpoints.roomWeek(id: id, weekStart: weekStart), as: RoomWeekDto.self)
+        cache.setData(week, for: key)
+        return week
     }
 
     func createRoom(_ input: CreateRoomInput) async throws -> RoomDto {
