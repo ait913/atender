@@ -123,8 +123,8 @@ struct RoomCalendar: View {
     let roomId: String
     @Environment(AppEnvironment.self) private var environment
     @State private var viewMode: CalendarViewMode = .day
-    @State private var anchor = CalendarRange.todayString()
-    @State private var selectedDate = CalendarRange.todayString()
+    @State private var anchor = SchoolClock.todayString()
+    @State private var selectedDate = SchoolClock.todayString()
     @State private var expanded = false
     @State private var activeSheet: RoomCalSheet?
     @State private var weeks: [RoomWeekDto] = []
@@ -272,7 +272,7 @@ struct RoomDayEventList: View {
                             .lineLimit(1)
                         Spacer()
                         Text(event.subtitle)
-                            .font(.atender(10))
+                            .font(.caption2)
                             .foregroundStyle(Color.textTertiary)
                             .lineLimit(1)
                     }
@@ -302,7 +302,7 @@ struct AvailabilityBar: View {
             HStack {
                 Text("\(CalendarRange.format(date, .monthDay)) の空き時間")
                     .font(.atenderBase)
-                    .fontWeight(.black)
+                    .fontWeight(.bold)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
                 Button(action: onToggle) {
@@ -316,7 +316,7 @@ struct AvailabilityBar: View {
             HStack {
                 Text("").frame(width: 44)
                 ForEach(9...18, id: \.self) { hour in
-                    Text("\(hour)").font(.atender(10, .bold)).foregroundStyle(Color.textTertiary).frame(maxWidth: .infinity)
+                    Text("\(hour)").font(.caption2).fontWeight(.bold).foregroundStyle(Color.textTertiary).frame(maxWidth: .infinity)
                 }
             }
             BarRow(label: "全員", busyCounts: result.combined, total: max(1, members.count), color: nil)
@@ -344,7 +344,7 @@ private struct BarRow: View {
     var body: some View {
         HStack(spacing: Space.s2) {
             Text(label)
-                .font(.atender(10, .bold))
+                .font(.caption2).fontWeight(.bold)
                 .foregroundStyle(Color.textSecondary)
                 .lineLimit(1)
                 .frame(width: 44, alignment: .leading)
@@ -396,7 +396,7 @@ struct RoomTimetable: View {
         loadError = false
         defer { isLoading = false }
         do {
-            async let roomWeek = environment.roomRepository.roomWeek(id: roomId, weekStart: CalendarRange.mondayOf(CalendarRange.todayString()), force: true)
+            async let roomWeek = environment.roomRepository.roomWeek(id: roomId, weekStart: CalendarRange.mondayOf(SchoolClock.todayString()), force: true)
             async let me = environment.meRepository.me()
             async let timetables = environment.timetableRepository.userTimetables()
             let meResponse = try await me

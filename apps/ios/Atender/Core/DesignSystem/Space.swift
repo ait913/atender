@@ -15,9 +15,7 @@ enum Space {
     static let s16: CGFloat = 64
     static let s20: CGFloat = 80
 
-    static let pagePxMobile: CGFloat = 12
-    static let pagePxDesktop: CGFloat = 24
-    static let pagePadding: CGFloat = pagePxMobile
+    static let pagePxMobile: CGFloat = 16
     static let cardPadding: CGFloat = 12
     static let cardPaddingLg: CGFloat = 16
     static let sectionGapMobile: CGFloat = 16
@@ -28,8 +26,6 @@ enum Space {
     static let tabBarHeight: CGFloat = 64
     static let tabBarContent: CGFloat = 48
     static let topbarHeightMobile: CGFloat = 48
-    static let topbarHeightDesktop: CGFloat = 56
     static let selfTtChrome: CGFloat = 352
     static let roomTtChromeTop: CGFloat = 168
-    static let roomTtChromeBottom: CGFloat = 64
 }

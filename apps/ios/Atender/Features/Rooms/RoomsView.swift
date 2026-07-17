@@ -130,7 +130,7 @@ struct RoomCard: View {
                         VStack(alignment: .leading, spacing: Space.s1) {
                             Text(room.name)
                                 .font(.atenderXl)
-                                .fontWeight(.black)
+                                .fontWeight(.bold)
                                 .foregroundStyle(Color.textPrimary)
                                 .lineLimit(1)
                             Text("\(room.memberCount) メンバー")
@@ -140,7 +140,8 @@ struct RoomCard: View {
                         }
                         Spacer()
                         Text(room.myRole.rawValue)
-                            .font(.atender(11, .bold))
+                            .font(.caption2)
+                            .fontWeight(.bold)
                             .foregroundStyle(Color.textPrimary)
                             .padding(.horizontal, Space.s3)
                             .padding(.vertical, Space.s1)

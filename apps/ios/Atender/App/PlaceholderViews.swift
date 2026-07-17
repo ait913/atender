@@ -26,7 +26,7 @@ private struct PlaceholderScreen: View {
             VStack(spacing: Space.s3) {
                 Text(title)
                     .font(.atender2xl)
-                    .fontWeight(.black)
+                    .fontWeight(.bold)
                     .foregroundStyle(Color.textPrimary)
                 Text(subtitle)
                     .font(.atenderBase)

@@ -131,7 +131,7 @@ struct RoomSettingsSheet: View {
                 HStack(spacing: Space.s3) {
                     Text(String((member.name ?? member.handle ?? "?").prefix(1)).uppercased())
                         .font(.atenderSm)
-                        .fontWeight(.black)
+                        .fontWeight(.bold)
                         .foregroundStyle(Color.white)
                         .frame(width: 36, height: 36)
                         .background(Color(hexString: MemberColor.memberColor(member.userId)))

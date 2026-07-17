@@ -140,19 +140,21 @@ struct EventTile: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.atender(12, .semibold))
+                    .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(2)
                     .minimumScaleFactor(0.8)
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.atender(10, .medium))
+                        .font(.caption2)
+                        .fontWeight(.medium)
                         .foregroundStyle(Color.textSecondary)
                         .lineLimit(1)
                 }
                 if let meta {
                     Text(meta)
-                        .font(.atender(10))
+                        .font(.caption2)
                         .foregroundStyle(Color.textTertiary)
                 }
             }
@@ -171,10 +173,11 @@ struct PeriodLabelCell: View {
     var body: some View {
         VStack(spacing: 1) {
             Text("\(slot.periodIndex)")
-                .font(.atender(12, .bold))
+                .font(.caption)
+                .fontWeight(.bold)
                 .foregroundStyle(Color.textPrimary)
             Text(TimeFormatting.minutesToTime(slot.startMinute))
-                .font(.atender(8))
+                .font(.caption2)
                 .monospacedDigit()
                 .foregroundStyle(Color.textTertiary)
         }

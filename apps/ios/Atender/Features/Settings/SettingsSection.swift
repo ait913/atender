@@ -30,7 +30,8 @@ struct SettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(.atender(11, .semibold))
+                .font(.caption2)
+                .fontWeight(.semibold)
                 .foregroundStyle(Color.textTertiary)
                 .textCase(.uppercase)
                 .tracking(0.5)

@@ -1,0 +1,33 @@
+import CoreGraphics
+
+enum CalendarMonthLayout {
+    static let minRowHeight: CGFloat = 56
+    static let weekdayHeaderHeight: CGFloat = 26
+    static let rowCount: Int = 6
+    static let agendaHeight: CGFloat = 200
+
+    static func rowHeight(available: CGFloat) -> CGFloat {
+        max(minRowHeight, (available - weekdayHeaderHeight - agendaHeight) / CGFloat(rowCount))
+    }
+
+    static func contentHeight(available: CGFloat) -> CGFloat {
+        weekdayHeaderHeight + rowHeight(available: available) * CGFloat(rowCount)
+    }
+}
+
+enum CalendarDayEmphasis: Equatable {
+    case selected
+    case today
+    case outsideMonth
+    case normal
+}
+
+enum CalendarDayStyle {
+    /// Priority: selected > today > outsideMonth > normal.
+    static func emphasis(date: String, todayString: String, selectedDate: String, monthFirst: String) -> CalendarDayEmphasis {
+        if date == selectedDate { return .selected }
+        if date == todayString { return .today }
+        if CalendarRange.monthFirst(date) != monthFirst { return .outsideMonth }
+        return .normal
+    }
+}

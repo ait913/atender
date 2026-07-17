@@ -76,7 +76,7 @@ struct AttendanceCalendar: View {
     let onToggleSelectionMode: () -> Void
     let onToggleDate: (String) -> Void
     @Environment(AppEnvironment.self) private var environment
-    @State private var anchor: String = CalendarRange.monthFirst(CalendarRange.todayString())
+    @State private var anchor: String = CalendarRange.monthFirst(SchoolClock.todayString())
     @State private var eventDates: Set<String> = []
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
@@ -109,7 +109,8 @@ struct AttendanceCalendar: View {
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(weekdays, id: \.self) { label in
                     Text(label)
-                        .font(.atender(10, .bold))
+                        .font(.caption2)
+                        .fontWeight(.bold)
                         .foregroundStyle(Color.textTertiary)
                         .frame(maxWidth: .infinity)
                 }
@@ -241,7 +242,8 @@ struct AttendanceCalendar: View {
             legendItem(.ban, .statusSuspended, "休講")
             Text("破線=未記録あり ・ ●=予定")
         }
-        .font(.atender(10, .bold))
+        .font(.caption2)
+                        .fontWeight(.bold)
         .foregroundStyle(Color.textTertiary)
         .lineLimit(2)
         .frame(maxWidth: .infinity, alignment: .leading)

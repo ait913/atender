@@ -8,21 +8,21 @@ extension Color {
         })
     }
 
-    static let bgBase = dynamic(dark: UIColor(hex: 0x0B0E14), light: UIColor(hex: 0xF9F9F9))
-    static let bgMuted = dynamic(dark: UIColor(hex: 0x14181F), light: UIColor(hex: 0xF2F2F2))
-    static let bgElevated = dynamic(dark: UIColor(hex: 0x1A1F2A), light: UIColor(hex: 0xFFFFFF))
-    static let bgOverlay = dynamic(dark: .black.withAlphaComponent(0.72), light: UIColor.hex(0x0F172A, 0.40))
+    static let bgBase = Color(uiColor: .systemGroupedBackground)
+    static let bgMuted = Color(uiColor: .tertiarySystemGroupedBackground)
+    static let bgElevated = Color(uiColor: .secondarySystemGroupedBackground)
+    static let bgOverlay = Color(uiColor: .systemFill)
 
-    static let textPrimary = dynamic(dark: UIColor(hex: 0xF5F6F8), light: UIColor(hex: 0x0F172A))
-    static let textSecondary = dynamic(dark: UIColor.hex(0xF5F6F8, 0.72), light: UIColor.hex(0x0F172A, 0.72))
-    static let textTertiary = dynamic(dark: UIColor.hex(0xF5F6F8, 0.52), light: UIColor.hex(0x0F172A, 0.58))
+    static let textPrimary = Color(uiColor: .label)
+    static let textSecondary = Color(uiColor: .secondaryLabel)
+    static let textTertiary = Color(uiColor: .tertiaryLabel)
     static let textOnAccent = Color.white
     static let textOnDanger = Color.white
 
-    static let borderSubtle = dynamic(dark: UIColor.white.withAlphaComponent(0.06), light: UIColor.hex(0x0F172A, 0.08))
-    static let borderDefault = dynamic(dark: UIColor.white.withAlphaComponent(0.12), light: UIColor.hex(0x0F172A, 0.14))
-    static let borderEmphasis = dynamic(dark: UIColor.white.withAlphaComponent(0.28), light: UIColor.hex(0x0F172A, 0.30))
-    static let borderSettings = dynamic(dark: UIColor.white.withAlphaComponent(0.12), light: UIColor.hex(0x0F172A, 0.08))
+    static let borderSubtle = Color(uiColor: .separator)
+    static let borderDefault = Color(uiColor: .separator)
+    static let borderEmphasis = Color(uiColor: .opaqueSeparator)
+    static let borderSettings = Color(uiColor: .separator)
 
     // accent = 水色 azure (#2E8CFF を少しシアン側へ / light 基準)
     static let accent50 = dynamic(dark: UIColor.hex(0x3DA9F0, 0.12), light: UIColor.hex(0x1E96E6, 0.10))

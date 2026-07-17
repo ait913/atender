@@ -122,7 +122,7 @@ struct FriendCard: View {
             HStack(spacing: Space.s4) {
                 Text(String((user.name ?? user.handle ?? "?").prefix(1)).uppercased())
                     .font(.atenderLg)
-                    .fontWeight(.black)
+                    .fontWeight(.bold)
                     .foregroundStyle(Color.white)
                     .frame(width: 56, height: 56)
                     .background(LinearGradient(colors: FriendAvatar.gradient(id: user.id), startPoint: .topLeading, endPoint: .bottomTrailing))

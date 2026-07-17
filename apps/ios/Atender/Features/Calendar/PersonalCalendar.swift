@@ -5,8 +5,8 @@ import SwiftUI
 final class PersonalCalendarViewModel {
     @ObservationIgnored private let environment: AppEnvironment
     var viewMode: CalendarViewMode = .month
-    var anchor = CalendarRange.todayString()
-    var selectedDate = CalendarRange.todayString()
+    var anchor = SchoolClock.todayString()
+    var selectedDate = SchoolClock.todayString()
     var timetables: [UserTimetableDto] = []
     var semesters: [SemesterDto] = []
     var overview: SemesterOverviewDto?
@@ -274,7 +274,8 @@ struct CalendarMonth: View {
                 }
                 ForEach(Array(events.prefix(3))) { event in
                     Text(CalendarEventDisplay.eventTitle(event))
-                        .font(.atender(9, .semibold))
+                        .font(.caption2)
+                        .fontWeight(.semibold)
                         .lineLimit(1)
                         .foregroundStyle(Color.textPrimary)
                         .padding(.horizontal, 3)
@@ -284,7 +285,8 @@ struct CalendarMonth: View {
                 }
                 if events.count > 3 {
                     Text("+\(events.count - 3)")
-                        .font(.atender(9, .bold))
+                        .font(.caption2)
+                        .fontWeight(.bold)
                         .foregroundStyle(Color.textTertiary)
                 }
                 Spacer(minLength: 0)
@@ -348,7 +350,7 @@ struct CalendarDay: View {
                 ForEach(9...21, id: \.self) { hour in
                     let y = CGFloat(hour - 9) / 12 * height
                     Text("\(hour):00")
-                        .font(.atender(9))
+                        .font(.caption2)
                         .foregroundStyle(Color.textTertiary)
                         .position(x: 24, y: y + 8)
                     Rectangle().fill(Color.borderSubtle).frame(height: 1).position(x: proxy.size.width / 2 + 28, y: y)

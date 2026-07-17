@@ -175,12 +175,12 @@ struct MeetingDetailSheet: View {
                     HStack(spacing: Space.s4) {
                         Text(slots.count > 1 ? "\(first.periodIndex)-\(last.periodIndex)" : "\(first.periodIndex)")
                             .font(.atender5xl)
-                            .fontWeight(.black)
+                            .fontWeight(.bold)
                             .foregroundStyle(Color(hexString: course?.color ?? "#F97316"))
                         VStack(alignment: .leading, spacing: Space.s2) {
                             Text(course?.name ?? "授業")
                                 .font(.atender2xl)
-                                .fontWeight(.black)
+                                .fontWeight(.bold)
                                 .foregroundStyle(Color.textPrimary)
                             Text("\(["日", "月", "火", "水", "木", "金", "土"][meeting.dayOfWeek])曜日 · \(TimeFormatting.minutesToTime(first.startMinute)) – \(TimeFormatting.minutesToTime(last.endMinute))")
                                 .font(.atenderSm)

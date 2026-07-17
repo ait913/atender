@@ -13,7 +13,7 @@ struct NumberStepper: View {
             }
             Text("\(value)")
                 .font(.atenderXl)
-                .fontWeight(.black)
+                .fontWeight(.bold)
                 .monospacedDigit()
                 .foregroundStyle(Color.textPrimary)
                 .frame(minWidth: 44)
@@ -28,7 +28,7 @@ struct NumberStepper: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.atenderBase)
-                .fontWeight(.black)
+                .fontWeight(.bold)
                 .foregroundStyle(Color.textPrimary)
                 .frame(width: 44, height: 44)
                 .background(Color.bgMuted)
