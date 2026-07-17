@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { env } from "./env";
 import { corsMiddleware } from "./middleware/cors";
+import { clientVersionGuard } from "./middleware/clientVersion";
 import { registerErrorHandler } from "./middleware/error";
 import { registerAttendanceRoutes } from "./routes/attendance";
 import { registerAuthRoutes } from "./routes/auth";
@@ -22,13 +23,16 @@ import { registerTodayRoutes } from "./routes/today";
 import { registerTimetableSuspensionRoutes } from "./routes/timetableSuspensions";
 import { registerUsersRoutes } from "./routes/users";
 import { registerUserTimetableRoutes } from "./routes/userTimetables";
+import { registerVersionRoutes } from "./routes/version";
 
 export const app = new Hono();
 
 app.use("*", corsMiddleware);
+app.use("*", clientVersionGuard);
 registerErrorHandler(app);
 
 registerHealthRoutes(app);
+registerVersionRoutes(app);
 registerAuthRoutes(app);
 registerMeRoutes(app);
 registerUsersRoutes(app);

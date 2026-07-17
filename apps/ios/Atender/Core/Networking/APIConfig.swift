@@ -18,19 +18,26 @@ enum APIConfig {
         #endif
     }()
 
+    static let authCallbackScheme = "atender"
 
     /// iOS は `Authorization: Bearer` で認証する (better-auth bearer plugin)。
     /// `URLSession.shared` はグローバルの `HTTPCookieStorage` を共有するため、API の `Set-Cookie` が
     /// 自動保存され以降の全リクエストに cookie が付く。better-auth の originCheckMiddleware は
     /// **cookie 付きリクエストだけ Origin を検証する**ので、Origin を送らないネイティブは 403
     /// (`MISSING_OR_NULL_ORIGIN`) になる。cookie を一切持たないことが本来の設計。
-    static let apiSession: URLSession = {
+    static func makeSession(protocolClasses: [AnyClass]? = nil) -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpShouldSetCookies = false
         configuration.httpCookieAcceptPolicy = .never
         configuration.httpCookieStorage = nil
+        if let value = AppVersion.clientHeaderValue(build: AppVersion.current) {
+            configuration.httpAdditionalHeaders = [AppVersion.clientHeaderField: value]
+        }
+        if let protocolClasses {
+            configuration.protocolClasses = protocolClasses
+        }
         return URLSession(configuration: configuration)
-    }()
+    }
 
-    static let authCallbackScheme = "atender"
+    static let apiSession: URLSession = makeSession()
 }

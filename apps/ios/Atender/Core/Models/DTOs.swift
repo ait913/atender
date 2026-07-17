@@ -947,3 +947,8 @@ struct IcsTitleRulesResponse: Codable, Equatable {
 struct IcsTitleRuleResponse: Codable, Equatable {
     let rule: IcsTitleRuleDto
 }
+
+struct VersionResponse: Codable, Equatable {
+    let commit: String
+    let minIOSBuild: Int
+}

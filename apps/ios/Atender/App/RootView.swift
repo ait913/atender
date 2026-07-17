@@ -9,17 +9,21 @@ struct RootView: View {
         ZStack {
             AmbientBackground()
             Group {
-                switch environment.authStore.state {
-                case .unknown:
-                    splash
-                case .signedOut:
-                    AuthView()
-                case .signedIn:
-                    if environment.authStore.me?.setupStatus.isComplete == false {
-                        SetupFlowView()
-                    } else {
-                        MainTabView()
-                            .environment(environment.appRouter)
+                if case let .blocked(minBuild) = environment.versionStore.state {
+                    VersionGateView(currentBuild: environment.versionStore.currentBuild, minBuild: minBuild)
+                } else {
+                    switch environment.authStore.state {
+                    case .unknown:
+                        splash
+                    case .signedOut:
+                        AuthView()
+                    case .signedIn:
+                        if environment.authStore.me?.setupStatus.isComplete == false {
+                            SetupFlowView()
+                        } else {
+                            MainTabView()
+                                .environment(environment.appRouter)
+                        }
                     }
                 }
             }
@@ -27,6 +31,9 @@ struct RootView: View {
         }
         .task {
             await environment.authStore.bootstrap()
+        }
+        .task {
+            await environment.versionStore.check()
         }
         .onOpenURL { url in
             if GIDSignIn.sharedInstance.handle(url) {

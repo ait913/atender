@@ -17,3 +17,4 @@ export * from "./schemas/stats.js";
 export * from "./schemas/template.js";
 export * from "./schemas/timetableSuspension.js";
 export * from "./schemas/userTimetable.js";
+export * from "./schemas/version.js";
