@@ -3,7 +3,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var environment
-    @AppStorage("atender.theme") private var themePreference = ThemePreference.auto.rawValue
+    @AppStorage("atender.theme") private var themePreference = ThemePreference.light.rawValue
 
     var body: some View {
         ZStack {
@@ -55,7 +55,7 @@ struct RootView: View {
         .onChange(of: canNavigate) { _, value in
             environment.appRouter.applyPendingDeepLinkIfPossible(canNavigate: value)
         }
-        .preferredColorScheme((ThemePreference(rawValue: themePreference) ?? .auto).colorScheme)
+        .preferredColorScheme((ThemePreference(rawValue: themePreference) ?? .light).colorScheme)
     }
 
     private var canNavigate: Bool {

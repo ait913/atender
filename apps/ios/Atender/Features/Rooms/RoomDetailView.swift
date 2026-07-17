@@ -139,41 +139,44 @@ struct RoomCalendar: View {
         let events = RoomCalendarLogic.buildCalendarEvents(weeks: weeks)
         let eventMap = MeetingExpansion.eventsByDate(events)
         let dayEvents = eventMap[selectedDate] ?? []
-        VStack(spacing: Space.s3) {
-            HStack {
-                PeriodNav(viewMode: viewMode, anchor: anchor) { next in
-                    anchor = next
-                    if viewMode == .day { selectedDate = next }
-                    Task { await reload(force: true) }
+        ScrollView {
+            VStack(spacing: Space.s3) {
+                HStack {
+                    PeriodNav(viewMode: viewMode, anchor: anchor) { next in
+                        anchor = next
+                        if viewMode == .day { selectedDate = next }
+                        Task { await reload(force: true) }
+                    }
+                    Spacer()
+                    CalendarSegmented(viewMode: Binding(get: { viewMode }, set: { viewMode = $0; Task { await reload(force: true) } }))
                 }
-                Spacer()
-                CalendarSegmented(viewMode: Binding(get: { viewMode }, set: { viewMode = $0; Task { await reload(force: true) } }))
-            }
-            AvailabilityBar(date: selectedDate, members: weeks.first?.members ?? [], events: dayEvents, expanded: expanded) {
-                expanded.toggle()
-            }
-            if isLoading {
-                Skeleton(width: nil, height: viewMode == .day ? 620 : 360, radius: Radius.md)
-            } else if loadError {
-                Panel { Text("カレンダーを読み込めませんでした。").foregroundStyle(Color.textSecondary) }
-            } else {
-                switch viewMode {
-                case .month:
-                    CalendarMonth(anchor: anchor, selectedDate: selectedDate, events: events, statusByDate: [:]) { date in
-                        selectedDate = date
-                        anchor = date
+                AvailabilityBar(date: selectedDate, members: weeks.first?.members ?? [], events: dayEvents, expanded: expanded) {
+                    expanded.toggle()
+                }
+                if isLoading {
+                    Skeleton(width: nil, height: viewMode == .day ? 620 : 360, radius: Radius.md)
+                } else if loadError {
+                    Panel { Text("カレンダーを読み込めませんでした。").foregroundStyle(Color.textSecondary) }
+                } else {
+                    switch viewMode {
+                    case .month:
+                        CalendarMonth(anchor: anchor, selectedDate: selectedDate, events: events, statusByDate: [:]) { date in
+                            selectedDate = date
+                            anchor = date
+                        }
+                        RoomDayEventList(date: selectedDate, events: dayEvents)
+                    case .week:
+                        CalendarWeek(weekStart: CalendarRange.mondayOf(anchor), selectedDate: selectedDate, eventsByDateMap: eventMap) { date in
+                            selectedDate = date
+                            anchor = date
+                        }
+                    case .day:
+                        CalendarDay(date: selectedDate, events: dayEvents)
                     }
-                    RoomDayEventList(date: selectedDate, events: dayEvents)
-                case .week:
-                    CalendarWeek(weekStart: CalendarRange.mondayOf(anchor), selectedDate: selectedDate, eventsByDateMap: eventMap) { date in
-                        selectedDate = date
-                        anchor = date
-                    }
-                case .day:
-                    CalendarDay(date: selectedDate, events: dayEvents)
                 }
             }
         }
+        .scrollBounceBehavior(.basedOnSize)
         .accessibilityIdentifier("room-calendar")
         .overlay(alignment: .bottomTrailing) {
             if viewMode != .month {
@@ -372,20 +375,23 @@ struct RoomTimetable: View {
     @State private var loadError = false
 
     var body: some View {
-        Group {
-            if isLoading {
-                Skeleton(width: nil, height: 420, radius: Radius.md)
-            } else if loadError {
-                Panel { Text("時間割を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
-            } else if let week {
-                let events = RoomTimetableLogic.buildEvents(week: week, daySlots: daySlots)
-                if events.isEmpty {
-                    EmptyState(title: week.members.isEmpty ? "メンバーがいません" : "メンバーの時間割がまだありません")
-                } else {
-                    TimetableGrid(daySlots: daySlots, events: events, days: RoomTimetableLogic.displayDays(events: events), height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight))
+        ScrollView {
+            Group {
+                if isLoading {
+                    Skeleton(width: nil, height: 420, radius: Radius.md)
+                } else if loadError {
+                    Panel { Text("時間割を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
+                } else if let week {
+                    let events = RoomTimetableLogic.buildEvents(week: week, daySlots: daySlots)
+                    if events.isEmpty {
+                        EmptyState(title: week.members.isEmpty ? "メンバーがいません" : "メンバーの時間割がまだありません")
+                    } else {
+                        TimetableGrid(daySlots: daySlots, events: events, days: RoomTimetableLogic.displayDays(events: events), height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight))
+                    }
                 }
             }
         }
+        .scrollBounceBehavior(.basedOnSize)
         .accessibilityIdentifier("room-timetable")
         .task { await load() }
     }
