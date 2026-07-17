@@ -4,7 +4,7 @@
 
 ## プロジェクト要約
 
-時間割登録 + ワンタッチ出欠 + 出席率追跡のアプリ。学校 + 学科で時間割テンプレを public 共有し、再入力コストを下げる。Touri 自身を含む学生 (専門学校・大学) 向け。Web 版 (`apps/web`) が機能の正典。iOS ネイティブ版 (`apps/ios`) は **Web の忠実移植** (同一デザインシステム・同一 IA・全機能) を進行中。
+時間割登録 + ワンタッチ出欠 + 出席率追跡のアプリ。学校 + 学科で時間割テンプレを public 共有し、再入力コストを下げる。Touri 自身を含む学生 (専門学校・大学) 向け。Web 版 (`apps/web`) が機能の正典。iOS ネイティブ版 (`apps/ios`) は **IA と機能を Web と共有しつつ、見た目と操作は iOS ネイティブ** (Apple HIG / 標準部品 / Liquid Glass)。
 
 ## 主要ドキュメント
 
@@ -31,9 +31,12 @@
 ## 規約・やらないこと
 
 - API は完全分離 (Web client / iOS client から同一 API を叩ける形)。BFF 一体型は採用しない
-- **iOS は Web の忠実移植**。スマホ独自の簡略化・IA 改変・タブ構成の再発明を**しない**。Web (`apps/web`) の画面構成・ナビ・デザイントークン・全機能をそのまま写す。設計時は必ず `apps/web` の実装を正典として参照する
-  - ボトムタブ = Web `navItems.ts` の5項目 (ホーム/学期・科目/ルーム/友達/設定)。**Today/Timetable/Stats は独立画面ではない** (Web でも `/today` 無し・`/timetable`→`/`・`/stats`→`/semester`)。「今日の出欠」「時間割」は Home 内、「出席率」は 学期・科目。iOS でこれらを別タブに作らない
-  - デザインは `apps/web/src/styles.css` のトークン (light/dark) を 1:1 で移植。スマホ用に色・余白・角丸を変えない
+- **iOS はネイティブ優先**。見た目・操作・部品は Apple HIG に従う。`apps/web` は**デザインの正典ではない**
+  - **IA と機能は Web と共有する** (ここは不変)。ボトムタブ = 5項目 (ホーム/学期・科目/ルーム/友達/設定)。**Today/Timetable/Stats は独立画面ではない** (Web でも `/today` 無し・`/timetable`→`/`・`/stats`→`/semester`)。「今日の出欠」「時間割」は Home 内、「出席率」は 学期・科目。iOS でこれらを別タブに作らない。iOS 独自機能の追加・Web 機能の削除は設計 doc で明示的に決める
+  - **中立の見た目はシステムに明け渡す**: 中立色 (背景/文字/罫線) は semantic system color、書体は built-in text style (本文 17pt / 最小 11pt)、タップ領域 44pt。`styles.css` のトークンを pt に移植しない
+  - **ブランド資産は Web と共有し続ける**: accent (azure) / status 色 / 科目カラーパレット / キャラクター画像。**これらの色の値を iOS 側で勝手に変えない**
+  - 標準部品を自前で再発明しない (`TabView` / `Picker` / `Menu` / `ContentUnavailableView` / `List` / `SignInWithAppleButton` / `.sheet`)。自前背景は Liquid Glass と干渉する
+  - 詳細: `.designs/20260717-ios-ui-revamp.md`
 - 時間割テンプレ共有は「学校 + 学科」で public 検索。opt-in 制にはしない (MVP)
 - 出欠ルール (公欠等の扱い) は学校・学科でデフォ共有 + ユーザー個別上書き可
 - キャラクター画像は Codex (gpt-image-1) 生成。アニメ調禁止、Claude/ChatGPT 系の親しみあるキャラ

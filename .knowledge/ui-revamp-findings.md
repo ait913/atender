@@ -26,7 +26,9 @@ Touri の要望 (2026-07-17):
 **スコープ確認済**: ホーム + 時間割/カレンダー優先 (デザインシステム土台 + ホーム・時間割・カレンダーを作り込む。
 学期・ルーム・友達・設定は土台に追従する最小改修のみ)。
 
-**設計 doc は未着手** (Architect 未召集)。本書は Architect に渡す材料。
+**設計 doc は執筆済**: `.designs/20260717-ios-ui-revamp.md` (2026-07-17)。
+**以降、刷新の正典はそちら。** 本書は Researcher の材料であり、下記のとおり**一部は設計時の実測で覆っている**
+(★ 印の訂正を参照)。矛盾したら設計 doc が勝つ。
 
 ## What — 確定事実
 
@@ -55,7 +57,18 @@ Liquid Glass と干渉する」と名指しで警告している。
 `TimetableGridPhaseB.swift` は曜日ラベルを固定配列で描くだけで、**今日の列も現在のコマもハイライトしない**。
 
 → **主ユースケース「次の授業のコマを確認」はそもそも未実装。**
-データは `OccurrenceDto` (startMinute/periodIndex) に既にあり、不足は表示ロジックだけ。**最大の勝ち筋**。
+データは `OccurrenceDto` (startMinute/periodIndex) に既にある。**最大の勝ち筋**。
+
+**★ 訂正: 「不足は表示ロジックだけ」は誤り。土台の時計が壊れている** (設計 F3/F4/F5 で実測):
+
+- **`CalendarRange.todayString()` は UTC 暦。API は `APP_TZ = "Asia/Tokyo"` 固定** →
+  **毎日 00:00〜08:59 JST の 9 時間、iOS だけ前日を指す** (JST 08:00 → iOS `"2026-07-16"` / API `"2026-07-17"`)。
+  「教室移動しながら」= まさにその時間帯
+- 同原因の既存バグ: `RoomTimetable.load()` が `mondayOf(todayString())` を使うため、
+  **月曜の 9 時前はルームの時間割が「先週」を読む** (刷新と無関係に今日そこにあるバグ)
+- `DayConvention.todayDayOfWeekJs` は**土日を月曜に丸める**ので「今日の列」には使えない。かつ**本番から未使用**
+- → 設計は `SchoolClock` (JST 固定) を新設し `CalendarRange.todayString()` を削除する。
+  詳細: `knowledge/gotcha/client-today-must-use-server-timezone.md`
 
 ### ★ 3.「TimeTree 参考に」は既に達成済み
 
@@ -110,6 +123,12 @@ Web の Tailwind 値をそのまま pt にした結果、**全部が 1 段小さ
 → **`ja` を development language にすれば標準 back が「戻る」になり、この自前部品と
 `.toolbar(.hidden)` の連鎖が解ける。** ネイティブ回帰の障害が 1 つ自動で消える。
 `SignInWithAppleButton` を避けた理由も同根の可能性 (未確認)。
+
+**★ 実証済** (設計 F1/F2、シミュレータ実測 + 負の対照): `project.yml` に `options.developmentLanguage: ja` を
+足すだけで `Bundle.main.preferredLocalizations == ["ja"]` になり、**`.lproj` を 1 つも足さずに**
+UIKit の "Back" が「戻る」になる。外すと `["en"]` / `"Back"` に戻ることも確認済 (assert に牙がある)。
+`BackHeaderButton` の実使用は **2 箇所のみ** (`RoomDetailView.swift:39` / `TemplatesView.swift:22`)。
+一般化した知見: `knowledge/gotcha/ios-japanese-ui-shipped-as-english-bundle.md`
 
 ### ★ 7. ホームのクロームが画面の 41%
 
@@ -198,12 +217,17 @@ Zod schema を鏡写ししていて codegen も契約テストも 0。API が fi
 **commit `3078d66` / iPhone 16 (iOS 18.2) で 174 tests, 0 failures を実測** (2026-07-17)。
 台帳 `.knowledge/known-failures.md` の「174 GREEN / 0 RED」と一致。
 
-### 刷新で意図的に壊れる 9 件 (設計 doc に明記すること)
+### ★ 訂正: 「意図的に壊れる 9 件」は過大見積もりだった → 実際は 3 本 + 削除 1 本
 
-- `DesignTokenTests.swift:7` — **`Space.selfTtChrome == 352`**, `Space.tabBarHeight == 64` を assert。**ホームのレイアウトを変えた瞬間に赤**
-- `NavigationTests.swift:7` — `MainTab.allCases.count == 5` + 5 タブのラベルと SF Symbol 名
-- `TypographyRegistrationTests.swift:7,34` — `Inter-*` 5 種の登録 + `UIAppFonts` に 7 ファイル実在
-- `HomeChipsTests.swift` (3 本) — `HomeChips.items(rooms:)` が `[self, ...rooms]` を返し先頭ラベルが `"自分"`
+**正典は設計 doc §9.2。** 下記は Researcher 時点の見積もりで、設計時の実測で 2 件が覆った。
+
+| テスト | 見積もり | 実際 | 理由 |
+|---|---|---|---|
+| `DesignTokenTests.swift:7` (`selfTtChrome == 352` / `tabBarHeight == 64`) | 壊れる | **壊れる** (トークン削除でコンパイル不可) | — |
+| `TypographyRegistrationTests.swift:7,34` (Inter 5 種 + UIAppFonts 7 ファイル) | 壊れる | **壊れる** (2 本とも) | — |
+| `NavigationTests.swift:7` (5 タブ + label + symbol) | 壊れる | **★ 緑のまま** | IA を変えず、**`calendar.fill` が SF Symbols に存在しない**ため symbol の fill 統一が原理的に不可能 → 名前を変えない (設計 F6 で実測) |
+| `HomeChipsTests.swift` (3 本) | 壊れる | **★ 緑のまま** | `HomeChips.items(rooms:)` の契約を変えず、可視判定を**新関数** `isVisible(rooms:)` として足す設計にしたため |
+| `DayConventionTests.testTodayDayOfWeekJsRoundsWeekendToMonday` | (挙がっていない) | **★ 削除** | 検証対象の `DayConvention.todayDayOfWeekJs` を削除するため。**この関数は本番コードから 1 箇所も呼ばれていない**死にコードで、かつ「土日は月曜」仕様が「今日の列」と正面から矛盾する (設計 F5) |
 
 ### ★ 見落とすと事故る 5 件 — 「ロジックテスト」の顔をした色結合
 
