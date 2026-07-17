@@ -97,13 +97,32 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 
 → **いずれも本 feature (Apple/native-callback/setup.ts) とは無関係**。親コミット (5343c82, 実装前) で同一 4 件が失敗することを確認済み。設計の「apps/api 全 Vitest GREEN」は better-auth 更新で陳腐化している。**Magic Link の設計要件 D1 (send 200 + Resend 1 回) は既存 `[§8 #1]` が pass、probe でも確認済みで満たされている。**
 
-### 環境依存 (Reviewer のローカル harness 固有。CI/クリーン env では発生しない)
+### 環境依存 — dev `apps/api/.env` が Vitest プロセスに漏れて `.env.test` を上書きする (5 件)
 
-- `tests/ios-api.test.ts §8.4` の native/callback 3 件 (valid→302 / no session→401 / next 省略→302)
-  - **原因: dev 用 `apps/api/.env` (gitignore) がテストプロセスに漏れ、`.env.test` を上書きしていた。** その `.env` の `BETTER_AUTH_TRUSTED_ORIGINS` が `...,atender://` と **`auth` 欠落で truncate** されており、`atender://auth` が trusted 判定されず 400 になっていた。
-  - **native/callback のコード自体は正しい**: `.env` を `atender://auth` に直すと §8.4 全 12 pass、probe で `next=atender://auth`→302 / `next` 省略→302 atender://auth / evil.com→400 を確認 (C2/C4/C5 充足)。
-  - **本番影響の注意**: 同じ truncate (`atender://` vs `atender://auth`) が Coolify PROD の `BETTER_AUTH_TRUSTED_ORIGINS` に入ると feature が本番で無効化される。投入値は厳密に `atender://auth` であること。
+**2026-07-17 再実測 (Reviewer / feature/version-management)**: 旧記載は「`.env` の `BETTER_AUTH_TRUSTED_ORIGINS` を
+`atender://auth` に直せば直る」と書いていたが、**これは誤った処方**だったので置換する。
 
+**真の欠陥は「dev `.env` がテストに漏れること」自体**であって `.env` の値ではない。
+漏れている 3 変数のうち 2 つは **dev としては正しい値**であり、直すと今度はローカル開発が壊れる:
+
+| 変数 | dev `.env` (正しい) | `.env.test` (テストの期待) | 落ちるテスト |
+|---|---|---|---|
+| `BETTER_AUTH_COOKIE_DOMAIN` | `localhost` | `.appily.run` | `auth [§8 #7]` Set-Cookie 契約 |
+| `PUBLIC_WEB_URL` | `http://localhost:5173` | `https://atender.appily.run` | `cors-cookie [§8 #70]` OPTIONS の Allow-Origin が null |
+| `BETTER_AUTH_TRUSTED_ORIGINS` | `...,atender://` ← **これだけは真のバグ** (`auth` 欠落) | `...,atender://auth` | `ios-api §8.4` native/callback 3 件 |
+
+→ **合計 5 件**。3 変数を `.env.test` 相当に揃えると **5 件とも pass** し、
+全体が **17 failed / 318 passed / 1 skipped** = 台帳の A1-A8 + B1-B5 + Magic Link 4 = **17 件と完全一致**する
+(2026-07-17 実測、`3c9e85b`)。**未分類 0**。
+
+- **実装コードは全て正しい**。`cors-cookie §8 #70` は `clientVersionGuard` 導入前 (`index.ts` を `2ddd1f8` に戻した状態)
+  でも同一に失敗するので、version-management feature の regression ではない (negative control 実施済)。
+- **恒久対策 (未実施・要判断)**: Vitest 側で dev `.env` を読ませない
+  (app が import 時に dotenv で `.env` を読む構成が原因)。`.env` を書き換える運用は
+  「テストを通すとローカル開発が壊れる」トレードオフになるので採らない。
+- **本番影響の注意**: `BETTER_AUTH_TRUSTED_ORIGINS` の truncate (`atender://` vs `atender://auth`) が
+  Coolify PROD に入ると native ログインが本番で無効化される。投入値は厳密に `atender://auth` であること。
+- 関連: `Muraki/knowledge/gotcha/env-module-import-time-parse-defeats-runtime-env-swap.md`
 
 ### テスト方法論の限界 (実装は正しい。in-process env 差し替えで観測不能)
 
@@ -120,9 +139,11 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 183 GREEN / 0 RED** (`fix/room-week-contract` = `eb96e8a` 時点、Reviewer 実測 2026-07-17)。
-内訳: 前回 174 (feature/phase-e-p1、2026-07-16 実測) + **Reviewer 新規 9** (`RoomWeekContractTests`)。
-`Executed 183 tests, with 0 failures (0 unexpected)`。**未分類の失敗 0**。
+**ベースライン: 201 GREEN / 0 RED** (`feature/version-management` = `3c9e85b` + Reviewer 追記、実測 2026-07-17)。
+内訳: 183 (`fix/room-week-contract` = `eb96e8a`、2026-07-17 実測) + **version-management 18**
+(`VersionGateTests` = Codex 生成 16 + Reviewer 追記 2)。
+`Executed 201 tests, with 0 failures (0 unexpected)`。**未分類の失敗 0**。
+前々回 174 (feature/phase-e-p1、2026-07-16) → +9 (`RoomWeekContractTests`) → 183 → +18 = 201 で件数が繋がる。
 実行: `xcodegen generate` → `xcodebuild test -project Atender.xcodeproj -scheme Atender -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.2'`
 
 ### ★ この台帳自体が失敗を隠していた (2026-07-16 の教訓)

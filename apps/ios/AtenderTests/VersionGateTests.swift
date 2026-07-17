@@ -281,4 +281,56 @@ final class VersionGateTests: XCTestCase {
             "アプリの更新が必要です。TestFlight から最新版に更新してください。"
         )
     }
+
+    // ── Reviewer 追記 (設計 §8 に対するカバレッジの穴埋め) ────────────────────
+    // 設計 §6.5 は「send(_:as:) / send(_:) / upload(...) の 3 メソッドすべてで、401 判定の前に
+    //   if status == 426 { versionStore.handleUpgradeRequired(); throw APIError.upgradeRequired }」
+    // と明記している。しかし #I11/#I12 は send(_:as:) しか踏んでおらず、残る 2 経路は無テストだった。
+    // (負のコントロール NC-3 で `status == 426` の出現が 2 site しかないことが判明したため追加)
+
+    func test_I11_sendWithoutDecodingIntercepts426() async throws {
+        // 設計 §6.5 — send(_:) 経路
+        let versionStore = VersionStore(session: StubURLProtocol.makeSession(), currentBuild: 6)
+        let (client, authStore, _) = try makeClient(token: "tok", versionStore: versionStore)
+        respond(
+            status: 426,
+            body: #"{"error":{"code":"CLIENT_UPGRADE_REQUIRED","message":"upgrade"}}"#.data(using: .utf8)!
+        )
+
+        let endpoint = APIEndpoint(path: "/api/me", method: .post)
+        do {
+            try await client.send(endpoint)
+            XCTFail("send(_:) must throw APIError.upgradeRequired on 426")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .upgradeRequired)
+        }
+
+        XCTAssertEqual(versionStore.state, .blocked(minBuild: nil))
+        XCTAssertNotEqual(authStore.state, .signedOut)
+    }
+
+    func test_I11_uploadIntercepts426() async throws {
+        // 設計 §6.5 — upload(...) 経路
+        let versionStore = VersionStore(session: StubURLProtocol.makeSession(), currentBuild: 6)
+        let (client, authStore, _) = try makeClient(token: "tok", versionStore: versionStore)
+        respond(
+            status: 426,
+            body: #"{"error":{"code":"CLIENT_UPGRADE_REQUIRED","message":"upgrade"}}"#.data(using: .utf8)!
+        )
+
+        do {
+            _ = try await client.upload(
+                path: "/api/ics/import",
+                fileData: Data("BEGIN:VCALENDAR".utf8),
+                filename: "a.ics",
+                as: TestResponse.self
+            )
+            XCTFail("upload(...) must throw APIError.upgradeRequired on 426")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .upgradeRequired)
+        }
+
+        XCTAssertEqual(versionStore.state, .blocked(minBuild: nil))
+        XCTAssertNotEqual(authStore.state, .signedOut)
+    }
 }
