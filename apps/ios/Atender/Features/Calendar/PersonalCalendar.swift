@@ -307,8 +307,13 @@ struct CalendarMonth: View {
                 }
                 .frame(height: 24)
 
+                // イベント領域は最大 2 行。溢れる日 (>2) は chip を 1 個に減らし、
+                // 残り 1 行を「+N」に充てる (番号 + chip1 + +N はどの端末でも rowHeight に収まる)。
+                // これで「+N」がセル枠 clip で切れず必ず読める (標準カレンダーの more 表記と同じ)。
+                let overflow = events.count > 2
+                let visibleCount = overflow ? 1 : 2
                 VStack(alignment: .leading, spacing: 3) {
-                    ForEach(Array(events.prefix(2))) { event in
+                    ForEach(Array(events.prefix(visibleCount))) { event in
                         Text(CalendarEventDisplay.eventTitle(event))
                             .font(.caption2)
                             .fontWeight(.semibold)
@@ -319,15 +324,16 @@ struct CalendarMonth: View {
                             .background(Color.opaqueTint(hex: event.color, ratio: 0.18, base: .bgElevated))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
-                    if events.count > 2 {
-                        Text("+\(events.count - 2)")
+                    if overflow {
+                        Text("+\(events.count - visibleCount)")
                             .font(.caption2)
-                            .fontWeight(.bold)
+                            .fontWeight(.semibold)
                             .foregroundStyle(Color.textTertiary)
+                            .padding(.horizontal, 3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    Spacer(minLength: 0)
                 }
-                .frame(maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .clipped()
             }
             .padding(2)
