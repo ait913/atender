@@ -293,7 +293,7 @@ struct CalendarMonth: View {
         return Button { onSelectDate(date) } label: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
-                    Text(String(date.suffix(2)).trimmingCharacters(in: CharacterSet(charactersIn: "0")))
+                    Text(String(Int(date.suffix(2)) ?? 0))
                         .font(.atenderXs)
                         .fontWeight(emphasis == .today ? .bold : .semibold)
                         .foregroundStyle(dayNumberColor(emphasis))
