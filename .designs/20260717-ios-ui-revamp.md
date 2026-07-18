@@ -1075,6 +1075,14 @@ Web `CalendarMonth` を正典に、**スプレッドシート枠を全廃**す�
 
 **原則 (DESIGN.md §3.6.3)**: 「白い丸カードの上に、枠のない日セルを 1pt gap で並べ、イベントは不透明 tint ピルで置く」。**日セルの個別枠 (table border) は引かない。** これが「詰め詰め10年前」を解く最大のレバー。
 
+**★ 日番号の生存保証 (P3 Reviewer YELLOW の是正、2026-07-18。Reviewer + codex + Leader 一致)**:
+`minRowHeight 56 / prefix(2) / 11pt` だけでは「番号 + chip 2個」の総高が行高を超え、**内容が隣週に溢れて日番号が上週の chip に覆われる** (実測: デモ月曜=2件で iPhone 16 でも発生)。動的高・Dynamic Type・ローカライズで再発するので**寸法の引き上げ (minRowHeight) を主対策にしない**。日セルの構造で守る:
+
+- **日セルは「固定トップ行 (日番号) + 下部イベント領域」の 2 段に分ける。** 日番号の行は**高さを予約**し、イベント chip と**絶対に重ならない** (同一 VStack に number と chip を並べて競合させない)。
+- **イベント領域だけに `prefix(2)` / `+N` / clip を適用**し、**日セルは自身の `frame(height:)` に `.clipped()`** して隣週へ描画を漏らさない。番号は clip 対象の外 (トップ固定行) に置くので必ず生存する。
+- `minRowHeight` の再計算 (番号行 + chip 上限 + gap が収まる実寸) は**補助**として併用してよいが、単独対策にはしない。
+- `+N` 閾値は上記構造の下でイベント領域が溢れる件数に合わせる (`prefix(2)` なら 3 件目から `+N`)。
+
 **★ `CalendarMonth` は共有部品** (`PersonalCalendar.swift:151` ホーム / `RoomDetailView.swift:163` ルーム) → 上のマス描画は**両方に波及する** (望ましい)。**動的高 (`available`) だけは optional prop にしてホーム専用にする**:
 
 ```swift
