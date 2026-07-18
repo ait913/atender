@@ -165,8 +165,8 @@ xcrun simctl create "iPhone 16" \
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 264 GREEN / 0 RED** (main = `dc0ef53` = UI 刷新 P2 マージ後、2026-07-17 Leader 実測)。
-`Executed 264 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。
+**ベースライン: 268 GREEN / 0 RED** (main = `0368155` = UI 刷新 P3 マージ後、2026-07-18 Leader 実測)。
+`Executed 268 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。264 + ColorTintTests 4 = 268。**未分類の失敗 0**。
 
 ### ★ このスイートは「壊れた画面」を検出しない (2026-07-17 の教訓)
 
