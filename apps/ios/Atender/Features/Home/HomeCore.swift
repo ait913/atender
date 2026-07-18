@@ -26,6 +26,10 @@ enum HomeChips {
     static func items(rooms: [RoomSummaryDto]) -> [ContextChipItem] {
         [.selfChip(label: "自分")] + rooms.map { .room(roomId: $0.id, roomName: $0.name) }
     }
+
+    static func isVisible(rooms: [RoomSummaryDto]) -> Bool {
+        !rooms.isEmpty
+    }
 }
 
 struct HomeView: View {
@@ -35,42 +39,72 @@ struct HomeView: View {
     @State private var semesterId: String?
     @State private var didApplyDefaultSemester = false
     @State private var rooms: [RoomSummaryDto] = []
+    @State private var semesters: [SemesterDto] = []
+    @State private var showTimetableSettings = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(spacing: Space.s3) {
-                    ContextChips(
-                        items: HomeChips.items(rooms: rooms),
-                        selected: context,
-                        onChange: { context = $0 },
-                        onAddRoom: { environment.appRouter.selectedTab = .rooms }
-                    )
-                    HomeViewModeTabs(mode: mode) { mode = $0 }
-                    if context == .self && mode == .calendar {
-                        HomeSemesterPicker(semesterId: $semesterId)
-                    }
-                    HomeBody(context: context, mode: mode, semesterId: $semesterId)
-                }
-                .padding(.horizontal, Space.pagePxMobile)
-                .padding(.top, Space.s3)
-                .padding(.bottom, 128)
+        VStack(spacing: Space.s3) {
+            if context == .self {
+                SemesterMenu(semesters: semesters, semesterId: $semesterId)
             }
-
-            if context == .self && mode == .timetable {
-                SelfTodayCTA()
+            if HomeChips.isVisible(rooms: rooms) {
+                ContextChips(
+                    items: HomeChips.items(rooms: rooms),
+                    selected: context,
+                    onChange: { context = $0 },
+                    onAddRoom: { environment.appRouter.selectedTab = .rooms }
+                )
+            }
+            Picker("表示", selection: $mode) {
+                Text("時間割").tag(HomeViewMode.timetable)
+                Text("カレンダー").tag(HomeViewMode.calendar)
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 240)
+            GeometryReader { proxy in
+                HomeBody(
+                    context: context,
+                    mode: mode,
+                    semesterId: $semesterId,
+                    showTimetableSettings: $showTimetableSettings,
+                    available: proxy.size.height
+                )
+            }
+            .frame(maxHeight: .infinity)
+        }
+        .padding(.horizontal, Space.pagePxMobile)
+        .padding(.top, Space.s3)
+        .background(Color.clear)
+        .navigationTitle("ホーム")
+        .navigationBarTitleDisplayMode(.large)
+        .safeAreaInset(edge: .bottom) {
+            if context == .self { NowNextBarHost() }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if context == .self && mode == .timetable {
+                    Button {
+                        showTimetableSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .frame(width: 44, height: 44)
+                    .accessibilityLabel("時間割の設定")
+                }
             }
         }
-        .background(Color.clear)
         .task {
             rooms = (try? await environment.roomRepository.rooms()) ?? []
+            await loadSemesters()
             if let cached: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) {
                 applyDefaultSemester(cached)
+                applyFallbackSemester()
                 return
             }
             if let me = try? await environment.meRepository.me() {
                 applyDefaultSemester(me)
             }
+            applyFallbackSemester()
         }
     }
 
@@ -78,6 +112,60 @@ struct HomeView: View {
         guard !didApplyDefaultSemester, semesterId == nil, let defaultId = me.user.defaultSemesterId else { return }
         semesterId = defaultId
         didApplyDefaultSemester = true
+    }
+
+    private func applyFallbackSemester() {
+        if semesterId == nil {
+            semesterId = semesters.first?.id
+        }
+    }
+
+    private func loadSemesters() async {
+        if let cached: [SemesterDto] = environment.queryClient.data(for: .semesters(), as: [SemesterDto].self) {
+            semesters = cached
+        }
+        if let loaded = try? await environment.semesterRepository.semesters() {
+            semesters = loaded
+        }
+    }
+}
+
+struct SemesterMenu: View {
+    let semesters: [SemesterDto]
+    @Binding var semesterId: String?
+
+    var body: some View {
+        HStack {
+            Menu {
+                ForEach(semesters) { semester in
+                    Button {
+                        semesterId = semester.id
+                    } label: {
+                        HStack {
+                            Text(semester.name)
+                            if semester.id == semesterId {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: Space.s2) {
+                    Text(current?.name ?? "学期を選択")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.textSecondary)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(Color.textTertiary)
+                }
+            }
+            Spacer()
+        }
+    }
+
+    private var current: SemesterDto? {
+        semesters.first { $0.id == semesterId } ?? semesters.first
     }
 }
 
@@ -105,7 +193,7 @@ struct ContextChips: View {
                         }
                         .foregroundStyle(isActive(item) ? Color.accent500 : Color.textSecondary)
                         .padding(.horizontal, Space.s4)
-                        .frame(height: 40)
+                        .frame(height: 44)
                         .background(isActive(item) ? Color.accent500.opacity(0.15) : Color.bgElevated)
                         .clipShape(Capsule())
                         .overlay(Capsule().stroke(isActive(item) ? Color.accent500 : Color.borderSubtle, lineWidth: 1))
@@ -118,7 +206,7 @@ struct ContextChips: View {
                         .font(.atenderSm)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.textTertiary)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
                         .background(Color.bgElevated)
                         .clipShape(Circle())
                         .overlay(Circle().stroke(Color.borderSubtle, lineWidth: 1))
@@ -153,121 +241,21 @@ struct ContextChips: View {
     private func isActive(_ item: ContextChipItem) -> Bool { selected == context(for: item) }
 }
 
-struct HomeViewModeTabs: View {
-    let mode: HomeViewMode
-    let onChange: (HomeViewMode) -> Void
-
-    var body: some View {
-        HStack(spacing: 0) {
-            tab("時間割", .timetable)
-            tab("カレンダー", .calendar)
-        }
-        .padding(4)
-        .background(Color.bgMuted)
-        .clipShape(Capsule())
-    }
-
-    private func tab(_ title: String, _ value: HomeViewMode) -> some View {
-        Button {
-            onChange(value)
-        } label: {
-            Text(title)
-                .font(.atenderSm)
-                .fontWeight(.bold)
-                .foregroundStyle(mode == value ? Color.textOnAccent : Color.textSecondary)
-                .frame(maxWidth: .infinity)
-                .frame(height: 34)
-                .background(mode == value ? Color.accent500 : Color.clear)
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .conditional(mode == value) { $0.atenderShadow(.glowSoft) }
-    }
-}
-
-struct HomeSemesterPicker: View {
-    @Environment(AppEnvironment.self) private var environment
-    @Binding var semesterId: String?
-    var trailing: AnyView?
-    @State private var semesters: [SemesterDto] = []
-    @State private var open = false
-
-    var body: some View {
-        HStack(spacing: Space.s2) {
-            Button { open = true } label: {
-                HStack(spacing: Space.s2) {
-                    Text(current?.name ?? "学期を選択")
-                        .font(.atenderBase)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.textPrimary)
-                    Image(systemName: "chevron.down")
-                        .font(.atenderXs)
-                        .foregroundStyle(Color.textTertiary)
-                }
-            }
-            .buttonStyle(.plain)
-            Spacer()
-            trailing
-        }
-        .frame(minHeight: 36)
-        .task { await load() }
-        .background {
-            BottomSheet(title: "学期を選択", isPresented: $open) {
-                VStack(spacing: Space.s2) {
-                    ForEach(semesters) { semester in
-                        Button {
-                            semesterId = semester.id
-                            open = false
-                        } label: {
-                            HStack {
-                                Text(semester.name)
-                                    .font(.atenderBase)
-                                    .fontWeight(.bold)
-                                Spacer()
-                                if semester.id == semesterId {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                            .foregroundStyle(semester.id == semesterId ? Color.accent500 : Color.textPrimary)
-                            .padding(Space.s3)
-                            .background(semester.id == semesterId ? Color.accent500.opacity(0.15) : Color.bgMuted)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-        }
-    }
-
-    private var current: SemesterDto? {
-        semesters.first { $0.id == semesterId } ?? semesters.first
-    }
-
-    private func load() async {
-        if let cached: [SemesterDto] = environment.queryClient.data(for: .semesters(), as: [SemesterDto].self) {
-            semesters = cached
-        }
-        if let loaded = try? await environment.semesterRepository.semesters() {
-            semesters = loaded
-            if semesterId == nil { semesterId = loaded.first?.id }
-        }
-    }
-}
-
 struct HomeBody: View {
     let context: HomeContext
     let mode: HomeViewMode
     @Binding var semesterId: String?
+    @Binding var showTimetableSettings: Bool
+    let available: CGFloat
 
     var body: some View {
         switch (context, mode) {
         case (.self, .timetable):
-            SelfTimetableView(semesterId: $semesterId)
+            SelfTimetableView(semesterId: $semesterId, showSettings: $showTimetableSettings, available: available)
         case (.self, .calendar):
-            PersonalCalendar(semesterId: semesterId)
+            PersonalCalendar(semesterId: semesterId, available: available)
         case (.room(let roomId), .timetable):
-            RoomTimetable(roomId: roomId)
+            RoomTimetable(roomId: roomId, available: available)
         case (.room(let roomId), .calendar):
             RoomCalendar(roomId: roomId)
         }

@@ -23,8 +23,5 @@ enum Space {
     static let sectionGap: CGFloat = sectionGapMobile
     static let buttonGap: CGFloat = 8
     static let buttonGapDestructive: CGFloat = 12
-    static let tabBarHeight: CGFloat = 64
     static let topbarHeightMobile: CGFloat = 48
-    static let selfTtChrome: CGFloat = 352
-    static let roomTtChromeTop: CGFloat = 168
 }

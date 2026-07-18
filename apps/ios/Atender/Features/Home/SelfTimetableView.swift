@@ -111,6 +111,8 @@ final class SelfTimetableViewModel {
 struct SelfTimetableView: View {
     @Environment(AppEnvironment.self) private var environment
     @Binding var semesterId: String?
+    @Binding var showSettings: Bool
+    let available: CGFloat
     @State private var viewModel: SelfTimetableViewModel?
     @State private var activeSheet: TimetableActiveSheet?
 
@@ -129,28 +131,29 @@ struct SelfTimetableView: View {
                 Skeleton(width: 128, height: 20, radius: Radius.full)
                 Skeleton(width: nil, height: 360, radius: Radius.md)
             } else if let model, let display {
-                HomeSemesterPicker(
-                    semesterId: $semesterId,
-                    trailing: AnyView(settingsButton)
-                )
-                .zIndex(2)
-                TimetableGrid(
-                    daySlots: display.daySlots,
-                    events: model.eventInputs(for: display),
-                    days: DayConvention.resolveDisplayDays(daysOfWeek: display.daysOfWeek, meetings: display.meetings),
-                    onEventTap: { id in
-                        if let meeting = display.meetings.first(where: { $0.id == id }) {
-                            activeSheet = .detail(meeting)
-                        }
-                    },
-                    onEmptyCellTap: { displayDow, period in
-                        Task {
-                            if await model.ensureTimetable(semesterId: semesterId) != nil {
-                                activeSheet = .create(dayOfWeekJs: DayConvention.displayToJs(displayDow), period: period)
+                ScrollView {
+                    TimetableGrid(
+                        daySlots: display.daySlots,
+                        events: model.eventInputs(for: display),
+                        days: DayConvention.resolveDisplayDays(daysOfWeek: display.daysOfWeek, meetings: display.meetings),
+                        onEventTap: { id in
+                            if let meeting = display.meetings.first(where: { $0.id == id }) {
+                                activeSheet = .detail(meeting)
                             }
-                        }
-                    }
-                )
+                        },
+                        onEmptyCellTap: { displayDow, period in
+                            Task {
+                                if await model.ensureTimetable(semesterId: semesterId) != nil {
+                                    activeSheet = .create(dayOfWeekJs: DayConvention.displayToJs(displayDow), period: period)
+                                }
+                            }
+                        },
+                        available: available,
+                        todayDisplayDay: SchoolClock.displayDay(),
+                        currentPeriodIndex: TimetableGridLayout.currentPeriodIndex(daySlots: display.daySlots, nowMinute: SchoolClock.nowMinute())
+                    )
+                }
+                .scrollBounceBehavior(.basedOnSize)
             } else {
                 Panel { Text("先に学期を作成してください。").foregroundStyle(Color.textSecondary) }
             }
@@ -159,24 +162,10 @@ struct SelfTimetableView: View {
             if viewModel == nil { viewModel = SelfTimetableViewModel(environment: environment) }
             await viewModel?.load()
         }
-        .overlay(activeSheetView(display: display, model: model))
-    }
-
-    private var settingsButton: some View {
-        Button {
-            activeSheet = .settings
-        } label: {
-            Image(systemName: "gearshape")
-                .font(.atenderSm)
-                .foregroundStyle(Color.textSecondary)
-                .frame(width: 36, height: 36)
-                .background(Color.textPrimary.opacity(0.08))
-                .clipShape(Circle())
+        .onChange(of: showSettings) { _, newValue in
+            if newValue { activeSheet = .settings }
         }
-        .accessibilityLabel("時間割の設定")
-        .buttonStyle(.plain)
-        .contentShape(Circle())
-        .zIndex(3)
+        .overlay(activeSheetView(display: display, model: model))
     }
 
     @ViewBuilder
@@ -238,7 +227,12 @@ struct SelfTimetableView: View {
     private var activeSheetBinding: Binding<Bool> {
         Binding(
             get: { activeSheet != nil },
-            set: { if !$0 { activeSheet = nil } }
+            set: {
+                if !$0 {
+                    activeSheet = nil
+                    showSettings = false
+                }
+            }
         )
     }
 }

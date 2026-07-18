@@ -6,51 +6,60 @@ struct TimetableGrid: View {
     var days: [Int] = [1, 2, 3, 4, 5]
     var onEventTap: ((String) -> Void)?
     var onEmptyCellTap: ((_ displayDayOfWeek: Int, _ periodIndex: Int) -> Void)?
-    var height: CGFloat?
+    var available: CGFloat
+    var todayDisplayDay: Int?
+    var currentPeriodIndex: Int?
 
     private let headerWidth: CGFloat = 44
-    private let headerHeight: CGFloat = 28
     private let dayLabels = ["月", "火", "水", "木", "金", "土", "日"]
 
     var body: some View {
-        let periodIndexes = daySlots.map(\.periodIndex).sorted()
-        let targetHeight = height ?? max(320, UIScreen.main.bounds.height - Space.selfTtChrome)
+        let periodIndexes = Array(Set(daySlots.map(\.periodIndex))).sorted()
+        let rowCount = max(1, periodIndexes.count)
+        let rowHeight = TimetableGridLayout.rowHeight(available: available, rowCount: rowCount)
+        let contentHeight = TimetableGridLayout.contentHeight(available: available, rowCount: rowCount)
         GeometryReader { proxy in
             let width = proxy.size.width
-            let rowCount = max(1, periodIndexes.count)
             let colWidth = max(1, (width - headerWidth) / CGFloat(max(1, days.count)))
-            let rowHeight = max(1, (targetHeight - headerHeight) / CGFloat(rowCount))
             let coalesced = TimetableCoalesce.coalesce(events)
             let occupied = occupiedSet(coalesced: coalesced, periodIndexes: periodIndexes)
             ZStack(alignment: .topLeading) {
-                background(width: width, colWidth: colWidth, rowHeight: rowHeight, periodIndexes: periodIndexes, occupied: occupied)
+                background(width: width, colWidth: colWidth, rowHeight: rowHeight, contentHeight: contentHeight, periodIndexes: periodIndexes, occupied: occupied)
                 eventLayer(coalesced: coalesced, colWidth: colWidth, rowHeight: rowHeight, periodIndexes: periodIndexes)
+                currentIntersection(colWidth: colWidth, rowHeight: rowHeight, periodIndexes: periodIndexes)
             }
         }
-        .frame(height: targetHeight)
+        .frame(height: contentHeight)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.borderSubtle, lineWidth: 1))
+        .atenderShadow(.card)
+        .animation(.smooth, value: currentPeriodIndex)
     }
 
-    private func background(width: CGFloat, colWidth: CGFloat, rowHeight: CGFloat, periodIndexes: [Int], occupied: Set<String>) -> some View {
+    private func background(width: CGFloat, colWidth: CGFloat, rowHeight: CGFloat, contentHeight: CGFloat, periodIndexes: [Int], occupied: Set<String>) -> some View {
         ZStack(alignment: .topLeading) {
             Rectangle().fill(Color.bgBase)
             Rectangle()
                 .fill(Color.bgMuted)
-                .frame(width: headerWidth, height: headerHeight)
+                .frame(width: headerWidth, height: TimetableGridLayout.headerHeight)
+            if let todayCol {
+                Rectangle()
+                    .fill(Color.accent500.opacity(0.06))
+                    .frame(width: colWidth, height: contentHeight)
+                    .position(x: headerWidth + colWidth * CGFloat(todayCol) + colWidth / 2, y: contentHeight / 2)
+            }
             ForEach(Array(days.enumerated()), id: \.element) { index, day in
                 Text(dayLabels[max(0, min(6, day - 1))])
                     .font(.atenderXs)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(Color.textSecondary)
-                    .frame(width: colWidth, height: headerHeight)
-                    .background(Color.bgMuted)
-                    .position(x: headerWidth + colWidth * CGFloat(index) + colWidth / 2, y: headerHeight / 2)
+                    .fontWeight(day == todayDisplayDay ? .bold : .semibold)
+                    .foregroundStyle(day == todayDisplayDay ? Color.accent500 : Color.textSecondary)
+                    .frame(width: colWidth, height: TimetableGridLayout.headerHeight)
+                    .background(day == todayDisplayDay ? Color.accent500.opacity(0.06) : Color.bgMuted)
+                    .position(x: headerWidth + colWidth * CGFloat(index) + colWidth / 2, y: TimetableGridLayout.headerHeight / 2)
             }
             ForEach(Array(periodIndexes.enumerated()), id: \.element) { row, period in
-                PeriodLabelCell(slot: slot(period))
+                PeriodLabelCell(slot: slot(period), isCurrent: period == currentPeriodIndex)
                     .frame(width: headerWidth, height: rowHeight)
-                    .position(x: headerWidth / 2, y: headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
+                    .position(x: headerWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
                 ForEach(Array(days.enumerated()), id: \.element) { col, day in
                     let key = "\(day):\(period)"
                     EmptyCell {
@@ -58,9 +67,7 @@ struct TimetableGrid: View {
                     }
                     .opacity(occupied.contains(key) ? 0 : 1)
                     .frame(width: colWidth, height: rowHeight)
-                    .overlay(alignment: .top) { Rectangle().fill(Color.borderSubtle).frame(height: 1) }
-                    .overlay(alignment: .leading) { Rectangle().fill(Color.borderSubtle).frame(width: 1) }
-                    .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
+                    .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
                 }
             }
         }
@@ -77,7 +84,7 @@ struct TimetableGrid: View {
                    let col = days.firstIndex(of: first.dayOfWeek),
                    let row = periodIndexes.firstIndex(of: first.startPeriodIndex) {
                     let span = min(group.map(\.periodCount).max() ?? 1, periodIndexes.count - row)
-                    HStack(spacing: 2) {
+                    HStack(alignment: .top, spacing: 2) {
                         ForEach(group) { event in
                             EventTile(title: event.title, color: event.color, subtitle: event.subtitle) {
                                 onEventTap?(event.id)
@@ -85,11 +92,28 @@ struct TimetableGrid: View {
                         }
                     }
                     .padding(2)
-                    .frame(width: colWidth, height: rowHeight * CGFloat(span))
-                    .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: headerHeight + rowHeight * CGFloat(row) + rowHeight * CGFloat(span) / 2)
+                    .frame(width: colWidth, height: rowHeight * CGFloat(span), alignment: .topLeading)
+                    .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight * CGFloat(span) / 2)
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func currentIntersection(colWidth: CGFloat, rowHeight: CGFloat, periodIndexes: [Int]) -> some View {
+        if let todayCol,
+           let currentPeriodIndex,
+           let row = periodIndexes.firstIndex(of: currentPeriodIndex) {
+            RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                .stroke(Color.accent500, lineWidth: 2)
+                .frame(width: colWidth, height: rowHeight)
+                .position(x: headerWidth + colWidth * CGFloat(todayCol) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
+        }
+    }
+
+    private var todayCol: Int? {
+        guard let todayDisplayDay else { return nil }
+        return days.firstIndex(of: todayDisplayDay)
     }
 
     private func occupiedSet(coalesced: [TimetableEventInput], periodIndexes: [Int]) -> Set<String> {
@@ -125,17 +149,18 @@ struct EventTile: View {
                 content
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var content: some View {
-        HStack(spacing: Space.s2) {
+        HStack(alignment: .top, spacing: Space.s2) {
             Capsule()
                 .fill(Color(hexString: color))
-                .frame(width: 3)
+                .frame(width: 2)
             if let leadingSystemImage {
                 Image(systemName: leadingSystemImage)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.caption2)
+                    .fontWeight(.bold)
                     .foregroundStyle(Color(hexString: color))
             }
             VStack(alignment: .leading, spacing: 2) {
@@ -149,7 +174,7 @@ struct EventTile: View {
                     Text(subtitle)
                         .font(.caption2)
                         .fontWeight(.medium)
-                        .foregroundStyle(Color.textSecondary)
+                        .foregroundStyle(Color.opaqueTint(hex: color, ratio: 0.70, base: .eventMixTarget))
                         .lineLimit(1)
                 }
                 if let meta {
@@ -162,27 +187,28 @@ struct EventTile: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 6)
-        .background(Color(hexString: color).opacity(0.16))
+        .background(Color.opaqueTint(hex: color, ratio: 0.15, base: .bgElevated))
         .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
     }
 }
 
 struct PeriodLabelCell: View {
     let slot: DaySlotDto
+    var isCurrent = false
 
     var body: some View {
         VStack(spacing: 1) {
             Text("\(slot.periodIndex)")
                 .font(.caption)
                 .fontWeight(.bold)
-                .foregroundStyle(Color.textPrimary)
+                .foregroundStyle(isCurrent ? Color.textOnAccent : Color.textPrimary)
             Text(TimeFormatting.minutesToTime(slot.startMinute))
                 .font(.caption2)
                 .monospacedDigit()
-                .foregroundStyle(Color.textTertiary)
+                .foregroundStyle(isCurrent ? Color.textOnAccent.opacity(0.9) : Color.textTertiary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.bgMuted)
+        .background(isCurrent ? Color.accent500 : Color.bgMuted)
     }
 }
 

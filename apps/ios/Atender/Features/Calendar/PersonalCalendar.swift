@@ -98,6 +98,7 @@ final class PersonalCalendarViewModel {
 struct PersonalCalendar: View {
     @Environment(AppEnvironment.self) private var environment
     let semesterId: String?
+    let available: CGFloat
     @State private var viewModel: PersonalCalendarViewModel?
     @State private var loadRevision = 0
 
@@ -136,30 +137,45 @@ struct PersonalCalendar: View {
         } else if semesterId != nil && model.semesters.first(where: { $0.id == semesterId }) == nil {
             Panel { Text("学期を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
         } else {
-            VStack(spacing: Space.s3) {
-                HStack {
-                    PeriodNav(viewMode: model.viewMode, anchor: model.anchor) { next in
-                        model.anchor = next
-                        if model.viewMode == .day { model.selectedDate = next }
-                        Task { await model.load(semesterId: semesterId) }
+            ScrollView {
+                VStack(spacing: Space.s3) {
+                    HStack {
+                        PeriodNav(viewMode: model.viewMode, anchor: model.anchor) { next in
+                            model.anchor = next
+                            if model.viewMode == .day { model.selectedDate = next }
+                            Task { await model.load(semesterId: semesterId) }
+                        }
+                        Spacer()
+                        CalendarSegmented(viewMode: Binding(get: { model.viewMode }, set: { model.viewMode = $0; Task { await model.load(semesterId: semesterId) } }))
                     }
-                    Spacer()
-                    CalendarSegmented(viewMode: Binding(get: { model.viewMode }, set: { model.viewMode = $0; Task { await model.load(semesterId: semesterId) } }))
-                }
-                switch model.viewMode {
-                case .month:
-                    CalendarMonth(anchor: model.anchor, selectedDate: model.selectedDate, events: events, statusByDate: model.statusByDate()) { date in
-                        model.selectDate(date)
+                    switch model.viewMode {
+                    case .month:
+                        CalendarMonth(
+                            anchor: model.anchor,
+                            selectedDate: model.selectedDate,
+                            events: events,
+                            statusByDate: model.statusByDate(),
+                            available: available,
+                            onSelectDate: { date in
+                                model.selectDate(date)
+                            },
+                            onChangeAnchor: { next in
+                                model.anchor = next
+                                Task { await model.load(semesterId: semesterId) }
+                            }
+                        )
+                        DayAgendaPanel(date: model.selectedDate, events: eventMap[model.selectedDate] ?? [])
+                            .frame(height: CalendarMonthLayout.agendaHeight)
+                    case .week:
+                        CalendarWeek(weekStart: CalendarRange.mondayOf(model.anchor), selectedDate: model.selectedDate, eventsByDateMap: eventMap) { date in
+                            model.selectDate(date)
+                        }
+                    case .day:
+                        CalendarDay(date: model.selectedDate, events: eventMap[model.selectedDate] ?? [])
                     }
-                    DayAgendaPanel(date: model.selectedDate, events: eventMap[model.selectedDate] ?? [])
-                case .week:
-                    CalendarWeek(weekStart: CalendarRange.mondayOf(model.anchor), selectedDate: model.selectedDate, eventsByDateMap: eventMap) { date in
-                        model.selectDate(date)
-                    }
-                case .day:
-                    CalendarDay(date: model.selectedDate, events: eventMap[model.selectedDate] ?? [])
                 }
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
 }
@@ -231,48 +247,65 @@ struct CalendarMonth: View {
     let selectedDate: String
     let events: [CalendarEvent]
     let statusByDate: [String: AttendanceDayStatus]
+    var available: CGFloat? = nil
     let onSelectDate: (String) -> Void
+    var onChangeAnchor: ((String) -> Void)? = nil
 
     private let labels = ["月", "火", "水", "木", "金", "土", "日"]
     var body: some View {
-        let range = CalendarRange.monthGridRange(anchorMonthFirst: CalendarRange.monthFirst(anchor))
+        let monthFirst = CalendarRange.monthFirst(anchor)
+        let range = CalendarRange.monthGridRange(anchorMonthFirst: monthFirst)
         let dates = (0..<42).map { CalendarRange.addDays(range.start, $0) }
         let eventMap = MeetingExpansion.eventsByDate(events)
+        let rowHeight = available.map { CalendarMonthLayout.rowHeight(available: $0) } ?? 86
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(labels, id: \.self) { label in
                     Text(label).font(.atenderXs).fontWeight(.bold).foregroundStyle(Color.textTertiary).frame(maxWidth: .infinity).frame(height: 26)
                 }
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 0) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 7), spacing: 1) {
                 ForEach(dates, id: \.self) { date in
-                    dayCell(date, events: eventMap[date] ?? [])
+                    dayCell(date, events: eventMap[date] ?? [], monthFirst: monthFirst, rowHeight: rowHeight)
                 }
             }
         }
+        .padding(Space.s2)
         .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.borderSubtle, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+        .atenderShadow(.card)
+        .gesture(
+            DragGesture(minimumDistance: 20)
+                .onEnded { value in
+                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                    if value.translation.width < -50 {
+                        onChangeAnchor?(CalendarRange.addMonths(anchor, 1))
+                    } else if value.translation.width > 50 {
+                        onChangeAnchor?(CalendarRange.addMonths(anchor, -1))
+                    }
+                }
+        )
+        .sensoryFeedback(.selection, trigger: anchor)
     }
 
-    private func dayCell(_ date: String, events: [CalendarEvent]) -> some View {
-        let inMonth = date.prefix(7) == CalendarRange.monthFirst(anchor).prefix(7)
+    private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat) -> some View {
+        let emphasis = CalendarDayStyle.emphasis(date: date, todayString: SchoolClock.todayString(), selectedDate: selectedDate, monthFirst: monthFirst)
         return Button { onSelectDate(date) } label: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     Text(String(date.suffix(2)).trimmingCharacters(in: CharacterSet(charactersIn: "0")))
                         .font(.atenderXs)
-                        .fontWeight(.bold)
-                        .foregroundStyle(selectedDate == date ? Color.textOnAccent : (inMonth ? Color.textPrimary : Color.textTertiary))
+                        .fontWeight(emphasis == .today ? .bold : .semibold)
+                        .foregroundStyle(dayNumberColor(emphasis))
                         .frame(width: 24, height: 24)
-                        .background(selectedDate == date ? Color.accent500 : Color.clear)
+                        .background(emphasis == .selected ? Color.accent500 : Color.clear)
                         .clipShape(Circle())
                     Spacer()
                     if let status = statusByDate[date], status != .noClass {
                         Circle().fill(CalendarEventDisplay.dayStatusColor(status)).frame(width: 6, height: 6)
                     }
                 }
-                ForEach(Array(events.prefix(3))) { event in
+                ForEach(Array(events.prefix(2))) { event in
                     Text(CalendarEventDisplay.eventTitle(event))
                         .font(.caption2)
                         .fontWeight(.semibold)
@@ -280,24 +313,32 @@ struct CalendarMonth: View {
                         .foregroundStyle(Color.textPrimary)
                         .padding(.horizontal, 3)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(hexString: event.color).opacity(0.18))
+                        .background(Color.opaqueTint(hex: event.color, ratio: 0.18, base: .bgElevated))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                 }
-                if events.count > 3 {
-                    Text("+\(events.count - 3)")
+                if events.count > 2 {
+                    Text("+\(events.count - 2)")
                         .font(.caption2)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.textTertiary)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(4)
-            .frame(height: 86)
-            .background(inMonth ? Color.bgElevated : Color.bgMuted.opacity(0.45))
-            .overlay(alignment: .top) { Rectangle().fill(Color.borderSubtle).frame(height: 1) }
-            .overlay(alignment: .leading) { Rectangle().fill(Color.borderSubtle).frame(width: 1) }
+            .padding(2)
+            .frame(height: rowHeight)
+            .background(emphasis == .outsideMonth ? Color.bgMuted.opacity(0.45) : Color.bgElevated)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    private func dayNumberColor(_ emphasis: CalendarDayEmphasis) -> Color {
+        switch emphasis {
+        case .selected: return Color.textOnAccent
+        case .today: return Color.accent500
+        case .outsideMonth: return Color.textTertiary
+        case .normal: return Color.textPrimary
+        }
     }
 }
 
@@ -381,22 +422,28 @@ struct DayAgendaPanel: View {
                 .font(.atenderBase)
                 .fontWeight(.bold)
                 .foregroundStyle(Color.textPrimary)
-            if events.isEmpty {
-                Text("予定はありません")
-                    .font(.atenderSm)
-                    .foregroundStyle(Color.textTertiary)
-            } else {
-                ForEach(events) { event in
-                    HStack(spacing: Space.s2) {
-                        Circle().fill(Color(hexString: event.color)).frame(width: 8, height: 8)
-                        Text(event.title).font(.atenderSm).fontWeight(.bold)
-                        Spacer()
-                        Text("\(TimeFormatting.minutesToTime(event.startMinute))-\(TimeFormatting.minutesToTime(event.endMinute))")
-                            .font(.atenderXs)
-                            .foregroundStyle(Color.textTertiary)
+            ScrollView {
+                if events.isEmpty {
+                    Text("予定はありません")
+                        .font(.atenderSm)
+                        .foregroundStyle(Color.textTertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    VStack(spacing: Space.s2) {
+                        ForEach(events) { event in
+                            HStack(spacing: Space.s2) {
+                                Circle().fill(Color(hexString: event.color)).frame(width: 8, height: 8)
+                                Text(event.title).font(.atenderSm).fontWeight(.bold)
+                                Spacer()
+                                Text("\(TimeFormatting.minutesToTime(event.startMinute))-\(TimeFormatting.minutesToTime(event.endMinute))")
+                                    .font(.atenderXs)
+                                    .foregroundStyle(Color.textTertiary)
+                            }
+                        }
                     }
                 }
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
         .padding(Space.s4)
         .background(Color.bgElevated)

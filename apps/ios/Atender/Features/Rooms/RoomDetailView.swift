@@ -42,14 +42,16 @@ struct RoomDetailView: View {
                 if tab == .calendar {
                     RoomCalendar(roomId: roomId)
                 } else {
-                    RoomTimetable(roomId: roomId)
+                    GeometryReader { proxy in
+                        RoomTimetable(roomId: roomId, available: proxy.size.height)
+                    }
                 }
             }
         }
         .padding(Space.pagePxMobile)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.bgBase)
-        .navigationTitle(model?.room?.name ?? "ルーム")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             if model == nil { model = RoomDetailViewModel(env: environment, roomId: roomId) }
@@ -160,10 +162,20 @@ struct RoomCalendar: View {
                 } else {
                     switch viewMode {
                     case .month:
-                        CalendarMonth(anchor: anchor, selectedDate: selectedDate, events: events, statusByDate: [:]) { date in
-                            selectedDate = date
-                            anchor = date
-                        }
+                        CalendarMonth(
+                            anchor: anchor,
+                            selectedDate: selectedDate,
+                            events: events,
+                            statusByDate: [:],
+                            onSelectDate: { date in
+                                selectedDate = date
+                                anchor = date
+                            },
+                            onChangeAnchor: { next in
+                                anchor = next
+                                Task { await reload(force: true) }
+                            }
+                        )
                         RoomDayEventList(date: selectedDate, events: dayEvents)
                     case .week:
                         CalendarWeek(weekStart: CalendarRange.mondayOf(anchor), selectedDate: selectedDate, eventsByDateMap: eventMap) { date in
@@ -368,6 +380,7 @@ private struct BarRow: View {
 
 struct RoomTimetable: View {
     let roomId: String
+    let available: CGFloat
     @Environment(AppEnvironment.self) private var environment
     @State private var week: RoomWeekDto?
     @State private var daySlots: [DaySlotDto] = RoomTimetableLogic.defaultSlots
@@ -375,23 +388,27 @@ struct RoomTimetable: View {
     @State private var loadError = false
 
     var body: some View {
-        ScrollView {
-            Group {
-                if isLoading {
-                    Skeleton(width: nil, height: 420, radius: Radius.md)
-                } else if loadError {
-                    Panel { Text("時間割を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
-                } else if let week {
-                    let events = RoomTimetableLogic.buildEvents(week: week, daySlots: daySlots)
-                    if events.isEmpty {
-                        EmptyState(title: week.members.isEmpty ? "メンバーがいません" : "メンバーの時間割がまだありません")
-                    } else {
-                        TimetableGrid(daySlots: daySlots, events: events, days: RoomTimetableLogic.displayDays(events: events), height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight))
-                    }
+        Group {
+            if isLoading {
+                Skeleton(width: nil, height: 420, radius: Radius.md)
+            } else if loadError {
+                Panel { Text("時間割を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
+            } else if let week {
+                let events = RoomTimetableLogic.buildEvents(week: week, daySlots: daySlots)
+                if events.isEmpty {
+                    EmptyState(title: week.members.isEmpty ? "メンバーがいません" : "メンバーの時間割がまだありません")
+                } else {
+                    TimetableGrid(
+                        daySlots: daySlots,
+                        events: events,
+                        days: RoomTimetableLogic.displayDays(events: events),
+                        available: available,
+                        todayDisplayDay: SchoolClock.displayDay(),
+                        currentPeriodIndex: TimetableGridLayout.currentPeriodIndex(daySlots: daySlots, nowMinute: SchoolClock.nowMinute())
+                    )
                 }
             }
         }
-        .scrollBounceBehavior(.basedOnSize)
         .accessibilityIdentifier("room-timetable")
         .task { await load() }
     }
