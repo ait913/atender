@@ -268,11 +268,11 @@ static let borderSettings = Color(uiColor: .separator)
 | `pagePxMobile` (12) | **16 に変更** | (使用 12 箇所は値の変更のみで追従) | **P1 済** |
 | `topbarHeightMobile` (48) | **維持** | `FullScreenModal.swift:37` (スコープ外) + `PlaceholderViews.swift:52` (P2 でファイルごと削除) → **P2 後も `FullScreenModal` が残るので維持** | — |
 | `tabBarContent` (48) | 削除 | `BottomTabBar.swift:35` → §4.1 で**ファイルごと削除** | **P2** |
-| `tabBarHeight` (64) | 削除 | **本番 9 箇所** (§4.2 の表)。**うち 7 箇所は P2 で外れるが、`SelfTodayCTA.swift:107` (§5.4) と `RoomDetailView.swift:386` (§5.3) が P3 まで残る** | **P3** |
+| `tabBarHeight` (64) | 削除 | **本番 9 箇所** (§4.2 の表)。**うち 7 箇所は P2 で外れるが、`SelfTodayCTA.swift:107` (§5.4) と `RoomDetailView.swift:389` (§5.3) が P3 まで残る** | **P3** |
 | `selfTtChrome` (352) | 削除 | `TimetableGridPhaseB.swift:17` → §5.3 | **P3** |
-| `roomTtChromeTop` (168) | 削除 | `RoomDetailView.swift:386` → §5.3 | **P3** |
+| `roomTtChromeTop` (168) | 削除 | `RoomDetailView.swift:389` → §5.3 | **P3** |
 
-**★ `tabBarHeight` が P2 で消えない理由** (P2 の Developer が消そうとして詰まらないように): §4.2 の 9 行のうち 2 行 (`SelfTodayCTA.swift:107` / `RoomDetailView.swift:386`) は §5.4 / §5.3 = **P3 の作業**で消える。
+**★ `tabBarHeight` が P2 で消えない理由** (P2 の Developer が消そうとして詰まらないように): §4.2 の 9 行のうち 2 行 (`SelfTodayCTA.swift:107` / `RoomDetailView.swift:389`) は §5.4 / §5.3 = **P3 の作業**で消える。
 → **P2 では `Space.tabBarHeight` の定義を残したまま、§4.2 の他 7 箇所のパディングだけを外す。定義の削除は P3。**
 これは `selfTtChrome` / `roomTtChromeTop` も同じ構図 (どちらも §5.3 = P3 が最後の参照を消す)。**§3.5 で消えるトークンのうち P1 で消せるのは「本番参照が最初から 0 だった 4 つ」だけ。**
 
@@ -308,7 +308,7 @@ enum ScreenMetrics {
 | site | 処遇 | Phase |
 |---|---|---|
 | `TimetableGridPhaseB.swift:17` | **消滅** — `GeometryReader` の `available` に置換 (§5.3) | P3 |
-| `RoomDetailView.swift:386` | **消滅** — 同上 (`height:` 引数を渡さなくなる) | P3 |
+| `RoomDetailView.swift:389` | **消滅** — 同上 (`height:` 引数を渡さなくなる) | P3 |
 | `SelfTodayCTA.swift:166` | **消滅** — 展開パネルが `.sheet` + `presentationDetents` になる (§5.4) | P3 |
 | `BottomSheet.swift:37` | **`ScreenMetrics.height` に置換** (1 行。BottomSheet 自体はスコープ外のまま) | P4 |
 
@@ -441,7 +441,7 @@ struct MainTabView: View {
 
 タブバーの高さはシステムの所有物になるので、**自前で下パディングを積むのをやめる**。native `TabView` は各タブの content に safe area inset を自動で入れる。
 
-**★ P2 で外れるのは下表の 7 箇所。`Space.tabBarHeight` の*定義*は P3 まで残す** — 残り 2 箇所 (`SelfTodayCTA.swift:107` / `RoomDetailView.swift:386`) が P3 の作業 (§5.4 / §5.3) で消えるまで、定義を消すとコンパイルが通らない (§3.5)。
+**★ P2 で外れるのは下表の 7 箇所。`Space.tabBarHeight` の*定義*は P3 まで残す** — 残り 2 箇所 (`SelfTodayCTA.swift:107` / `RoomDetailView.swift:389`) が P3 の作業 (§5.4 / §5.3) で消えるまで、定義を消すとコンパイルが通らない (§3.5)。
 
 | file:line | 現状 | 処遇 | Phase |
 |---|---|---|---|
@@ -453,7 +453,7 @@ struct MainTabView: View {
 | `Features/SemesterOverview/SemesterOverviewView.swift:78` | `.padding(.bottom, Space.s6 + Space.tabBarHeight)` | **`.padding(.bottom, Space.s6)`** | **P2** |
 | `Features/Rooms/RoomDetailView.swift:208` | `.padding(.bottom, Space.tabBarHeight + Space.s6)` | **`.padding(.bottom, Space.s6)`** | **P2** |
 | `Features/Home/SelfTodayCTA.swift:107` | `.padding(.bottom, Space.tabBarHeight + safeAreaBottom())` | §5.4 で `safeAreaInset` になり消滅 (**P2 では触らない**) | **P3** |
-| `Features/Rooms/RoomDetailView.swift:386` | `height:` 引数の一部 | §5.3 で消滅 (**P2 では触らない**) | **P3** |
+| `Features/Rooms/RoomDetailView.swift:389` | `height:` 引数の一部 | §5.3 で消滅 (**P2 では触らない**) | **P3** |
 
 **`Space.tabBarContent` (48) は P2 で定義ごと削除できる** — 唯一の参照 `BottomTabBar.swift:35` が同フェーズでファイルごと消えるため。
 
@@ -470,7 +470,7 @@ struct MainTabView: View {
 | `Features/Home/HomeCore.swift:65` | `.navigationBarHidden(true)` | **削除** → §5.1 の toolbar を持つ |
 | `Features/SemesterOverview/SemesterOverviewView.swift:25` | `.navigationBarHidden(true)` | **削除** + `.navigationTitle("学期・科目")` |
 | `Features/Settings/SettingsView.swift:42` | `.navigationBarHidden(true)` | **削除** + `.navigationTitle("設定")` |
-| `Features/Rooms/RoomDetailView.swift:54` | `.toolbar(.hidden, for: .navigationBar)` + `.navigationBarBackButtonHidden(true)` (:53) | **両方削除** + `.navigationTitle(model?.room?.name ?? "ルーム")` + `.navigationBarTitleDisplayMode(.inline)`。**★ 併せて §4.7 (溢れ止め) を同フェーズで行う** |
+| `Features/Rooms/RoomDetailView.swift:54` | `.toolbar(.hidden, for: .navigationBar)` + `.navigationBarBackButtonHidden(true)` (:53) | **両方削除** + `.navigationTitle(model?.room?.name ?? "ルーム")` + `.navigationBarTitleDisplayMode(.inline)`。**★ 併せて §4.7 (溢れ止め) を同フェーズで行う**。**★ この inline タイトルの room 名は P3 で `.navigationTitle("")` に置換する (裁定1・§5.6。本文 header の大タイトルと重複するため)** — `.navigationBarTitleDisplayMode(.inline)` 自体は維持 |
 | `Features/Rooms/TemplatesView.swift:50` | `.toolbar(.hidden, for: .navigationBar)` + **`.navigationBarBackButtonHidden(true)` (:49)** | **両方削除** + `.navigationTitle("テンプレート")` |
 | `App/PlaceholderViews.swift:39` | `.navigationBarHidden(true)` | ファイルごと削除 |
 
@@ -694,12 +694,12 @@ var body: some View {
 前倒しの範囲は「**壊れを出さないための最小**」に限る。P3 の作り込みを引きずり込まない:
 
 - `TimetableGrid` の `height: CGFloat?` は **P2 では現状のまま**。`available: CGFloat` への必須化は **P3** (§5.3)
-- **理由**: `TimetableGrid` は **`SelfTimetableView.swift:137` と `RoomDetailView.swift:386` の 2 箇所から呼ばれる共有部品** (grep 済)。P2 で prop を必須化すると **`SelfTimetableView` (= P3 の `HomeView` 再構成の一部) を P2 に道連れにする**
+- **理由**: `TimetableGrid` は **`SelfTimetableView.swift:137` と `RoomDetailView.swift:389` の 2 箇所から呼ばれる共有部品** (grep 済)。P2 で prop を必須化すると **`SelfTimetableView` (= P3 の `HomeView` 再構成の一部) を P2 に道連れにする**
 - **帰結**: P2 の間、グリッド高は `max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight)` = **クロームの実態と対応しない数値**のまま残る。**`ScrollView` の中にいるので無害** (溢れてもスクロールするだけ)。P3 の §5.3 が `available` を渡して概念ごと消す
 
 #### ★ P2 で消せるトークンは増えない
 
-`RoomDetailView.swift:386` を**触らない**ので、そこが最後の参照である **`Space.roomTtChromeTop` と `Space.tabBarHeight` の定義は P2 では消せない**。§3.5 の表 (両方 **P3**) は**変更なしが正しい**。`UIScreen.main` の 1 件 (:386) が消えるのも **P3** のまま (§3.6)。
+`RoomDetailView.swift:389` を**触らない**ので、そこが最後の参照である **`Space.roomTtChromeTop` と `Space.tabBarHeight` の定義は P2 では消せない**。§3.5 の表 (両方 **P3**) は**変更なしが正しい**。`UIScreen.main` の 1 件 (:386) が消えるのも **P3** のまま (§3.6)。
 
 ---
 
@@ -707,62 +707,75 @@ var body: some View {
 
 ### 5.1 「ホームは時間割とカレンダーを大きく」の具体形 (findings が「決めろ」と名指し)
 
-**答え: 3 段のコントロール行を nav bar 1 段に畳み、外側 `ScrollView` を捨て、グリッドに画面高を数えさせるのをやめる。**
+**答え (DESIGN.md §3.7.1 に従う。★ 旧稿の「3 段を nav bar の principal/leading に畳む」案は DESIGN.md 承認で撤回): large title「ホーム」を出し、switcher (ContextChips) と segmented (時間割/カレンダー) を nav bar の下・コンテンツ先頭に置き、gear を toolbar trailing に上げる。外側 `ScrollView` を捨て、グリッド/カレンダーが自分の `GeometryReader` から利用可能高を受け取る (画面高の引き算をやめる)。**
+
+> ★ **DESIGN.md との整合 (2026-07-18)**: 旧稿は「縦を食わないよう segmented を `.principal`・学期を `.topBarLeading` に畳み、`.inline` タイトル」にしていたが、**DESIGN.md §3.7.1 (正典) は「large title + switcher/segmented を nav bar の下・コンテンツ先頭」を全 5 タブ共通で規定**しており、旧稿と食い違う。**PJ 層 > 汎用層で DESIGN.md を採り、本節と §5.2 を書き換えた** (Touri 裁定: Home に large title「ホーム」を付与し 5 タブ統一)。large title は Web に無い要素だが iOS 慣習 + ヘッダー統一要望で採用 (DESIGN.md §3.7.1)。
 
 現状の積み上げ (findings ★7) と処遇:
 
 | # | 現状 | 高さ | 処遇 |
 |---|---|---|---|
-| 1 | `ContextChips` | 40 | **rooms が 0 個なら出さない** (§5.2)。出すときは 44 |
-| 2 | `HomeViewModeTabs` (自前) | 42 | **nav bar の principal へ** → `Picker(.segmented)` (§5.2) |
-| 3 | `HomeSemesterPicker` (自前・**親子 2 経路に二重定義**) | 36 | **nav bar の leading へ** → `Menu` (§5.2)。二重定義も解消 |
-| 4 | `TimetableGrid` | 本体 | §5.3 |
+| 1 | `ContextChips` | 40 | **rooms が 0 個なら出さない** (§5.2)。出すときは 44。nav bar の下・コンテンツ先頭 (§3.7.1) |
+| 2 | `HomeViewModeTabs` (自前, `HomeCore.swift:156-186`) | 42 | **削除 → native `Picker(.segmented)` を nav bar の下・コンテンツ先頭に置く** (§5.2、DESIGN.md §3.7.1)。**`.principal` には置かない** (large title と併用不可) |
+| 3 | `HomeSemesterPicker` (自前 BottomSheet, `HomeCore.swift:188-256`・**親子 2 経路に二重定義**) | 36 | **削除 → native `Menu` を subhead 体裁 (§3.7.3) でコンテンツ先頭に置く** (§5.2)。二重定義も解消 |
+| 4 | `TimetableGrid` | 本体 | §5.3 (+ **DESIGN.md §3.6 のマス描画**) |
 | 5 | `SelfTodayCTA` (展開時 画面の 36%) | ~162 | **`NowNextBar` 2 行 + 詳細は `.sheet`** (§5.4) |
-| 6 | `BottomTabBar` | 64+34 | **system TabView** (§4.1) + スクロールで最小化 (iOS 26) |
+| 6 | `BottomTabBar` | 64+34 | **system TabView** (§4.1、**P2 済**) + スクロールで最小化 (iOS 26) |
 
-**`Space.selfTtChrome = 352` は「数を減らす」のではなく「概念ごと消す」**: §5.3 のとおりグリッドが `GeometryReader` から実際の利用可能高を受け取るようになるので、**画面高からクロームを引き算する必要が最初から無くなる**。
+**`Space.selfTtChrome = 352` は「数を減らす」のではなく「概念ごと消す」**: §5.3 のとおりグリッド/カレンダーが自分の `GeometryReader` から実際の利用可能高を受け取るようになるので、**画面高からクロームを引き算する必要が最初から無くなる**。large title と 3 つのコントロール行の高さは可変 (Dynamic Type) なので、**HomeView が定数で引き算せず、`HomeBody` を包む `GeometryReader` が残り高を測る** (手計算した総和を doc に焼かない — architect note の「導出値でなく生成規則」)。
 
-### 5.2 `HomeView` の構造
+### 5.2 `HomeView` の構造 (DESIGN.md §3.7.1 / §3.7.3 準拠)
 
 ```
 ┌─ nav bar (system / Liquid Glass) ────────────────────────┐
-│ [2026 前期 ⌄]   [ 時間割 | カレンダー ]           [⚙︎]   │
-└──────────────────────────────────────────────────────────┘
-│ [自分] [3年A組] [サークル] [+]        ← rooms が 1 個以上のときだけ (44pt)
+│  ホーム                                          [⚙︎]    │  ← large title「ホーム」(§3.7.1) / gear は toolbar trailing
+│                                                          │     large title はスクロールで inline に遷移
+├──────────────────────────────────────────────────────────┤
+│  2026 前期 ⌄                    ← 学期ピッカー (subhead 体裁・§3.7.3)。context==.self のみ
+│  [自分] [3年A組] [サークル] [+] ← ContextChips (switcher)。rooms 1 個以上のみ・44pt
+│  [ 時間割 | カレンダー ]         ← segmented Picker (§3.7.1)。常時
 ├──────────────────────────────────────────────────────────┤
 │                                                          │
-│                                                          │
-│                 HomeBody (利用可能高を全部使う)           │
-│                                                          │
+│                 HomeBody (残り高を全部使う)               │
 │                                                          │
 ├──────────────────────────────────────────────────────────┤
 │ 次の授業 · 13:00 · A302                                   │  ← NowNextBar (safeAreaInset)
-│ 3限 英語                    [今日は全出席 (2)]  [⌃]      │     glass capsule
+│ 3限 英語                    [今日は全出席 (2)]  [⌃]      │     glass capsule (§5.4)
 └──────────────────────────────────────────────────────────┘
 ┌─ tab bar (system / Liquid Glass / スクロールで最小化) ────┐
-│  ホーム   学期・科目   ルーム   友達   設定               │
+│  ホーム   学期・科目   ルーム   友達   設定               │  ← P2 済
 └──────────────────────────────────────────────────────────┘
 ```
 
-**nav bar の 3 スロット** (各 1 目的。F7 で型検査済):
+**ヘッダー規格 (DESIGN.md §3.7.1)**:
+
+- **`.navigationTitle("ホーム")` + `.navigationBarTitleDisplayMode(.large)`** — large title = `.largeTitle` (34)、スクロールで inline に遷移。**アプリ名でなくタブ名「ホーム」**。**本文に大タイトルを重複させない** (nav の large title が唯一のタイトル)。→ **★ 旧稿の `.inline` + `.navigationTitle("")` + `.principal` セグメントは撤回** (DESIGN.md §3.7.1 が全 5 タブ large title を規定)。
+- **`.principal` / `.topBarLeading` にコントロールを置かない** — large title と principal は視覚的に競合する。segmented と学期ピッカーは **nav bar の下・コンテンツ先頭** に置く。
+- **toolbar は trailing の gear 1 スロットだけ** (F7 で型検査済):
 
 | placement | 中身 | 表示条件 |
 |---|---|---|
-| `.topBarLeading` | `Menu` — label = `Text(現在の学期名).lineLimit(1)` + `Image(systemName: "chevron.down")`、`.frame(maxWidth: 120, alignment: .leading)`。中身は `Picker("学期", selection: $semesterId)` に全学期 | `context == .self` |
-| `.principal` | `Picker("表示", selection: $mode)` + `.pickerStyle(.segmented)` + `.frame(maxWidth: 200)`。segment = 「時間割」「カレンダー」 | **常時** |
-| `.topBarTrailing` | `Button { showTimetableSettings = true } label: { Image(systemName: "gearshape") }` | `context == .self && mode == .timetable` |
+| `.topBarTrailing` | `Button { showTimetableSettings = true } label: { Image(systemName: "gearshape") }` (44×44) | `context == .self && mode == .timetable` |
 
-- **`.navigationBarTitleDisplayMode(.inline)`** かつ `.navigationTitle("")` — `.principal` を使うとタイトルは表示されないため。large title は縦を食うので使わない (**逸脱理由**: HIG は large title でのワインドファインディングを推す。ここは segmented picker が現在地を示し、かつ「時間割を大きく」が最優先要望なので inline を採る)
-- **学期 Menu を残す理由**: 学期切替は極めて低頻度 (学期に 1 回) なので HIG §5 的には二次階層送りが筋だが、**機能削除は Touri のプロダクト判断**なので削らない。常設 36pt の行 → nav bar の 1 スロットに畳むことで、低頻度に見合ったコストにする
+**コンテンツ先頭のコントロール行** (nav bar の下・上から順に。全画面同じ順序 §3.7.1):
 
-**`ContextChips`**:
+| 行 | 部品 | 体裁 | 表示条件 |
+|---|---|---|---|
+| 1 | **学期ピッカー** | native `Menu` — label = `HStack { Text(現在の学期名).font(.subheadline).fontWeight(.semibold).foregroundStyle(Color.textSecondary); Image(systemName:"chevron.down").font(.caption2).foregroundStyle(Color.textTertiary) }`。中身は `ForEach(semesters)` の `Button`。**subhead 級・低強調 (§3.7.3 の L3 meta)**。self-drawn `BottomSheet` を native `Menu` に置換 (§0 標準部品回帰) | `context == .self` |
+| 2 | **ContextChips** (switcher) | 下記「`ContextChips`」 | `HomeChips.isVisible(rooms:)` (rooms 1 個以上) |
+| 3 | **segmented** (時間割/カレンダー) | `Picker("表示", selection: $mode) { Text("時間割").tag(HomeViewMode.timetable); Text("カレンダー").tag(HomeViewMode.calendar) }.pickerStyle(.segmented)` + `.frame(maxWidth: 240)` | **常時** |
+
+- **学期ピッカーを残す理由 / subhead に落とす理由**: 学期切替は極めて低頻度 (学期に 1 回) だが、**機能削除は Touri のプロダクト判断**なので削らない。DESIGN.md §3.7.3 に従い「見出しでなく subhead 級コントロール」として最小強調で置く (旧稿の `.atenderBase` 17 bold から降格)。
+- **`.principal` に畳まない逸脱の撤回**: 旧稿は縦節約のため principal/leading に畳んだが、DESIGN.md §3.7.1 が全 5 タブ large title + コントロール下置きを正典化したので**それに揃える** (ヘッダー統一が Touri の名指し要望 #8)。
+
+**`ContextChips`** (DESIGN.md §3.7.1 の switcher):
 - **`rooms.isEmpty` のときは行ごと出さない。** ルームが 0 個のユーザーに `[自分][+]` を常時見せるのは、機能ゼロの 40pt。`+` はルームタブと重複した導線であり、失っても到達不能にはならない
 - `rooms` が 1 個以上なら現状どおり `[自分][ルーム…][+]`。**1 タップ切替は維持する** — 「友達と会話しながらみんなの時間割を確認」に直接対応する最頻ジェスチャだから (ui-ux-design-perspectives §5「対等なコンテキストを数個往復 → context chip」)
-- チップ高 `40 → 44` (HIG のタップ領域)。`+` ボタンも `40×40 → 44×44`
+- チップ高 `40 → 44`、`+` ボタン `40×40 → 44×44` (HIG のタップ領域、`HomeCore.swift:108,121` の `.frame(height: 40)` / `.frame(width:40,height:40)` を 44 に)
 - `HomeChips.items(rooms:)` の**契約は変えない** (§9.2: `HomeChipsTests` 3 本は緑のまま)。可視判定は新関数 `HomeChips.isVisible(rooms:)` として足す
 
-**削除するもの**: `HomeViewModeTabs` (自前セグメント、`HomeCore.swift:157-187`) / `HomeSemesterPicker` (自前 Button + BottomSheet、`HomeCore.swift:189-257`)。
-**二重定義の解消**: `HomeSemesterPicker` は `HomeCore.swift:51` と `SelfTimetableView.swift:132` の**親子 2 経路**で描かれていた。学期 Menu は **`HomeView` の toolbar 1 箇所だけ**になる。`SelfTimetableView` からは学期ピッカーと ⚙︎ ボタンが消え、グリッドとシートだけになる。
+**削除するもの**: `HomeViewModeTabs` (自前セグメント、`HomeCore.swift:156-186`) / `HomeSemesterPicker` (自前 Button + BottomSheet、`HomeCore.swift:188-256`)。
+**二重定義の解消**: `HomeSemesterPicker` は `HomeCore.swift:51` (calendar モード時のみ) と `SelfTimetableView.swift:132-135` (timetable モード時) の**親子 2 経路**で描かれていた。学期 `Menu` は **`HomeView` のコンテンツ先頭 1 箇所だけ**になり、self の両モードで共有する。`SelfTimetableView` からは学期ピッカー (`:132-136`) と ⚙︎ ボタン (`settingsButton` `:165-180`) が消え、グリッドとシートだけになる。
 
 **`HomeView` の state** (公開契約):
 
@@ -779,15 +792,15 @@ struct HomeView: View {
 }
 ```
 
-`HomeView.task` は現状の rooms/me の読み込みに加え、`semesterRepository.semesters()` を読む (旧 `HomeSemesterPicker.load()` の移管。キャッシュ優先 → force 無しの順も現状どおり)。
+`HomeView.task` は現状の rooms/me の読み込み (`HomeCore.swift:65-74`) に加え、`semesterRepository.semesters()` を読んで `semesters` を埋める (旧 `HomeSemesterPicker.load()` `:247-255` の移管。キャッシュ優先 → force 無しの順も現状どおり)。**`semesterId` の既定適用 (`applyDefaultSemester`) は現状のまま**。
 
 **`SelfTimetableView` の prop 契約** (描画テストのため明記):
 
 ```swift
 struct SelfTimetableView: View {
     @Binding var semesterId: String?
-    @Binding var showSettings: Bool        // ← 新規。HomeView の toolbar の ⚙︎ が立てる
-    let available: CGFloat                 // ← 新規。GeometryReader が測った利用可能高 (§5.3)
+    @Binding var showSettings: Bool        // ← 新規。HomeView の toolbar の ⚙︎ が立てる → activeSheet = .settings を開く
+    let available: CGFloat                 // ← 新規。HomeBody 経由で HomeView の GeometryReader から。ScrollView + TimetableGrid(available:) に渡す
 }
 ```
 
@@ -799,31 +812,117 @@ struct HomeBody: View {
     let mode: HomeViewMode
     @Binding var semesterId: String?
     @Binding var showTimetableSettings: Bool
-    let available: CGFloat                 // ← 新規
+    let available: CGFloat                 // ← 新規。HomeView の GeometryReader が測った残り高
 }
 ```
 
-**外側 `ScrollView` の廃止**: 現状 `HomeView` は全体を 1 枚の `ScrollView` で包み `.padding(.bottom, 128)` している。**グリッドが `ScrollView` の中にいる = 高さが無限に与えられる = だから自分で画面高を計算するしかなかった。** これが `selfTtChrome` の構造的な原因。外側 `ScrollView` を外し、`GeometryReader` が測った高さを `HomeBody` に渡す。`.padding(.bottom, 128)` は `safeAreaInset` が自動で担う (§5.4)。
+**利用可能高の測り方 (★ 定数で引き算しない)**: large title と 3 つのコントロール行の高さは Dynamic Type で可変。**HomeView は `HomeBody` を `GeometryReader` で包み、その `proxy.size.height` を `available` として渡す** (コントロール行が intrinsic 高を取った後の残りを `GeometryReader` が自動で測る)。旧稿の `proxy.size.height - (chips ? 44 : 0)` は学期ピッカー行と segmented 行を数え落とすので**採らない**。`HomeBody` は受けた `available` を `SelfTimetableView` / `PersonalCalendar` / `RoomTimetable` に渡す (§5.3 / §5.5)。
+
+**外側 `ScrollView` の廃止**: 現状 `HomeView` は全体を 1 枚の `ScrollView` (`HomeCore.swift:41`) で包み `.padding(.bottom, 128)` (`:57`) している。**グリッドが `ScrollView` の中にいる = 高さが無限に与えられる = だから自分で画面高を計算するしかなかった。** これが `selfTtChrome` の構造的な原因。外側 `ScrollView` を外し、`GeometryReader` が測った高さを `HomeBody` に渡す。`.padding(.bottom, 128)` は `safeAreaInset` が自動で担う (§5.4)。**現状 `HomeCore.swift:60-62` の `SelfTodayCTA()` overlay も削除** (§5.4 の `NowNextBarHost` を `safeAreaInset` へ)。
 
 ```swift
 // HomeView.body の骨格
-GeometryReader { proxy in
-    VStack(spacing: 0) {
-        if HomeChips.isVisible(rooms: rooms) {
-            ContextChips(...).frame(height: 44)
-        }
+VStack(spacing: Space.s3) {
+    if context == .self {
+        SemesterMenu(semesters: semesters, semesterId: $semesterId)   // 行 1 (§3.7.3 subhead)
+    }
+    if HomeChips.isVisible(rooms: rooms) {
+        ContextChips(...)                                             // 行 2 (44pt)
+    }
+    Picker("表示", selection: $mode) {                                // 行 3 (segmented)
+        Text("時間割").tag(HomeViewMode.timetable)
+        Text("カレンダー").tag(HomeViewMode.calendar)
+    }
+    .pickerStyle(.segmented)
+    .frame(maxWidth: 240)
+    GeometryReader { proxy in
         HomeBody(context: context, mode: mode, semesterId: $semesterId,
                  showTimetableSettings: $showTimetableSettings,
-                 available: proxy.size.height - (HomeChips.isVisible(rooms: rooms) ? 44 : 0))
+                 available: proxy.size.height)
     }
+    .frame(maxHeight: .infinity)                                      // 残り高を占有
 }
+.padding(.horizontal, Space.pagePxMobile)
+.navigationTitle("ホーム")
+.navigationBarTitleDisplayMode(.large)
 .safeAreaInset(edge: .bottom) {
     if context == .self { NowNextBarHost() }
 }
-.toolbar { /* 上表の 3 スロット */ }
+.toolbar {
+    ToolbarItem(placement: .topBarTrailing) {
+        if context == .self && mode == .timetable {
+            Button { showTimetableSettings = true } label: { Image(systemName: "gearshape") }
+                .accessibilityLabel("時間割の設定")
+        }
+    }
+}
 ```
 
-### 5.3 時間割グリッド — 画面高を数えるのをやめる + 「今」を描く
+- **★ ラベル文字列を変えない (ScreenshotFlow 依存)**: segmented のセグメントは `Text("時間割")` / `Text("カレンダー")` のまま、gear は `.accessibilityLabel("時間割の設定")` のまま。`AtenderUITests/ScreenshotFlow.swift` が `tapButton("カレンダー")`(`:41`) / `tapButton("時間割")`(`:46,202`) / `tapButton("時間割の設定")`(`:58`) で掴む。native `Picker(.segmented)` のセグメントは XCUITest で `app.buttons[ラベル]` として拾えるので無改修で動くが、**ラベルを変えると before/after 比較が黙って壊れる** (§5.4 の CTA ラベル保存と同じ理由)。`ContextChips` の `accessibilityIdentifier("context-chips")`(`HomeCore.swift:129`) も維持。
+- **timetable モードは外側スクロール無し** = large title は展開したまま (親指域で操作)。**calendar モードは §5.5 の `ScrollView` が nav に付くので large title がスクロールで inline に縮む** (§3.7.1 の想定挙動)。この非対称は許容 (grid は available をちょうど埋めるので外側スクロール不要)。
+- **`context == .room` のとき** switcher は残す (ルーム切替のため) が、学期ピッカーと gear は self 専用なので出さない。room の body は `RoomTimetable` / `RoomCalendar` (§0 の最小追従。§5.3 で `RoomTimetable` が `available` を受ける)。
+
+### 5.3 時間割グリッド — 画面高を数えるのをやめる + マスを描き直す + 「今」を描く
+
+**この節は 3 つを同時に行う: (A) DESIGN.md §3.6 のマス描画 (Touri 名指しの核心) / (B) 利用可能高を受け取る / (C) 「今」を描く。**
+
+#### 5.3.0 ★ マスの描き方 (DESIGN.md §3.6.1 / §3.6.2 の必須適用)
+
+Touri の名指し不満「背景が透過」「マス目の線が見える」「テキストが中央」を、Web の描画を正典に是正する。**対象は `TimetableGridPhaseB.swift` の `EventTile` / `TimetableGrid.background` / 外殻。** `TimetableGrid` は `SelfTimetableView` (ホーム) と `RoomTimetable` (ルーム詳細) の共有部品なので、ここの是正は**両方に自動で波及する** (DESIGN.md §3.6 は全画面共通の視覚規則なので望ましい)。
+
+**(a) `EventTile` — 不透明 tint / 2pt 左バー / 上寄せ** (DESIGN.md §3.6.1):
+
+| 属性 | 現状 (`TimetableGridPhaseB.swift`) | P3 規則 (pt / color) |
+|---|---|---|
+| 背景 | `:165` `.background(Color(hexString: color).opacity(0.16))` = **半透明** (下地の罫線が透ける) | **不透明化**: `.background(Color.opaqueTint(hex: color, ratio: 0.15, base: .bgElevated))` (下記ヘルパ)。alpha 透過を使わない。ratio = Web の 15% |
+| 左バー | `:133-135` `Capsule().fill(Color(hexString: color)).frame(width: 3)` | 幅 **2pt** (`.frame(width: 2)`)。`Capsule()` (= `Radius.full`)、solid 科目色。※現状 3pt を 2pt に |
+| 角丸 | `:166` `Radius.timetableCell` (8) | **変更なし** (既に正しい) |
+| テキスト配置 | `content` の `HStack(spacing: Space.s2)` は既定 `.center` 垂直整列 + `EventTile.body :128` の `.frame(maxWidth:.infinity, maxHeight:.infinity)` = **セル内で上下中央** | **上寄せ**: `content` の `HStack` を `HStack(alignment: .top, spacing: Space.s2)` に。`EventTile.body :128` の frame を `.frame(maxWidth:.infinity, maxHeight:.infinity, alignment: .topLeading)` に。**中央をやめて上に** |
+| タイトル | `:143` `.caption` (12) semibold `lineLimit(2)` | **変更なし** (既に正しい) |
+| 副題 (教室) | `:148-152` `.caption2` + `Color.textSecondary` | 色を **科目色の濃色**へ: `.foregroundStyle(Color.opaqueTint(hex: color, ratio: 0.70, base: .eventMixTarget))` (DESIGN.md §3.6.1 の「科目色 70% を eventMixTarget に合成」。`eventMixTarget` は `Color+Atender.swift:61` に既存)。font は `.caption2` のまま |
+
+**★ 不透明合成ヘルパの新設** (`Color+Atender.swift` に **additive** で追加。既存の有彩色トークンは 1 つも触らない — §9.3):
+
+```swift
+// apps/ios/Atender/Core/DesignSystem/Color+Atender.swift (末尾に追加)
+extension Color {
+    /// 科目色 hex を ratio(0..1) で不透明な base 面に合成する。
+    /// Web の color-mix(in srgb, subject ratio%, base) 相当。★ 半透明にしない = 下地の罫線を透かさない。
+    /// dynamic(base が light/dark で変わる)を保つため UIColor(dynamicProvider:) で trait ごとに解決して混ぜる。
+    static func opaqueTint(hex: String, ratio: CGFloat, base: Color) -> Color {
+        let subject = UIColor(Color(hexString: hex))
+        let baseColor = UIColor(base)
+        return Color(UIColor { traits in
+            let s = subject.resolvedColor(with: traits)
+            let b = baseColor.resolvedColor(with: traits)
+            var sr: CGFloat = 0, sg: CGFloat = 0, sb: CGFloat = 0, sa: CGFloat = 0
+            var br: CGFloat = 0, bg: CGFloat = 0, bb: CGFloat = 0, ba: CGFloat = 0
+            s.getRed(&sr, green: &sg, blue: &sb, alpha: &sa)
+            b.getRed(&br, green: &bg, blue: &bb, alpha: &ba)
+            let r = ratio
+            return UIColor(red: sr * r + br * (1 - r),
+                           green: sg * r + bg * (1 - r),
+                           blue: sb * r + bb * (1 - r),
+                           alpha: 1)      // ★ 常に alpha=1 (不透明)
+        })
+    }
+}
+```
+
+- **既存の `Color.mix(hex:with:ratio:)` (`TimetableLogic.swift:392`) は使わない** — 中身が `.opacity(...)` = 半透明を返すので Touri 不満 #1 を再生産する。参照 0 (grep 済) なので放置してよいが、`EventTile` / 月カレンダー chip はこの `opaqueTint` を使う。
+- **ヘルパは additive。色の「値」は変えていない** (§9.3 の禁止と衝突しない) — 変えるのは*合成方法* (透過 → 不透明) であり、パレット hex・`accent*`・`status*` は 1 つも触らない。`Color.opaqueTint` は `UIColor(dynamicProvider:)` を返すので light/dark 追従は保たれる (F8 系の型検査対象。Developer は `swiftc -typecheck` で確認)。
+
+**(b) グリッド線と空きセル — 罫線を消す** (DESIGN.md §3.6.2):
+
+| 属性 | 現状 (`TimetableGridPhaseB.swift`) | P3 規則 |
+|---|---|---|
+| 空きセル背景 | `EmptyCell :199` `.background(Color.bgBase)` = 不透明 | **変更なし** (既に不透明。Web どおりページ地に溶ける) |
+| グリッド線 | `background(...) :61-62` 各空きセルに `.overlay(alignment:.top){Rectangle borderSubtle 1px}` + `.overlay(alignment:.leading){Rectangle borderSubtle 1px}` = **全セルに縦横の罫線 = 表組み** | **★ この 2 行の `.overlay` を両方削除する。** 罫線を引かず、空きセル (`bgBase`) を地に溶かし、event tile の不透明 tint 面と header/時限ラベル (`bgMuted`) だけで構造を見せる = **「面が主役・線は最小」** (Web の gap 分離相当)。**濃い罫線で表組みにしない** (Touri 不満 #2) |
+| 外殻 | `:31-32` `.clipShape(Radius.md)` + `.overlay(stroke borderSubtle 1px)` | **stroke を外し `.atenderShadow(.card)` に**: `.clipShape(RoundedRectangle(cornerRadius: Radius.md, style:.continuous))` + `.atenderShadow(.card)` (DESIGN.md §4 の L1「グリッド = card (Radius.md + shadow)」)。周囲は `Space.sectionGapMobile`(16) で離す (VStack spacing は既に `Space.s3`=12 だが、§3.2 の下限 16 を満たすため grid 周りは `Space.s4` 相当を確保) |
+
+> ★ **セル背景 = 不透明** / **罫線 = 削除 (gap 分離)** / **テキスト = 上寄せ** — この 3 点が Touri 名指し #1/#2/#3 の直接の帰結。Reviewer は「EventTile の background に alpha 透過が無い」「`.overlay` 罫線が 0 本」「HStack alignment が `.top`」を実装 grep でなくスクショで確認する (§9.4: 描画は目視、§10.1)。
+
+#### 5.3.1 レイアウト (available を受け取る)
 
 ```swift
 // apps/ios/Atender/Core/Timetable/TimetableGridLayout.swift (新規)
@@ -859,7 +958,7 @@ struct TimetableGrid: View {
 }
 ```
 
-- **`height: CGFloat?` を削除し `available: CGFloat` を必須にする** — 呼び出し側 (`SelfTimetableView` / `RoomTimetable`) が必ず `GeometryReader` の実測値を渡す。`UIScreen.main` は消える (F8)
+- **`height: CGFloat?` を削除し `available: CGFloat` を必須にする** — 呼び出し側が必ず `GeometryReader` 由来の実測値を渡す。**ホーム経路**: `SelfTimetableView` が prop で受けた `available` (HomeView の `GeometryReader` → `HomeBody` → `SelfTimetableView`) をそのまま渡す。**ルーム経路**: `RoomTimetable` が自分の body を包む `GeometryReader` の `proxy.size.height` を渡す。どちらも `UIScreen.main` は消える (F8)
 - `EmptyCell` は `rowHeight >= 44` になるのでタップ領域を満たす
 
 **「今」の描画** (findings ★2「最大の勝ち筋」):
@@ -875,9 +974,8 @@ struct TimetableGrid: View {
 
 **`currentPeriodIndex(daySlots:nowMinute:)` の規則**: `daySlots` を `periodIndex` 昇順にし、**最初に** `startMinute <= nowMinute && nowMinute < endMinute` を満たす slot の `periodIndex`。無ければ `nil`。`isBreak` の slot も対象に含む (休み時間も「今」の一部であり、グリッドはそれを行として描いているため)。
 
-**`RoomTimetable` の追従** (**P3**): `TimetableGrid(..., height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight))` (`RoomDetailView.swift:386`) → `available` を `GeometryReader` から渡す形に。**§4.7 で `RoomTimetable` に入れた `ScrollView` を外し** (グリッドが `TimetableGridLayout` で内部スクロールを持つようになるため二重スクロールになる)、`RoomDetailView` の `Group` に `.frame(maxHeight: .infinity)` を付けて残り高を与える。**ルームの時間割には `todayDisplayDay` を渡し、`currentPeriodIndex` も渡す** (メンバーの時間割でも「今」は同じ意味を持つ)。
-**★ `RoomCalendar` 側の `ScrollView` (§4.7) は P3 でも残す** — §5.5 の `CalendarMonthLayout` はホームの `PersonalCalendar` を対象にした節であり、`RoomCalendar` は本設計のスコープ外 (§0「ルームは土台に追従する最小改修のみ」)。**FAB の overlay もそこに付いたまま**にする。
-これで `RoomDetailView.swift:386` の `UIScreen.main` / `Space.roomTtChromeTop` / `Space.tabBarHeight` が**同時に**消える (§3.5 / §3.6)。
+**`RoomTimetable` の追従** (**P3**): 現状 `RoomTimetable` (`RoomDetailView.swift:369`) は `ScrollView { … TimetableGrid(daySlots:events:days:height: max(360, UIScreen.main.bounds.height - Space.roomTtChromeTop - Space.tabBarHeight)) }` (`:380`/`:389`)。→ **`RoomTimetable` の body を `GeometryReader { proxy in … }` で包み、`§4.7 で入れた ScrollView を外し`** (グリッドが `TimetableGridLayout` で内部スクロールを持つため二重スクロールになる)、`TimetableGrid(daySlots: daySlots, events: events, days: RoomTimetableLogic.displayDays(events: events), available: proxy.size.height, todayDisplayDay: SchoolClock.displayDay(), currentPeriodIndex: TimetableGridLayout.currentPeriodIndex(daySlots: daySlots, nowMinute: SchoolClock.nowMinute()))` を渡す形に。これで `:389` の `UIScreen.main` / `Space.roomTtChromeTop` / `Space.tabBarHeight` が**同時に**消える (§3.5 / §3.6)。**ルームの時間割にも `todayDisplayDay` / `currentPeriodIndex` を渡す** (メンバーの時間割でも「今」は同じ意味を持つ)。ホーム経由 (`HomeBody` の `.room` context) で `RoomTimetable` を出すときも `available` は `HomeBody` の `GeometryReader` から来る → `RoomTimetable(roomId:, available:)` を prop 化する。
+**★ `RoomCalendar` 側の `ScrollView` (§4.7) は P3 でも残す** — §5.5 の `CalendarMonthLayout` (動的高) はホームの `PersonalCalendar` を対象にした節であり、`RoomCalendar` の高さ制御は本設計のスコープ外 (§0「ルームは土台に追従する最小改修のみ」)。**FAB の overlay もそこに付いたまま**にする。**ただし `RoomCalendar` が月表示で使う `CalendarMonth` は共有部品なので、§5.5 の §3.6.3 マス描画 (不透明 chip / 枠なし / today) は `RoomCalendar` にも波及する** (視覚規則の全画面共通化 = 望ましい)。**波及するのはマス描画だけで、動的高 (`available`) は渡さない** (下記 §5.5 の optional prop で room は nil = 固定 86 のまま)。
 
 **★ ただし `RoomDetailView` が「溢れて操作不能」になるのは P2。** P2 単独マージを壊さないための**最小の手当てだけ**を前倒し済 → **§4.7** を参照。**本節 (grid の prop 契約変更) は P3 のまま。**
 
@@ -957,7 +1055,43 @@ Menu {
 - `⌃` ボタン (`cta-expand-toggle`) がこれを開く。44×44
 - 中身 (コマごとの 6 ステータスボタン) は現状のロジックのまま。ステータスボタンは `minHeight: 40 → 44`
 
-### 5.5 カレンダーを大きく
+### 5.5 カレンダーを大きく + 月カレンダーを描き直す
+
+**この節も (A) DESIGN.md §3.6.3 のマス描画 / (B) 動的高 / (C) today セル / (D) スワイプ を同時に行う。** 対象は `PersonalCalendar.swift` の `CalendarMonth` (`:229-302`) と `content` (`:123-165`)。
+
+#### 5.5.0 ★ 月カレンダーのマス (DESIGN.md §3.6.3 の必須適用 — 最も「10年前」だった画面)
+
+Web `CalendarMonth` を正典に、**スプレッドシート枠を全廃**する:
+
+| 属性 | 現状 (`PersonalCalendar.swift`) | P3 規則 (pt / color) |
+|---|---|---|
+| 外殻 | `:253-255` `.background(Color.bgElevated)` + `Radius.md` (18) + `.overlay(stroke borderSubtle 1px)` | **白カード化**: `.padding(Space.s2)` (内 8) → `.background(Color.bgElevated)` → `.clipShape(RoundedRectangle(cornerRadius: Radius.lg, style:.continuous))` (**24**) → `.atenderShadow(.card)`。**stroke overlay は削除** (影で浮かせる。DESIGN.md §3.6.3) |
+| セル分離 | `:242` 曜日 HStack `spacing: 0` / `:247` `LazyVGrid(columns: [GridItem(.flexible(), spacing: 0)], spacing: 0)` = 隙間なし + 罫線 | **1pt gap のみ**: `LazyVGrid` の `GridItem(.flexible(), spacing: 1)` + `LazyVGrid(..., spacing: 1)`。**各日セルに border を引かない** |
+| 罫線 | `dayCell :297-298` `.overlay(alignment:.top){borderSubtle 1px}` + `.overlay(alignment:.leading){borderSubtle 1px}` | **★ この 2 行の `.overlay` を両方削除** (Touri 不満 #2。DESIGN.md §3.6.3「各日セルに border を引かない」) |
+| 日セル | `dayCell :294-296` `.padding(4)` + `.frame(height: 86)` 固定 + `.background(inMonth ? bgElevated : bgMuted.opacity(0.45))` | 内 padding **2pt** (`.padding(2)`)、高さは §5.5.1 の `CalendarMonthLayout` から算出 (固定 86 廃止)、`.clipShape(RoundedRectangle(cornerRadius: Radius.sm, style:.continuous))` (**10**)。背景は §5.5「今日のセル」の `CalendarDayStyle` に従う (inMonth = bgElevated=カード地に溶ける / outsideMonth = bgMuted.opacity(0.45)) |
+| 日付 | `:262-269` 左上・選択時 accent 丸 | **左上のまま** (既に正しい)。選択 = accent 丸背景 / **今日 = accent 文字色 (§5.5「今日のセル」で追加)** |
+| イベント chip | `:275-284` `.background(Color(hexString: event.color).opacity(0.18))` = **半透明** + `Radius 4` + `.caption2` + `prefix(3)` | **不透明化**: `.background(Color.opaqueTint(hex: event.color, ratio: 0.18, base: .bgElevated))` (§5.3.0 のヘルパ)。`Radius 4` は維持 (DESIGN.md 4–8 の範囲)。font `.caption2` は維持 (P1 で 9pt→caption2 済)。**`prefix(3)` → `prefix(2)`** に下げ、`+N` 閾値 (`:286` `events.count > 3` → `> 2`) も合わせる (11pt に上げた分 3 件は 56pt 最小セルに収まらない。溢れは `+N` が担う) |
+| 状態ドット | `:271-273` 日付右の丸 6pt `dayStatusColor` | **変更なし** (既に正しい) |
+
+**原則 (DESIGN.md §3.6.3)**: 「白い丸カードの上に、枠のない日セルを 1pt gap で並べ、イベントは不透明 tint ピルで置く」。**日セルの個別枠 (table border) は引かない。** これが「詰め詰め10年前」を解く最大のレバー。
+
+**★ `CalendarMonth` は共有部品** (`PersonalCalendar.swift:151` ホーム / `RoomDetailView.swift:163` ルーム) → 上のマス描画は**両方に波及する** (望ましい)。**動的高 (`available`) だけは optional prop にしてホーム専用にする**:
+
+```swift
+struct CalendarMonth: View {
+    let anchor: String
+    let selectedDate: String
+    let events: [CalendarEvent]
+    let statusByDate: [String: AttendanceDayStatus]
+    var available: CGFloat? = nil       // ← 新規。nil = 固定 86 (ルーム経路)。値あり = CalendarMonthLayout で算出 (ホーム)
+    let onSelectDate: (String) -> Void
+}
+```
+
+- ホーム (`PersonalCalendar`) は `available` を渡す。ルーム (`RoomDetailView:163`) は**渡さない (nil)** → 固定 86 のまま = §0「ルームは最小追従」。
+- 日セル高 = `available.map { CalendarMonthLayout.rowHeight(available: $0) } ?? 86`。
+
+#### 5.5.1 レイアウト (動的高)
 
 ```swift
 // apps/ios/Atender/Core/Timetable/CalendarMonthLayout.swift (新規)
@@ -976,10 +1110,11 @@ enum CalendarMonthLayout {
 - `rowHeight(available:)` = `max(minRowHeight, (available - weekdayHeaderHeight - agendaHeight) / CGFloat(rowCount))`
 - `contentHeight(available:)` = `weekdayHeaderHeight + rowHeight(available:) * CGFloat(rowCount)`
 
-- 現状のセル高**固定 86** を廃止 → 利用可能高から算出。**クローム削減分がそのままカレンダーの大きさになる**
-- `DayAgendaPanel` は残す (機能削除はしない) が `.frame(height: CalendarMonthLayout.agendaHeight)` + 内部スクロール
-- 全体を `ScrollView` + `.scrollBounceBehavior(.basedOnSize)` で包む → 収まれば動かず、iPhone SE のように溢れればスクロールする
-- **月セルのイベント名は 9pt → `.caption2` (11pt)**。行が入る数は減るが、9pt は HIG の最小 11pt を割っており「読めない情報」は情報ではない。`prefix(3)` は `prefix(2)` に下げる (**逸脱理由**: 11pt に上げた分、3 件表示は 56pt の最小セルに収まらない。溢れた件数は既存の `+N` 表示が担う)
+- 現状のセル高**固定 86** を廃止 → 利用可能高から算出 (§5.5.0 の `available` optional prop 経由)。**クローム削減分がそのままカレンダーの大きさになる**
+- **`PersonalCalendar` の prop 契約**: `PersonalCalendar(semesterId: String?, available: CGFloat)` — `available` は `HomeBody` (§5.2) が `HomeView` の `GeometryReader` から渡す。`content` の月表示で `CalendarMonth(anchor:selectedDate:events:statusByDate:available: available, onSelectDate:)` として渡す
+- `DayAgendaPanel` (`:375-406`) は残す (機能削除はしない) が `.frame(height: CalendarMonthLayout.agendaHeight)` (200) + 内部スクロール
+- **`content` (`:138-163`) の月表示を `ScrollView { … }.scrollBounceBehavior(.basedOnSize)` で包む** → 収まれば動かず、iPhone SE のように溢れればスクロールする。`available` は `ScrollView` の**外**から (= HomeBody 由来) 受け取るので viewport 高であり、`CalendarMonthLayout.rowHeight(available:)` に正しく効く (ScrollView の内側で測ると無限高になる罠を避ける)
+- **月セルのイベント名の件数**: font は既に `.caption2` (11pt。P1 で `:277` の 9pt→caption2 済) なので**フォントは触らない**。**`prefix(3)` (`:275`) → `prefix(2)`**、`+N` 閾値 (`:286` `events.count > 3`) → `> 2` に下げる (**逸脱理由**: 11pt では 3 件が 56pt 最小セルに収まらない。溢れた件数は `+N` 表示が担う)。詳細は §5.5.0 のイベント chip 行
 
 **今日のセル** (現状 today の指標が無い):
 
@@ -1004,6 +1139,22 @@ enum CalendarDayStyle {
 - `CalendarMonth` に `DragGesture(minimumDistance: 20)` を付け、`onEnded` で `value.translation.width` が **`< -50` なら翌月 / `> 50` なら前月**。それ以外は何もしない
 - `.sensoryFeedback(.selection, trigger: anchor)`
 - 縦スクロール (`ScrollView`) と競合しないよう、`DragGesture` は**水平成分が垂直成分より大きいときだけ**採用する: `abs(value.translation.width) > abs(value.translation.height)`
+
+### 5.6 ルーム詳細のタイトル重複解消 (Touri 裁定 1 / DESIGN.md §3.7.2・§9-1)
+
+**現状の重複** (`RoomDetailView.swift`、main `a337ea0` で確認): P2 が付けた **nav bar の inline タイトル `:52` `.navigationTitle(model?.room?.name ?? "ルーム")`** と、本文 header の**大タイトル `:68` `Text(model?.room?.name ?? "ルーム").font(.atender2xl).fontWeight(.bold)`** が room 名を**2 回**出している (DESIGN.md §2 の診断)。
+
+**P3 で解消 (DESIGN.md §3.7.2 のプロミネント content header パターン)**: **nav bar のタイトル文言を消し、本文 header の大タイトル + gear を残す。**
+
+| 対象 | 現状 | P3 の変更 |
+|---|---|---|
+| nav bar タイトル | `:52` `.navigationTitle(model?.room?.name ?? "ルーム")` | **`.navigationTitle("")` に置換** (P2 で足した room 名を撤回。nav は back のみ)。`:53` `.navigationBarTitleDisplayMode(.inline)` は**維持** |
+| 本文 header 大タイトル | `:65-91` `header` (`:68` room 名 `.atender2xl` bold / `:81-89` gear `gearshape.fill`) | **維持** (これが唯一のタイトルになる)。gear も本文 header に残す |
+| 上に詰める | `body` は `VStack(alignment:.leading, spacing: Space.s3)` (`:38`) で header が先頭。nav タイトル文言が消えて inline バーが back だけになった分、header が視覚的に上へ来る | **構造変更なし**。nav の room 名が消えることで重複が解け、大タイトルが「上に押し込まれた」ように見える (Touri の明示要望「小さい方を消して、大文字ルーム名と設定ボタンを上に」) |
+
+- **逸脱の明示** (DESIGN.md §3.7.2): 「詳細画面は inline nav タイトル」という一般 iOS 慣習からの逸脱。理由は (a) room 名が長く content で大きく見せる価値がある (b) Touri の名指し要望。**プロミネントな content header を持つ詳細画面 (ルーム詳細) はこのパターン**。header を持たない詳細画面 (テンプレート/科目詳細/日別詳細で content 側に大タイトルが無いもの) は **inline nav タイトルを使う** (= §4.3 の `TemplatesView` 等は現状の inline タイトルのまま。本裁定はルーム詳細だけ)。
+- **★ §4.3 (P2) の該当記述を撤回するのはこの 1 行だけ**: §4.3 の表は P2 で `.navigationTitle(model?.room?.name ?? "ルーム")` を足したが、P3 で `.navigationTitle("")` に置換する (nav は back のみ)。`.navigationBarTitleDisplayMode(.inline)` / `BackHeaderButton` 撤去 / 溢れ止め (§4.7) は**維持** (それらは P2 で正しく着地済)。
+- **テスト影響**: nav タイトル文言の有無を assert する既存テストは無い (`RoomDetailView` は `room-detail-tabs` identifier で掴まれるが nav タイトルは掴まれていない)。Reviewer は §10.1 のスクショで「nav バーに room 名が出ていない・本文 header に大タイトルが 1 つだけ」を目視確認する。
 
 ---
 
@@ -1264,6 +1415,16 @@ F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 
 - **#H2**: `HomeChips.isVisible(rooms: [room1])` → `true`
 - **#H3**: `HomeChips.items(rooms:)` の既存契約は**不変** — 先頭が `.selfChip(label: "自分")`、以降が入力順の room (既存 `HomeChipsTests` 3 本が緑のまま)
 
+### 8.6.1 マス描画ヘルパ (`Color.opaqueTint`) — T (§5.3.0 / §5.5.0)
+
+**Touri 名指し #1「背景が透過」の唯一の機械的防波堤。** `Color.opaqueTint` の返り値を `UIColor(_:)` に通し、light/dark trait で `resolvedColor(with:)` して RGBA 成分で検証する (`UIColor(Color.accent500)` の round-trip が dynamic を保つことは §8.7 #S11 で確認済の経路)。
+
+- **#T1**: `UIColor(Color.opaqueTint(hex: "#FF0000", ratio: 0.15, base: .bgElevated))` を light/dark どちらの trait で解決しても **alpha == 1.0** (`accuracy: 0.001`)。**★ これが「透過をやめた」ことの証拠** — 現行 `EventTile` の `.opacity(0.16)` はここで alpha≈0.16 になり落ちる
+- **#T2**: `ratio: 0` → base の色そのもの (`opaqueTint(hex:"#FF0000", ratio:0, base:.bgElevated)` の RGB == `UIColor(Color.bgElevated)` の RGB、light/dark 各 trait で `accuracy: 0.01`)
+- **#T3**: `ratio: 1` → subject の色そのもの (`opaqueTint(hex:"#FF0000", ratio:1, base:.bgElevated)` の RGB == `(1,0,0)` `accuracy: 0.01`)。**#T2/#T3 は #T1 が vacuous でない (ratio が実際に効いている) ことの対照**
+- **#T4**: base が dynamic (`bgElevated` は light/dark で別値) のとき、`opaqueTint(..., base: .bgElevated)` の light 解決値と dark 解決値が**互いに異なる** — ヘルパが `UIColor(dynamicProvider:)` を潰していない (light/dark 追従を殺していない) こと
+- **★ hex をベタ書きした期待値で「特定の色」を検証しない** (§9.3)。検証する不変条件は「alpha=1」「ratio の端点で base/subject に一致」「dynamic が保たれる」であって、混色結果の具体 hex ではない
+
 ### 8.7 ローカライズ / フォント / シェル — S
 
 - **#S1**: `Bundle.main.preferredLocalizations == ["ja"]` — **★ 負の対照**: `project.yml` から `developmentLanguage: ja` を外すと `["en"]` になることを確認済 (F2)。この assert には牙がある
@@ -1310,6 +1471,7 @@ F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 
   - `LocalizationTests.swift` (#S1〜#S3)
   - `ScreenMetricsTests.swift` (§3.6 の値の契約。**P1 で着地済** — `@MainActor` 付きのテストクラスになる)
   - `HomeChipsTests.swift` に **#H1/#H2 を追記** (既存 3 本は触らない)
+  - `ColorTintTests.swift` (#T1〜#T4、**P3**。`Color.opaqueTint` の alpha=1 / ratio 端点 / dynamic 保持)
   - `TypographyRegistrationTests.swift` を **全面書き換え** (#S4〜#S8)
   - `NavigationTests.swift` に **#S10 を追記** (既存は触らない)
   - `DesignTokenTests.swift` に **#S11/#S12 を新メソッド `testAccentColorAssetMatchesToken` として追記** (**P2**。既存 2 メソッドは触らない — `testSpacingAndRadiusTokens` の 2 行削除は P3 / §9.2 #1)
@@ -1335,7 +1497,7 @@ F3 の症状は **00:00〜08:59 JST の 9 時間**だけに出る。正午 (JST 
 
 | # | テスト | 壊れる Phase | 壊れる理由 | Reviewer の再生成方針 |
 |---|---|---|---|---|
-| 1 | `DesignTokenTests.testSpacingAndRadiusTokens` | **P3** | `Space.selfTtChrome` (:11) と `Space.tabBarHeight` (:10) を**削除する**ので**コンパイルが通らない** (assert が落ちるのではない)。**★ 両トークンとも削除は P3** — `selfTtChrome` は `TimetableGridPhaseB.swift:17` (§5.3)、`tabBarHeight` は `SelfTodayCTA.swift:107` (§5.4) と `RoomDetailView.swift:386` (§5.3) が最後の参照を握っている。したがって **P1 でも P2 でも本テストは緑のまま**が正しい (P1 実測で緑を確認済) | 該当 2 行を削除。`Radius.full == 9999` と `Space.s20 == 80` の 2 行は**そのまま維持** (これらのトークンは残る)。**削除したトークン名を新しい定数で assert し直さない** — 「消えた」ことはコンパイラが保証する |
+| 1 | `DesignTokenTests.testSpacingAndRadiusTokens` | **P3** | `Space.selfTtChrome` (:11) と `Space.tabBarHeight` (:10) を**削除する**ので**コンパイルが通らない** (assert が落ちるのではない)。**★ 両トークンとも削除は P3** — `selfTtChrome` は `TimetableGridPhaseB.swift:17` (§5.3)、`tabBarHeight` は `SelfTodayCTA.swift:107` (§5.4) と `RoomDetailView.swift:389` (§5.3) が最後の参照を握っている。したがって **P1 でも P2 でも本テストは緑のまま**が正しい (P1 実測で緑を確認済) | 該当 2 行を削除。`Radius.full == 9999` と `Space.s20 == 80` の 2 行は**そのまま維持** (これらのトークンは残る)。**削除したトークン名を新しい定数で assert し直さない** — 「消えた」ことはコンパイラが保証する |
 | 2 | `TypographyRegistrationTests.testRegisteredFontPostScriptNamesResolveWithUIFont` | **P1 済** | `Font.interPostScriptName` を削除 + Inter/Noto を登録解除 | **#S4〜#S7 に全面書き換え**。「Inter が**無い**こと」を assert する側に反転させる |
 | 3 | `TypographyRegistrationTests.testUIAppFontsPlistContainsBundledFontFiles` | **P1 済** | `UIAppFonts` が 7 件 → 1 件 | **#S8**。`expectedFontFiles` を `["GoogleSans-Medium-Latin.ttf"]` に。**「全エントリがパス無し + バンドル内に実在」の不変条件ループは価値が高いのでそのまま残す** |
 
@@ -1406,7 +1568,7 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 |---|---|---|
 | **P1 土台** ✅ **着地済 (`4dfd3a9`)** | §3.1 書体 / §3.2 フォントトークン (呼び出し 18 箇所の変換) / §3.3 中立色 / §3.4 `AmbientBackground` 削除 (+ `RootView` の該当行) / **§3.5 のうち「本番参照 0 の 4 トークン削除 + `pagePxMobile` 12→16」だけ** / §3.6 `ScreenMetrics` 新設 (消費者は P4) + §7.1 `SchoolClock` + §7.2 `TodayTimeline`・`NowNextText`・`AttendanceSummary` + §5.3 `TimetableGridLayout` + §5.5 `CalendarMonthLayout`・`CalendarDayStyle` + `project.yml` の `developmentLanguage`/`UIAppFonts` | **ビルド基盤に効く** (`project.yml` + xcodegen + フォント登録)。全画面に波及するが機械的。**新規ロジックは全部ここで、UI 無しで、テスト付きで着地する** |
 | **P2 シェル** | §4 全部 — native `TabView` (§4.1) + **`AccentColor.colorset` の azure 是正 (§4.1)** / `BottomTabBar`・`PlaceholderViews` 削除 / nav bar 復活 + `BackHeaderButton` 削除 (§4.3) / Glass シム (§4.5) / **§4.7 `RoomDetailView` の溢れ止め (§5.3 から前倒し)** + **§3.5 のうち `Space.tabBarContent` の定義削除** + **§4.2 の 7 箇所のパディング除去 (`tabBarHeight` の*定義*は残す)** + **#S11/#S12 (§8.7)**。**★ `RootView` は 1 行も触らない (§4.4 / §4.6 撤回)** | P1 の `ja` 設定に依存 (back が「戻る」になって初めて `BackHeaderButton` を消せる)。**§4.7 が無いと `RoomDetailView` が操作不能のままマージされる** = 「`main` は常にデプロイ可能」に抵触 |
-| **P3 ホーム** | §5 全部 (nav bar への畳み込み / `ContextChips` 条件表示 / グリッドが available を受け取る = **`TimetableGrid` の prop 契約変更と §4.7 の `ScrollView` 撤去** / 「今」の描画 / `NowNextBar` / カレンダー拡大) + **§3.5 のうち `Space.tabBarHeight`・`selfTtChrome`・`roomTtChromeTop` の定義削除** (§5.3/§5.4 が最後の参照を消した後) + **`DesignTokenTests` の 2 行削除** (§9.2 #1) | **本命。** P2 のシェルに乗る。**「今」の UI とクローム再編は同じ場所 (`SelfTodayCTA` → `NowNextBar`) を触るので分けない**。**`TimetableGrid` は `SelfTimetableView` と `RoomDetailView` の共有部品なので、prop 契約の変更は両呼び出し側が揃うこのフェーズで行う** |
+| **P3 ホーム** | §5 全部: **large title「ホーム」+ 学期/switcher/segmented をコンテンツ先頭へ (§5.2、DESIGN.md §3.7.1)** / `ContextChips` 条件表示 / グリッドが available を受け取る = **`TimetableGrid` の prop 契約変更 (`height`→`available`) と §4.7 の `ScrollView` 撤去** / **★ DESIGN.md §3.6 のマス描画 = `EventTile`/グリッド線 (§5.3.0) + 月カレンダー (§5.5.0)** + **`Color.opaqueTint` ヘルパ新設 (additive)** / 「今」の描画 / `NowNextBar` (§5.4) / カレンダー拡大 (§5.5) / **ルーム詳細のタイトル重複解消 (§5.6、裁定1)** + **§3.5 のうち `Space.tabBarHeight`・`selfTtChrome`・`roomTtChromeTop` の定義削除** (§5.3/§5.4 が最後の参照を消した後) + **`DesignTokenTests` の 2 行削除** (§9.2 #1) | **本命。** P2 のシェルに乗る。**「今」の UI とクローム再編は同じ場所 (`SelfTodayCTA` → `NowNextBar`) を触るので分けない**。**`TimetableGrid` / `CalendarMonth` / `EventTile` は `SelfTimetableView`(ホーム) と `RoomDetailView`(ルーム) の共有部品なので、prop 契約とマス描画の変更は両呼び出し側が揃うこのフェーズで行う** (マス描画は両方に波及 = DESIGN.md §3.6 の全画面共通化で望ましい) |
 | **P4 仕上げ** | §6 全部 (haptics / ジェスチャ / 遷移アニメ / `ContentUnavailableView` / `.redacted` / `Chip`・`StatusDot` 削除) + **`BottomSheet.swift:37` の `UIScreen.main` → `ScreenMetrics.height`** (§3.6 で新設したヘルパに初めて消費者が付く) | P3 の構造が固まった後。**単体で RED になっても本体は動く** = 最後に置くのが安全 |
 
 **トークン削除の一覧は §3.5 の表が正典** (Phase 列付き)。本表と食い違ったら §3.5 を採る。
@@ -1434,6 +1596,11 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
    - **FAB も見る** (§4.7「FAB の罠」): `room-fab-event` が**カレンダーの週/日表示で浮いたまま**であること。`.overlay` を `ScrollView` の内側に付けてしまうと**スクロールで流れて消える**ので、**スクロールした後のスクショで FAB が同じ位置にいる**ことを確認する
    - iPhone 16 と **iPhone SE (小画面)** の両方で行う。SE の方が可用高が小さく、溢れが先に出る
 3. **P3 完了時**: iPhone SE (小画面) と iPhone 16 の両方で `01-home-timetable` を撮り、**グリッドが溢れずに収まっている**こと (#G4/#G5 の実地確認)
+3b. **★ P3 完了時: マス描画の是正 (DESIGN.md §3.6 / Touri 名指し #1-#3)** — ユニットは #T が alpha=1 を守るが、見た目は目視。`01-home-timetable` / `02-home-calendar` / `E03-room-timetable` を撮り、**before (P2 スクショ) と比較**:
+   - **時間割セル**: 背景が**不透明** (下地のグリッド線が透けない) / セル内テキストが**上寄せ** / 左バーが細く (2pt) / 空きセルに**縦横の罫線が無い** (表組みに見えない)
+   - **月カレンダー** (`02-home-calendar`): **白い丸カード (Radius 24 + 影)** の上に、**枠のない日セル**が gap で並ぶ / イベント chip が**不透明** / 今日のセルが accent 文字色 / スプレッドシート枠が消えている
+   - **判定が成功/失敗で違う値になるか**: なる — P2 スクショはセル背景が半透明で罫線が全面に回り、月カレンダーは灰枠のスプレッドシート。是正後は罫線が消え面が主役になる。**目視で明確に区別可能** (Touri の 3 不満の直接確認)
+3c. **★ P3 完了時: ヘッダー規格 (裁定2・裁定1)** — `01-home-timetable` に **large title「ホーム」**が出ていること。`03-room-detail` (ルーム詳細) の **nav バーに room 名が出ておらず** (back のみ)、**本文 header に大タイトルが 1 つだけ** + gear が上部にあること (§5.6。重複が消えている)
 4. **P1 の negative control** — `project.yml` から `developmentLanguage: ja` を一時的に外して `xcodegen generate` → **#S1/#S2/#S3 が赤くなること**を確認してから戻す。「GREEN は修正が作った」と言い切るため (F2 で Architect が実施済の手順をそのまま踏む)
    **★ P1 は既にマージ済 (`4dfd3a9`)。この手順の実施記録が無い場合は P2 の着手前に行う** — `ja` 化は P2 の `BackHeaderButton` 削除の前提 (back が「戻る」にならないまま自前 back を消すと英語の "Back" が出る)
 
@@ -1538,12 +1705,13 @@ findings は **「今」の実装を #1** に置いていた (「最大の勝ち
 | `App/MainTabView.swift` | 全面置換 (§4.1) | P2 |
 | `Assets.xcassets/AccentColor.colorset/Contents.json` | **`#F97316` (orange) → azure に是正** (light `#1E96E6` / dark `#3DA9F0` = `Color.accent500` と同ペア)。`7ac596f` から取り残された未移行の残骸。**native `TabView` / nav bar が最初の消費者になるので P2 で直す** (§4.1) | **P2** |
 | `App/RootView.swift` | **★ 触らない。** `AmbientBackground()` 除去は P1 で完了済 (§3.4)。**P2 に予定していた 2 点 (`?? .auto` + `@AppStorage` 既定値) は撤回済** (§4.4 / §4.6) | P1 ✅ のみ |
-| `Features/Home/HomeCore.swift` | `HomeView` 再構成 / `HomeViewModeTabs`・`HomeSemesterPicker` 削除 / `HomeChips.isVisible` 追加 | P3 |
-| `Features/Home/SelfTimetableView.swift` | 学期ピッカーと ⚙︎ を除去 / `available`・`showSettings` を受け取る | P3 |
+| `Features/Home/HomeCore.swift` | `HomeView` 再構成 = **large title「ホーム」+ 学期 `Menu`(subhead)/`ContextChips`/`Picker(.segmented)` をコンテンツ先頭へ / gear を toolbar trailing へ (§5.2)** / `HomeViewModeTabs`(`:156-186`)・`HomeSemesterPicker`(`:188-256`) 削除 / `HomeChips.isVisible` 追加 / 外側 `ScrollView`(`:41`) 撤去 → `GeometryReader` で `HomeBody` に available を渡す / `ContextChips` 高 40→44 | P3 |
+| `Features/Home/SelfTimetableView.swift` | 学期ピッカー(`:132-136`) と ⚙︎(`settingsButton :165-180`) を除去 / `showSettings` binding + `available: CGFloat` を受け取り `.settings` シートを開く / グリッド部を `ScrollView { TimetableGrid(available: available, …) }.scrollBounceBehavior(.basedOnSize)` に (available は HomeBody 経由で prop) | P3 |
 | `Features/Home/SelfTodayCTA.swift` | **`NowNextBar.swift` に置換して削除** | P3 |
-| `Features/Timetable/TimetableGridPhaseB.swift` | `available` / `todayDisplayDay` / `currentPeriodIndex` を受け取る。`UIScreen.main` 除去 | P3 |
-| `Features/Calendar/PersonalCalendar.swift` | 月グリッドの高さ / today セル / スワイプ | P3 |
-| `Features/Rooms/RoomDetailView.swift` | **P2**: nav bar 復活 + `BackHeaderButton` 除去 (§4.3、`.navigationTitle` は **`model?.room?.name`**) + **溢れ止め = `RoomCalendar` / `RoomTimetable` に各 1 つ `ScrollView` を入れる (§4.7、★ FAB の `.overlay` は `ScrollView` の外)** + §4.2 の `:208` パディング。**P3**: `RoomTimetable` が `available` を受け取る + そちらの `ScrollView` のみ撤去 (§5.3)。`todayString` 置換は P1 済 | P2, P3 |
+| `Features/Timetable/TimetableGridPhaseB.swift` | **§3.6.1/§3.6.2 マス描画 (§5.3.0): `EventTile` 背景を `opaqueTint` で不透明化(`:165`) / 左バー 3→2pt(`:135`) / テキスト上寄せ(`content` HStack `.top` + `body :128` frame `.topLeading`) / 空きセル罫線 `.overlay` 2 本削除(`:61-62`) / 外殻 stroke(`:32`)→`.atenderShadow(.card)`** + `available` / `todayDisplayDay` / `currentPeriodIndex` を受け取り `UIScreen.main`(`:17`) 除去 (§5.3.1) + 「今」の描画 | P3 |
+| `Features/Calendar/PersonalCalendar.swift` | **§3.6.3 マス描画 (§5.5.0): `CalendarMonth` 外殻 → 白カード `Radius.lg`+shadow / セル罫線 `.overlay` 2 本削除(`:297-298`) / gap 1pt / 日セル `Radius.sm`+padding 2 / event chip を `opaqueTint` で不透明化(`:283`) / `prefix(3)`→`prefix(2)`(`:275,286`)** + `available` optional prop + 月グリッドの動的高 / today セル (`CalendarDayStyle`) / スワイプ / `content`(`:138-163`) を `ScrollView` 包み | P3 |
+| `Core/DesignSystem/Color+Atender.swift` | **`Color.opaqueTint(hex:ratio:base:)` を末尾に additive 追加 (§5.3.0)。既存トークンは 1 つも触らない (§9.3)** | P3 |
+| `Features/Rooms/RoomDetailView.swift` | **P2**: nav bar 復活 + `BackHeaderButton` 除去 (§4.3) + **溢れ止め = `RoomCalendar` / `RoomTimetable` に各 1 つ `ScrollView` を入れる (§4.7、★ FAB の `.overlay` は `ScrollView` の外)** + §4.2 の `:208` パディング。**P3**: **nav タイトル `:52` を `.navigationTitle("")` に置換 (§5.6・裁定1。本文 header の大タイトルと重複解消)** + `RoomTimetable`(`:369`) を `GeometryReader` 包みにして `available` を受け取り `:389` の `ScrollView`/`UIScreen.main`/`Space.roomTtChromeTop`/`Space.tabBarHeight` を撤去 (§5.3) + `CalendarMonth`(`:163`) はマス描画のみ波及 (available は渡さない)。`todayString` 置換は P1 済 | P2, P3 |
 | `Features/{Settings,SemesterOverview,Rooms,Friends,Setup}/*` | **土台追従の最小改修のみ** — `Space.tabBarHeight` パディング除去 (§4.2) / `Font.atender(size:)` 変換 (§3.2) / `todayString` 置換 (§7.1) / `.navigationBarHidden` 除去 (§4.3) | P1, P2 |
 
 ### 触らないもの
