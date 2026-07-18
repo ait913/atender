@@ -124,3 +124,26 @@ extension UIColor {
         UIColor(hex: value).withAlphaComponent(alpha)
     }
 }
+
+extension Color {
+    /// 科目色 hex を ratio(0..1) で不透明な base 面に合成する。
+    /// Web の color-mix(in srgb, subject ratio%, base) 相当。★ 半透明にしない = 下地の罫線を透かさない。
+    /// dynamic(base が light/dark で変わる)を保つため UIColor(dynamicProvider:) で trait ごとに解決して混ぜる。
+    static func opaqueTint(hex: String, ratio: CGFloat, base: Color) -> Color {
+        let subject = UIColor(Color(hexString: hex))
+        let baseColor = UIColor(base)
+        return Color(UIColor { traits in
+            let s = subject.resolvedColor(with: traits)
+            let b = baseColor.resolvedColor(with: traits)
+            var sr: CGFloat = 0, sg: CGFloat = 0, sb: CGFloat = 0, sa: CGFloat = 0
+            var br: CGFloat = 0, bg: CGFloat = 0, bb: CGFloat = 0, ba: CGFloat = 0
+            s.getRed(&sr, green: &sg, blue: &sb, alpha: &sa)
+            b.getRed(&br, green: &bg, blue: &bb, alpha: &ba)
+            let r = ratio
+            return UIColor(red: sr * r + br * (1 - r),
+                           green: sg * r + bg * (1 - r),
+                           blue: sb * r + bb * (1 - r),
+                           alpha: 1)      // ★ 常に alpha=1 (不透明)
+        })
+    }
+}

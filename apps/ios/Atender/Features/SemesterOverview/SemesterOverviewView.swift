@@ -4,6 +4,7 @@ struct SemesterOverviewView: View {
     @Environment(AppEnvironment.self) private var environment
     @State private var model: SemesterOverviewViewModel?
     @State private var semesterId: String?
+    @State private var semesters: [SemesterDto] = []
     @State private var didApplyDefault = false
     @State private var selectionMode = false
     @State private var selectedDates: Set<String> = []
@@ -91,10 +92,7 @@ struct SemesterOverviewView: View {
             guard let overview else { return "" }
             return "期間 \(CalendarRange.format(overview.startDate, .monthDay)) 〜 \(CalendarRange.format(overview.endDate, .monthDay))"
         }()
-        return HomeSemesterPicker(
-            semesterId: $semesterId,
-            trailing: AnyView(Text(label).font(.atenderXs).foregroundStyle(Color.textTertiary))
-        )
+        return SemesterOverviewSemesterMenu(semesters: semesters, semesterId: $semesterId, trailing: label)
     }
 
     private func courseList(_ overview: SemesterOverviewDto) -> some View {
@@ -166,6 +164,7 @@ struct SemesterOverviewView: View {
         if model == nil {
             model = SemesterOverviewViewModel(env: environment)
         }
+        await loadSemesters()
         if !didApplyDefault {
             didApplyDefault = true
             if let cached: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) {
@@ -182,6 +181,16 @@ struct SemesterOverviewView: View {
     private func reloadOverview() async {
         if let semesterId {
             await model?.reload(semesterId: semesterId)
+        }
+    }
+
+    private func loadSemesters() async {
+        if let cached: [SemesterDto] = environment.queryClient.data(for: .semesters(), as: [SemesterDto].self) {
+            semesters = cached
+        }
+        if let loaded = try? await environment.semesterRepository.semesters() {
+            semesters = loaded
+            if semesterId == nil { semesterId = loaded.first?.id }
         }
     }
 
@@ -202,6 +211,49 @@ struct SemesterOverviewView: View {
         selectionMode = false
         selectedDates.removeAll()
         if activeSheet == .bulk { activeSheet = nil }
+    }
+}
+
+private struct SemesterOverviewSemesterMenu: View {
+    let semesters: [SemesterDto]
+    @Binding var semesterId: String?
+    let trailing: String
+
+    var body: some View {
+        HStack(spacing: Space.s2) {
+            Menu {
+                ForEach(semesters) { semester in
+                    Button {
+                        semesterId = semester.id
+                    } label: {
+                        HStack {
+                            Text(semester.name)
+                            if semester.id == semesterId {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: Space.s2) {
+                    Text(current?.name ?? "学期を選択")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.textSecondary)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(Color.textTertiary)
+                }
+            }
+            Spacer()
+            Text(trailing)
+                .font(.atenderXs)
+                .foregroundStyle(Color.textTertiary)
+        }
+    }
+
+    private var current: SemesterDto? {
+        semesters.first { $0.id == semesterId } ?? semesters.first
     }
 }
 

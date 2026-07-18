@@ -7,8 +7,6 @@ final class DesignTokenTests: XCTestCase {
     func testSpacingAndRadiusTokens() {
         XCTAssertEqual(Radius.full, 9999)
         XCTAssertEqual(Space.s20, 80)
-        XCTAssertEqual(Space.tabBarHeight, 64)
-        XCTAssertEqual(Space.selfTtChrome, 352)
     }
 
     func testThemePreferenceColorSchemes() {

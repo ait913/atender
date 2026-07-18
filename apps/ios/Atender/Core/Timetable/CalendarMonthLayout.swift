@@ -1,7 +1,8 @@
 import CoreGraphics
 
 enum CalendarMonthLayout {
-    static let minRowHeight: CGFloat = 56
+    // 24pt day-number row + 3pt gap + two caption chips at about 13pt each + 3pt chip gap + 4pt cell padding.
+    static let minRowHeight: CGFloat = 60
     static let weekdayHeaderHeight: CGFloat = 26
     static let rowCount: Int = 6
     static let agendaHeight: CGFloat = 200
