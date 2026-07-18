@@ -305,29 +305,36 @@ struct CalendarMonth: View {
                         Circle().fill(CalendarEventDisplay.dayStatusColor(status)).frame(width: 6, height: 6)
                     }
                 }
-                ForEach(Array(events.prefix(2))) { event in
-                    Text(CalendarEventDisplay.eventTitle(event))
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
-                        .foregroundStyle(Color.textPrimary)
-                        .padding(.horizontal, 3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.opaqueTint(hex: event.color, ratio: 0.18, base: .bgElevated))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                .frame(height: 24)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(Array(events.prefix(2))) { event in
+                        Text(CalendarEventDisplay.eventTitle(event))
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                            .foregroundStyle(Color.textPrimary)
+                            .padding(.horizontal, 3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.opaqueTint(hex: event.color, ratio: 0.18, base: .bgElevated))
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    if events.count > 2 {
+                        Text("+\(events.count - 2)")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                    Spacer(minLength: 0)
                 }
-                if events.count > 2 {
-                    Text("+\(events.count - 2)")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.textTertiary)
-                }
-                Spacer(minLength: 0)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .clipped()
             }
             .padding(2)
             .frame(height: rowHeight)
             .background(emphasis == .outsideMonth ? Color.bgMuted.opacity(0.45) : Color.bgElevated)
             .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            .clipped()
         }
         .buttonStyle(.plain)
     }
