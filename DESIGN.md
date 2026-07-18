@@ -198,8 +198,8 @@ Web `CalendarMonth` を正典に、**スプレッドシート枠を全廃**す�
 ### 3.8 タブバー (Liquid Glass) (Touri 名指し: アイコンが大きい・ラベルが近い)
 
 - ターゲットは native `TabView` + `.tabItem`(`Label`) の Liquid Glass タブバー (revamp doc §4.1)。**アイコンは outline のまま** (5 個中一部だけ fill にすると混在。revamp doc F6 で確定、`calendar.fill` は SF Symbols に不在)。
-- **アイコンの point size・ラベルとの間隔は native `TabView` ではシステム所有**であり、`.tabItem` から直接制御できる保証がない。Touri の「アイコン大きい・ラベル近い」を native の枠内で調整できるかは **未確認 → §10 で researcher 検証に回す**。**本書で「調整できる」と断定しない。**
-- 検証結果が「native では不可」の場合の判断 (自前タブバー維持で微調整するか / システム値を受容するか) は Touri のプロダクト判断であり、本書では決めない (§9)。
+- **★ 確定 (2026-07-18、researcher 調査 + Leader 実機プローブ + Touri 裁定)**: iOS 26 Liquid Glass タブバーは**アイコンの point size もラベル間隔もシステム所有**で、`UITabBarAppearance` の override は**丸ごと無視される** (実機で `iconColor=.systemRed`/ラベル 12pt 下げが無視されるのをピクセル実測で確認。詳細 `Muraki/knowledge/library/swiftui-liquid-glass-ios26.md`)。
+- Touri の「アイコン大きい・ラベル近い」(#6/#7) は **iOS 26 のシステムメトリクスでバグではない**。制御するには Liquid Glass を捨てる (自前タブバー) しかなく、**Touri は Liquid Glass を優先する裁定 (2026-07-18)**。→ **タブアイコン/間隔は native のシステム値を受容する。P3/P4 で調整しない。**
 
 ---
 
@@ -256,11 +256,11 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 | 3 | テキストが**中央に来てる** → 上にして | §3.6.1 (align top) | 時間割セルのテキストが上寄せ |
 | 4 | 時間割カレンダーの**デザイン自体が微妙** | §3.1/§3.3/§3.6 (丸み + 影 + 面主役) | グリッドが card 化 (radius 18 + shadow) |
 | 5 | iOS が**詰め詰めで10年前** | §3.2 (余白) / §3.6.3 (枠全廃) | section-gap 16pt 遵守、スプレッドシート枠廃止 |
-| 6 | タブのアイコンが**でかい** | §3.8 + §10 (researcher 検証) | native の調整可否を確認後に決定 |
-| 7 | タブの**文字とアイコンの距離が近い** | §3.8 + §10 (researcher 検証) | 同上 |
+| 6 | タブのアイコンが**でかい** | §3.8 (✅ 解決: システム所有・Glass 優先で受容) | native 制御不能を実測確定、Touri 裁定で不調整 |
+| 7 | タブの**文字とアイコンの距離が近い** | §3.8 (✅ 解決: 同上) | 同上 |
 | 8 | ヘッダー/フォントサイズの**規格を統一** | §3.4 (タイポ段の画面横断統一) / §3.7 (ヘッダー規格) | 全画面同一見出しスケール、nav bar 規約統一、大タイトル重複排除 |
 
-**#6/#7 は本書だけでは完結しない** (native の調整可否が未確認)。それ以外の 6 件は本書の原則で完全に説明可能。
+**#6/#7 は「直さない」で解決** (iOS 26 のシステム所有メトリクスで native 制御不能、Touri が Liquid Glass 優先を裁定)。残り 6 件は本書の原則で実装に落ちる。
 
 ---
 
@@ -288,14 +288,9 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 
 ## 10. ★ 要 researcher 検証 (Leader に差し戻す)
 
-本書で憶測を避け、実在確認が要る点:
+1. ~~native `TabView` でタブアイコン size / ラベル間隔を制御できるか~~ → ✅ **解決済 (2026-07-18)**: 制御不能を researcher 調査 + Leader 実機プローブで確定、Touri は Liquid Glass 優先を裁定。§3.8 に反映。**残る要検証項目は無い。**
 
-1. **native `TabView` + `.tabItem`(`Label`) で、iOS 26 Liquid Glass タブバーのアイコン point size / ラベルとアイコンの間隔を制御できるか** (Touri 不満 #6/#7)。
-   - 制御 API が存在するか (`.tabItem` の Label に対する font/imageScale、UITabBarAppearance、`.symbolVariant`/`.imageScale` の効き方等)。
-   - 制御できない場合、self-drawn タブバー維持で微調整する選択肢の是非 (規約は標準部品回帰を推奨、干渉リスクあり)。
-   - **判定基準**: 「native の枠内でアイコンを小さく/ラベルを離せるか」が Yes/No で返ること。No なら Touri のプロダクト判断へ (§9)。
-
-2. (補助) iOS 26 Liquid Glass の nav bar / tab bar が `AccentColor` asset を引く挙動は revamp doc §4.1 で実測済。本書はそれを前提とするのみで再調査不要。
+(補助) iOS 26 Liquid Glass の nav bar / tab bar が `AccentColor` asset を引く挙動は revamp doc §4.1 で実測済。本書はそれを前提とするのみ。
 
 ---
 
