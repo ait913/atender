@@ -8,6 +8,7 @@
 
 ## 主要ドキュメント
 
+- **★ デザイン正典: `DESIGN.md`** (iOS 視覚言語の正典)。UI 設計・実装は必ずこれを参照。トークンは Web と 1:1 一致済で、規定するのは「適用規則」(角丸/余白/影/タイポ/マスの描き方/ヘッダー規格)
 - 設計書: `.designs/<YYYYMMDD>-<feature-slug>.md` (Architect が作成)
 - プロジェクト固有ナレッジ: `.knowledge/<topic>.md`
 - 参考 (クロス PJ knowledge):
