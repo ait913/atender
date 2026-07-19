@@ -54,13 +54,14 @@ struct HomeView: View {
                     onChange: { context = $0 },
                     onAddRoom: { environment.appRouter.selectedTab = .rooms }
                 )
+                .padding(.horizontal, -Space.pagePxMobile)
             }
             Picker("表示", selection: $mode) {
                 Text("時間割").tag(HomeViewMode.timetable)
                 Text("カレンダー").tag(HomeViewMode.calendar)
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 240)
+            .frame(maxWidth: .infinity)
             GeometryReader { proxy in
                 HomeBody(
                     context: context,
@@ -214,6 +215,8 @@ struct ContextChips: View {
                 .accessibilityLabel("ルームを追加")
             }
         }
+        .scrollClipDisabled()
+        .contentMargins(.horizontal, Space.pagePxMobile, for: .scrollContent)
         .accessibilityIdentifier("context-chips")
     }
 
