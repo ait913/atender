@@ -26,7 +26,7 @@ struct AttendanceRateHero: View {
             }
             RateProgressBar(pct: pct, required: requiredRate)
                 .frame(height: 10)
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                 Text(SemesterOverviewDisplayLogic.overallActionText(
                     allowedAbsences: overall.allowedAbsences,
                     remainingCount: overall.remainingCount,
@@ -140,6 +140,7 @@ struct AttendanceCalendar: View {
         let inSemester = startDate <= iso && iso <= endDate
         let selected = selectedDates.contains(iso)
         let disabled = selectionMode && !inSemester
+        let hasStateStroke = visual.dashed || iso == today || selected
         return Button {
             selectionMode ? onToggleDate(iso) : onSelectDay(iso)
         } label: {
@@ -175,6 +176,11 @@ struct AttendanceCalendar: View {
                 }
             }
             .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                if !hasStateStroke {
+                    Circle().strokeBorder(Color.borderSubtle, lineWidth: 1)
+                }
+            }
             .overlay {
                 if visual.dashed {
                     Circle()

@@ -24,6 +24,7 @@ struct SemesterOverviewView: View {
         }
         .background(Color.bgBase.ignoresSafeArea())
         .navigationTitle("学期・科目")
+        .navigationBarTitleDisplayMode(.inline)
         .task { await bootstrap() }
         .onChange(of: semesterId) { _, newValue in
             guard let newValue else { return }

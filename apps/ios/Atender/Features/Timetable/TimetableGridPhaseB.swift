@@ -77,6 +77,15 @@ struct TimetableGrid: View {
                     .frame(width: width - headerWidth, height: 1)
                     .position(x: headerWidth + (width - headerWidth) / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row))
             }
+            ForEach(1..<max(1, days.count), id: \.self) { col in
+                Rectangle()
+                    .fill(Color.borderSubtle)
+                    .frame(width: 1, height: contentHeight - TimetableGridLayout.headerHeight)
+                    .position(
+                        x: headerWidth + colWidth * CGFloat(col),
+                        y: TimetableGridLayout.headerHeight + (contentHeight - TimetableGridLayout.headerHeight) / 2
+                    )
+            }
         }
     }
 

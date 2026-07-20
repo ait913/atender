@@ -44,22 +44,6 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: Space.s3) {
-            HStack(alignment: .center) {
-                Text("ホーム")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Spacer()
-                if context == .self && mode == .timetable {
-                    Button {
-                        showTimetableSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.title2)
-                    }
-                    .frame(width: 44, height: 44)
-                    .accessibilityLabel("時間割の設定")
-                }
-            }
             if context == .self {
                 SemesterMenu(semesters: semesters, semesterId: $semesterId)
             }
@@ -92,7 +76,20 @@ struct HomeView: View {
         .padding(.horizontal, Space.pagePxMobile)
         .padding(.top, Space.s3)
         .background(Color.clear)
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("ホーム")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if context == .self && mode == .timetable {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showTimetableSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("時間割の設定")
+                }
+            }
+        }
         .safeAreaInset(edge: .bottom) {
             if context == .self { NowNextBarHost() }
         }
