@@ -36,7 +36,8 @@ struct TimetableGrid: View {
     }
 
     private func background(width: CGFloat, colWidth: CGFloat, rowHeight: CGFloat, contentHeight: CGFloat, periodIndexes: [Int], occupied: Set<String>) -> some View {
-        ZStack(alignment: .topLeading) {
+        let rowCount = max(1, periodIndexes.count)
+        return ZStack(alignment: .topLeading) {
             Rectangle().fill(Color.bgElevated)
             Rectangle()
                 .fill(Color.bgMuted)
@@ -69,6 +70,12 @@ struct TimetableGrid: View {
                     .frame(width: colWidth, height: rowHeight)
                     .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
                 }
+            }
+            ForEach(1..<rowCount, id: \.self) { row in
+                Rectangle()
+                    .fill(Color.borderSubtle)
+                    .frame(width: width - headerWidth, height: 1)
+                    .position(x: headerWidth + (width - headerWidth) / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row))
             }
         }
     }

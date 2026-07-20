@@ -150,7 +150,7 @@ struct AttendanceCalendar: View {
                         color.opacity(visual.bgFraction)
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
+                .clipShape(Circle())
                 VStack(spacing: 3) {
                     Text(String(Int(iso.suffix(2)) ?? 0))
                         .font(.atenderSm.weight(.semibold))
@@ -158,6 +158,7 @@ struct AttendanceCalendar: View {
                         .foregroundStyle(visual.iconColor)
                 }
                 .foregroundStyle(inMonth ? Color.textPrimary : Color.textTertiary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 if selected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8, weight: .bold))
@@ -176,17 +177,17 @@ struct AttendanceCalendar: View {
             .aspectRatio(1, contentMode: .fit)
             .overlay {
                 if visual.dashed {
-                    RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    Circle()
                         .stroke(Color.statusTardy.opacity(0.40), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
                 }
             }
             .overlay {
                 if iso == today {
-                    RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    Circle()
                         .stroke(Color.accent500.opacity(0.60), lineWidth: 1)
                 }
                 if selected {
-                    RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    Circle()
                         .stroke(Color.accent500, lineWidth: 2)
                 }
             }

@@ -154,6 +154,7 @@ struct SelfTimetableView: View {
                     )
                 }
                 .scrollBounceBehavior(.basedOnSize)
+                .scrollClipDisabled()
             } else {
                 Panel { Text("先に学期を作成してください。").foregroundStyle(Color.textSecondary) }
             }

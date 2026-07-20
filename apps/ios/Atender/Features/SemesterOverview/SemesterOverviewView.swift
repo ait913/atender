@@ -81,6 +81,7 @@ struct SemesterOverviewView: View {
                 .refreshable {
                     if let semesterId { await model.reload(semesterId: semesterId) }
                 }
+                .scrollClipDisabled()
             }
         } else {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
