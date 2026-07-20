@@ -294,7 +294,7 @@ struct CalendarMonth: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack {
                     Text(String(Int(date.suffix(2)) ?? 0))
-                        .font(.atenderXs)
+                        .font(.atenderSm)
                         .fontWeight(emphasis == .today ? .bold : .semibold)
                         .foregroundStyle(dayNumberColor(emphasis))
                         .frame(width: 24, height: 24)
@@ -321,7 +321,7 @@ struct CalendarMonth: View {
                             .foregroundStyle(Color.textPrimary)
                             .padding(.horizontal, 3)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.opaqueTint(hex: event.color, ratio: 0.18, base: .bgElevated))
+                            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                     }
                     if overflow {

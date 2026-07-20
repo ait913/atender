@@ -126,6 +126,11 @@ extension UIColor {
 }
 
 extension Color {
+    /// 時間割 / 月カレンダー / 学期出欠カレンダー — 3つの面カレンダーの「マス背景」の彩度。
+    /// 白 (bgElevated) に科目色 / 状態色をどれだけ混ぜるか (0..1)。値が大きいほど濃い。
+    /// ★ Touri が見た目を見て上下調整する開始値。ここ1箇所を変えれば3面すべてに反映される。
+    static let surfaceTintRatio: CGFloat = 0.42
+
     /// 科目色 hex を ratio(0..1) で不透明な base 面に合成する。
     /// Web の color-mix(in srgb, subject ratio%, base) 相当。★ 半透明にしない = 下地の罫線を透かさない。
     /// dynamic(base が light/dark で変わる)を保つため UIColor(dynamicProvider:) で trait ごとに解決して混ぜる。

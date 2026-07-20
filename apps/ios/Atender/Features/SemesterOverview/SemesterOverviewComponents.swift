@@ -109,7 +109,7 @@ struct AttendanceCalendar: View {
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(weekdays, id: \.self) { label in
                     Text(label)
-                        .font(.caption2)
+                        .font(.atenderXs)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.textTertiary)
                         .frame(maxWidth: .infinity)
@@ -122,7 +122,7 @@ struct AttendanceCalendar: View {
         }
         .padding(Space.s4)
         .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .atenderShadow(.card)
         .accessibilityIdentifier("attendance-calendar")
         .onAppear {
@@ -153,7 +153,7 @@ struct AttendanceCalendar: View {
                 .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
                 VStack(spacing: 3) {
                     Text(String(Int(iso.suffix(2)) ?? 0))
-                        .font(.atenderXs.weight(.bold))
+                        .font(.atenderSm.weight(.semibold))
                     statusIcon(visual.icon)
                         .foregroundStyle(visual.iconColor)
                 }
@@ -175,8 +175,10 @@ struct AttendanceCalendar: View {
             }
             .aspectRatio(1, contentMode: .fit)
             .overlay {
-                RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
-                    .stroke(visual.dashed ? Color.statusTardy.opacity(0.40) : Color.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: visual.dashed ? [4, 3] : []))
+                if visual.dashed {
+                    RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                        .stroke(Color.statusTardy.opacity(0.40), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                }
             }
             .overlay {
                 if iso == today {
