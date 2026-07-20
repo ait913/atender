@@ -68,7 +68,7 @@ struct BulkEditSheet: View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("休講").font(.atenderBase.weight(.bold)).foregroundStyle(Color.textPrimary)
             TextField("理由", text: $reason)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.atender)
                 .onChange(of: reason) { _, value in reason = String(value.prefix(100)) }
             HStack(spacing: Space.s3) {
                 AtenderButton(title: "休講にする", variant: .secondary, isLoading: anyPending) {
@@ -85,7 +85,7 @@ struct BulkEditSheet: View {
         VStack(alignment: .leading, spacing: Space.s3) {
             Text("予定").font(.atenderBase.weight(.bold)).foregroundStyle(Color.textPrimary)
             TextField("タイトル", text: $eventTitle)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.atender)
                 .onChange(of: eventTitle) { _, value in eventTitle = String(value.prefix(80)) }
             AtenderButton(
                 title: "選択日すべてに終日予定を追加",
@@ -208,7 +208,7 @@ struct PersonalEventEditModalContent: View {
         VStack(alignment: .leading, spacing: Space.s4) {
             field("タイトル") {
                 TextField("タイトル", text: $title)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.atender)
                     .onChange(of: title) { _, value in title = String(value.prefix(100)) }
             }
             field("日付") {
@@ -247,7 +247,7 @@ struct PersonalEventEditModalContent: View {
             field("メモ") {
                 TextField("メモ", text: $note, axis: .vertical)
                     .lineLimit(3...6)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.atender)
                     .onChange(of: note) { _, value in note = String(value.prefix(500)) }
             }
             if let errorMessage {

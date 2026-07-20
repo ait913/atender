@@ -130,7 +130,7 @@ struct CourseSuspensionSection: View {
             .datePickerStyle(.compact)
             .labelsHidden()
             TextField("学園祭振替 等", text: $reason)
-                .textFieldStyle(.roundedBorder)
+                .textFieldStyle(.atender)
                 .onChange(of: reason) { _, value in reason = String(value.prefix(100)) }
             AtenderButton(title: "追加", variant: .primary, isLoading: isPending, isEnabled: !date.isEmpty && !isPending) {
                 Task { await add() }

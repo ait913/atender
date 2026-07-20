@@ -60,7 +60,7 @@ struct MeetingEditModal: View {
 
                     Text("教室").sheetLabel()
                     TextField("教室", text: $room)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(.atender)
 
                     if let errorText {
                         Text(errorText)
