@@ -79,7 +79,7 @@ struct AttendanceCalendar: View {
     @State private var anchor: String = CalendarRange.monthFirst(SchoolClock.todayString())
     @State private var eventDates: Set<String> = []
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
     private let weekdays = ["日", "月", "火", "水", "木", "金", "土"]
 
     var body: some View {
@@ -106,7 +106,7 @@ struct AttendanceCalendar: View {
                 }
                 chip(selectionMode ? "選択中" : "複数選択", active: selectionMode, action: onToggleSelectionMode)
             }
-            LazyVGrid(columns: columns, spacing: 6) {
+            LazyVGrid(columns: columns, spacing: 3) {
                 ForEach(weekdays, id: \.self) { label in
                     Text(label)
                         .font(.atenderXs)
