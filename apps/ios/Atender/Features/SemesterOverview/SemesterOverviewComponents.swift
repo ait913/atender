@@ -13,7 +13,7 @@ struct AttendanceRateHero: View {
                 .foregroundStyle(Color.textSecondary)
             HStack(alignment: .lastTextBaseline, spacing: Space.s2) {
                 Text(pct.map(String.init) ?? "—")
-                    .font(.atender5xl.weight(.black))
+                    .font(.atender5xl.weight(.bold))
                     .foregroundStyle(rateColor)
                 if pct != nil {
                     Text("%")
