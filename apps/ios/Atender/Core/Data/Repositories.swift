@@ -80,6 +80,11 @@ final class TimetableRepository {
         return response.userTimetable
     }
 
+    func deleteUserTimetable(id: String) async throws {
+        try await client.send(Endpoints.deleteUserTimetable(id: id))
+        cache.invalidate(prefixes: invalidationTargets(for: .userTimetableDelete))
+    }
+
     func publishAsTemplate(id: String, title: String) async throws -> TemplateDto {
         let input = TemplatePublishInput(title: title, description: nil, year: nil, term: nil)
         let response = try await client.send(Endpoints.publishAsTemplate(id: id, input), as: TemplateResponse.self)

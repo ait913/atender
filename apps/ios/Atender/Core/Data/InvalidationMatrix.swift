@@ -37,8 +37,10 @@ enum Mutation: Equatable {
 
 func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
     switch mutation {
-    case .markAllPresent, .patchAttendance:
+    case .markAllPresent:
         return [QueryKey(["stats"]), .semesters(), .dayPrefix()]
+    case .patchAttendance:
+        return [QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .deleteAttendance:
         return [QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .bulkAttendance:
@@ -66,7 +68,7 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
     case .meUpdate:
         return [.usersSearch(), .semesters(), QueryKey(["stats"])]
     case .attendanceRuleUpsert:
-        return [.rules()]
+        return [.rules(), .semesters(), .dayPrefix(), QueryKey(["stats"])]
     case .semesterCreate, .semesterUpdate:
         return [.semesters()]
     case .semesterDelete:

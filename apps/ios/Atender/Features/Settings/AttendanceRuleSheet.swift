@@ -71,6 +71,7 @@ struct AttendanceRuleSheet: View {
             await onSaved()
             isPresented = false
         } catch {
+            environment.toastCenter.show("保存できませんでした")
         }
     }
 }

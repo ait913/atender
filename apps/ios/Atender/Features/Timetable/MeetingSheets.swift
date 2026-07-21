@@ -28,28 +28,41 @@ struct MeetingEditModal: View {
             BottomSheet(title: mode == .create ? "授業を追加" : "授業を編集", isPresented: $isPresented) {
                 VStack(alignment: .leading, spacing: Space.s4) {
                     Text("科目").sheetLabel()
-                    Menu {
-                        ForEach(allCourses) { course in
-                            Button(course.name) { courseId = course.id }
+                    if mode == .create {
+                        Menu {
+                            ForEach(allCourses) { course in
+                                Button(course.name) { courseId = course.id }
+                            }
+                        } label: {
+                            HStack {
+                                Text(selectedCourseName)
+                                    .font(.atenderBase)
+                                    .foregroundStyle(courseId.isEmpty ? Color.textSecondary : Color.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.atenderSm)
+                                    .foregroundStyle(Color.textSecondary)
+                            }
+                            .padding(Space.s3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.bgMuted)
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                         }
-                    } label: {
+                        Button("＋ 科目を追加") { courseModalOpen = true }
+                            .font(.atenderSm)
+                            .fontWeight(.bold)
+                    } else {
                         HStack {
                             Text(selectedCourseName)
                                 .font(.atenderBase)
                                 .foregroundStyle(courseId.isEmpty ? Color.textSecondary : Color.textPrimary)
                             Spacer()
-                            Image(systemName: "chevron.up.chevron.down")
-                                .font(.atenderSm)
-                                .foregroundStyle(Color.textSecondary)
                         }
                         .padding(Space.s3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.bgMuted)
                         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                     }
-                    Button("＋ 科目を追加") { courseModalOpen = true }
-                        .font(.atenderSm)
-                        .fontWeight(.bold)
 
                     Text("曜日").sheetLabel()
                     if mode == .create {
