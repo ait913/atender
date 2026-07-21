@@ -44,7 +44,7 @@ targets:
         GIDClientID: 562309257902-30d4j2sil5pd7sm0ph6sha6lmh3qg8ll.apps.googleusercontent.com
         ITSAppUsesNonExemptEncryption: false
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "6"
+        CFBundleVersion: "7"
         LSApplicationQueriesSchemes:
           - itms-beta
         UILaunchScreen: {}
