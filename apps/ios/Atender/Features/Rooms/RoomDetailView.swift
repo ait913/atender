@@ -133,8 +133,14 @@ struct RoomCalendar: View {
     @State private var loadError = false
 
     enum RoomCalSheet: Identifiable {
-        case event, ics
-        var id: Int { self == .event ? 0 : 1 }
+        case event, ics, editEvent(RoomEventDto)
+        var id: String {
+            switch self {
+            case .event: return "event"
+            case .ics: return "ics"
+            case .editEvent(let event): return "edit-\(event.id)-\(event.occurrenceDate)"
+            }
+        }
     }
 
     var body: some View {
@@ -174,16 +180,25 @@ struct RoomCalendar: View {
                             onChangeAnchor: { next in
                                 anchor = next
                                 Task { await reload(force: true) }
+                            },
+                            onSelectEvent: { event in
+                                selectRoomEvent(event)
                             }
                         )
-                        RoomDayEventList(date: selectedDate, events: dayEvents)
+                        RoomDayEventList(date: selectedDate, events: dayEvents) { event in
+                            selectRoomEvent(event)
+                        }
                     case .week:
-                        CalendarWeek(weekStart: CalendarRange.mondayOf(anchor), selectedDate: selectedDate, eventsByDateMap: eventMap) { date in
+                        CalendarWeek(weekStart: CalendarRange.mondayOf(anchor), selectedDate: selectedDate, eventsByDateMap: eventMap, onSelectDate: { date in
                             selectedDate = date
                             anchor = date
-                        }
+                        }, onSelectEvent: { event in
+                            selectRoomEvent(event)
+                        })
                     case .day:
-                        CalendarDay(date: selectedDate, events: dayEvents)
+                        CalendarDay(date: selectedDate, events: dayEvents) { event in
+                            selectRoomEvent(event)
+                        }
                     }
                 }
             }
@@ -235,12 +250,32 @@ struct RoomCalendar: View {
                 IcsImportWizard(roomId: roomId, isPresented: activeSheetBinding) {
                     await reload(force: true)
                 }
+            case .editEvent(let event):
+                RoomEventEditSheet(roomId: roomId, event: event, isPresented: activeSheetBinding) {
+                    await reload(force: true)
+                }
             }
         }
     }
 
     private var activeSheetBinding: Binding<Bool> {
         Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
+    }
+
+    private func selectRoomEvent(_ event: CalendarEvent) {
+        guard let roomEvent = resolveRoomEvent(for: event) else { return }
+        activeSheet = .editEvent(roomEvent)
+    }
+
+    private func resolveRoomEvent(for event: CalendarEvent) -> RoomEventDto? {
+        guard event.kind == .roomEvent, event.id.hasPrefix("room:") else { return nil }
+        let parts = event.id.split(separator: ":", maxSplits: 2).map(String.init)
+        guard parts.count == 3 else { return nil }
+        let seriesId = parts[1]
+        let occurrenceDate = parts[2]
+        return weeks.flatMap(\.roomEvents).first {
+            $0.seriesId == seriesId && $0.occurrenceDate == occurrenceDate
+        }
     }
 
     private func reload(force: Bool = false) async {
@@ -264,6 +299,7 @@ struct RoomCalendar: View {
 struct RoomDayEventList: View {
     let date: String
     let events: [CalendarEvent]
+    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s3) {
@@ -274,25 +310,7 @@ struct RoomDayEventList: View {
                 Text("予定なし").font(.atenderSm).foregroundStyle(Color.textTertiary)
             } else {
                 ForEach(events) { event in
-                    HStack(spacing: Space.s2) {
-                        Capsule().fill(Color(hexString: event.color)).frame(width: 4, height: 28)
-                        Text(TimeFormatting.minutesToTime(event.startMinute))
-                            .font(.atenderXs)
-                            .foregroundStyle(Color(hexString: event.color))
-                        Text(event.title)
-                            .font(.atenderSm)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Color.textPrimary)
-                            .lineLimit(1)
-                        Spacer()
-                        Text(event.subtitle)
-                            .font(.caption2)
-                            .foregroundStyle(Color.textTertiary)
-                            .lineLimit(1)
-                    }
-                    .padding(Space.s2)
-                    .background(Color(hexString: event.color).opacity(0.15))
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    eventRow(event)
                 }
             }
         }
@@ -300,6 +318,38 @@ struct RoomDayEventList: View {
         .background(Color.bgElevated)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
         .atenderShadow(.card)
+    }
+
+    @ViewBuilder
+    private func eventRow(_ event: CalendarEvent) -> some View {
+        let row = HStack(spacing: Space.s2) {
+            Capsule().fill(Color(hexString: event.color)).frame(width: 4, height: 28)
+            Text(TimeFormatting.minutesToTime(event.startMinute))
+                .font(.atenderXs)
+                .foregroundStyle(Color(hexString: event.color))
+            Text(event.title)
+                .font(.atenderSm)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+            Spacer()
+            Text(event.subtitle)
+                .font(.caption2)
+                .foregroundStyle(Color.textTertiary)
+                .lineLimit(1)
+        }
+        .padding(Space.s2)
+        .background(Color(hexString: event.color).opacity(0.15))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+
+        if event.kind == .roomEvent, let onSelectEvent {
+            Button { onSelectEvent(event) } label: {
+                row
+            }
+            .buttonStyle(.plain)
+        } else {
+            row
+        }
     }
 }
 
