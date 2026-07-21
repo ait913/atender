@@ -28,12 +28,25 @@ struct MeetingEditModal: View {
             BottomSheet(title: mode == .create ? "授業を追加" : "授業を編集", isPresented: $isPresented) {
                 VStack(alignment: .leading, spacing: Space.s4) {
                     Text("科目").sheetLabel()
-                    Picker("科目", selection: $courseId) {
+                    Menu {
                         ForEach(allCourses) { course in
-                            Text(course.name).tag(course.id)
+                            Button(course.name) { courseId = course.id }
                         }
+                    } label: {
+                        HStack {
+                            Text(selectedCourseName)
+                                .font(.atenderBase)
+                                .foregroundStyle(courseId.isEmpty ? Color.textSecondary : Color.textPrimary)
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.atenderSm)
+                                .foregroundStyle(Color.textSecondary)
+                        }
+                        .padding(Space.s3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.bgMuted)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                     }
-                    .pickerStyle(.menu)
                     Button("＋ 科目を追加") { courseModalOpen = true }
                         .font(.atenderSm)
                         .fontWeight(.bold)
@@ -96,6 +109,10 @@ struct MeetingEditModal: View {
         var map = Dictionary(uniqueKeysWithValues: timetable.courses.map { ($0.id, $0) })
         for course in createdCourses { map[course.id] = course }
         return Array(map.values).sorted { $0.name < $1.name }
+    }
+
+    private var selectedCourseName: String {
+        allCourses.first { $0.id == courseId }?.name ?? "科目を選択"
     }
 
     private var canSave: Bool {
