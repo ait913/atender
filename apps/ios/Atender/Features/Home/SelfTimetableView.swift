@@ -115,25 +115,14 @@ struct SelfTimetableView: View {
     let available: CGFloat
     @State private var viewModel: SelfTimetableViewModel?
     @State private var activeSheet: TimetableActiveSheet?
+    @State private var isSheetPresented = false
+    @State private var pendingEditMeeting: MeetingDto?
 
-    private enum TimetableActiveSheet: Identifiable {
+    private enum TimetableActiveSheet {
         case create(dayOfWeekJs: Int, period: Int)
         case detail(MeetingDto)
         case edit(MeetingDto)
         case settings
-
-        var id: String {
-            switch self {
-            case .create(let dayOfWeekJs, let period):
-                return "create-\(dayOfWeekJs)-\(period)"
-            case .detail(let meeting):
-                return "detail-\(meeting.id)"
-            case .edit(let meeting):
-                return "edit-\(meeting.id)"
-            case .settings:
-                return "settings"
-            }
-        }
     }
 
     var body: some View {
@@ -152,12 +141,14 @@ struct SelfTimetableView: View {
                         onEventTap: { id in
                             if let meeting = display.meetings.first(where: { $0.id == id }) {
                                 activeSheet = .detail(meeting)
+                                isSheetPresented = true
                             }
                         },
                         onEmptyCellTap: { displayDow, period in
                             Task {
                                 if await model.ensureTimetable(semesterId: semesterId) != nil {
                                     activeSheet = .create(dayOfWeekJs: DayConvention.displayToJs(displayDow), period: period)
+                                    isSheetPresented = true
                                 }
                             }
                         },
@@ -177,71 +168,97 @@ struct SelfTimetableView: View {
             await viewModel?.load()
         }
         .onChange(of: showSettings) { _, newValue in
-            if newValue { activeSheet = .settings }
+            if newValue {
+                activeSheet = .settings
+                isSheetPresented = true
+            }
         }
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .create(let dayOfWeekJs, let period):
-                if let timetable = model?.selected(semesterId: semesterId) ?? model?.createdTimetable {
-                    MeetingEditModal(
-                        isPresented: activeSheetBinding,
-                        timetable: timetable,
-                        mode: .create,
-                        initialDayOfWeekJs: dayOfWeekJs,
-                        initialPeriod: period,
-                        meeting: nil,
-                        onSaved: { Task { await model?.reloadTimetables() } }
-                    )
-                }
-            case .detail(let meeting):
-                if let display {
-                    let detailCourse = display.courses.first { $0.id == meeting.courseId }
-                    let detailSlots = display.daySlots.filter { $0.periodIndex >= meeting.startPeriodIndex && $0.periodIndex < meeting.startPeriodIndex + meeting.periodCount }
-                    MeetingDetailSheet(
-                        isPresented: activeSheetBinding,
-                        meeting: meeting,
-                        course: detailCourse,
-                        slots: detailSlots,
-                        onEdit: { activeSheet = .edit(meeting) },
-                        onDelete: {
-                            Task {
-                                await model?.deleteMeeting(meeting)
-                                activeSheet = nil
-                            }
-                        }
-                    )
-                }
-            case .edit(let meeting):
-                if let display {
-                    MeetingEditModal(
-                        isPresented: activeSheetBinding,
-                        timetable: display,
-                        mode: .edit,
-                        initialDayOfWeekJs: nil,
-                        initialPeriod: nil,
-                        meeting: meeting,
-                        onSaved: { Task { await model?.reloadTimetables() } }
-                    )
-                }
-            case .settings:
-                TimetableSettingsSheet(
-                    isPresented: activeSheetBinding,
-                    timetable: model?.selected(semesterId: semesterId) ?? model?.createdTimetable,
+        .overlay(activeSheetView(display: display, model: model))
+    }
+
+    @ViewBuilder
+    private func activeSheetView(display: UserTimetableDto?, model: SelfTimetableViewModel?) -> some View {
+        switch activeSheet {
+        case .create(let dayOfWeekJs, let period):
+            if let timetable = model?.selected(semesterId: semesterId) ?? model?.createdTimetable {
+                MeetingEditModal(
+                    isPresented: sheetBinding,
+                    timetable: timetable,
+                    mode: .create,
+                    initialDayOfWeekJs: dayOfWeekJs,
+                    initialPeriod: period,
+                    meeting: nil,
                     onSaved: { Task { await model?.reloadTimetables() } }
                 )
             }
+        case .detail(let meeting):
+            if let display {
+                let detailCourse = display.courses.first { $0.id == meeting.courseId }
+                let detailSlots = display.daySlots.filter { $0.periodIndex >= meeting.startPeriodIndex && $0.periodIndex < meeting.startPeriodIndex + meeting.periodCount }
+                MeetingDetailSheet(
+                    isPresented: sheetBinding,
+                    meeting: meeting,
+                    course: detailCourse,
+                    slots: detailSlots,
+                    onEdit: {
+                        pendingEditMeeting = meeting
+                        isSheetPresented = false
+                    },
+                    onDelete: {
+                        Task {
+                            await model?.deleteMeeting(meeting)
+                            closeSheet()
+                        }
+                    }
+                )
+            }
+        case .edit(let meeting):
+            if let display {
+                MeetingEditModal(
+                    isPresented: sheetBinding,
+                    timetable: display,
+                    mode: .edit,
+                    initialDayOfWeekJs: nil,
+                    initialPeriod: nil,
+                    meeting: meeting,
+                    onSaved: { Task { await model?.reloadTimetables() } }
+                )
+            }
+        case .settings:
+            TimetableSettingsSheet(
+                isPresented: sheetBinding,
+                timetable: model?.selected(semesterId: semesterId) ?? model?.createdTimetable,
+                onSaved: { Task { await model?.reloadTimetables() } }
+            )
+        case nil:
+            EmptyView()
         }
     }
 
-    private var activeSheetBinding: Binding<Bool> {
+    private var sheetBinding: Binding<Bool> {
         Binding(
-            get: { activeSheet != nil },
-            set: {
-                if !$0 {
-                    activeSheet = nil
-                    showSettings = false
-                }
+            get: { isSheetPresented },
+            set: { newValue in
+                isSheetPresented = newValue
+                if !newValue { handleSheetDismissed() }
             }
         )
+    }
+
+    private func handleSheetDismissed() {
+        if let meeting = pendingEditMeeting {
+            pendingEditMeeting = nil
+            activeSheet = .edit(meeting)
+            Task { @MainActor in isSheetPresented = true }
+        } else {
+            activeSheet = nil
+            showSettings = false
+        }
+    }
+
+    private func closeSheet() {
+        isSheetPresented = false
+        activeSheet = nil
+        showSettings = false
     }
 }
