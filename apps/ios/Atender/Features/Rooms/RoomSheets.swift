@@ -161,15 +161,26 @@ struct RoomSettingsSheet: View {
     }
 
     private var inviteSection: some View {
-        let link = "https://atender.appily.run/rooms/join/\(model?.room?.inviteCode ?? "")"
+        let inviteCode = model?.room?.inviteCode
+        let link = InviteURL.room(inviteCode: inviteCode ?? "")
         return VStack(alignment: .leading, spacing: Space.s3) {
             Text("招待リンク").font(.atenderSm).fontWeight(.semibold).foregroundStyle(Color.textSecondary)
+            if inviteCode != nil {
+                InviteQRView(urlString: link)
+            } else {
+                InviteQRView(urlString: "")
+                    .redacted(reason: .placeholder)
+            }
             Text(link).font(.atenderXs).foregroundStyle(Color.textTertiary)
             if let copyMessage { Text(copyMessage).font(.atenderXs).foregroundStyle(Color.accent500) }
             HStack(spacing: Space.s3) {
                 AtenderButton(title: "リンクをコピー", variant: .secondary, size: .sm) {
                     UIPasteboard.general.string = link
                     copyMessage = "コピーしました"
+                }
+                if let url = URL(string: link) {
+                    ShareLink("共有", item: url)
+                        .font(.atenderSm)
                 }
                 AtenderButton(title: "再発行", variant: .ghost, size: .sm) {
                     Task {
