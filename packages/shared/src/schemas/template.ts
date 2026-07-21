@@ -41,6 +41,8 @@ export const TemplateDto = z.object({
   meetings: z.array(MeetingDto),
   createdAt: z.string(),
   updatedAt: z.string(),
+  schoolName: z.string(),
+  departmentName: z.string(),
 });
 
 export const TemplateSearchQuery = z.object({

@@ -250,6 +250,8 @@ struct TemplateDto: Codable, Equatable, Identifiable {
     let meetings: [MeetingDto]
     let createdAt: String
     let updatedAt: String
+    let schoolName: String
+    let departmentName: String
 }
 
 struct TemplateSearchQuery: Equatable {
