@@ -151,4 +151,10 @@ extension Color {
                            alpha: 1)      // ★ 常に alpha=1 (不透明)
         })
     }
+
+    func toHexString() -> String {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
+        return String(format: "#%02X%02X%02X", Int(round(r * 255)), Int(round(g * 255)), Int(round(b * 255)))
+    }
 }

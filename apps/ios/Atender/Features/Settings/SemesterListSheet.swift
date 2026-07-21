@@ -153,6 +153,7 @@ struct SemesterListSheet: View {
             await onChanged()
             await reload()
         } catch {
+            environment.toastCenter.show("保存できませんでした")
         }
     }
 
@@ -163,7 +164,10 @@ struct SemesterListSheet: View {
             try await environment.semesterRepository.deleteSemester(id: id)
             await onChanged()
             await reload()
+        } catch APIError.http(status: 409) {
+            environment.toastCenter.show("時間割があるため削除できません。先に時間割を削除してください")
         } catch {
+            environment.toastCenter.show("削除できませんでした")
         }
     }
 
@@ -177,6 +181,7 @@ struct SemesterListSheet: View {
             await onChanged()
             await reload()
         } catch {
+            environment.toastCenter.show("保存できませんでした")
         }
     }
 }
