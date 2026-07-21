@@ -41,11 +41,13 @@ final class QueryCacheTests: XCTestCase {
     }
 
     func testPhaseAInvalidationTargets() {
+        // T6: patchAttendance は today を invalidate する (deleteAttendance と対称化)
         assertTargets(.patchAttendance, [
+            QueryKey(["today"]),
             QueryKey(["stats"]),
             QueryKey(["semesters"]),
             QueryKey(["day"]),
-        ], excluded: [QueryKey(["today"])])
+        ])
 
         assertTargets(.deleteAttendance, [
             QueryKey(["today"]),
@@ -95,6 +97,15 @@ final class QueryCacheTests: XCTestCase {
             QueryKey(["semesters"]),
             QueryKey(["stats"]),
         ])
+    }
+
+    // T5: 出欠ルール保存 (attendanceRuleUpsert) は stats/semesters/dayPrefix を invalidate する
+    //     (ルール変更 → 出席率・日別に反映)。SPEC の必須キー含有を subset で検証。
+    func testAttendanceRuleUpsertInvalidatesStatsSemestersDay() {
+        let actual = Set(invalidationTargets(for: .attendanceRuleUpsert))
+        XCTAssertTrue(actual.contains(QueryKey(["stats"])), "stats を invalidate する")
+        XCTAssertTrue(actual.contains(QueryKey(["semesters"])), "semesters を invalidate する")
+        XCTAssertTrue(actual.contains(QueryKey(["day"])), "dayPrefix を invalidate する")
     }
 
     private func assertTargets(

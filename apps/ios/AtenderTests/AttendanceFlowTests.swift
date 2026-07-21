@@ -111,7 +111,7 @@ final class AttendanceFlowTests: XCTestCase {
         XCTAssertTrue(cache.isStale(.stats()))
         XCTAssertTrue(cache.isStale(.semesters()))
         XCTAssertTrue(cache.isStale(QueryKey(["day", "2026-06-08"])))
-        XCTAssertFalse(cache.isStale(.today()))
+        XCTAssertTrue(cache.isStale(.today()), "T6: patchAttendance は today も invalidate する")
     }
 
     // --- patchAttendance 失敗: ロールバック + トースト ---
