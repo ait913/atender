@@ -65,34 +65,8 @@ final class RoomWeekContractTests: XCTestCase {
         XCTAssertEqual(week.members[0].userId, "demo-user-ios")
         XCTAssertEqual(week.meetings[0].courseName, "プログラミング演習")
         XCTAssertEqual(week.meetings[0].startMinute, 540, accuracy: 0.0001)
-        XCTAssertFalse(week.recurringMeetings.isEmpty, "recurringMeetings が読めること")
-        XCTAssertEqual(week.recurringMeetings[0].courseName, "プログラミング演習")
-        XCTAssertEqual(week.recurringMeetings[0].dayOfWeek, 1)
-        XCTAssertEqual(week.recurringMeetings[0].startPeriodIndex, 1)
         XCTAssertEqual(week.roomEvents[0].title, "合同勉強会")
         XCTAssertEqual(week.roomEvents[0].source, .manual)
-    }
-
-    func testRoomWeekDecodeDefaultsMissingRecurringMeetingsToEmptyArray() throws {
-        let json = """
-        {
-          "weekStart": "2026-07-12T15:00:00.000Z",
-          "weekEnd": "2026-07-19T14:59:59.999Z",
-          "members": [
-            {"userId": "demo-user-ios", "name": "デモ太郎", "handle": null, "image": null, "color": "hsl(301 70% 45%)"}
-          ],
-          "meetings": [
-            {"userId": "demo-user-ios", "occurrenceId": "occ_1", "courseId": "course_1", "courseName": "プログラミング演習", "courseColor": "#3B82F6", "date": "2026-07-13", "startMinute": 540, "endMinute": 630}
-          ],
-          "roomEvents": []
-        }
-        """
-
-        let week = try JSONDecoder().decode(RoomWeekDto.self, from: Data(json.utf8))
-
-        XCTAssertEqual(week.recurringMeetings, [])
-        XCTAssertEqual(week.members[0].userId, "demo-user-ios")
-        XCTAssertEqual(week.meetings[0].courseName, "プログラミング演習")
     }
 
     /// 負のコントロール: `week` ラッパー付きは契約違反なので decode 失敗すべき。
@@ -191,5 +165,85 @@ final class RoomWeekContractTests: XCTestCase {
 
         let members = try await repo.roomMembers(id: "room_1", force: true)
         XCTAssertFalse(members.isEmpty, "/api/rooms/:id/members は {members} 包みのまま")
+    }
+
+    // MARK: - Reviewer-independent recurringMeetings decode (design I10-I12)
+
+    // I10: recurringMeetings present -> decoded through the repository wiring.
+    // Inline JSON authored from the backend contract (independent of the shipped fixture).
+    func testRecurringI10DecodesRecurringMeetingsViaRepository() async throws {
+        let repo = RoomRepository(client: try makeClient(), cache: QueryClient())
+        let json = """
+        {
+          "weekStart": "2026-07-12T15:00:00.000Z",
+          "weekEnd": "2026-07-19T14:59:59.999Z",
+          "members": [
+            {"userId": "u1", "name": "Alice", "handle": null, "image": null, "color": "hsl(1 70% 45%)"}
+          ],
+          "meetings": [
+            {"userId": "u1", "occurrenceId": "occ_1", "courseId": "c1", "courseName": "OccCourse", "courseColor": "#3B82F6", "date": "2026-07-13", "startMinute": 540, "endMinute": 630}
+          ],
+          "recurringMeetings": [
+            {"userId": "u1", "timetableId": "tt_9", "courseId": "c1", "courseName": "RecurCourse", "courseColor": "#3B82F6", "dayOfWeek": 1, "startPeriodIndex": 2, "periodCount": 3}
+          ],
+          "roomEvents": []
+        }
+        """
+        respond(json: json)
+        let week = try await repo.roomWeek(id: "room_1", weekStart: "2026-07-13", force: true)
+
+        XCTAssertEqual(week.recurringMeetings.count, 1)
+        let rm = week.recurringMeetings[0]
+        XCTAssertEqual(rm.userId, "u1")
+        XCTAssertEqual(rm.timetableId, "tt_9")
+        XCTAssertEqual(rm.courseId, "c1")
+        XCTAssertEqual(rm.courseName, "RecurCourse")
+        XCTAssertEqual(rm.courseColor, "#3B82F6")
+        XCTAssertEqual(rm.dayOfWeek, 1)          // stays JS-convention in the DTO
+        XCTAssertEqual(rm.startPeriodIndex, 2)
+        XCTAssertEqual(rm.periodCount, 3)
+        // I12 sibling: occurrence contract still readable alongside recurring.
+        XCTAssertEqual(week.meetings[0].courseName, "OccCourse")
+        XCTAssertEqual(week.members[0].userId, "u1")
+    }
+
+    // I11: recurringMeetings key absent -> decodeIfPresent ?? [] yields [], no throw.
+    // Separate inline JSON (the shipped fixture keeps the new shape).
+    func testRecurringI11MissingRecurringMeetingsDefaultsToEmpty() async throws {
+        let repo = RoomRepository(client: try makeClient(), cache: QueryClient())
+        let json = """
+        {
+          "weekStart": "2026-07-12T15:00:00.000Z",
+          "weekEnd": "2026-07-19T14:59:59.999Z",
+          "members": [
+            {"userId": "u1", "name": "Alice", "handle": null, "image": null, "color": "hsl(1 70% 45%)"}
+          ],
+          "meetings": [
+            {"userId": "u1", "occurrenceId": "occ_1", "courseId": "c1", "courseName": "OccCourse", "courseColor": "#3B82F6", "date": "2026-07-13", "startMinute": 540, "endMinute": 630}
+          ],
+          "roomEvents": []
+        }
+        """
+        respond(json: json)
+        let week = try await repo.roomWeek(id: "room_1", weekStart: "2026-07-13", force: true)
+
+        XCTAssertEqual(week.recurringMeetings, [])
+        XCTAssertEqual(week.meetings[0].courseName, "OccCourse")   // occurrence still read
+        XCTAssertEqual(week.members[0].userId, "u1")
+    }
+
+    // I11b: pure DTO decode of missing key (no repository) -> [].
+    func testRecurringI11DecodeIfPresentDefaultsToEmpty() throws {
+        let json = """
+        {
+          "weekStart": "2026-07-12T15:00:00.000Z",
+          "weekEnd": "2026-07-19T14:59:59.999Z",
+          "members": [],
+          "meetings": [],
+          "roomEvents": []
+        }
+        """
+        let week = try JSONDecoder().decode(RoomWeekDto.self, from: Data(json.utf8))
+        XCTAssertEqual(week.recurringMeetings, [])
     }
 }
