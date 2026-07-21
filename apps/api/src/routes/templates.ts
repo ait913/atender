@@ -17,6 +17,8 @@ const templateInclude = {
   daySlots: { orderBy: { periodIndex: "asc" as const } },
   courses: { orderBy: { id: "asc" as const } },
   meetings: { orderBy: [{ dayOfWeek: "asc" as const }, { startPeriodIndex: "asc" as const }] },
+  school: { select: { name: true } },
+  department: { select: { name: true } },
 };
 
 export function registerTemplateRoutes(app: Hono) {

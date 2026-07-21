@@ -45,5 +45,7 @@
     }
   ],
   "createdAt": "2026-06-01T00:00:00.000Z",
-  "updatedAt": "2026-06-01T00:00:00.000Z"
+  "updatedAt": "2026-06-01T00:00:00.000Z",
+  "schoolName": "サンプル情報専門学校",
+  "departmentName": "情報処理科"
 }

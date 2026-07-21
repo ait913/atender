@@ -65,6 +65,8 @@ export type TemplateWithParts = TimetableTemplate & {
   daySlots: Array<{ periodIndex: number; label: string; startMinute: number; endMinute: number; isBreak: boolean }>;
   courses: Array<{ id: string; name: string; teacher: string | null; color: string | null; note: string | null }>;
   meetings: Array<{ id: string; courseId: string; dayOfWeek: number; startPeriodIndex: number; periodCount: number; room: string | null }>;
+  school?: { name: string };
+  department?: { name: string };
 };
 
 export function templateDto(template: TemplateWithParts) {
@@ -84,6 +86,8 @@ export function templateDto(template: TemplateWithParts) {
     meetings: template.meetings.map(meetingDto),
     createdAt: template.createdAt.toISOString(),
     updatedAt: template.updatedAt.toISOString(),
+    schoolName: template.school?.name ?? "",
+    departmentName: template.department?.name ?? "",
   };
 }
 
