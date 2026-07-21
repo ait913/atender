@@ -29,6 +29,28 @@ final class RoomLogicTests: XCTestCase {
         )
     }
 
+    private func recurringMeeting(
+        userId: String = "u1",
+        timetableId: String = "tt_1",
+        courseId: String = "c1",
+        courseName: String = "Course",
+        courseColor: String? = "#123456",
+        dayOfWeek: Int = 3,
+        startPeriodIndex: Int = 1,
+        periodCount: Int = 1
+    ) -> RoomWeekDto.RecurringMeeting {
+        RoomWeekDto.RecurringMeeting(
+            userId: userId,
+            timetableId: timetableId,
+            courseId: courseId,
+            courseName: courseName,
+            courseColor: courseColor,
+            dayOfWeek: dayOfWeek,
+            startPeriodIndex: startPeriodIndex,
+            periodCount: periodCount
+        )
+    }
+
     private func roomEvent(
         id: String = "event_1",
         seriesId: String = "series_1",
@@ -67,6 +89,7 @@ final class RoomLogicTests: XCTestCase {
     private func week(
         members: [RoomWeekDto.Member] = [],
         meetings: [RoomWeekDto.Meeting] = [],
+        recurringMeetings: [RoomWeekDto.RecurringMeeting] = [],
         roomEvents: [RoomEventDto] = []
     ) -> RoomWeekDto {
         RoomWeekDto(
@@ -74,6 +97,7 @@ final class RoomLogicTests: XCTestCase {
             weekEnd: "2026-07-07",
             members: members,
             meetings: meetings,
+            recurringMeetings: recurringMeetings,
             roomEvents: roomEvents
         )
     }
@@ -297,55 +321,61 @@ final class RoomLogicTests: XCTestCase {
         XCTAssertEqual(slots.map(\.endMinute), [630, 730, 870, 970, 1070])
     }
 
-    func testBuildTimetableEventsMapsDayPeriodSpanAndFields() {
-        let events = RoomTimetableLogic.buildEvents(
-            week: week(members: [member("u1", name: "Alice", color: "#0f0")], meetings: [
-                meeting(userId: "u1", courseId: "c1", courseName: "Math", courseColor: "#123", date: "2026-07-01", startMinute: 540, endMinute: 630),
-            ]),
-            daySlots: RoomTimetableLogic.defaultSlots
-        )
+    func testBuildRecurringEventsMapsDayPeriodSpanAndFields() {
+        let events = RoomTimetableLogic.buildRecurringEvents(week: week(
+            members: [member("u1", name: "Alice", color: "#0f0")],
+            recurringMeetings: [
+                recurringMeeting(userId: "u1", courseId: "c1", courseName: "Math", courseColor: "#123", dayOfWeek: 3, startPeriodIndex: 1, periodCount: 2),
+            ]
+        ))
 
         XCTAssertEqual(events.count, 1)
         XCTAssertEqual(events[0].dayOfWeek, 3)
         XCTAssertEqual(events[0].startPeriodIndex, 1)
-        XCTAssertEqual(events[0].periodCount, 1)
+        XCTAssertEqual(events[0].periodCount, 2)
         XCTAssertEqual(events[0].color, "#123")
         XCTAssertEqual(events[0].title, "Math")
         XCTAssertEqual(events[0].subtitle, "Alice")
         XCTAssertEqual(events[0].mergeKey, "u1:c1")
+        XCTAssertEqual(events[0].id, "u1:c1:3:1")
     }
 
-    func testBuildTimetableEventsHandlesSundaySaturdaySpanAndFallbackColors() {
-        let events = RoomTimetableLogic.buildEvents(
-            week: week(members: [member("u1", handle: "alice", color: "#0f0")], meetings: [
-                meeting(userId: "u1", occurrenceId: "wed", courseId: "c1", courseName: "Two Slots", courseColor: nil, date: "2026-07-01", startMinute: 540, endMinute: 730),
-                meeting(userId: "missing", occurrenceId: "sun", courseId: "c2", courseName: "Sunday", courseColor: nil, date: "2026-07-05", startMinute: 540, endMinute: 630),
-                meeting(userId: "u1", occurrenceId: "sat", courseId: "c3", courseName: "Saturday", courseColor: "#123", date: "2026-07-04", startMinute: 540, endMinute: 630),
-            ]),
-            daySlots: RoomTimetableLogic.defaultSlots
-        )
+    func testBuildRecurringEventsHandlesBoundariesFallbacksAndPeriodMinimum() {
+        let events = RoomTimetableLogic.buildRecurringEvents(week: week(
+            members: [member("u1", handle: "alice", color: "#0f0")],
+            recurringMeetings: [
+                recurringMeeting(userId: "u1", courseId: "c1", courseName: "Monday", courseColor: nil, dayOfWeek: 1, periodCount: 0),
+                recurringMeeting(userId: "missing", courseId: "c2", courseName: "Sunday", courseColor: nil, dayOfWeek: 0),
+                recurringMeeting(userId: "u1", courseId: "c3", courseName: "Saturday", courseColor: "#123", dayOfWeek: 6),
+            ]
+        ))
 
         let byTitle = Dictionary(uniqueKeysWithValues: events.map { ($0.title, $0) })
-        XCTAssertEqual(byTitle["Two Slots"]?.dayOfWeek, 3)
-        XCTAssertEqual(byTitle["Two Slots"]?.periodCount, 2)
-        XCTAssertEqual(byTitle["Two Slots"]?.color, "#0f0")
-        XCTAssertEqual(byTitle["Two Slots"]?.subtitle, "alice")
+        XCTAssertEqual(byTitle["Monday"]?.dayOfWeek, 1)
+        XCTAssertEqual(byTitle["Monday"]?.periodCount, 1)
+        XCTAssertEqual(byTitle["Monday"]?.color, "#0f0")
+        XCTAssertEqual(byTitle["Monday"]?.subtitle, "alice")
         XCTAssertEqual(byTitle["Sunday"]?.dayOfWeek, 7)
         XCTAssertEqual(byTitle["Sunday"]?.color, "#F97316")
         XCTAssertEqual(byTitle["Sunday"]?.subtitle, "No name")
         XCTAssertEqual(byTitle["Saturday"]?.dayOfWeek, 6)
     }
 
-    func testBuildTimetableEventsDedupsByUserCourseDayAndPeriod() {
-        let events = RoomTimetableLogic.buildEvents(
-            week: week(members: [member("u1")], meetings: [
-                meeting(userId: "u1", occurrenceId: "a", courseId: "c1", date: "2026-07-01", startMinute: 540, endMinute: 630),
-                meeting(userId: "u1", occurrenceId: "b", courseId: "c1", date: "2026-07-01", startMinute: 540, endMinute: 630),
-            ]),
-            daySlots: RoomTimetableLogic.defaultSlots
-        )
+    func testBuildRecurringEventsDedupsKeepsMultipleMembersAndSorts() {
+        let events = RoomTimetableLogic.buildRecurringEvents(week: week(
+            members: [member("u1"), member("u2")],
+            recurringMeetings: [
+                recurringMeeting(userId: "u1", courseId: "fri", courseName: "Friday", dayOfWeek: 5, startPeriodIndex: 1),
+                recurringMeeting(userId: "u1", courseId: "mon", courseName: "Monday", dayOfWeek: 1, startPeriodIndex: 3),
+                recurringMeeting(userId: "u1", courseId: "c1", courseName: "First", dayOfWeek: 3, startPeriodIndex: 2),
+                recurringMeeting(userId: "u1", courseId: "c1", courseName: "Duplicate", dayOfWeek: 3, startPeriodIndex: 2),
+                recurringMeeting(userId: "u2", courseId: "c1", courseName: "Second", dayOfWeek: 3, startPeriodIndex: 2),
+            ]
+        ))
 
-        XCTAssertEqual(events.count, 1)
+        XCTAssertEqual(events.count, 4)
+        XCTAssertEqual(events.map(\.title), ["Monday", "First", "Second", "Friday"])
+        XCTAssertEqual(events.filter { $0.startPeriodIndex == 2 && $0.dayOfWeek == 3 }.count, 2)
     }
 
     func testDisplayDaysIncludesWeekdaysAndAdditionalDaysSorted() {

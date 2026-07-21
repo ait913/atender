@@ -65,8 +65,34 @@ final class RoomWeekContractTests: XCTestCase {
         XCTAssertEqual(week.members[0].userId, "demo-user-ios")
         XCTAssertEqual(week.meetings[0].courseName, "プログラミング演習")
         XCTAssertEqual(week.meetings[0].startMinute, 540, accuracy: 0.0001)
+        XCTAssertFalse(week.recurringMeetings.isEmpty, "recurringMeetings が読めること")
+        XCTAssertEqual(week.recurringMeetings[0].courseName, "プログラミング演習")
+        XCTAssertEqual(week.recurringMeetings[0].dayOfWeek, 1)
+        XCTAssertEqual(week.recurringMeetings[0].startPeriodIndex, 1)
         XCTAssertEqual(week.roomEvents[0].title, "合同勉強会")
         XCTAssertEqual(week.roomEvents[0].source, .manual)
+    }
+
+    func testRoomWeekDecodeDefaultsMissingRecurringMeetingsToEmptyArray() throws {
+        let json = """
+        {
+          "weekStart": "2026-07-12T15:00:00.000Z",
+          "weekEnd": "2026-07-19T14:59:59.999Z",
+          "members": [
+            {"userId": "demo-user-ios", "name": "デモ太郎", "handle": null, "image": null, "color": "hsl(301 70% 45%)"}
+          ],
+          "meetings": [
+            {"userId": "demo-user-ios", "occurrenceId": "occ_1", "courseId": "course_1", "courseName": "プログラミング演習", "courseColor": "#3B82F6", "date": "2026-07-13", "startMinute": 540, "endMinute": 630}
+          ],
+          "roomEvents": []
+        }
+        """
+
+        let week = try JSONDecoder().decode(RoomWeekDto.self, from: Data(json.utf8))
+
+        XCTAssertEqual(week.recurringMeetings, [])
+        XCTAssertEqual(week.members[0].userId, "demo-user-ios")
+        XCTAssertEqual(week.meetings[0].courseName, "プログラミング演習")
     }
 
     /// 負のコントロール: `week` ラッパー付きは契約違反なので decode 失敗すべき。

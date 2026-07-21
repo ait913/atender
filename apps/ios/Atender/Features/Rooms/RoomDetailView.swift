@@ -394,7 +394,7 @@ struct RoomTimetable: View {
             } else if loadError {
                 Panel { Text("時間割を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
             } else if let week {
-                let events = RoomTimetableLogic.buildEvents(week: week, daySlots: daySlots)
+                let events = RoomTimetableLogic.buildRecurringEvents(week: week)
                 if events.isEmpty {
                     EmptyState(title: week.members.isEmpty ? "メンバーがいません" : "メンバーの時間割がまだありません")
                 } else {

@@ -582,6 +582,7 @@ struct RoomWeekDto: Codable, Equatable {
     let weekEnd: String
     let members: [Member]
     let meetings: [Meeting]
+    let recurringMeetings: [RecurringMeeting]
     let roomEvents: [RoomEventDto]
 
     struct Member: Codable, Equatable, Identifiable {
@@ -602,6 +603,43 @@ struct RoomWeekDto: Codable, Equatable {
         let date: String
         let startMinute: Double
         let endMinute: Double
+    }
+
+    struct RecurringMeeting: Codable, Equatable {
+        let userId: String
+        let timetableId: String
+        let courseId: String
+        let courseName: String
+        let courseColor: String?
+        let dayOfWeek: Int
+        let startPeriodIndex: Int
+        let periodCount: Int
+    }
+
+    init(
+        weekStart: String,
+        weekEnd: String,
+        members: [Member],
+        meetings: [Meeting],
+        recurringMeetings: [RecurringMeeting] = [],
+        roomEvents: [RoomEventDto]
+    ) {
+        self.weekStart = weekStart
+        self.weekEnd = weekEnd
+        self.members = members
+        self.meetings = meetings
+        self.recurringMeetings = recurringMeetings
+        self.roomEvents = roomEvents
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        weekStart = try container.decode(String.self, forKey: .weekStart)
+        weekEnd = try container.decode(String.self, forKey: .weekEnd)
+        members = try container.decode([Member].self, forKey: .members)
+        meetings = try container.decode([Meeting].self, forKey: .meetings)
+        recurringMeetings = try container.decodeIfPresent([RecurringMeeting].self, forKey: .recurringMeetings) ?? []
+        roomEvents = try container.decode([RoomEventDto].self, forKey: .roomEvents)
     }
 }
 
