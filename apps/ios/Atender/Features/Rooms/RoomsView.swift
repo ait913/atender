@@ -231,13 +231,18 @@ struct JoinByCodeSheet: View {
     @Binding var isPresented: Bool
     let onJoined: (String) -> Void
     @Environment(AppEnvironment.self) private var environment
+    @Environment(AppRouter.self) private var router
     @State private var code = ""
     @State private var isPending = false
     @State private var errorMessage: String?
+    @State private var scannerPresented = false
 
     var body: some View {
         SheetScaffold(title: "リンクで参加", isPresented: $isPresented) {
             VStack(alignment: .leading, spacing: Space.s4) {
+                AtenderButton(title: "QR コードで参加", systemImage: "qrcode.viewfinder", variant: .secondary) {
+                    scannerPresented = true
+                }
                 LabeledInput(label: "招待リンクまたはコード", text: $code)
                 if let errorMessage {
                     Text(errorMessage).font(.atenderSm).foregroundStyle(Color.statusAbsent)
@@ -260,6 +265,16 @@ struct JoinByCodeSheet: View {
             }
         }
         .accessibilityIdentifier("join-by-code-sheet")
+        .fullScreenCover(isPresented: $scannerPresented) {
+            QRScannerScreen(
+                onResult: { url in
+                    scannerPresented = false
+                    isPresented = false
+                    router.handleDeepLink(url)
+                },
+                onCancel: { scannerPresented = false }
+            )
+        }
     }
 }
 

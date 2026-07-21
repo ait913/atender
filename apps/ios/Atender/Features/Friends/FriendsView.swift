@@ -178,12 +178,14 @@ struct AddFriendSheet: View {
     @Binding var isPresented: Bool
     let onChanged: () async -> Void
     @Environment(AppEnvironment.self) private var environment
+    @Environment(AppRouter.self) private var router
     @State private var rawHandle = ""
     @State private var searchResults: [UserSearchDto] = []
     @State private var invite = ""
     @State private var myInviteCode: String?
     @State private var copyMessage: String?
     @State private var isPending = false
+    @State private var scannerPresented = false
 
     var body: some View {
         SheetScaffold(title: "友達を追加", isPresented: $isPresented) {
@@ -209,6 +211,9 @@ struct AddFriendSheet: View {
                     .buttonStyle(.plain)
                 }
                 inviteLinkSection
+                AtenderButton(title: "QR コードで追加", systemImage: "qrcode.viewfinder", variant: .secondary) {
+                    scannerPresented = true
+                }
                 LabeledInput(label: "招待リンクで追加", text: $invite)
             }
         } footer: {
@@ -229,16 +234,39 @@ struct AddFriendSheet: View {
             try? await Task.sleep(nanoseconds: 300_000_000)
             searchResults = (try? await environment.friendshipRepository.searchUsers(handle: handle)) ?? []
         }
+        .fullScreenCover(isPresented: $scannerPresented) {
+            QRScannerScreen(
+                onResult: { url in
+                    scannerPresented = false
+                    isPresented = false
+                    router.handleDeepLink(url)
+                },
+                onCancel: { scannerPresented = false }
+            )
+        }
     }
 
     private var inviteLinkSection: some View {
-        let link = "https://atender.appily.run/friends/add/\(myInviteCode ?? "")"
+        let inviteCode = myInviteCode
+        let link = InviteURL.friend(inviteCode: inviteCode ?? "")
         return VStack(alignment: .leading, spacing: Space.s2) {
+            if inviteCode != nil {
+                InviteQRView(urlString: link)
+            } else {
+                InviteQRView(urlString: "")
+                    .redacted(reason: .placeholder)
+            }
             Text(link).font(.atenderXs).foregroundStyle(Color.textTertiary)
             if let copyMessage { Text(copyMessage).font(.atenderXs).foregroundStyle(Color.accent500) }
-            AtenderButton(title: "リンクをコピー", variant: .secondary, size: .sm) {
-                UIPasteboard.general.string = link
-                copyMessage = "コピーしました"
+            HStack(spacing: Space.s3) {
+                AtenderButton(title: "リンクをコピー", variant: .secondary, size: .sm) {
+                    UIPasteboard.general.string = link
+                    copyMessage = "コピーしました"
+                }
+                if let url = URL(string: link) {
+                    ShareLink("共有", item: url)
+                        .font(.atenderSm)
+                }
             }
         }
     }
