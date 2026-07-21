@@ -6,7 +6,7 @@ struct PeriodChips: View {
     var disabled = false
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.s1), count: 5), spacing: Space.s1) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 40, maximum: 44), spacing: Space.s1)], alignment: .leading, spacing: Space.s1) {
             ForEach(1...max(1, periodCount), id: \.self) { period in
                 let selected = value.contains(period)
                 Button {
