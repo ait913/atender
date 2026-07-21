@@ -25,6 +25,7 @@ struct TimetableSettingsSheet: View {
     @State private var searchOpen = false
     @State private var searchQuery = ""
     @State private var templates: [TemplateDto] = []
+    @State private var confirmingDelete = false
 
     var body: some View {
         BottomSheet(title: "時間割の設定", isPresented: $isPresented) {
@@ -108,6 +109,9 @@ struct TimetableSettingsSheet: View {
                         .font(.atenderSm)
                         .foregroundStyle(message.contains("できません") || message.contains("してください") ? Color.statusAbsent : Color.textSecondary)
                 }
+                if timetable != nil {
+                    timetableDangerZone
+                }
             }
             .onAppear { initialize() }
             .onChange(of: isPresented) { _, open in if open { initialize() } }
@@ -121,6 +125,27 @@ struct TimetableSettingsSheet: View {
                     Task { await save() }
                 }
             }
+        }
+    }
+
+    private var timetableDangerZone: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("この時間割を削除")
+                .font(.atenderBase.weight(.bold))
+                .foregroundStyle(Color.statusAbsent)
+            Text("授業・出席記録も全て削除されます。元に戻せません。")
+                .font(.atenderSm)
+                .foregroundStyle(Color.textSecondary)
+            AtenderButton(title: "削除する", variant: .ghost) {
+                confirmingDelete = true
+            }
+        }
+        .padding(Space.s4)
+        .background(Color.statusAbsent.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Radius.md, style: .continuous).stroke(Color.statusAbsent.opacity(0.30), lineWidth: 1))
+        .confirmDestructive("時間割を削除", isPresented: $confirmingDelete, actionTitle: "削除する") {
+            Task { await deleteTimetable() }
         }
     }
 
@@ -199,6 +224,17 @@ struct TimetableSettingsSheet: View {
         message = "「\(template.title)」を取り込みました"
         searchOpen = false
         onSaved?()
+    }
+
+    private func deleteTimetable() async {
+        guard let id = timetable?.id else { return }
+        do {
+            try await environment.timetableRepository.deleteUserTimetable(id: id)
+            onSaved?()
+            isPresented = false
+        } catch {
+            environment.toastCenter.show("削除できませんでした")
+        }
     }
 
     private func timeField(_ minutes: Binding<Int>) -> some View {

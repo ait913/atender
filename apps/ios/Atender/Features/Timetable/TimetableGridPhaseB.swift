@@ -26,7 +26,7 @@ struct TimetableGrid: View {
             ZStack(alignment: .topLeading) {
                 background(width: width, colWidth: colWidth, rowHeight: rowHeight, contentHeight: contentHeight, periodIndexes: periodIndexes, occupied: occupied)
                 eventLayer(coalesced: coalesced, colWidth: colWidth, rowHeight: rowHeight, periodIndexes: periodIndexes)
-                currentIntersection(colWidth: colWidth, rowHeight: rowHeight, periodIndexes: periodIndexes)
+                currentIntersection(coalesced: coalesced, colWidth: colWidth, rowHeight: rowHeight, periodIndexes: periodIndexes)
             }
         }
         .frame(height: contentHeight)
@@ -116,14 +116,27 @@ struct TimetableGrid: View {
     }
 
     @ViewBuilder
-    private func currentIntersection(colWidth: CGFloat, rowHeight: CGFloat, periodIndexes: [Int]) -> some View {
+    private func currentIntersection(coalesced: [TimetableEventInput], colWidth: CGFloat, rowHeight: CGFloat, periodIndexes: [Int]) -> some View {
         if let todayCol,
-           let currentPeriodIndex,
-           let row = periodIndexes.firstIndex(of: currentPeriodIndex) {
-            RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
-                .stroke(Color.accent500, lineWidth: 2)
-                .frame(width: colWidth, height: rowHeight)
-                .position(x: headerWidth + colWidth * CGFloat(todayCol) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
+           let todayDisplayDay,
+           let currentPeriodIndex {
+            if let block = coalesced.first(where: {
+                $0.dayOfWeek == todayDisplayDay &&
+                    $0.startPeriodIndex <= currentPeriodIndex &&
+                    currentPeriodIndex < $0.startPeriodIndex + $0.periodCount
+            }),
+               let row = periodIndexes.firstIndex(of: block.startPeriodIndex) {
+                let span = min(block.periodCount, periodIndexes.count - row)
+                RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    .stroke(Color.accent500, lineWidth: 2)
+                    .frame(width: colWidth, height: rowHeight * CGFloat(span))
+                    .position(x: headerWidth + colWidth * CGFloat(todayCol) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight * CGFloat(span) / 2)
+            } else if let row = periodIndexes.firstIndex(of: currentPeriodIndex) {
+                RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    .stroke(Color.accent500, lineWidth: 2)
+                    .frame(width: colWidth, height: rowHeight)
+                    .position(x: headerWidth + colWidth * CGFloat(todayCol) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
+            }
         }
     }
 

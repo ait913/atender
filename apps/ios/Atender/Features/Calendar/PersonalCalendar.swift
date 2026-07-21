@@ -251,6 +251,7 @@ struct CalendarMonth: View {
     var available: CGFloat? = nil
     let onSelectDate: (String) -> Void
     var onChangeAnchor: ((String) -> Void)? = nil
+    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
 
     private let labels = ["月", "火", "水", "木", "金", "土", "日"]
     var body: some View {
@@ -324,6 +325,12 @@ struct CalendarMonth: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .contentShape(Rectangle())
+                            .simultaneousGesture(TapGesture().onEnded {
+                                if event.kind == .roomEvent {
+                                    onSelectEvent?(event)
+                                }
+                            })
                     }
                     if overflow {
                         Text("+\(events.count - visibleCount)")
@@ -361,6 +368,7 @@ struct CalendarWeek: View {
     let selectedDate: String
     let eventsByDateMap: [String: [CalendarEvent]]
     let onSelectDate: (String) -> Void
+    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
 
     var body: some View {
         VStack(spacing: Space.s2) {
@@ -382,6 +390,12 @@ struct CalendarWeek: View {
                             ForEach(events) { event in
                                 EventTile(title: event.title, color: event.color, subtitle: event.subtitle, meta: TimeFormatting.minutesToTime(event.startMinute))
                                     .frame(height: 48)
+                                    .contentShape(Rectangle())
+                                    .simultaneousGesture(TapGesture().onEnded {
+                                        if event.kind == .roomEvent {
+                                            onSelectEvent?(event)
+                                        }
+                                    })
                             }
                         }
                     }
@@ -397,6 +411,8 @@ struct CalendarWeek: View {
 struct CalendarDay: View {
     let date: String
     let events: [CalendarEvent]
+    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
+
     var body: some View {
         let laned = CalendarLane.assignLanes(events)
         GeometryReader { proxy in
@@ -417,6 +433,12 @@ struct CalendarDay: View {
                     EventTile(title: item.event.title, color: item.event.color, subtitle: "\(item.event.subtitle) · \(TimeFormatting.minutesToTime(item.event.startMinute))", leadingSystemImage: item.event.source == .googleOauth ? "cloud.fill" : (item.event.source == .icsFile || item.event.source == .icsUrl ? "calendar.badge.arrow.down" : nil))
                         .frame(width: laneWidth - 2, height: eventHeight)
                         .position(x: 58 + laneWidth * CGFloat(item.lane) + laneWidth / 2, y: top + eventHeight / 2)
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if item.event.kind == .roomEvent {
+                                onSelectEvent?(item.event)
+                            }
+                        })
                 }
             }
         }

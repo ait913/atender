@@ -192,23 +192,7 @@ struct AddFriendSheet: View {
             VStack(alignment: .leading, spacing: Space.s5) {
                 LabeledInput(label: "ハンドル検索", text: $rawHandle, placeholder: "@handle")
                 ForEach(searchResults) { user in
-                    Button {
-                        Task { await request(userId: user.id) }
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(user.name ?? "名前未設定").font(.atenderSm).fontWeight(.bold)
-                                Text("@\(user.handle ?? String(user.id.prefix(8)))").font(.atenderXs).foregroundStyle(Color.textTertiary)
-                            }
-                            Spacer()
-                            Text("申請").font(.atenderSm).fontWeight(.bold).foregroundStyle(Color.accent500)
-                        }
-                        .foregroundStyle(Color.textPrimary)
-                        .padding(Space.s3)
-                        .background(Color.bgMuted)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
-                    }
-                    .buttonStyle(.plain)
+                    searchResultRow(user)
                 }
                 inviteLinkSection
                 AtenderButton(title: "QR コードで追加", systemImage: "qrcode.viewfinder", variant: .secondary) {
@@ -269,6 +253,56 @@ struct AddFriendSheet: View {
                 }
             }
         }
+    }
+
+    private func searchResultRow(_ user: UserSearchDto) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(user.name ?? "名前未設定").font(.atenderSm).fontWeight(.bold)
+                Text("@\(user.handle ?? String(user.id.prefix(8)))").font(.atenderXs).foregroundStyle(Color.textTertiary)
+            }
+            Spacer()
+            friendshipSearchAction(for: user)
+        }
+        .foregroundStyle(Color.textPrimary)
+        .padding(Space.s3)
+        .background(Color.bgMuted)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md))
+    }
+
+    @ViewBuilder
+    private func friendshipSearchAction(for user: UserSearchDto) -> some View {
+        switch user.friendshipStatus {
+        case nil:
+            Button {
+                Task { await request(userId: user.id) }
+            } label: {
+                Text("申請")
+                    .font(.atenderSm)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.accent500)
+            }
+            .buttonStyle(.plain)
+            .disabled(isPending)
+        case .some(.pending):
+            friendshipStatusBadge("申請済")
+        case .some(.accepted):
+            friendshipStatusBadge("友達")
+        case .some(.declined), .some(.blocked), .some(.unknown):
+            AtenderButton(title: "申請", variant: .ghost, size: .sm, isEnabled: false) {}
+                .fixedSize()
+        }
+    }
+
+    private func friendshipStatusBadge(_ title: String) -> some View {
+        Text(title)
+            .font(.atenderSm)
+            .fontWeight(.bold)
+            .foregroundStyle(Color.textSecondary)
+            .padding(.horizontal, Space.s3)
+            .padding(.vertical, Space.s2)
+            .background(Color.bgElevated)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
     }
 
     private func request(userId: String? = nil, inviteCode: String? = nil) async {

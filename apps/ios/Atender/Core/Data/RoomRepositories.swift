@@ -105,6 +105,17 @@ final class RoomEventRepository {
         cache.invalidate(prefixes: invalidationTargets(for: .roomEvent(id: roomId)))
         return response.event
     }
+
+    func updateRoomEvent(roomId: String, eventId: String, _ input: UpdateRoomEventInput) async throws -> RoomEventDto {
+        let response = try await client.send(Endpoints.updateRoomEvent(id: roomId, eventId: eventId, input), as: RoomEventResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .roomEvent(id: roomId)))
+        return response.event
+    }
+
+    func deleteRoomEvent(roomId: String, eventId: String, scope: String = "all", originalDate: String? = nil) async throws {
+        try await client.send(Endpoints.deleteRoomEvent(id: roomId, eventId: eventId, scope: scope, originalDate: originalDate))
+        cache.invalidate(prefixes: invalidationTargets(for: .roomEvent(id: roomId)))
+    }
 }
 
 @MainActor

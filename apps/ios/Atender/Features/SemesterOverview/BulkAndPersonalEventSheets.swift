@@ -239,7 +239,7 @@ struct PersonalEventEditModalContent: View {
                     }
                     ColorPicker("", selection: Binding(
                         get: { Color(hexString: color) },
-                        set: { _ in }
+                        set: { color = $0.toHexString() }
                     ))
                     .labelsHidden()
                 }

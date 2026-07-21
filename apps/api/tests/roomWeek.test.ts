@@ -129,3 +129,231 @@ describe("room week endpoint", () => {
     expectError(await json(setupRequired), "SETUP_REQUIRED");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Reviewer-generated (independent from Developer): recurringMeetings B1-B9
+// Source of truth: .designs/20260721-room-recurring-timetable.md §挙動仕様 backend
+// ─────────────────────────────────────────────────────────────────────────────
+
+type AnyDb = ReturnType<typeof prisma>;
+
+async function makeSemester(
+  db: AnyDb,
+  userId: string,
+  name: string,
+  startDate = new Date("2026-04-01T00:00:00.000Z"),
+  endDate = new Date("2026-09-30T14:59:59.000Z"),
+) {
+  return db.semester.create({ data: { userId, name, startDate, endDate } });
+}
+
+async function makeTimetable(
+  db: AnyDb,
+  userId: string,
+  semesterId: string,
+  opts: {
+    title?: string;
+    courseName: string;
+    color?: string | null;
+    dayOfWeek: number;
+    startPeriodIndex?: number;
+    periodCount?: number;
+    createdAt?: Date;
+  },
+) {
+  const tt = await db.userTimetable.create({
+    data: {
+      userId,
+      semesterId,
+      title: opts.title ?? `${opts.courseName} tt`,
+      ...(opts.createdAt ? { createdAt: opts.createdAt } : {}),
+    },
+  });
+  const course = await db.course.create({
+    data: { userTimetableId: tt.id, name: opts.courseName, color: opts.color ?? null },
+  });
+  const meeting = await db.meeting.create({
+    data: {
+      userTimetableId: tt.id,
+      courseId: course.id,
+      dayOfWeek: opts.dayOfWeek,
+      startPeriodIndex: opts.startPeriodIndex ?? 1,
+      periodCount: opts.periodCount ?? 1,
+    },
+  });
+  return { tt, course, meeting };
+}
+
+async function fetchWeek(cookie: string, roomId: string, weekStart = "2026-05-25") {
+  const res = await requestJson(app, `/api/rooms/${roomId}/week?weekStart=${weekStart}`, {
+    headers: cookieHeader(cookie),
+  });
+  expect(res.status).toBe(200);
+  return (await json(res)) as any;
+}
+
+describe("room week recurringMeetings (Reviewer B1-B9)", () => {
+  it("B1: single member returns exactly one recurring meeting with mapped fields", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" });
+    const room = await createRoom(db, { ownerId: owner.user.id });
+
+    const body = await fetchWeek(owner.cookie, room.id);
+    expect(Array.isArray(body.recurringMeetings)).toBe(true);
+    expect(body.recurringMeetings).toHaveLength(1);
+    const rm = body.recurringMeetings[0];
+    expect(rm.userId).toBe(owner.user.id);
+    expect(rm.dayOfWeek).toBe(3);
+    expect(rm.startPeriodIndex).toBe(1);
+    expect(rm.periodCount).toBe(2);
+    expect(rm.courseName).toBe("オペレーティングシステム");
+    expect(rm.courseColor).toBe("#ffffff");
+    expect(rm.timetableId).toBe(owner.userTimetable.id);
+    expect(rm.courseId).toBe(owner.course.id);
+  });
+
+  it("B2: recurringMeetings are identical regardless of weekStart (in-range vs out-of-range)", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" });
+    const room = await createRoom(db, { ownerId: owner.user.id });
+
+    const outOfRange = await fetchWeek(owner.cookie, room.id, "2027-01-04");
+    const inRange = await fetchWeek(owner.cookie, room.id, "2026-04-06");
+
+    const norm = (b: any) =>
+      [...b.recurringMeetings]
+        .map((m: any) => JSON.stringify(m))
+        .sort();
+    expect(norm(outOfRange)).toEqual(norm(inRange));
+    expect(outOfRange.recurringMeetings).toHaveLength(1);
+    // occurrence contrast: out-of-range week has no occurrence meetings
+    expect(inRange.recurringMeetings).toHaveLength(1);
+  });
+
+  it("B3: multiple members overlapping same room appear distinctly by userId", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" }); // 水1-2 OS
+    const memberB = await createTestUser(db, { name: "MemberB" });
+    const semB = await makeSemester(db, memberB.id, "B sem");
+    const ttB = await makeTimetable(db, memberB.id, semB.id, {
+      courseName: "科目Y",
+      color: "#00ff00",
+      dayOfWeek: 3,
+      startPeriodIndex: 2,
+      periodCount: 1,
+    });
+    await db.user.update({ where: { id: memberB.id }, data: { defaultSemesterId: semB.id } });
+    const room = await createRoom(db, { ownerId: owner.user.id });
+    await addRoomMember(db, { roomId: room.id, userId: memberB.id, joinedAt: new Date("2026-05-02T00:00:00.000Z") });
+
+    const body = await fetchWeek(owner.cookie, room.id);
+    const ownerRm = body.recurringMeetings.find((m: any) => m.userId === owner.user.id);
+    const bRm = body.recurringMeetings.find((m: any) => m.userId === memberB.id);
+    expect(ownerRm).toBeTruthy();
+    expect(ownerRm.startPeriodIndex).toBe(1);
+    expect(ownerRm.courseName).toBe("オペレーティングシステム");
+    expect(bRm).toBeTruthy();
+    expect(bRm.startPeriodIndex).toBe(2);
+    expect(bRm.courseName).toBe("科目Y");
+    expect(bRm.timetableId).toBe(ttB.tt.id);
+  });
+
+  it("B4: defaultSemesterId is preferred over the newest-created timetable", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" });
+    const memberB = await createTestUser(db, { name: "MemberB" });
+    const semOld = await makeSemester(db, memberB.id, "old");
+    const semNew = await makeSemester(db, memberB.id, "new");
+    await makeTimetable(db, memberB.id, semOld.id, {
+      courseName: "OLD",
+      dayOfWeek: 1, // 月
+      startPeriodIndex: 1,
+      periodCount: 1,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await makeTimetable(db, memberB.id, semNew.id, {
+      courseName: "NEW",
+      dayOfWeek: 2, // 火
+      startPeriodIndex: 1,
+      periodCount: 1,
+      createdAt: new Date("2026-03-01T00:00:00.000Z"),
+    });
+    // defaultSemesterId points at the OLDER (not the newest-created) timetable
+    await db.user.update({ where: { id: memberB.id }, data: { defaultSemesterId: semOld.id } });
+
+    const room = await createRoom(db, { ownerId: owner.user.id });
+    await addRoomMember(db, { roomId: room.id, userId: memberB.id });
+
+    const body = await fetchWeek(owner.cookie, room.id);
+    const bRms = body.recurringMeetings.filter((m: any) => m.userId === memberB.id);
+    expect(bRms).toHaveLength(1);
+    expect(bRms[0].courseName).toBe("OLD");
+    expect(bRms[0].dayOfWeek).toBe(1);
+  });
+
+  it("B5: with defaultSemesterId null, the newest-created timetable is used (fallback)", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" });
+    const memberC = await createTestUser(db, { name: "MemberC", defaultSemesterId: null });
+    const semOld = await makeSemester(db, memberC.id, "old");
+    const semNew = await makeSemester(db, memberC.id, "new");
+    await makeTimetable(db, memberC.id, semOld.id, {
+      courseName: "OLD",
+      dayOfWeek: 1,
+      startPeriodIndex: 1,
+      periodCount: 1,
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    await makeTimetable(db, memberC.id, semNew.id, {
+      courseName: "NEW",
+      dayOfWeek: 2,
+      startPeriodIndex: 1,
+      periodCount: 1,
+      createdAt: new Date("2026-03-01T00:00:00.000Z"),
+    });
+
+    const room = await createRoom(db, { ownerId: owner.user.id });
+    await addRoomMember(db, { roomId: room.id, userId: memberC.id });
+
+    const body = await fetchWeek(owner.cookie, room.id);
+    const cRms = body.recurringMeetings.filter((m: any) => m.userId === memberC.id);
+    expect(cRms).toHaveLength(1);
+    expect(cRms[0].courseName).toBe("NEW");
+    expect(cRms[0].dayOfWeek).toBe(2);
+  });
+
+  it("B6: a member without any timetable contributes nothing but remains in members", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" });
+    const memberD = await createTestUser(db, { name: "MemberD" }); // no timetable at all
+    const room = await createRoom(db, { ownerId: owner.user.id });
+    await addRoomMember(db, { roomId: room.id, userId: memberD.id });
+
+    const body = await fetchWeek(owner.cookie, room.id);
+    expect(body.recurringMeetings.some((m: any) => m.userId === memberD.id)).toBe(false);
+    expect(body.members.map((m: any) => m.userId)).toContain(memberD.id);
+  });
+
+  it("B7: showMemberTimetables=false restricts recurringMeetings to the viewer only", async () => {
+    const db = prisma();
+    const owner = await setupCompleteUser(db, { name: "Owner" }); // 水1-2 OS
+    const memberB = await createTestUser(db, { name: "MemberB" });
+    const semB = await makeSemester(db, memberB.id, "B sem");
+    await makeTimetable(db, memberB.id, semB.id, {
+      courseName: "科目Y",
+      dayOfWeek: 3,
+      startPeriodIndex: 2,
+      periodCount: 1,
+    });
+    await db.user.update({ where: { id: memberB.id }, data: { defaultSemesterId: semB.id } });
+
+    const room = await createRoom(db, { ownerId: owner.user.id });
+    await addRoomMember(db, { roomId: room.id, userId: memberB.id });
+    await db.room.update({ where: { id: room.id }, data: { showMemberTimetables: false } });
+
+    const body = await fetchWeek(owner.cookie, room.id);
+    expect(body.recurringMeetings.length).toBeGreaterThan(0);
+    expect(body.recurringMeetings.every((m: any) => m.userId === owner.user.id)).toBe(true);
+    expect(body.recurringMeetings.some((m: any) => m.userId === memberB.id)).toBe(false);
+  });
+});
