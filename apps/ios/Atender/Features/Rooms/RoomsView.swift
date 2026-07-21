@@ -49,6 +49,7 @@ struct RoomsView: View {
         }
         .background(Color.bgBase)
         .navigationTitle("ルーム")
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             if model == nil { model = RoomsViewModel(env: environment) }
             await model?.load()

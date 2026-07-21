@@ -54,13 +54,14 @@ struct HomeView: View {
                     onChange: { context = $0 },
                     onAddRoom: { environment.appRouter.selectedTab = .rooms }
                 )
+                .padding(.horizontal, -Space.pagePxMobile)
             }
             Picker("表示", selection: $mode) {
                 Text("時間割").tag(HomeViewMode.timetable)
                 Text("カレンダー").tag(HomeViewMode.calendar)
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 240)
+            .frame(maxWidth: .infinity)
             GeometryReader { proxy in
                 HomeBody(
                     context: context,
@@ -76,22 +77,21 @@ struct HomeView: View {
         .padding(.top, Space.s3)
         .background(Color.clear)
         .navigationTitle("ホーム")
-        .navigationBarTitleDisplayMode(.large)
-        .safeAreaInset(edge: .bottom) {
-            if context == .self { NowNextBarHost() }
-        }
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if context == .self && mode == .timetable {
+            if context == .self && mode == .timetable {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showTimetableSettings = true
                     } label: {
                         Image(systemName: "gearshape")
                     }
-                    .frame(width: 44, height: 44)
                     .accessibilityLabel("時間割の設定")
                 }
             }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if context == .self { NowNextBarHost() }
         }
         .task {
             rooms = (try? await environment.roomRepository.rooms()) ?? []
@@ -214,6 +214,8 @@ struct ContextChips: View {
                 .accessibilityLabel("ルームを追加")
             }
         }
+        .scrollClipDisabled()
+        .contentMargins(.horizontal, Space.pagePxMobile, for: .scrollContent)
         .accessibilityIdentifier("context-chips")
     }
 

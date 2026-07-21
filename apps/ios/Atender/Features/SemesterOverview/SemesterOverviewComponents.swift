@@ -13,7 +13,7 @@ struct AttendanceRateHero: View {
                 .foregroundStyle(Color.textSecondary)
             HStack(alignment: .lastTextBaseline, spacing: Space.s2) {
                 Text(pct.map(String.init) ?? "—")
-                    .font(.atender5xl.weight(.black))
+                    .font(.atender5xl.weight(.bold))
                     .foregroundStyle(rateColor)
                 if pct != nil {
                     Text("%")
@@ -26,7 +26,7 @@ struct AttendanceRateHero: View {
             }
             RateProgressBar(pct: pct, required: requiredRate)
                 .frame(height: 10)
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s2) {
                 Text(SemesterOverviewDisplayLogic.overallActionText(
                     allowedAbsences: overall.allowedAbsences,
                     remainingCount: overall.remainingCount,
@@ -79,7 +79,7 @@ struct AttendanceCalendar: View {
     @State private var anchor: String = CalendarRange.monthFirst(SchoolClock.todayString())
     @State private var eventDates: Set<String> = []
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
     private let weekdays = ["日", "月", "火", "水", "木", "金", "土"]
 
     var body: some View {
@@ -106,10 +106,10 @@ struct AttendanceCalendar: View {
                 }
                 chip(selectionMode ? "選択中" : "複数選択", active: selectionMode, action: onToggleSelectionMode)
             }
-            LazyVGrid(columns: columns, spacing: 6) {
+            LazyVGrid(columns: columns, spacing: 3) {
                 ForEach(weekdays, id: \.self) { label in
                     Text(label)
-                        .font(.caption2)
+                        .font(.atenderXs)
                         .fontWeight(.bold)
                         .foregroundStyle(Color.textTertiary)
                         .frame(maxWidth: .infinity)
@@ -122,7 +122,7 @@ struct AttendanceCalendar: View {
         }
         .padding(Space.s4)
         .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .atenderShadow(.card)
         .accessibilityIdentifier("attendance-calendar")
         .onAppear {
@@ -140,6 +140,7 @@ struct AttendanceCalendar: View {
         let inSemester = startDate <= iso && iso <= endDate
         let selected = selectedDates.contains(iso)
         let disabled = selectionMode && !inSemester
+        let hasStateStroke = visual.dashed || iso == today || selected
         return Button {
             selectionMode ? onToggleDate(iso) : onSelectDay(iso)
         } label: {
@@ -150,14 +151,15 @@ struct AttendanceCalendar: View {
                         color.opacity(visual.bgFraction)
                     }
                 }
-                .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
+                .clipShape(Circle())
                 VStack(spacing: 3) {
                     Text(String(Int(iso.suffix(2)) ?? 0))
-                        .font(.atenderXs.weight(.bold))
+                        .font(.atenderSm.weight(.semibold))
                     statusIcon(visual.icon)
                         .foregroundStyle(visual.iconColor)
                 }
                 .foregroundStyle(inMonth ? Color.textPrimary : Color.textTertiary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 if selected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8, weight: .bold))
@@ -175,16 +177,23 @@ struct AttendanceCalendar: View {
             }
             .aspectRatio(1, contentMode: .fit)
             .overlay {
-                RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
-                    .stroke(visual.dashed ? Color.statusTardy.opacity(0.40) : Color.borderSubtle, style: StrokeStyle(lineWidth: 1, dash: visual.dashed ? [4, 3] : []))
+                if !hasStateStroke {
+                    Circle().strokeBorder(Color.borderSubtle, lineWidth: 1)
+                }
+            }
+            .overlay {
+                if visual.dashed {
+                    Circle()
+                        .stroke(Color.statusTardy.opacity(0.40), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                }
             }
             .overlay {
                 if iso == today {
-                    RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    Circle()
                         .stroke(Color.accent500.opacity(0.60), lineWidth: 1)
                 }
                 if selected {
-                    RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous)
+                    Circle()
                         .stroke(Color.accent500, lineWidth: 2)
                 }
             }

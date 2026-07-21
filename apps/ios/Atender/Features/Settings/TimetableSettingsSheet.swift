@@ -37,14 +37,14 @@ struct TimetableSettingsSheet: View {
                         .background(Color.bgMuted)
                         .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
                 }
-                field("名前") { TextField("名前", text: $name).textFieldStyle(.roundedBorder).disabled(timetable == nil) }
+                field("名前") { TextField("名前", text: $name).textFieldStyle(.atender).disabled(timetable == nil) }
                 field("表示する曜日") { DayChips(value: $daysOfWeek, disabled: timetable == nil) }
                 field("時限 (\(slots.count) 限)") {
                     VStack(spacing: Space.s2) {
                         ForEach($slots) { $slot in
                             HStack(spacing: Space.s2) {
                                 TextField("ラベル", text: $slot.label)
-                                    .textFieldStyle(.roundedBorder)
+                                    .textFieldStyle(.atender)
                                     .frame(width: 64)
                                 timeField($slot.startMinute)
                                 Text("–").foregroundStyle(Color.textTertiary)
@@ -70,7 +70,7 @@ struct TimetableSettingsSheet: View {
                     .font(.atenderBase)
                     .disabled(timetable == nil)
                 if publishEnabled {
-                    field("公開タイトル") { TextField("公開タイトル", text: $publishTitle).textFieldStyle(.roundedBorder).disabled(timetable == nil) }
+                    field("公開タイトル") { TextField("公開タイトル", text: $publishTitle).textFieldStyle(.atender).disabled(timetable == nil) }
                 }
                 Button {
                     searchOpen.toggle()
@@ -83,7 +83,7 @@ struct TimetableSettingsSheet: View {
                 .disabled(timetable == nil)
                 if searchOpen {
                     TextField("検索", text: $searchQuery)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(.atender)
                         .onSubmit { Task { await loadTemplates() } }
                     ForEach(templates) { template in
                         HStack {
@@ -206,7 +206,7 @@ struct TimetableSettingsSheet: View {
             get: { TimeFormatting.minutesToTime(minutes.wrappedValue) },
             set: { if let value = TimeFormatting.hhmmToMinutes($0) { minutes.wrappedValue = value } }
         ))
-        .textFieldStyle(.roundedBorder)
+        .textFieldStyle(.atender)
         .keyboardType(.numbersAndPunctuation)
         .frame(width: 72)
     }

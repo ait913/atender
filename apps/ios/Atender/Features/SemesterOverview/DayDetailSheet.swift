@@ -71,7 +71,7 @@ struct DayDetailSheet: View {
                     .font(.atenderSm.weight(.bold))
                     .foregroundStyle(Color.textSecondary)
                 TextField("理由", text: $reason)
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.atender)
                     .onChange(of: reason) { _, value in reason = String(value.prefix(100)) }
                 AtenderButton(title: "この日を休講にする", variant: .primary, size: .sm) {
                     Task {

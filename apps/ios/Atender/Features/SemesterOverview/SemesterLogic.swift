@@ -25,13 +25,13 @@ enum AttendanceDayVisual {
 
         switch status {
         case .allPresent:
-            return .init(icon: .check, iconColor: .statusPresent, bgStatusColor: .statusPresent, bgFraction: 0.20, dashed: false)
+            return .init(icon: .check, iconColor: .statusPresent, bgStatusColor: .statusPresent, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
         case .hasAbsent:
-            return .init(icon: .x, iconColor: .statusAbsent, bgStatusColor: .statusAbsent, bgFraction: 0.26, dashed: false)
+            return .init(icon: .x, iconColor: .statusAbsent, bgStatusColor: .statusAbsent, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
         case .hasTardy:
-            return .init(icon: .clock, iconColor: .statusTardy, bgStatusColor: .statusTardy, bgFraction: 0.24, dashed: false)
+            return .init(icon: .clock, iconColor: .statusTardy, bgStatusColor: .statusTardy, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
         case .allSuspended:
-            return .init(icon: .ban, iconColor: .statusSuspended, bgStatusColor: .statusSuspended, bgFraction: 0.20, dashed: false)
+            return .init(icon: .ban, iconColor: .statusSuspended, bgStatusColor: .statusSuspended, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
         case .partialUnrecorded:
             return .init(icon: .minus, iconColor: .textTertiary, bgStatusColor: .statusNone, bgFraction: 0.12, dashed: true)
         case .noClass, .unknown, .none:

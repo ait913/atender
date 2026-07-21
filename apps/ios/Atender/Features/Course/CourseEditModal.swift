@@ -19,8 +19,8 @@ struct CourseEditModal: View {
     var body: some View {
         BottomSheet(title: course == nil ? "科目を追加" : "科目を編集", isPresented: $isPresented, stackLevel: stackLevel) {
             VStack(alignment: .leading, spacing: Space.s4) {
-                field("科目名") { TextField("科目名", text: $name).textFieldStyle(.roundedBorder) }
-                field("先生") { TextField("先生", text: $teacher).textFieldStyle(.roundedBorder) }
+                field("科目名") { TextField("科目名", text: $name).textFieldStyle(.atender) }
+                field("先生") { TextField("先生", text: $teacher).textFieldStyle(.atender) }
                 field("色") {
                     HStack(spacing: Space.s3) {
                         ForEach(colors, id: \.self) { candidate in
@@ -37,7 +37,7 @@ struct CourseEditModal: View {
                 field("メモ") {
                     TextField("メモ", text: $note, axis: .vertical)
                         .lineLimit(3...6)
-                        .textFieldStyle(.roundedBorder)
+                        .textFieldStyle(.atender)
                 }
                 if let error {
                     Text(error).font(.atenderSm).foregroundStyle(Color.statusAbsent)

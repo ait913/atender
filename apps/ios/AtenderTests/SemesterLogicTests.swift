@@ -12,7 +12,7 @@ final class SemesterLogicTests: XCTestCase {
             icon: .check,
             iconColor: .statusPresent,
             bgStatusColor: .statusPresent,
-            bgFraction: 0.20,
+            bgFraction: Double(Color.surfaceTintRatio),
             dashed: false
         )
         assertVisual(
@@ -20,7 +20,7 @@ final class SemesterLogicTests: XCTestCase {
             icon: .x,
             iconColor: .statusAbsent,
             bgStatusColor: .statusAbsent,
-            bgFraction: 0.26,
+            bgFraction: Double(Color.surfaceTintRatio),
             dashed: false
         )
         assertVisual(
@@ -28,7 +28,7 @@ final class SemesterLogicTests: XCTestCase {
             icon: .clock,
             iconColor: .statusTardy,
             bgStatusColor: .statusTardy,
-            bgFraction: 0.24,
+            bgFraction: Double(Color.surfaceTintRatio),
             dashed: false
         )
         assertVisual(
@@ -36,7 +36,7 @@ final class SemesterLogicTests: XCTestCase {
             icon: .ban,
             iconColor: .statusSuspended,
             bgStatusColor: .statusSuspended,
-            bgFraction: 0.20,
+            bgFraction: Double(Color.surfaceTintRatio),
             dashed: false
         )
         assertVisual(
@@ -63,7 +63,7 @@ final class SemesterLogicTests: XCTestCase {
             icon: .ban,
             iconColor: .statusSuspended,
             bgStatusColor: .statusSuspended,
-            bgFraction: 0.20,
+            bgFraction: Double(Color.surfaceTintRatio),
             dashed: false
         )
     }

@@ -51,6 +51,7 @@ struct FriendsView: View {
         }
         .background(Color.bgBase)
         .navigationTitle("友達")
+        .navigationBarTitleDisplayMode(.inline)
         .task {
             if model == nil { model = FriendsViewModel(env: environment) }
             await model?.load()

@@ -30,14 +30,15 @@ struct TimetableGrid: View {
             }
         }
         .frame(height: contentHeight)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .atenderShadow(.card)
         .animation(.smooth, value: currentPeriodIndex)
     }
 
     private func background(width: CGFloat, colWidth: CGFloat, rowHeight: CGFloat, contentHeight: CGFloat, periodIndexes: [Int], occupied: Set<String>) -> some View {
-        ZStack(alignment: .topLeading) {
-            Rectangle().fill(Color.bgBase)
+        let rowCount = max(1, periodIndexes.count)
+        return ZStack(alignment: .topLeading) {
+            Rectangle().fill(Color.bgElevated)
             Rectangle()
                 .fill(Color.bgMuted)
                 .frame(width: headerWidth, height: TimetableGridLayout.headerHeight)
@@ -69,6 +70,21 @@ struct TimetableGrid: View {
                     .frame(width: colWidth, height: rowHeight)
                     .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
                 }
+            }
+            ForEach(1..<rowCount, id: \.self) { row in
+                Rectangle()
+                    .fill(Color.borderSubtle)
+                    .frame(width: width - headerWidth, height: 1)
+                    .position(x: headerWidth + (width - headerWidth) / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row))
+            }
+            ForEach(1..<max(1, days.count), id: \.self) { col in
+                Rectangle()
+                    .fill(Color.borderSubtle)
+                    .frame(width: 1, height: contentHeight - TimetableGridLayout.headerHeight)
+                    .position(
+                        x: headerWidth + colWidth * CGFloat(col),
+                        y: TimetableGridLayout.headerHeight + (contentHeight - TimetableGridLayout.headerHeight) / 2
+                    )
             }
         }
     }
@@ -187,7 +203,7 @@ struct EventTile: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 6)
-        .background(Color.opaqueTint(hex: color, ratio: 0.15, base: .bgElevated))
+        .background(Color.opaqueTint(hex: color, ratio: Color.surfaceTintRatio, base: .bgElevated))
         .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
     }
 }
@@ -222,7 +238,7 @@ struct EmptyCell: View {
                 .fontWeight(.bold)
                 .foregroundStyle(Color.textTertiary.opacity(0))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.bgBase)
+                .background(Color.bgElevated)
         }
         .buttonStyle(.plain)
     }

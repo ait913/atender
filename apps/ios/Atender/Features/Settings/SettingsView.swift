@@ -39,6 +39,7 @@ struct SettingsView: View {
         }
         .background(Color.bgBase)
         .navigationTitle("設定")
+        .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("settings-view")
         .task { await reloadUser() }
         .onChange(of: activeSheet) { _, value in
