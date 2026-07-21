@@ -54,6 +54,10 @@ struct RoomsView: View {
             if model == nil { model = RoomsViewModel(env: environment) }
             await model?.load()
         }
+        .onChange(of: router.roomsPath.isEmpty) { _, isRoot in
+            guard isRoot else { return }
+            Task { await model?.load(force: true) }
+        }
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .create:

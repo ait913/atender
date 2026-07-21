@@ -26,14 +26,14 @@ final class RoomSettingsViewModel {
         meId = (try? await me)?.user.id
     }
 
-    func persist(name: String? = nil, description: String? = nil, showMemberTimetables: Bool? = nil) async {
-        _ = try? await env.roomRepository.updateRoom(id: roomId, UpdateRoomInput(name: name, description: description, showMemberTimetables: showMemberTimetables))
+    func persist(name: String? = nil, description: String? = nil, showMemberTimetables: Bool? = nil) async throws {
+        _ = try await env.roomRepository.updateRoom(id: roomId, UpdateRoomInput(name: name, description: description, showMemberTimetables: showMemberTimetables))
     }
 
-    func removeMember(_ userId: String) async { try? await env.roomRepository.removeMember(id: roomId, userId: userId) }
-    func regenerateInvite() async { _ = try? await env.roomRepository.regenerateInvite(id: roomId) }
-    func leave() async { try? await env.roomRepository.leaveRoom(id: roomId) }
-    func delete() async { try? await env.roomRepository.deleteRoom(id: roomId) }
+    func removeMember(_ userId: String) async throws { try await env.roomRepository.removeMember(id: roomId, userId: userId) }
+    func regenerateInvite() async throws { _ = try await env.roomRepository.regenerateInvite(id: roomId) }
+    func leave() async throws { try await env.roomRepository.leaveRoom(id: roomId) }
+    func delete() async throws { try await env.roomRepository.deleteRoom(id: roomId) }
 }
 
 struct RoomSettingsSheet: View {
@@ -49,6 +49,9 @@ struct RoomSettingsSheet: View {
     @State private var copyMessage: String?
     @State private var confirm: Confirm?
     @State private var importOpen = false
+    @State private var lastSavedName = ""
+    @State private var lastSavedDescription = ""
+    @State private var skipDisappearPersist = false
     @FocusState private var focusedField: Field?
 
     enum Field { case name, description }
@@ -64,7 +67,7 @@ struct RoomSettingsSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "ルームの設定", isPresented: $isPresented) {
+        SheetScaffold(title: "ルームの設定", isPresented: closeBinding) {
             VStack(alignment: .leading, spacing: Space.s5) {
                 LabeledInput(label: "ルーム名", text: $name)
                     .focused($focusedField, equals: .name)
@@ -73,10 +76,16 @@ struct RoomSettingsSheet: View {
                     .focused($focusedField, equals: .description)
                     .disabled(model?.isOwner != true)
                 Toggle("メンバー時間割を表示", isOn: Binding(get: { showMemberTimetables }, set: { value in
+                    let previous = showMemberTimetables
                     showMemberTimetables = value
                     Task {
-                        await model?.persist(showMemberTimetables: value)
-                        await onChanged()
+                        do {
+                            try await model?.persist(showMemberTimetables: value)
+                            await onChanged()
+                        } catch {
+                            showMemberTimetables = previous
+                            environment.toastCenter.show("保存できませんでした、もう一度試してください")
+                        }
                     }
                 }))
                 .disabled(model?.isOwner != true)
@@ -98,15 +107,20 @@ struct RoomSettingsSheet: View {
             if let room = model?.room {
                 name = room.name
                 description = room.description ?? ""
+                lastSavedName = name
+                lastSavedDescription = description
                 showMemberTimetables = room.showMemberTimetables
             }
         }
         .onChange(of: focusedField) { old, new in
             guard old != nil, new == nil, model?.isOwner == true else { return }
             Task {
-                await model?.persist(name: name, description: description.isEmpty ? nil : description)
-                await onChanged()
+                await persistRoomDetailsIfNeeded()
             }
+        }
+        .onDisappear {
+            guard !skipDisappearPersist else { return }
+            Task { await persistRoomDetailsIfNeeded() }
         }
         .confirmationDialog(confirmTitle, isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }), titleVisibility: .visible) {
             Button(confirmButtonTitle, role: .destructive) {
@@ -119,6 +133,22 @@ struct RoomSettingsSheet: View {
                 await onChanged()
             }
         }
+    }
+
+    private var closeBinding: Binding<Bool> {
+        Binding(
+            get: { isPresented },
+            set: { value in
+                guard !value else {
+                    isPresented = true
+                    return
+                }
+                Task {
+                    await persistRoomDetailsIfNeeded()
+                    isPresented = false
+                }
+            }
+        )
     }
 
     private var memberSection: some View {
@@ -184,9 +214,13 @@ struct RoomSettingsSheet: View {
                 }
                 AtenderButton(title: "再発行", variant: .ghost, size: .sm) {
                     Task {
-                        await model?.regenerateInvite()
-                        await model?.load()
-                        await onChanged()
+                        do {
+                            try await model?.regenerateInvite()
+                            await model?.load()
+                            await onChanged()
+                        } catch {
+                            environment.toastCenter.show("保存できませんでした、もう一度試してください")
+                        }
                     }
                 }
             }
@@ -211,20 +245,49 @@ struct RoomSettingsSheet: View {
         }
     }
 
+    private func persistRoomDetailsIfNeeded() async {
+        guard model?.isOwner == true else { return }
+        guard name != lastSavedName || description != lastSavedDescription else { return }
+        do {
+            try await model?.persist(name: name, description: description.isEmpty ? nil : description)
+            lastSavedName = name
+            lastSavedDescription = description
+            await onChanged()
+        } catch {
+            environment.toastCenter.show("保存できませんでした、もう一度試してください")
+        }
+    }
+
     private func performConfirm() async {
         switch confirm {
         case .removeMember(let userId):
-            await model?.removeMember(userId)
-            await model?.load()
-            await onChanged()
+            do {
+                try await model?.removeMember(userId)
+                await model?.load()
+                await onChanged()
+            } catch {
+                environment.toastCenter.show("削除できませんでした")
+            }
         case .leave:
-            await model?.leave()
-            isPresented = false
-            router.roomsPath = NavigationPath()
+            do {
+                try await model?.leave()
+                await onChanged()
+                skipDisappearPersist = true
+                isPresented = false
+                router.roomsPath = NavigationPath()
+            } catch {
+                environment.toastCenter.show("退出できませんでした")
+            }
         case .delete:
-            await model?.delete()
-            isPresented = false
-            router.roomsPath = NavigationPath()
+            do {
+                try await model?.delete()
+                await onChanged()
+                skipDisappearPersist = true
+                isPresented = false
+                router.roomsPath = NavigationPath()
+            } catch {
+                environment.toastCenter.show("削除できませんでした")
+            }
         case nil:
             break
         }
@@ -296,6 +359,113 @@ struct RoomEventCreateSheet: View {
 
     private func iso(_ date: Date) -> String {
         ISO8601DateFormatter().string(from: date)
+    }
+}
+
+struct RoomEventEditSheet: View {
+    let roomId: String
+    let event: RoomEventDto
+    @Binding var isPresented: Bool
+    let onChanged: () async -> Void
+    @Environment(AppEnvironment.self) private var environment
+    @State private var title: String
+    @State private var start: Date
+    @State private var end: Date
+    @State private var rrule: String?
+    @State private var visibility: VisibilityMode
+    @State private var isPending = false
+    @State private var confirmDelete = false
+
+    init(roomId: String, event: RoomEventDto, isPresented: Binding<Bool>, onChanged: @escaping () async -> Void) {
+        self.roomId = roomId
+        self.event = event
+        self._isPresented = isPresented
+        self.onChanged = onChanged
+        let parsedStart = Self.parseISO(event.start) ?? Date()
+        let parsedEnd = Self.parseISO(event.end) ?? Calendar.current.date(byAdding: .hour, value: 1, to: parsedStart) ?? parsedStart
+        _title = State(initialValue: event.title)
+        _start = State(initialValue: parsedStart)
+        _end = State(initialValue: parsedEnd)
+        _rrule = State(initialValue: event.recurrenceRule)
+        _visibility = State(initialValue: event.visibilityMode)
+    }
+
+    var body: some View {
+        SheetScaffold(title: "予定を編集", isPresented: $isPresented) {
+            VStack(alignment: .leading, spacing: Space.s4) {
+                LabeledInput(label: "タイトル", text: $title)
+                DatePicker("開始", selection: $start, displayedComponents: [.date, .hourAndMinute])
+                DatePicker("終了", selection: $end, displayedComponents: [.date, .hourAndMinute])
+                RecurrencePicker(rrule: $rrule, start: start)
+                Picker("表示モード", selection: $visibility) {
+                    Text("通常").tag(VisibilityMode.normal)
+                    Text("タイトル隠す").tag(VisibilityMode.titleMapped)
+                    Text("予定ありのみ").tag(VisibilityMode.busyOnly)
+                }
+            }
+        } footer: {
+            VStack(spacing: Space.s3) {
+                AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: !title.isEmpty && !isPending) {
+                    Task { await save() }
+                }
+                AtenderButton(title: "削除", variant: .destructive, isEnabled: !isPending) {
+                    confirmDelete = true
+                }
+            }
+        }
+        .confirmationDialog("予定を削除しますか？", isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("削除", role: .destructive) {
+                Task { await delete() }
+            }
+            Button("キャンセル", role: .cancel) {}
+        }
+    }
+
+    private func save() async {
+        isPending = true
+        defer { isPending = false }
+        do {
+            _ = try await environment.roomEventRepository.updateRoomEvent(roomId: roomId, eventId: event.id, UpdateRoomEventInput(
+                title: title,
+                description: event.description,
+                start: iso(start),
+                end: iso(end),
+                isAllDay: event.isAllDay,
+                color: event.color,
+                recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
+                visibilityMode: visibility,
+                editScope: "all",
+                originalDate: nil
+            ))
+            await onChanged()
+            isPresented = false
+        } catch {
+            environment.toastCenter.show("保存できませんでした、もう一度試してください")
+        }
+    }
+
+    private func delete() async {
+        isPending = true
+        defer { isPending = false }
+        do {
+            try await environment.roomEventRepository.deleteRoomEvent(roomId: roomId, eventId: event.id, scope: "all")
+            await onChanged()
+            isPresented = false
+        } catch {
+            environment.toastCenter.show("削除できませんでした")
+        }
+    }
+
+    private func iso(_ date: Date) -> String {
+        ISO8601DateFormatter().string(from: date)
+    }
+
+    private static func parseISO(_ value: String) -> Date? {
+        let fractional = ISO8601DateFormatter()
+        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let plain = ISO8601DateFormatter()
+        plain.formatOptions = [.withInternetDateTime]
+        return fractional.date(from: value) ?? plain.date(from: value)
     }
 }
 
