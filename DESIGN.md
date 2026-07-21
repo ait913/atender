@@ -102,7 +102,7 @@ Web の 2 層ソフトシャドウを iOS の `AtenderShadow.card` (既に Web �
 
 | 役割 | text style (iOS) | atender エイリアス | 用途 |
 |---|---|---|---|
-| 画面タイトル | `.largeTitle` (34) → スクロールで inline | `atender5xl` | nav bar の large title (§3.7) |
+| 画面タイトル | `.navigationBarTitleDisplayMode(.inline)` (~17 semibold・中央) | (system) | nav bar の inline title。large title は使わない (§3.7、2026-07-21 裁定) |
 | セクション大見出し / hero 数値 | `.title2` (22) / `.title` (28) | `atender2xl` / `atender3xl` | カード見出し、出席率 % の数値 |
 | 強調行タイトル | `.headline` (17 semibold) | `atenderLg` | リスト行の主題、科目名 (詳細) |
 | 本文 | `.body` (17) | `atenderBase` | 標準本文 |
