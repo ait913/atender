@@ -153,33 +153,24 @@ enum RoomTimetableLogic {
         return timetable?.daySlots.isEmpty == false ? timetable!.daySlots : defaultSlots
     }
 
-    static func buildEvents(week: RoomWeekDto, daySlots: [DaySlotDto]) -> [TimetableEventInput] {
+    static func buildRecurringEvents(week: RoomWeekDto) -> [TimetableEventInput] {
         let members = Dictionary(uniqueKeysWithValues: week.members.map { ($0.userId, $0) })
-        let sortedSlots = daySlots.sorted { $0.periodIndex < $1.periodIndex }
         var seen = Set<String>()
         var events: [TimetableEventInput] = []
-        for meeting in week.meetings {
-            guard let date = CalendarRange.parse(meeting.date) else { continue }
-            let jsDay = CalendarRange.utcCalendar.component(.weekday, from: date) - 1
-            let dow = DayConvention.jsToDisplay(jsDay)
-            let startMinute = Int(meeting.startMinute)
-            let endMinute = Int(meeting.endMinute)
-            guard let slot = sortedSlots.first(where: { startMinute >= $0.startMinute && startMinute < $0.endMinute })
-                ?? sortedSlots.first(where: { startMinute < $0.endMinute })
-            else { continue }
-            let key = "\(meeting.userId):\(meeting.courseId):\(dow):\(slot.periodIndex)"
+        for recurringMeeting in week.recurringMeetings {
+            let dow = DayConvention.jsToDisplay(recurringMeeting.dayOfWeek)
+            let key = "\(recurringMeeting.userId):\(recurringMeeting.courseId):\(dow):\(recurringMeeting.startPeriodIndex)"
             guard seen.insert(key).inserted else { continue }
-            let span = max(1, sortedSlots.filter { $0.periodIndex >= slot.periodIndex && $0.startMinute < endMinute }.count)
-            let member = members[meeting.userId]
+            let member = members[recurringMeeting.userId]
             events.append(TimetableEventInput(
                 id: key,
                 dayOfWeek: dow,
-                startPeriodIndex: slot.periodIndex,
-                periodCount: span,
-                color: meeting.courseColor ?? member?.color ?? "#F97316",
-                title: meeting.courseName,
+                startPeriodIndex: recurringMeeting.startPeriodIndex,
+                periodCount: max(1, recurringMeeting.periodCount),
+                color: recurringMeeting.courseColor ?? member?.color ?? "#F97316",
+                title: recurringMeeting.courseName,
                 subtitle: RoomCalendarLogic.memberName(name: member?.name, handle: member?.handle),
-                mergeKey: "\(meeting.userId):\(meeting.courseId)"
+                mergeKey: "\(recurringMeeting.userId):\(recurringMeeting.courseId)"
             ))
         }
         return events.sorted {

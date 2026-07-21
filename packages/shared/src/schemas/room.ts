@@ -119,6 +119,16 @@ export const RoomWeekDto = z.object({
     startMinute: z.number(),
     endMinute: z.number(),
   })),
+  recurringMeetings: z.array(z.object({
+    userId: z.string(),
+    timetableId: z.string(),
+    courseId: z.string(),
+    courseName: z.string(),
+    courseColor: z.string().nullable(),
+    dayOfWeek: z.number(),
+    startPeriodIndex: z.number(),
+    periodCount: z.number(),
+  })),
   roomEvents: z.array(RoomEventDto),
 });
 

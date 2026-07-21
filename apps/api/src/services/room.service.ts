@@ -299,6 +299,41 @@ export async function getRoomWeek(userId: string, roomId: string, weekStart: Dat
     include: { meeting: { include: { userTimetable: true } }, course: true },
     orderBy: [{ date: "asc" }, { startMinute: "asc" }],
   });
+  const timetableUserIds = room.showMemberTimetables ? memberIds : [userId];
+  const users = await prisma.user.findMany({
+    where: { id: { in: timetableUserIds } },
+    select: { id: true, defaultSemesterId: true },
+  });
+  const defaultSemesterByUser = new Map(users.map((user) => [user.id, user.defaultSemesterId]));
+  const timetables = await prisma.userTimetable.findMany({
+    where: { userId: { in: timetableUserIds } },
+    include: { meetings: { include: { course: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+  const selectedByUser = new Map<string, (typeof timetables)[number]>();
+  for (const timetable of timetables) {
+    const current = selectedByUser.get(timetable.userId);
+    const defaultSemesterId = defaultSemesterByUser.get(timetable.userId) ?? null;
+    if (!current) {
+      selectedByUser.set(timetable.userId, timetable);
+      continue;
+    }
+    if (defaultSemesterId && timetable.semesterId === defaultSemesterId) {
+      selectedByUser.set(timetable.userId, timetable);
+    }
+  }
+  const recurringMeetings = [...selectedByUser.values()].flatMap((timetable) =>
+    timetable.meetings.map((meeting) => ({
+      userId: timetable.userId,
+      timetableId: timetable.id,
+      courseId: meeting.courseId,
+      courseName: meeting.course.name,
+      courseColor: meeting.course.color,
+      dayOfWeek: meeting.dayOfWeek,
+      startPeriodIndex: meeting.startPeriodIndex,
+      periodCount: meeting.periodCount,
+    })),
+  );
   const roomEvents = await expandRoomEvents(roomId, weekStart, weekEnd);
   return {
     weekStart: weekStart.toISOString(),
@@ -320,6 +355,7 @@ export async function getRoomWeek(userId: string, roomId: string, weekStart: Dat
       startMinute: occurrence.startMinute,
       endMinute: occurrence.endMinute,
     })),
+    recurringMeetings,
     roomEvents: roomEvents.map((event) => visibleOccurrenceDto(event, userId)),
   };
 }
