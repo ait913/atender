@@ -187,6 +187,7 @@ struct MeetingDetailSheet: View {
                                 .foregroundStyle(Color.textSecondary)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(Space.s4)
                     .background(Color(hexString: course?.color ?? "#F97316").opacity(0.15))
                     .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
