@@ -427,7 +427,9 @@ final class RoomLogicTests: XCTestCase {
             courses: [],
             meetings: [],
             createdAt: "2026-07-01T00:00:00.000Z",
-            updatedAt: "2026-07-01T00:00:00.000Z"
+            updatedAt: "2026-07-01T00:00:00.000Z",
+            schoolName: "サンプル学校",
+            departmentName: "サンプル学科"
         )
 
         XCTAssertEqual(TemplateLogic.authorHandle(template), "user_1")
