@@ -41,52 +41,40 @@ struct HomeView: View {
     @State private var rooms: [RoomSummaryDto] = []
     @State private var semesters: [SemesterDto] = []
     @State private var showTimetableSettings = false
-    @State private var drawerExpanded = false
 
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(spacing: 0) {
-                HomeTopBar(mode: $mode, isDrawerExpanded: $drawerExpanded)
-                GeometryReader { proxy in
-                    HomeBody(
-                        context: context,
-                        mode: mode,
-                        semesterId: $semesterId,
-                        showTimetableSettings: $showTimetableSettings,
-                        available: proxy.size.height
-                    )
-                }
-                .frame(maxHeight: .infinity)
+        VStack(spacing: Space.s3) {
+            if context == .self {
+                SemesterMenu(semesters: semesters, semesterId: $semesterId)
             }
-
-            if drawerExpanded {
-                Color.black.opacity(0.12)
-                    .padding(.top, topBarHeight)
-                    .padding(.horizontal, -Space.pagePxMobile)
-                    .ignoresSafeArea(edges: .bottom)
-                    .transition(.opacity)
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
-                            drawerExpanded = false
-                        }
-                    }
-            }
-
-            if drawerExpanded {
-                HomeDrawerPanel(
-                    sections: HomeDrawer.sections(context: context, hasRooms: HomeChips.isVisible(rooms: rooms)),
-                    semesters: semesters,
-                    semesterId: $semesterId,
-                    chipItems: HomeChips.items(rooms: rooms),
-                    context: context,
-                    onSelectContext: { context = $0 },
+            if HomeChips.isVisible(rooms: rooms) {
+                ContextChips(
+                    items: HomeChips.items(rooms: rooms),
+                    selected: context,
+                    onChange: { context = $0 },
                     onAddRoom: { environment.appRouter.selectedTab = .rooms }
                 )
-                .offset(y: topBarHeight)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(.horizontal, -Space.pagePxMobile)
             }
+            Picker("表示", selection: $mode) {
+                Text("時間割").tag(HomeViewMode.timetable)
+                Text("カレンダー").tag(HomeViewMode.calendar)
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
+            GeometryReader { proxy in
+                HomeBody(
+                    context: context,
+                    mode: mode,
+                    semesterId: $semesterId,
+                    showTimetableSettings: $showTimetableSettings,
+                    available: proxy.size.height
+                )
+            }
+            .frame(maxHeight: .infinity)
         }
         .padding(.horizontal, Space.pagePxMobile)
+        .padding(.top, Space.s3)
         .background(Color.clear)
         .navigationTitle("ホーム")
         .navigationBarTitleDisplayMode(.inline)
@@ -143,8 +131,6 @@ struct HomeView: View {
             semesters = loaded
         }
     }
-
-    private var topBarHeight: CGFloat { 76 }
 }
 
 struct SemesterMenu: View {
