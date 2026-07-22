@@ -24,6 +24,18 @@
 
 以降の本文は**改訂後の正**。ドロワー関連の記述は残さない。
 
+### ★ 改訂履歴2 (実装 `a942627` → 本コミット・Touri 実機 FB)
+
+| 項目 | 前 (`a942627`) | 本改訂 |
+|---|---|---|
+| 出欠の開閉トリガ | 右下「^」円形 FAB (`attendance-fab`) でトグル | 廃止。出欠タイル下端に常設した Capsule グラバー (`attendance-grabber`) の上下ドラッグ + タップで開閉 (古い iOS Control Center 風・画面最下端ベタスワイプは使わずグラバー帯限定) |
+| 開閉の純ロジック | `shouldCollapse` (下向き畳み) のみ | `shouldExpand` (上向き開き) を対称追加。畳=下向き閾値超、開=上向き閾値超 |
+| 記録完了時 | 手動でのみ畳む | `unrecordedCount` が >0 から 0 になったら自動で畳む (Touri 明示希望。手動で開き直せる)。以前『live-reactive 自動畳みは唐突』で不採用としたが今回は採用 |
+| 学期選択 SemesterMenu | 本文 VStack 先頭に独立行で常時表示 | ナビバー `.toolbar` の `.topBarLeading` に移設 (self コンテキスト時のみ・「ホーム」タイトルと同じ行)。VStack 先頭の独立行は廃止 |
+| 出欠タイル背景 | タイル自身 `.atenderGlass(Radius.md)` | タイルは content のみ。グラバー+タイルを内包する外側 VStack に単一 `.atenderGlass(Radius.lg)` (Glass 二重を解消・DESIGN.md §3.3) |
+
+以降、本文中の『右下 FAB』『AttendanceFab』『VStack 先頭の SemesterMenu 常時表示』の記述はこの改訂2で置換されたものとして読む (グラバー開閉 + toolbar 学期に読み替える)。
+
 ---
 
 ## UI/UX
@@ -158,6 +170,11 @@ enum HomeAttendance {
     /// タイルで完了した drag が「畳む」に該当するか (下方向・縦優位・閾値超え)。
     static func shouldCollapse(translationHeight: CGFloat, translationWidth: CGFloat) -> Bool {
         abs(translationHeight) > abs(translationWidth) && translationHeight > dragThreshold
+    }
+
+    /// タイル下端グラバーで完了した drag が開くに該当するか (上方向・縦優位・閾値超え)。shouldCollapse の対称。
+    static func shouldExpand(translationHeight: CGFloat, translationWidth: CGFloat) -> Bool {
+        abs(translationHeight) > abs(translationWidth) && translationHeight < -dragThreshold
     }
 }
 ```
@@ -385,12 +402,16 @@ struct AttendanceTile: View {
 - **#A5**: 3 件中 1 件 `status = nil`、2 件記録済み → `true` (1 件でも未記録なら展開)。
 - **#A6**: `occurrences = []` (授業なし・空) → `false`。★ #A4 と #A6 の返り値は同じ false だが「空」と「全済み」は `isActive` で分岐 (#A1 で空は完全非表示・#A4 は「^」FAB を表示)。
 
-### 出欠タイル畳み drag (`HomeAttendance.shouldCollapse`)
+### 出欠タイル開閉 drag (`HomeAttendance.shouldCollapse` / `shouldExpand`)
 
 - **#A7**: 下方向 drag 60pt (height=+60, width=0) → `true` (畳む)。
 - **#A8**: 下方向 drag 30pt → `false` (閾値40未満)。
 - **#A9**: 上方向 drag 60pt (height=-60) → `false` (上方向では畳まない)。
 - **#A10**: 横優位 drag (height=+50, width=+120) → `false` (横優位無視・グリッド水平スクロール誤爆防止)。
+- **#A11**: shouldExpand 上方向 drag 60pt (height=-60, width=0) → `true` (開く)。
+- **#A12**: shouldExpand 上方向 drag 30pt (height=-30) → `false` (閾値40未満)。
+- **#A13**: shouldExpand 下方向 drag 60pt (height=+60) → `false` (下方向では開かない)。
+- **#A14**: shouldExpand 横優位 drag (height=-50, width=+120) → `false` (横優位無視)。
 
 ### 統合挙動 (手動確認・記述仕様)
 

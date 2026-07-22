@@ -44,9 +44,6 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: Space.s3) {
-            if context == .self {
-                SemesterMenu(semesters: semesters, semesterId: $semesterId)
-            }
             if HomeChips.isVisible(rooms: rooms) {
                 ContextChips(
                     items: HomeChips.items(rooms: rooms),
@@ -79,6 +76,11 @@ struct HomeView: View {
         .navigationTitle("ホーム")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if context == .self {
+                ToolbarItem(placement: .topBarLeading) {
+                    SemesterMenu(semesters: semesters, semesterId: $semesterId)
+                }
+            }
             if context == .self && mode == .timetable {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

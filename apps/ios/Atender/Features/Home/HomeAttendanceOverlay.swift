@@ -12,6 +12,10 @@ enum HomeAttendance {
     static func shouldCollapse(translationHeight: CGFloat, translationWidth: CGFloat) -> Bool {
         abs(translationHeight) > abs(translationWidth) && translationHeight > dragThreshold
     }
+
+    static func shouldExpand(translationHeight: CGFloat, translationWidth: CGFloat) -> Bool {
+        abs(translationHeight) > abs(translationWidth) && translationHeight < -dragThreshold
+    }
 }
 
 struct HomeAttendanceOverlay: View {
@@ -29,29 +33,26 @@ struct HomeAttendanceOverlay: View {
                 occurrences: occurrences,
                 nowMinute: SchoolClock.nowMinute(context.date)
             )
+            let unrecorded = AttendanceSummary.unrecordedCount(occurrences)
             Group {
                 if HomeAttendance.isActive(occurrences: occurrences) {
-                    if expanded {
-                        AttendanceTile(
-                            state: state,
-                            unrecordedCount: AttendanceSummary.unrecordedCount(occurrences),
-                            pending: viewModel?.pending ?? false,
-                            onMarkAllPresent: { Task { await viewModel?.markAll(.present) } },
-                            onMarkAll: { status in Task { await viewModel?.markAll(status) } },
-                            onOpenDetail: { showDetail = true },
-                            onCollapse: {
-                                withAnimation(attendanceAnimation) { expanded = false }
-                            }
-                        )
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else {
-                        AttendanceFab {
-                            withAnimation(attendanceAnimation) { expanded = true }
+                    VStack(spacing: 0) {
+                        if expanded {
+                            AttendanceTile(
+                                state: state,
+                                unrecordedCount: unrecorded,
+                                pending: viewModel?.pending ?? false,
+                                onMarkAllPresent: { Task { await viewModel?.markAll(.present) } },
+                                onMarkAll: { status in Task { await viewModel?.markAll(status) } },
+                                onOpenDetail: { showDetail = true }
+                            )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .padding(.trailing, Space.s5)
-                        .padding(.bottom, Space.s5)
+                        grabberBand(isExpanded: expanded)
                     }
+                    .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                    .padding(.horizontal, Space.s4)
+                    .padding(.bottom, Space.s2)
                 }
             }
             .task(id: SchoolClock.todayString(context.date)) {
@@ -64,6 +65,11 @@ struct HomeAttendanceOverlay: View {
                 guard newDate != nil else { return }
                 expanded = HomeAttendance.defaultExpanded(occurrences: viewModel?.occurrences ?? [])
             }
+            .onChange(of: unrecorded) { oldValue, newValue in
+                if oldValue > 0, newValue == 0 {
+                    withAnimation(attendanceAnimation) { expanded = false }
+                }
+            }
         }
         .sheet(isPresented: $showDetail) {
             TodayAttendanceSheet(
@@ -74,25 +80,30 @@ struct HomeAttendanceOverlay: View {
             .presentationDragIndicator(.visible)
         }
     }
-}
 
-struct AttendanceFab: View {
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            Image(systemName: "chevron.up")
-                .font(.atenderBase)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textPrimary)
-                .frame(width: 56, height: 56)
-                .background(Color.bgElevated)
-                .clipShape(Circle())
-                .atenderShadow(.card)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("attendance-fab")
-        .accessibilityLabel("出欠を開く")
+    private func grabberBand(isExpanded: Bool) -> some View {
+        Capsule()
+            .fill(Color.borderEmphasis)
+            .frame(width: 42, height: 5)
+            .frame(maxWidth: .infinity, minHeight: 36)
+            .contentShape(Rectangle())
+            .accessibilityIdentifier("attendance-grabber")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("出欠の開閉")
+            .onTapGesture {
+                withAnimation(attendanceAnimation) { expanded.toggle() }
+            }
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 10).onEnded { value in
+                    let h = value.translation.height
+                    let w = value.translation.width
+                    if isExpanded, HomeAttendance.shouldCollapse(translationHeight: h, translationWidth: w) {
+                        withAnimation(attendanceAnimation) { expanded = false }
+                    } else if !isExpanded, HomeAttendance.shouldExpand(translationHeight: h, translationWidth: w) {
+                        withAnimation(attendanceAnimation) { expanded = true }
+                    }
+                }
+            )
     }
 }
 
@@ -103,7 +114,6 @@ struct AttendanceTile: View {
     let onMarkAllPresent: () -> Void
     let onMarkAll: (AttendanceStatus) -> Void
     let onOpenDetail: () -> Void
-    let onCollapse: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
@@ -145,20 +155,6 @@ struct AttendanceTile: View {
         }
         .padding(.vertical, Space.s3)
         .padding(.horizontal, Space.s4)
-        .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .padding(.horizontal, Space.s4)
-        .padding(.bottom, Space.s2)
-        .highPriorityGesture(
-            DragGesture(minimumDistance: 10)
-                .onEnded { value in
-                    if HomeAttendance.shouldCollapse(
-                        translationHeight: value.translation.height,
-                        translationWidth: value.translation.width
-                    ) {
-                        onCollapse()
-                    }
-                }
-        )
     }
 
     private var markAllCTA: some View {
