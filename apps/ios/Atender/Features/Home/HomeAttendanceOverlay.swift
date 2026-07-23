@@ -36,7 +36,7 @@ struct HomeAttendanceOverlay: View {
             let unrecorded = AttendanceSummary.unrecordedCount(occurrences)
             Group {
                 if HomeAttendance.isActive(occurrences: occurrences) {
-                    VStack(spacing: Space.s1) {
+                    VStack(spacing: 2) {
                         grabberBand(isExpanded: expanded)
                         if expanded {
                             AttendanceTile(
@@ -47,7 +47,7 @@ struct HomeAttendanceOverlay: View {
                                 onMarkAll: { status in Task { await viewModel?.markAll(status) } },
                                 onOpenDetail: { showDetail = true }
                             )
-                            .transition(.opacity)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
                     }
                     .background {
@@ -159,7 +159,7 @@ struct AttendanceTile: View {
                 .accessibilityLabel("各コマの出欠を開く")
             }
         }
-        .padding(.vertical, Space.s3)
+        .padding(.bottom, Space.s3)
         .padding(.horizontal, Space.s4)
     }
 
