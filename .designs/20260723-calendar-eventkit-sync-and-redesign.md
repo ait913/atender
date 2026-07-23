@@ -364,12 +364,14 @@ static func icsTitleRulesList() -> APIEndpoint { .init(path: "/api/me/ics-title-
 
 汎用層チェック観点 (`ui-ux-design-perspectives.md` §7) を通し、正典 `DESIGN.md` に従う。**要件4 (全幅・影なし) は DESIGN.md §3.6.3/§3.3 と衝突していたが、G4=(b) 裁定で「月カレンダーは personal / room とも full-bleed が正典」に確定** → DESIGN.md §3.6.3/§3.3 を全面置換 (§F4.6)。以降の記述は full-bleed 統一前提。
 
-## F4.1 personal カレンダー = 月のみ (週/日モード撤去)
+## F4.1 personal / room カレンダー = 月のみ (週/日モード撤去)
 
-- **`PersonalCalendarViewModel` から `viewMode` を除去**し常に月。`currentRange` は月グリッド範囲固定。
-- **`PersonalCalendar.content` から `CalendarSegmented` (日/週/月ピッカー) と `case .week/.day` 分岐を削除**。`PeriodNav` は月送りのみ (chevron + 「2026年7月」)。
-- ★ **共有 struct `CalendarWeek` / `CalendarDay` / `CalendarLane` / `CalendarSegmented` は削除しない** — `RoomDetailView` が使用中 (grep 実測)。PersonalCalendar の**呼び出しを外すだけ**。→ `CalendarLaneTests` 等は緑のまま。
-- `CalendarMonthLayout` (rowHeight/agendaHeight/contentHeight) は月に使い続けるので**無改変** → `CalendarLayoutTests` 緑のまま。
+★ build 11 で **personal・room とも月固定に統一** (room も週日を撤去、§room 節)。
+
+- **`PersonalCalendarViewModel` から `viewMode` を除去**し常に月。`currentRange` は月グリッド範囲固定。**`RoomCalendar` からも `viewMode` state を除去**し常に月 (§room 節)。
+- **両 View から `CalendarSegmented` (日/週/月ピッカー) と `case .week/.day` 分岐を削除**。`PeriodNav` は月送りのみ (chevron + 「2026年7月」)。
+- ★ **孤児化**: 両 caller が週日を捨てた結果 `CalendarWeek`/`CalendarDay`/`CalendarSegmented` は本番 caller ゼロになる (§room 節で報告項目化)。`CalendarLane` は `TimetableLogic` 定義側 + test に参照が残り生存。
+- `CalendarMonthLayout` は **`agendaHeight` 控除を撤廃** (アジェンダ廃止・§F4.3) → 月グリッドが縦フル。`CalendarLayoutTests` の #CA1/#CA3 は式変更で更新が要る (§C7)。
 
 ## F4.2 月グリッドの視覚 — TimeTree 参考・全幅・影なし (両 caller 統一)
 
@@ -379,30 +381,35 @@ static func icsTitleRulesList() -> APIEndpoint { .init(path: "/api/me/ics-title-
 
 | 属性 | 現状 (card) | `.fullBleed` 新規則 |
 |---|---|---|
-| 外殻 | `bgElevated` 角丸 `Radius.lg` + `.atenderShadow(.card)` + `Space.s2` padding | **背景・角丸・影なし**。`Color.bgBase`。**画面左右端まで**。両 caller とも祖先で `Space.pagePxMobile` (16pt) の水平 page margin を持つ (PersonalCalendar の host / RoomDetailView は `.padding(Space.pagePxMobile)` at `RoomDetailView.swift:51`) ので、`CalendarMonth(.fullBleed)` は **`.padding(.horizontal, -Space.pagePxMobile)` で page margin を打ち消して端まで伸ばす**。曜日ヘッダ〜週行は端から端まで、日付/chip の**内側**にだけ小 padding |
+| 外殻 | `bgElevated` 角丸 `Radius.lg` + `.atenderShadow(.card)` + `Space.s2` padding | **角丸・影なし**。背景は `Color.bgElevated` (白)。**画面左右端まで**。両 caller とも祖先で `Space.pagePxMobile` (16pt) の水平 page margin を持つ (PersonalCalendar の host / RoomDetailView は `.padding(Space.pagePxMobile)` at `RoomDetailView.swift:51`) ので、`CalendarMonth(.fullBleed)` は **`.padding(.horizontal, -Space.pagePxMobile)` で page margin を打ち消して端まで伸ばす**。曜日ヘッダ〜週行は端から端まで、日付/chip の**内側**にだけ小 padding |
 | セル分離 | `LazyVGrid spacing:1` の 1pt gap | **hairline 罫線**: 各週行の上辺に `Color.borderSubtle` (= `.separator`) の 0.5pt (1px)。列間も同 hairline。TimeTree の薄いグリッド線 (§3.6.2「8% hairline」許容範囲内) |
-| 日セル背景 | `bgElevated`/`bgMuted.opacity` | **不透明**。当月 `Color.bgBase`、当月外 `Color.bgMuted`。角丸なし (グリッドが連続) |
+| 日セル背景 | `bgElevated`/`bgMuted.opacity` | **不透明**。当月 `Color.bgElevated` (白)、当月外 `Color.bgMuted`。角丸なし (グリッドが連続) |
 | 日付 | 左上、選択=accent 丸、今日=accent 文字 | 左上維持。**曜日色**: 日=`#E5484D` 系 (red)、土=`#0091FF` 系 (blue)、平日=`textPrimary`、当月外は各色の tertiary。今日=accent 塗り丸、選択=accent アウトライン丸 |
-| イベント chip | 18% 不透明 tint ピル | **不透明 tint の細バー** (TimeTree の帯)。`Radius` 3–4、`.caption2` semibold 1 行 truncate。最大 N 行 → 超過 `+M` (既存ロジック流用) |
+| イベント chip | 18% 不透明 tint ピル | **★ build 11: 時間割セル (§3.6.1) と同スタイルに統一** — **不透明 tint 面** (base = `Color.bgElevated` 白 に科目/予定色を合成、半透明にしない) + **2pt solid 左バー** (`Radius.full`、科目/予定色) + テキスト `textPrimary`。`.caption2` semibold 1 行 truncate。最大 N 行 → 超過 `+M` (既存ロジック流用)。TimeTree の帯でなく時間割セルの縮小版 |
 | 状態ドット | 日付右 6pt 丸 | 維持 (出席状態) |
 
 - 曜日ヘッダ: 全幅・Mon 始まり (既存 `monthGridRange` が Mon 基準のため踏襲)。土日を上記色で。**TimeTree 既定は日曜始まりだが、時間割が月〜金中心 + 既存グリッド演算が Mon 基準なので Mon 始まりを維持 (逸脱理由 1 行)**。
 - タップターゲット: 日セルは視覚が小さくても hit area 44pt を確保 (§3.6 / 汎用層 §2)。
 
-### room 側の全幅化調整 (G4=(b) で新たに要る点)
+### room カレンダー = 自分カレンダーと完全統一 (★ build 11 Touri 実機裁定)
 
-room 月カレンダーは従来 card 前提だったため、全幅化で以下を調整する (personal は元々全幅前提で新規なので不要):
+**build 11 で、ルームカレンダーは「日/週/月トグル・週表示・日表示・AvailabilityBar (空き時間バー) を全撤去」し、自分カレンダーと完全に同じ月グリッド全幅 (`CalendarMonth(chrome:.fullBleed)`) に統一された。** 表示するのは**マスキング適用済のルーム予定のみ**。「空き時間」機能は Touri 裁定で**一旦削除** (post-MVP で別導線に戻す余地)。
 
-- **負マージンで端まで**: `RoomCalendar` の月ケースの `CalendarMonth` 呼び出しに `.fullBleed` が効く。祖先 `RoomDetailView.body` の `.padding(Space.pagePxMobile)` (`:51`) を月グリッドだけ打ち消す (§F4.2 外殻行の負マージン)。**周辺 (PeriodNav / `CalendarSegmented` / `AvailabilityBar` / `RoomDayEventList`) は page margin inset のまま**。全幅になるのは月グリッド本体だけ。
-- **card 前提の余白の消滅**: 従来 room 月グリッドは `Space.s2` の内 padding + card 外殻を持っていた。full-bleed でこれらは消える。上の `AvailabilityBar` (line 161) との縦間隔は `VStack(spacing: Space.s3)` が担うので**そのまま**。グリッドと下の `RoomDayEventList` の間隔も同 `Space.s3` で保たれる。
-- **FAB は月モードで元々非表示**: room の追加 FAB (`arrow.down.doc.fill` / 「予定を追加」) は `viewMode != .month` のときだけ出る (`RoomDetailView.swift:209`)。**月モードでは FAB が無い**ので、全幅月グリッドと FAB の `.overlay(alignment:.bottomTrailing)` は競合しない。day/week の FAB は無改変。
-- **week/day モードは無改変**: room は month/week/day を維持 (personal と違い週日を撤去しない)。full-bleed は month ケースのみ適用。week/day の `CalendarWeek`/`CalendarDay` は従来どおり card。
-- **月グリッドを ScrollView 直下の VStack 内で全幅化**: `RoomCalendar.body` の `ScrollView { VStack { … CalendarMonth … } }` 構造で、負マージンが ScrollView の水平コンテンツ幅を超えない (負 padding は clip されず端まで描画)。ScrollView 自体は page margin 内なので、月グリッドだけ負マージンで食い出す形になる — 実装時にグリッド右端が画面端に一致することを sim で確認 (§C3)。
+`RoomCalendar` の確定形:
+- **月グリッド固定**: `CalendarSegmented` (日/週/月トグル)・`case .week`/`.day` 分岐・`CalendarWeek`/`CalendarDay` 呼び出し・`viewMode` state を **RoomCalendar から撤去**。常に月。PersonalCalendar と同じ月送り chevron のみ。
+- **AvailabilityBar 撤去**: 空き時間バー (`AvailabilityBar`) と `RoomDayEventList` (日別予定リスト) を撤去。自分カレンダーと同様、月グリッドが縦スペースをフル使用 (アジェンダ無し、§F4.3)。
+- **表示内容**: `RoomCalendarLogic.buildCalendarEvents` のルーム予定 (マスキング適用済 `source=PERSONAL` 含む)。時間割/出席状態のオーバーレイは無し (ルームは予定共有のみ)。
+- **負マージンで端まで**: 祖先 `RoomDetailView.body` の `.padding(Space.pagePxMobile)` (`:51`) を月グリッドだけ負マージンで打ち消し画面端まで (§F4.2 外殻行)。月送り chevron 行は page margin inset のまま。
+- **FAB**: 「予定を追加」FAB は月グリッドと `.overlay(alignment:.bottomTrailing)` で共存 (月固定になったので、旧「`viewMode != .month` のとき表示」条件は撤廃し**常時表示**)。ICS 取込 FAB も同様に月画面で表示。
+- **★ 孤児化する共有 struct (実測)**: PersonalCalendar (§F4.1) と RoomCalendar の両方が週日を撤去した結果、**`CalendarWeek` / `CalendarDay` / `CalendarSegmented` は本番 caller を全て失う** (build 10 時点の caller は PersonalCalendar と RoomDetailView の 2 つだけ、と grep 実測)。`CalendarLane` は `TimetableLogic.swift` (定義側) と `CalendarLaneTests` に参照が残るので**純 util として生存** (`CalendarDay` からの呼びだけ消える)。→ **孤児化した `CalendarWeek`/`CalendarDay`/`CalendarSegmented` を削除するか残すかは Architect 裁量でない** (作った UI を捨てるプロダクト判断)。設計としては「本番 caller ゼロになった事実」を Reviewer/Leader に報告項目として上げ、削除は別途 Touri 判断。放置する場合も**未使用 struct として明示**し、週日関連テスト (もしあれば) の陳腐化を台帳に載せる。
 
-## F4.3 選択日アジェンダ (グリッド下)
+## F4.3 選択日アジェンダ — ★ build 11 で廃止
 
-- `DayAgendaPanel` を personal では**カード影なしの全幅リスト**に (`.atenderShadow(.card)` を `.fullBleed` 時は外す)。「7月23日 の予定」見出し + 予定行 (色ドット + タイトル + 時刻)。空は `ContentUnavailableView` 準拠の軽量 empty。
-- **予定追加導線**: アジェンダ見出し行の trailing に `+` ボタン → `PersonalEventEditorSheet` (既存 `BulkAndPersonalEventSheets.swift:296` の作成フォームを再利用/共通化)。保存で **backend create → `CalendarSyncCoordinator` 経由で EK にも push** (要件2「Atender で追加→iPhone にも出る」)。
+**build 11 Touri 実機裁定: グリッド下の `DayAgendaPanel` (「N/N の予定」リスト) は撤去。** 日タップ時のアジェンダ表示は**無し**。月グリッドが空いた縦スペースをフル使用して拡大する (`CalendarMonthLayout.rowHeight` の `available` から `agendaHeight` を引く控除を撤廃 → 行高がその分増える、§下記)。personal / room とも同一 (アジェンダ無し)。
+
+- **`DayAgendaPanel` struct と呼び出しを撤去**。日セルタップは選択状態 (accent アウトライン丸) のハイライトのみで、下部リストは出さない。
+- **`CalendarMonthLayout` 調整**: `rowHeight(available:)` は現状 `available - weekdayHeaderHeight - agendaHeight` を行数で割っている (`agendaHeight=200` を差し引いていた)。アジェンダ撤去で **`agendaHeight` の控除を 0 にする** (or `agendaHeight` 定数を撤去) → 月グリッドが縦フルに広がる。`CalendarLayoutTests` の #CA1/#CA3 は `agendaHeight` を式に含むので**この式変更で更新が要る** (§テスト基盤・挙動仕様 §C7)。
+- **★ 予定追加導線 (アジェンダ撤去後の代替)**: アジェンダに載せていた `+` ボタンは行き場を失う。代替として **`PersonalCalendar` / `RoomCalendar` の月画面に追加導線を残す** — personal は月ヘッダ (chevron 行) の trailing に `+`、room は既存 FAB (「予定を追加」、月固定化で常時表示、§room 節)。押下で `PersonalEventEditorSheet` (既存 `BulkAndPersonalEventSheets.swift:296` の作成フォーム再利用)。保存で **backend create → `CalendarSyncCoordinator` 経由で EK にも push** (要件2「Atender で追加→iPhone にも出る」)。日付は選択中の日をプリセット。
 
 ## F4.4 視覚階層の割当 (汎用層 §7-1)
 
@@ -410,13 +417,13 @@ room 月カレンダーは従来 card 前提だったため、全幅化で以下
 |---|---|---|
 | L0 | 今日 / 選択日のセル強調 | accent 塗り丸 (今日) / アウトライン丸 (選択) |
 | L1 | 月グリッド全体 | 全幅・面主役・hairline のみ |
-| L2 | イベント帯 | 科目/予定色の不透明 tint バー |
+| L2 | イベント chip | 時間割セル §3.6.1 同スタイル (不透明 tint 面 base=bgElevated 白 + 2pt solid 左バー + textPrimary) |
 | L3 (meta) | 曜日ヘッダ・月ラベル・状態ドット | `.caption`/`.footnote` secondary |
 
 ## F4.5 状態網羅 (汎用層 §7-4) — Reviewer はここからテスト
 - loading: 既存 `Skeleton` 踏襲。
 - error: 「カレンダーを読み込めませんでした」+ 再試行。
-- empty (予定 0): アジェンダに「予定はありません」+ `+` 追加導線。
+- empty (予定 0): アジェンダは廃止 (build 11) のため下部リスト無し。月グリッドは予定 chip が無い素の月表示 (時間割/backend 予定があればそれのみ)。追加は月画面の `+` / FAB (§F4.3)。
 - **EventKit 権限**: `notDetermined` → 設定画面で「iPhone のカレンダーと同期」ボタン (要求前は何も同期しない、月グリッドは時間割/backend 予定のみ表示)。`denied`/`restricted` → 「設定 > Atender でカレンダーを許可」への誘導 + アプリは backend 予定のみで**動作継続** (同期無効フォールバック、クラッシュしない)。`writeOnly` → 双方向不可の旨表示し full access を再要求 (双方向は full 必須、library note)。
 
 ## F4.6 ★ DESIGN.md 全面置換 (G4=(b) 採択・追記でなく置換)
@@ -458,7 +465,7 @@ room 月カレンダーは従来 card 前提だったため、全幅化で以下
   - default ルールは編集不可 (backend が 409、既存挙動)。
 
 ## F4.9 iOS ナビ構造 (汎用層 §7-7)
-- 変更なし: personal カレンダーは Home 内 (別タブ新設しない、CLAUDE.md IA 規約)。設定は二次階層 (Settings)。ルーム共有はルーム詳細内。→ 最頻タスク (予定を見る) は Home 1 タップ、追加はアジェンダ +、同期設定は低頻度で Settings 送り。
+- 変更なし: personal カレンダーは Home 内 (別タブ新設しない、CLAUDE.md IA 規約)。設定は二次階層 (Settings)。ルーム共有はルーム詳細内。→ 最頻タスク (予定を見る) は Home 1 タップ、追加は月画面の + / FAB、同期設定は低頻度で Settings 送り。
 
 ---
 
@@ -507,12 +514,14 @@ room 月カレンダーは従来 card 前提だったため、全幅化で以下
 - **M9 (非メンバー)**: room メンバーでない user の share 操作 → 404/403 (既存ガード)。
 
 ## C. UI (iOS)
-- **C1 (月のみ)**: PersonalCalendar に日/週セグメントが**無い**。月送り chevron のみ。
-- **C2 (personal full-bleed)**: personal の月 `CalendarMonth` は `.atenderShadow` を持たず、背景が `bgBase`、月グリッド左右が画面端まで (負マージンで page margin を打ち消す)。
-- **C3 (room も full-bleed・card 陳腐化)**: RoomDetailView の**月**カレンダーも full-bleed に統一 (G4=(b))。月グリッドは影なし・端まで。**周辺 (PeriodNav / segmented / AvailabilityBar / RoomDayEventList) は page margin inset のまま**。**旧「room 月カレンダー = card + shadow」を前提にした挙動/見た目は陳腐化** — Reviewer は「room 月グリッドに `.atenderShadow(.card)` が無いこと」「グリッド右端が画面端に一致」を確認。week/day モードは無改変 (card 維持)。FAB は月モードで元々非表示なので全幅と非競合。
+- **C1 (月のみ・personal / room 共通)**: PersonalCalendar・RoomCalendar のどちらにも日/週セグメントが**無い**。月送り chevron のみ。`viewMode` state が両 View から消えている。
+- **C2 (personal full-bleed)**: personal の月 `CalendarMonth` は `.atenderShadow` を持たず、背景が `bgElevated` (白)、月グリッド左右が画面端まで (負マージンで page margin を打ち消す)。
+- **C3 (room も full-bleed・週日/空き時間 撤去)**: ★ build 11 — RoomCalendar は**月グリッド全幅のみ**。日/週トグル・`CalendarWeek`/`CalendarDay`・`AvailabilityBar` (空き時間バー)・`RoomDayEventList` が**無い**。表示はマスキング適用済ルーム予定のみ。周辺 (月送り chevron) は page margin inset、月グリッドは影なし・端まで。Reviewer は「room に segmented/AvailabilityBar が無い」「月グリッドに `.atenderShadow(.card)` が無い」「グリッド右端が画面端に一致」を確認。
 - **C4 (曜日色)**: 日セル日付が 日=red / 土=blue / 平日=primary (personal / room 共通)。
-- **C5 (追加→双方向)**: アジェンダ + で作成 → backend 保存 + EK へ push → iPhone カレンダーに出現。
-- **C6 (共有 UI 到達不能層)**: ルーム共有 toggle/Picker は View 層。ロジック (visibilityMode → 投影) は backend テストで担保 (M系)。iOS 側はマッピングロジックを純関数化してテスト、View 自体は SmokeTests でクラッシュ非回帰のみ。
+- **C5 (chip = 時間割セル同スタイル)**: ★ build 11 — カレンダーのイベント chip が **不透明 tint 面 (base=`bgElevated` 白) + 2pt solid 左バー + `textPrimary`** (時間割セル §3.6.1 と同スタイル)。半透明ピルでない。
+- **C6 (追加→双方向)**: 月画面の追加導線 (personal=月ヘッダ trailing の `+` / room=常時 FAB) で作成 → backend 保存 + EK へ push → iPhone カレンダーに出現。
+- **C7 (アジェンダ廃止・グリッド縦フル)**: ★ build 11 — 日タップで下部アジェンダ (`DayAgendaPanel`) が**出ない**。`CalendarMonthLayout.rowHeight` は `agendaHeight` 控除を撤廃 → 同 `available` で行高が旧より大きい。`CalendarLayoutTests` #CA1/#CA3 は新式 (`available - weekdayHeaderHeight` を行数で割る、`agendaHeight` 項なし) に更新。
+- **C8 (共有 UI 到達不能層)**: ルーム共有 toggle/Picker は View 層。ロジック (visibilityMode → 投影) は backend テストで担保 (M系)。iOS 側はマッピングロジックを純関数化してテスト、View 自体は SmokeTests でクラッシュ非回帰のみ。
 
 ---
 
@@ -530,7 +539,7 @@ room 月カレンダーは従来 card 前提だったため、全幅化で以下
   - `EventKitTimeMappingTests` (S1–S6、**境界の両側 = 00:30 と 12:00 と 23:30 を測る**)。
   - `EventKitReconcilerTests` (uploads/pushTargets、E1–E3 の echo/dedup)。
 - `EventKitService` (EKEventStore I/O) は**ユニットテスト対象外** (Simulator の EventKit 実体依存)。回帰は既存 `SmokeTests`/`ScreenshotFlow` (token 注入ハーネス) でクラッシュ非回帰のみ。
-- `PersonalCalendar` の月のみ化: `CalendarLayoutTests`/`CalendarRangeTests` は無改変で緑を維持することを確認 (共有部品を消さない証跡)。
+- 月のみ化 + アジェンダ廃止 (build 11): `CalendarLayoutTests` #CA1/#CA3 は **`agendaHeight` 控除撤廃で式が変わるため更新が要る** (§C7)。`CalendarRangeTests` は月グリッド範囲演算のみで無改変・緑維持。`CalendarLaneTests` は `CalendarLane` が util として生存するため緑維持 (§F4.1 孤児化注記)。
 - ★ Reviewer はコードを見ず本 §挙動仕様からテスト生成。時刻標本は #番号どおり使う (無害な正午を選ばない)。
 
 ---
@@ -540,9 +549,9 @@ room 月カレンダーは従来 card 前提だったため、全幅化で以下
 1. **F1** schema migration (additive) → `prisma generate`。単独で緑。
 2. **F2** backend eventkit-sync (R系テスト) — F1 依存。
 3. **F3** backend personal-calendar-share + 投影 (M系テスト) — F1 依存。F2 のフック (M8) は F2 後。
-4. **F4a** iOS UI 刷新 (月のみ + full-bleed + chrome prop) — **F1–F3 非依存、先行出荷可**。C系。
-5. **F4b** iOS EventKit 同期層 + 設定 UI + アジェンダ追加導線 — F2 依存。S/E/P/C5 系。
-6. **F4c** iOS ルーム共有 UI + マスク編集 — F3 依存。C6 系。
+4. **F4a** iOS UI 刷新 (personal/room 月のみ統一 + full-bleed + chip=時間割セル化 + アジェンダ/週日/AvailabilityBar 撤去) — **F1–F3 非依存、先行出荷可** (build 11 で着地済/進行中)。C1–C5/C7 系。
+5. **F4b** iOS EventKit 同期層 + 設定 UI + 月画面の予定追加導線 — F2 依存。S/E/P/C6 系。
+6. **F4c** iOS ルーム共有 UI + マスク編集 — F3 依存。C8 系。
 7. **F5** gcal 死宣言/孤児 DTO 掃除 (低優先・非ブロッキング) — 1 シンボルずつ grep 後。
 
 各 iOS フェーズ後に `CFBundleVersion` を上げ、backend 依存を含む出荷では atender-api を先にデプロイ (CLAUDE.md 手順)。
