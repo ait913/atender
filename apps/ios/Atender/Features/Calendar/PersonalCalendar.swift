@@ -119,7 +119,6 @@ struct PersonalCalendar: View {
     @ViewBuilder
     private func content(_ model: PersonalCalendarViewModel) -> some View {
         let events = model.events(semesterId: semesterId)
-        let eventMap = MeetingExpansion.eventsByDate(events)
         if model.isLoading {
             VStack(spacing: Space.s3) {
                 Skeleton(width: nil, height: 40, radius: Radius.md)
@@ -155,13 +154,10 @@ struct PersonalCalendar: View {
                             Task { await model.load(semesterId: semesterId) }
                         }
                     )
-                    DayAgendaPanel(date: model.selectedDate, events: eventMap[model.selectedDate] ?? []) {
-                        isAddingPersonalEvent = true
-                    }
-                    .frame(height: CalendarMonthLayout.agendaHeight)
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
+            .scrollClipDisabled()
             .overlay {
                 PersonalEventEditModal(
                     date: model.selectedDate,
@@ -327,9 +323,13 @@ struct CalendarMonth: View {
                 .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
                 .atenderShadow(.card)
         case .fullBleed:
-            content
-                .padding(.horizontal, -Space.pagePxMobile)
-                .background(Color.bgBase)
+            GeometryReader { proxy in
+                content
+                    .frame(width: proxy.size.width + Space.pagePxMobile * 2)
+                    .background(Color.bgElevated)
+                    .offset(x: -Space.pagePxMobile)
+            }
+            .frame(height: CalendarMonthLayout.weekdayHeaderHeight + rowHeight * CGFloat(CalendarMonthLayout.rowCount))
         }
     }
 
@@ -369,10 +369,16 @@ struct CalendarMonth: View {
                             .fontWeight(.semibold)
                             .lineLimit(1)
                             .foregroundStyle(Color.textPrimary)
-                            .padding(.horizontal, 4)
+                            .padding(.leading, 5)
+                            .padding(.trailing, 4)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .frame(height: 14)
-                            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgBase))
+                            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
+                            .overlay(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color(hexString: event.color))
+                                    .frame(width: 2)
+                            }
                             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                             .contentShape(Rectangle())
                             .simultaneousGesture(TapGesture().onEnded {
@@ -397,7 +403,7 @@ struct CalendarMonth: View {
             .padding(.vertical, 2)
             .frame(maxWidth: .infinity)
             .frame(height: max(44, rowHeight))
-            .background(emphasis == .outsideMonth ? Color.bgMuted : Color.bgBase)
+            .background(emphasis == .outsideMonth ? Color.bgMuted : Color.bgElevated)
             .overlay(alignment: .top) {
                 Rectangle().fill(Color.borderSubtle).frame(height: 0.5)
             }

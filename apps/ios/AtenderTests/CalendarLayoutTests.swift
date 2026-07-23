@@ -5,7 +5,7 @@ import XCTest
 final class CalendarLayoutTests: XCTestCase {
 
     func testCA1RowHeightUsesAvailableCalendarSpace() {
-        let expected = (CGFloat(700) - CalendarMonthLayout.weekdayHeaderHeight - CalendarMonthLayout.agendaHeight) / CGFloat(CalendarMonthLayout.rowCount)
+        let expected = (CGFloat(700) - CalendarMonthLayout.weekdayHeaderHeight) / CGFloat(CalendarMonthLayout.rowCount)
 
         XCTAssertEqual(CalendarMonthLayout.rowHeight(available: 700), expected, accuracy: 0.001, "[ui-revamp #CA1]")
     }
