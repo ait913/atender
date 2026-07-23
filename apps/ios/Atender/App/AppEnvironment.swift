@@ -24,6 +24,8 @@ final class AppEnvironment {
     let icsImportRepository: IcsImportRepository
     let ruleRepository: RuleRepository
     let schoolRepository: SchoolRepository
+    let eventKitService: EventKitService
+    let calendarSyncCoordinator: CalendarSyncCoordinator
 
     init() {
         #if DEBUG
@@ -54,6 +56,8 @@ final class AppEnvironment {
         self.icsImportRepository = IcsImportRepository(client: self.apiClient, cache: queryClient)
         self.ruleRepository = RuleRepository(client: self.apiClient, cache: queryClient)
         self.schoolRepository = SchoolRepository(client: self.apiClient, cache: queryClient)
+        self.eventKitService = EventKitService()
+        self.calendarSyncCoordinator = CalendarSyncCoordinator(eventKit: self.eventKitService, client: self.apiClient, cache: queryClient)
         authStore.onLocalSignOut = { [queryClient] in
             queryClient.removeAll()
         }

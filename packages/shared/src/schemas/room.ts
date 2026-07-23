@@ -44,7 +44,7 @@ export const RoomEventDto = z.object({
   end: z.string(),
   isAllDay: z.boolean(),
   color: z.string().nullable(),
-  source: z.enum(["MANUAL", "ICS_FILE", "ICS_URL", "GOOGLE_OAUTH"]),
+  source: z.enum(["MANUAL", "ICS_FILE", "ICS_URL", "GOOGLE_OAUTH", "PERSONAL"]),
   visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]),
   isRecurringOccurrence: z.boolean(),
   recurrenceRule: z.string().nullable(),
@@ -132,6 +132,16 @@ export const RoomWeekDto = z.object({
   roomEvents: z.array(RoomEventDto),
 });
 
+export const PersonalCalendarShareDto = z.object({
+  id: z.string(),
+  roomId: z.string(),
+  userId: z.string(),
+  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]),
+  enabled: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 export type RoomSummaryDto = z.infer<typeof RoomSummaryDto>;
 export type RoomDto = z.infer<typeof RoomDto>;
 export type RoomMemberDto = z.infer<typeof RoomMemberDto>;
@@ -141,3 +151,4 @@ export type UpdateRoomInput = z.infer<typeof UpdateRoomInput>;
 export type CreateRoomEventInput = z.infer<typeof CreateRoomEventInput>;
 export type UpdateRoomEventInput = z.infer<typeof UpdateRoomEventInput>;
 export type RoomWeekDto = z.infer<typeof RoomWeekDto>;
+export type PersonalCalendarShareDto = z.infer<typeof PersonalCalendarShareDto>;

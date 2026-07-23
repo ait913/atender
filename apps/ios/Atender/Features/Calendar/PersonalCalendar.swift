@@ -4,7 +4,6 @@ import SwiftUI
 @Observable
 final class PersonalCalendarViewModel {
     @ObservationIgnored private let environment: AppEnvironment
-    var viewMode: CalendarViewMode = .month
     var anchor = SchoolClock.todayString()
     var selectedDate = SchoolClock.todayString()
     var timetables: [UserTimetableDto] = []
@@ -38,15 +37,7 @@ final class PersonalCalendarViewModel {
     }
 
     var currentRange: (start: String, end: String) {
-        switch viewMode {
-        case .month:
-            return CalendarRange.monthGridRange(anchorMonthFirst: CalendarRange.monthFirst(anchor))
-        case .week:
-            let start = CalendarRange.mondayOf(anchor)
-            return (start, CalendarRange.addDays(start, 6))
-        case .day:
-            return (selectedDate, selectedDate)
-        }
+        CalendarRange.monthGridRange(anchorMonthFirst: CalendarRange.monthFirst(anchor))
     }
 
     func events(semesterId: String?) -> [CalendarEvent] {
@@ -101,6 +92,7 @@ struct PersonalCalendar: View {
     let available: CGFloat
     @State private var viewModel: PersonalCalendarViewModel?
     @State private var loadRevision = 0
+    @State private var isAddingPersonalEvent = false
 
     var body: some View {
         Group {
@@ -117,6 +109,9 @@ struct PersonalCalendar: View {
         .task(id: semesterId) {
             if viewModel == nil { viewModel = PersonalCalendarViewModel(environment: environment) }
             await viewModel?.load(semesterId: semesterId)
+            if let range = viewModel?.currentRange {
+                await environment.calendarSyncCoordinator.sync(range: eventKitInterval(from: range.start, to: range.end))
+            }
             loadRevision += 1
         }
     }
@@ -140,43 +135,55 @@ struct PersonalCalendar: View {
             ScrollView {
                 VStack(spacing: Space.s3) {
                     HStack {
-                        PeriodNav(viewMode: model.viewMode, anchor: model.anchor) { next in
+                        PeriodNav(viewMode: .month, anchor: model.anchor) { next in
                             model.anchor = next
-                            if model.viewMode == .day { model.selectedDate = next }
                             Task { await model.load(semesterId: semesterId) }
                         }
                         Spacer()
-                        CalendarSegmented(viewMode: Binding(get: { model.viewMode }, set: { model.viewMode = $0; Task { await model.load(semesterId: semesterId) } }))
                     }
-                    switch model.viewMode {
-                    case .month:
-                        CalendarMonth(
-                            anchor: model.anchor,
-                            selectedDate: model.selectedDate,
-                            events: events,
-                            statusByDate: model.statusByDate(),
-                            available: available,
-                            onSelectDate: { date in
-                                model.selectDate(date)
-                            },
-                            onChangeAnchor: { next in
-                                model.anchor = next
-                                Task { await model.load(semesterId: semesterId) }
-                            }
-                        )
-                        DayAgendaPanel(date: model.selectedDate, events: eventMap[model.selectedDate] ?? [])
-                            .frame(height: CalendarMonthLayout.agendaHeight)
-                    case .week:
-                        CalendarWeek(weekStart: CalendarRange.mondayOf(model.anchor), selectedDate: model.selectedDate, eventsByDateMap: eventMap) { date in
+                    CalendarMonth(
+                        anchor: model.anchor,
+                        selectedDate: model.selectedDate,
+                        events: events,
+                        statusByDate: model.statusByDate(),
+                        available: available,
+                        onSelectDate: { date in
                             model.selectDate(date)
+                        },
+                        onChangeAnchor: { next in
+                            model.anchor = next
+                            Task { await model.load(semesterId: semesterId) }
                         }
-                    case .day:
-                        CalendarDay(date: model.selectedDate, events: eventMap[model.selectedDate] ?? [])
+                    )
+                    DayAgendaPanel(date: model.selectedDate, events: eventMap[model.selectedDate] ?? []) {
+                        isAddingPersonalEvent = true
                     }
+                    .frame(height: CalendarMonthLayout.agendaHeight)
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
+            .overlay {
+                PersonalEventEditModal(
+                    date: model.selectedDate,
+                    event: nil,
+                    semesterId: semesterId,
+                    onSaved: { saved in
+                        Task {
+                            try? await environment.calendarSyncCoordinator.pushManualEvent(saved)
+                            await model.load(semesterId: semesterId)
+                        }
+                    },
+                    isPresented: $isAddingPersonalEvent,
+                    stackLevel: 2
+                )
+            }
         }
+    }
+
+    private func eventKitInterval(from: String, to: String) -> DateInterval {
+        let start = EventKitTimeMapping.toAbsolute(date: from, isAllDay: true, startMinute: nil, endMinute: nil).start
+        let end = EventKitTimeMapping.toAbsolute(date: CalendarRange.addDays(to, 1), isAllDay: true, startMinute: nil, endMinute: nil).start
+        return DateInterval(start: start, end: end)
     }
 }
 
@@ -221,6 +228,7 @@ struct PeriodNav: View {
             Button { onChange(shift(1)) } label: { Image(systemName: "chevron.right") }
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
     }
 
     private var title: String {
@@ -242,12 +250,18 @@ struct PeriodNav: View {
     }
 }
 
+enum CalendarMonthChrome {
+    case card
+    case fullBleed
+}
+
 struct CalendarMonth: View {
     let anchor: String
     let selectedDate: String
     let events: [CalendarEvent]
     let statusByDate: [String: AttendanceDayStatus]
     var available: CGFloat? = nil
+    var chrome: CalendarMonthChrome = .fullBleed
     let onSelectDate: (String) -> Void
     var onChangeAnchor: ((String) -> Void)? = nil
     var onSelectEvent: ((CalendarEvent) -> Void)? = nil
@@ -259,37 +273,67 @@ struct CalendarMonth: View {
         let dates = (0..<42).map { CalendarRange.addDays(range.start, $0) }
         let eventMap = MeetingExpansion.eventsByDate(events)
         let rowHeight = available.map { CalendarMonthLayout.rowHeight(available: $0) } ?? 86
-        VStack(spacing: 0) {
+        monthGrid(dates: dates, eventMap: eventMap, monthFirst: monthFirst, rowHeight: rowHeight)
+            .gesture(
+                DragGesture(minimumDistance: 20)
+                    .onEnded { value in
+                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                        if value.translation.width < -50 {
+                            onChangeAnchor?(CalendarRange.addMonths(anchor, 1))
+                        } else if value.translation.width > 50 {
+                            onChangeAnchor?(CalendarRange.addMonths(anchor, -1))
+                        }
+                    }
+            )
+            .sensoryFeedback(.selection, trigger: anchor)
+    }
+
+    @ViewBuilder
+    private func monthGrid(dates: [String], eventMap: [String: [CalendarEvent]], monthFirst: String, rowHeight: CGFloat) -> some View {
+        let content = VStack(spacing: 0) {
             HStack(spacing: 0) {
-                ForEach(labels, id: \.self) { label in
-                    Text(label).font(.atenderXs).fontWeight(.bold).foregroundStyle(Color.textTertiary).frame(maxWidth: .infinity).frame(height: 26)
+                ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+                    Text(label)
+                        .font(.atenderXs)
+                        .fontWeight(.bold)
+                        .foregroundStyle(weekdayColor(index: index, outsideMonth: false))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: CalendarMonthLayout.weekdayHeaderHeight)
                 }
             }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 1), count: 7), spacing: 1) {
-                ForEach(dates, id: \.self) { date in
-                    dayCell(date, events: eventMap[date] ?? [], monthFirst: monthFirst, rowHeight: rowHeight)
+            VStack(spacing: 0) {
+                ForEach(0..<CalendarMonthLayout.rowCount, id: \.self) { row in
+                    HStack(spacing: 0) {
+                        ForEach(0..<7, id: \.self) { column in
+                            let date = dates[row * 7 + column]
+                            dayCell(
+                                date,
+                                events: eventMap[date] ?? [],
+                                monthFirst: monthFirst,
+                                rowHeight: rowHeight,
+                                column: column
+                            )
+                        }
+                    }
                 }
             }
         }
-        .padding(Space.s2)
-        .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-        .atenderShadow(.card)
-        .gesture(
-            DragGesture(minimumDistance: 20)
-                .onEnded { value in
-                    guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                    if value.translation.width < -50 {
-                        onChangeAnchor?(CalendarRange.addMonths(anchor, 1))
-                    } else if value.translation.width > 50 {
-                        onChangeAnchor?(CalendarRange.addMonths(anchor, -1))
-                    }
-                }
-        )
-        .sensoryFeedback(.selection, trigger: anchor)
+
+        switch chrome {
+        case .card:
+            content
+                .padding(Space.s2)
+                .background(Color.bgElevated)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                .atenderShadow(.card)
+        case .fullBleed:
+            content
+                .padding(.horizontal, -Space.pagePxMobile)
+                .background(Color.bgBase)
+        }
     }
 
-    private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat) -> some View {
+    private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat, column: Int) -> some View {
         let emphasis = CalendarDayStyle.emphasis(date: date, todayString: SchoolClock.todayString(), selectedDate: selectedDate, monthFirst: monthFirst)
         return Button { onSelectDate(date) } label: {
             VStack(alignment: .leading, spacing: 3) {
@@ -297,9 +341,14 @@ struct CalendarMonth: View {
                     Text(String(Int(date.suffix(2)) ?? 0))
                         .font(.atenderSm)
                         .fontWeight(emphasis == .today ? .bold : .semibold)
-                        .foregroundStyle(dayNumberColor(emphasis))
+                        .foregroundStyle(dayNumberColor(date: date, emphasis: emphasis))
                         .frame(width: 24, height: 24)
-                        .background(emphasis == .selected ? Color.accent500 : Color.clear)
+                        .background(emphasis == .today ? Color.accent500 : Color.clear)
+                        .overlay {
+                            if emphasis == .selected {
+                                Circle().stroke(Color.accent500, lineWidth: 1.5)
+                            }
+                        }
                         .clipShape(Circle())
                     Spacer()
                     if let status = statusByDate[date], status != .noClass {
@@ -320,10 +369,11 @@ struct CalendarMonth: View {
                             .fontWeight(.semibold)
                             .lineLimit(1)
                             .foregroundStyle(Color.textPrimary)
-                            .padding(.horizontal, 3)
+                            .padding(.horizontal, 4)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .frame(height: 14)
+                            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgBase))
+                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                             .contentShape(Rectangle())
                             .simultaneousGesture(TapGesture().onEnded {
                                 if event.kind == .roomEvent {
@@ -343,22 +393,112 @@ struct CalendarMonth: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .clipped()
             }
-            .padding(2)
-            .frame(height: rowHeight)
-            .background(emphasis == .outsideMonth ? Color.bgMuted.opacity(0.45) : Color.bgElevated)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+            .padding(.horizontal, 3)
+            .padding(.vertical, 2)
+            .frame(maxWidth: .infinity)
+            .frame(height: max(44, rowHeight))
+            .background(emphasis == .outsideMonth ? Color.bgMuted : Color.bgBase)
+            .overlay(alignment: .top) {
+                Rectangle().fill(Color.borderSubtle).frame(height: 0.5)
+            }
+            .overlay(alignment: .leading) {
+                if column > 0 {
+                    Rectangle().fill(Color.borderSubtle).frame(width: 0.5)
+                }
+            }
             .clipped()
         }
         .buttonStyle(.plain)
     }
 
-    private func dayNumberColor(_ emphasis: CalendarDayEmphasis) -> Color {
+    private func dayNumberColor(date: String, emphasis: CalendarDayEmphasis) -> Color {
         switch emphasis {
-        case .selected: return Color.textOnAccent
-        case .today: return Color.accent500
-        case .outsideMonth: return Color.textTertiary
-        case .normal: return Color.textPrimary
+        case .today: return Color.textOnAccent
+        case .selected: return Color.accent500
+        case .outsideMonth: return weekdayColor(index: weekdayIndex(date), outsideMonth: true)
+        case .normal: return weekdayColor(index: weekdayIndex(date), outsideMonth: false)
         }
+    }
+
+    private func weekdayColor(index: Int, outsideMonth: Bool) -> Color {
+        let color: Color
+        switch index {
+        case 5:
+            color = Color(hexString: "#0091FF")
+        case 6:
+            color = Color(hexString: "#E5484D")
+        default:
+            color = Color.textPrimary
+        }
+        return outsideMonth ? color.opacity(0.38) : color
+    }
+
+    private func weekdayIndex(_ date: String) -> Int {
+        guard let parsed = CalendarRange.parse(date) else { return 0 }
+        let weekday = CalendarRange.utcCalendar.component(.weekday, from: parsed)
+        return weekday == 1 ? 6 : weekday - 2
+    }
+}
+
+struct DayAgendaPanel: View {
+    let date: String
+    let events: [CalendarEvent]
+    var onAdd: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            HStack {
+                Text("\(CalendarRange.format(date, .monthDay)) の予定")
+                    .font(.atenderBase)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.textPrimary)
+                Spacer()
+                if let onAdd {
+                    Button(action: onAdd) {
+                        Image(systemName: "plus")
+                            .font(.atenderSm)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.textPrimary)
+                            .frame(width: 36, height: 36)
+                            .background(Color.textPrimary.opacity(0.08))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("予定を追加")
+                }
+            }
+            ScrollView {
+                if events.isEmpty {
+                    Text("予定はありません")
+                        .font(.atenderSm)
+                        .foregroundStyle(Color.textTertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, Space.s1)
+                } else {
+                    VStack(spacing: Space.s2) {
+                        ForEach(events) { event in
+                            HStack(spacing: Space.s2) {
+                                Circle().fill(Color(hexString: event.color)).frame(width: 8, height: 8)
+                                Text(event.title)
+                                    .font(.atenderSm)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(Color.textPrimary)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text("\(TimeFormatting.minutesToTime(event.startMinute))-\(TimeFormatting.minutesToTime(event.endMinute))")
+                                    .font(.atenderXs)
+                                    .foregroundStyle(Color.textTertiary)
+                            }
+                        }
+                    }
+                }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
+        .padding(.horizontal, Space.pagePxMobile)
+        .padding(.vertical, Space.s3)
+        .background(Color.bgBase)
+        .padding(.horizontal, -Space.pagePxMobile)
     }
 }
 
@@ -445,44 +585,5 @@ struct CalendarDay: View {
         .padding(Space.s3)
         .background(Color.bgElevated)
         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-    }
-}
-
-struct DayAgendaPanel: View {
-    let date: String
-    let events: [CalendarEvent]
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("\(CalendarRange.format(date, .monthDay)) の予定")
-                .font(.atenderBase)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textPrimary)
-            ScrollView {
-                if events.isEmpty {
-                    Text("予定はありません")
-                        .font(.atenderSm)
-                        .foregroundStyle(Color.textTertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    VStack(spacing: Space.s2) {
-                        ForEach(events) { event in
-                            HStack(spacing: Space.s2) {
-                                Circle().fill(Color(hexString: event.color)).frame(width: 8, height: 8)
-                                Text(event.title).font(.atenderSm).fontWeight(.bold)
-                                Spacer()
-                                Text("\(TimeFormatting.minutesToTime(event.startMinute))-\(TimeFormatting.minutesToTime(event.endMinute))")
-                                    .font(.atenderXs)
-                                    .foregroundStyle(Color.textTertiary)
-                            }
-                        }
-                    }
-                }
-            }
-            .scrollBounceBehavior(.basedOnSize)
-        }
-        .padding(Space.s4)
-        .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .atenderShadow(.card)
     }
 }

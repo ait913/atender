@@ -25,6 +25,7 @@ import {
 } from "../services/room.service";
 import { commitIcsImport, createIcsImport, deleteIcsImport, listIcsImports, previewIcsImport } from "../services/icsImport.service";
 import { createSync, deleteSync, listSyncs, runSync, updateSync } from "../services/googleCalendarSync.service";
+import { disableShare, getShare, patchShare, upsertShare } from "../services/personalCalendarShare.service";
 
 const IdParam = z.object({ id: z.string() });
 const SyncParam = z.object({ id: z.string(), syncId: z.string() });
@@ -39,6 +40,13 @@ const CreateSyncBody = z.object({
   visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).default("TITLE_MAPPED"),
 });
 const PatchSyncBody = z.object({
+  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).optional(),
+  enabled: z.boolean().optional(),
+});
+const SharePutBody = z.object({
+  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).default("TITLE_MAPPED"),
+});
+const SharePatchBody = z.object({
   visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).optional(),
   enabled: z.boolean().optional(),
 });
@@ -180,6 +188,33 @@ export function registerRoomRoutes(app: Hono) {
   app.post("/api/rooms/:id/google-calendar-syncs/:syncId/run", sessionMiddleware, setupGuard, zValidator("param", SyncParam), async (c) => {
     const param = c.req.valid("param");
     return c.json(await runSync({ syncId: param.syncId, userId: c.get("user").id, headers: c.req.raw.headers }));
+  });
+
+  app.get("/api/rooms/:id/personal-calendar-share", sessionMiddleware, setupGuard, zValidator("param", IdParam), async (c) => {
+    return c.json({ share: await getShare({ roomId: c.req.valid("param").id, userId: c.get("user").id }) });
+  });
+
+  app.post("/api/rooms/:id/personal-calendar-share", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", SharePutBody), async (c) => {
+    const share = await upsertShare({
+      roomId: c.req.valid("param").id,
+      userId: c.get("user").id,
+      visibilityMode: c.req.valid("json").visibilityMode,
+    });
+    return c.json({ share }, 201);
+  });
+
+  app.patch("/api/rooms/:id/personal-calendar-share", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", SharePatchBody), async (c) => {
+    const share = await patchShare({
+      roomId: c.req.valid("param").id,
+      userId: c.get("user").id,
+      patch: c.req.valid("json"),
+    });
+    return c.json({ share });
+  });
+
+  app.delete("/api/rooms/:id/personal-calendar-share", sessionMiddleware, setupGuard, zValidator("param", IdParam), async (c) => {
+    await disableShare({ roomId: c.req.valid("param").id, userId: c.get("user").id });
+    return c.json({ ok: true });
   });
 
   app.post("/api/rooms/:id/events", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", CreateRoomEventInput), async (c) => {

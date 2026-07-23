@@ -101,6 +101,7 @@ enum RoomEventSource: String, UnknownFallbackRawRepresentable {
     case icsFile = "ICS_FILE"
     case icsUrl = "ICS_URL"
     case googleOauth = "GOOGLE_OAUTH"
+    case personal = "PERSONAL"
     case unknown
 }
 
@@ -124,29 +125,5 @@ enum IcsMatchType: String, UnknownFallbackRawRepresentable {
     case equals = "EQUALS"
     case contains = "CONTAINS"
     case regex = "REGEX"
-    case unknown
-}
-
-enum GoogleConnectionStatus: String, UnknownFallbackRawRepresentable {
-    case active = "ACTIVE"
-    case revoked = "REVOKED"
-    case error = "ERROR"
-    case unknown
-}
-
-enum GoogleAccessRole: String, UnknownFallbackRawRepresentable {
-    case owner
-    case writer
-    case reader
-    case freeBusyReader
-    case unknown
-}
-
-enum GoogleSyncStatus: String, UnknownFallbackRawRepresentable {
-    case idle = "IDLE"
-    case syncing = "SYNCING"
-    case ok = "OK"
-    case failed = "FAILED"
-    case revoked = "REVOKED"
     case unknown
 }
