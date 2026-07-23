@@ -207,7 +207,7 @@ struct RoomCalendar: View {
         .accessibilityIdentifier("room-calendar")
         .overlay(alignment: .bottomTrailing) {
             if viewMode != .month {
-                VStack(spacing: Space.s3) {
+                VStack(alignment: .trailing, spacing: Space.s3) {
                     Button { activeSheet = .ics } label: {
                         Image(systemName: "arrow.down.doc.fill")
                             .frame(width: 44, height: 44)
@@ -233,7 +233,7 @@ struct RoomCalendar: View {
                     }
                     .accessibilityIdentifier("room-fab-event")
                 }
-                .padding(.trailing, Space.s5)
+                .padding(.trailing, Space.s4)
                 .padding(.bottom, Space.s6)
             }
         }

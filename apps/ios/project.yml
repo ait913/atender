@@ -45,7 +45,7 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: 招待QRコードを読み取るためにカメラを使用します。
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "8"
+        CFBundleVersion: "9"
         LSApplicationQueriesSchemes:
           - itms-beta
         UILaunchScreen: {}

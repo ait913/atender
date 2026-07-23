@@ -176,7 +176,6 @@ struct PersonalCalendar: View {
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .scrollClipDisabled()
         }
     }
 }
