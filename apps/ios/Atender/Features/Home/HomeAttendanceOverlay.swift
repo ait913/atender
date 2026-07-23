@@ -24,7 +24,7 @@ struct HomeAttendanceOverlay: View {
     @State private var expanded = false
     @State private var showDetail = false
 
-    private let attendanceAnimation = Animation.spring(response: 0.35, dampingFraction: 0.86)
+    private let attendanceAnimation = Animation.easeInOut(duration: 0.28)
 
     var body: some View {
         TimelineView(.everyMinute) { context in
@@ -36,9 +36,9 @@ struct HomeAttendanceOverlay: View {
             let unrecorded = AttendanceSummary.unrecordedCount(occurrences)
             Group {
                 if HomeAttendance.isActive(occurrences: occurrences) {
-                    if expanded {
-                        VStack(spacing: Space.s2) {
-                            grabberBand(isExpanded: expanded)
+                    VStack(spacing: Space.s1) {
+                        grabberBand(isExpanded: expanded)
+                        if expanded {
                             AttendanceTile(
                                 state: state,
                                 unrecordedCount: unrecorded,
@@ -47,15 +47,16 @@ struct HomeAttendanceOverlay: View {
                                 onMarkAll: { status in Task { await viewModel?.markAll(status) } },
                                 onOpenDetail: { showDetail = true }
                             )
+                            .transition(.opacity)
                         }
-                        .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                        .padding(.horizontal, Space.s4)
-                        .padding(.bottom, Space.s2)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else {
-                        grabberBand(isExpanded: expanded)
-                            .padding(.bottom, Space.s2)
                     }
+                    .background {
+                        Color.clear
+                            .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                            .opacity(expanded ? 1 : 0)
+                    }
+                    .padding(.horizontal, Space.s4)
+                    .padding(.bottom, Space.s2)
                 }
             }
             .task(id: SchoolClock.todayString(context.date)) {
@@ -66,7 +67,9 @@ struct HomeAttendanceOverlay: View {
             }
             .onChange(of: viewModel?.today?.date) { _, newDate in
                 guard newDate != nil else { return }
-                expanded = HomeAttendance.defaultExpanded(occurrences: viewModel?.occurrences ?? [])
+                withAnimation(attendanceAnimation) {
+                    expanded = HomeAttendance.defaultExpanded(occurrences: viewModel?.occurrences ?? [])
+                }
             }
             .onChange(of: unrecorded) { oldValue, newValue in
                 if oldValue > 0, newValue == 0 {
