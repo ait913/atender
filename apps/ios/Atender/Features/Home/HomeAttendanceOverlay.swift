@@ -36,9 +36,9 @@ struct HomeAttendanceOverlay: View {
             let unrecorded = AttendanceSummary.unrecordedCount(occurrences)
             Group {
                 if HomeAttendance.isActive(occurrences: occurrences) {
-                    VStack(spacing: 0) {
-                        grabberBand(isExpanded: expanded)
-                        if expanded {
+                    if expanded {
+                        VStack(spacing: Space.s2) {
+                            grabberBand(isExpanded: expanded)
                             AttendanceTile(
                                 state: state,
                                 unrecordedCount: unrecorded,
@@ -47,11 +47,15 @@ struct HomeAttendanceOverlay: View {
                                 onMarkAll: { status in Task { await viewModel?.markAll(status) } },
                                 onOpenDetail: { showDetail = true }
                             )
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
+                        .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+                        .padding(.horizontal, Space.s4)
+                        .padding(.bottom, Space.s2)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    } else {
+                        grabberBand(isExpanded: expanded)
+                            .padding(.bottom, Space.s2)
                     }
-                    .padding(.horizontal, Space.s4)
-                    .padding(.bottom, Space.s2)
                 }
             }
             .task(id: SchoolClock.todayString(context.date)) {
@@ -154,7 +158,6 @@ struct AttendanceTile: View {
         }
         .padding(.vertical, Space.s3)
         .padding(.horizontal, Space.s4)
-        .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
     }
 
     private var markAllCTA: some View {
