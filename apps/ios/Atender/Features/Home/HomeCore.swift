@@ -44,9 +44,6 @@ struct HomeView: View {
 
     var body: some View {
         VStack(spacing: Space.s3) {
-            if context == .self {
-                SemesterMenu(semesters: semesters, semesterId: $semesterId)
-            }
             if HomeChips.isVisible(rooms: rooms) {
                 ContextChips(
                     items: HomeChips.items(rooms: rooms),
@@ -79,6 +76,11 @@ struct HomeView: View {
         .navigationTitle("ホーム")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if context == .self {
+                ToolbarItem(placement: .topBarLeading) {
+                    SemesterMenu(semesters: semesters, semesterId: $semesterId)
+                }
+            }
             if context == .self && mode == .timetable {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -91,7 +93,10 @@ struct HomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if context == .self { NowNextBarHost() }
+            if context == .self { Color.clear.frame(height: 64) }
+        }
+        .overlay(alignment: .bottom) {
+            if context == .self { HomeAttendanceOverlay() }
         }
         .task {
             rooms = (try? await environment.roomRepository.rooms()) ?? []

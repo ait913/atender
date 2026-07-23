@@ -124,7 +124,8 @@ struct RoomSettingsSheet: View {
         }
         .confirmationDialog(confirmTitle, isPresented: Binding(get: { confirm != nil }, set: { if !$0 { confirm = nil } }), titleVisibility: .visible) {
             Button(confirmButtonTitle, role: .destructive) {
-                Task { await performConfirm() }
+                let pending = confirm
+                Task { await performConfirm(pending) }
             }
             Button("キャンセル", role: .cancel) { confirm = nil }
         }
@@ -258,8 +259,8 @@ struct RoomSettingsSheet: View {
         }
     }
 
-    private func performConfirm() async {
-        switch confirm {
+    private func performConfirm(_ pending: Confirm?) async {
+        switch pending {
         case .removeMember(let userId):
             do {
                 try await model?.removeMember(userId)
