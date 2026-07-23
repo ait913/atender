@@ -449,30 +449,68 @@ struct PersonalEventDto: Codable, Equatable, Identifiable {
     let endMinute: Int?
     let color: String?
     let note: String?
+    let source: String?
+    let ekExternalId: String?
+    let ekCalendarId: String?
+    let ekLastModified: String?
     let createdAt: String
     let updatedAt: String
 }
 
 struct PersonalEventCreateInput: Codable, Equatable {
-    var semesterId: String?
+    var semesterId: String? = nil
     let date: String
     let title: String
     var isAllDay: Bool = true
-    var startMinute: Int?
-    var endMinute: Int?
-    var color: String?
-    var note: String?
+    var startMinute: Int? = nil
+    var endMinute: Int? = nil
+    var color: String? = nil
+    var note: String? = nil
+    var source: String? = nil
+    var ekExternalId: String? = nil
+    var ekCalendarId: String? = nil
+    var ekLastModified: String? = nil
 }
 
 struct PersonalEventUpdateInput: Codable, Equatable {
-    var semesterId: String?
-    var date: String?
-    var title: String?
-    var isAllDay: Bool?
-    var startMinute: Int?
-    var endMinute: Int?
-    var color: String?
-    var note: String?
+    var semesterId: String? = nil
+    var date: String? = nil
+    var title: String? = nil
+    var isAllDay: Bool? = nil
+    var startMinute: Int? = nil
+    var endMinute: Int? = nil
+    var color: String? = nil
+    var note: String? = nil
+    var source: String? = nil
+    var ekExternalId: String? = nil
+    var ekCalendarId: String? = nil
+    var ekLastModified: String? = nil
+}
+
+struct EventKitSyncEvent: Codable, Equatable {
+    let ekExternalId: String
+    let ekCalendarId: String
+    let ekLastModified: String?
+    let date: String
+    let title: String
+    let isAllDay: Bool
+    let startMinute: Int?
+    let endMinute: Int?
+}
+
+struct EventKitSyncInput: Codable, Equatable {
+    struct Range: Codable, Equatable {
+        let from: String
+        let to: String
+    }
+
+    let range: Range
+    let events: [EventKitSyncEvent]
+}
+
+struct EventKitSyncResponse: Codable, Equatable {
+    let mirrors: [PersonalEventDto]
+    let manualNeedingPush: [PersonalEventDto]
 }
 
 struct DayDetailDto: Codable, Equatable {
@@ -685,6 +723,25 @@ struct UpdateRoomEventInput: Codable, Equatable {
     var originalDate: String?
 }
 
+struct PersonalCalendarShareDto: Codable, Equatable, Identifiable {
+    let id: String
+    let roomId: String
+    let userId: String
+    let visibilityMode: VisibilityMode
+    let enabled: Bool
+    let createdAt: String
+    let updatedAt: String
+}
+
+struct SharePutInput: Codable, Equatable {
+    var visibilityMode: VisibilityMode
+}
+
+struct SharePatchInput: Codable, Equatable {
+    var visibilityMode: VisibilityMode?
+    var enabled: Bool?
+}
+
 struct SchoolDto: Codable, Equatable, Identifiable {
     let id: String
     let mextCode: String?
@@ -760,49 +817,6 @@ struct EffectiveRuleResponse: Codable, Equatable {
     }
 }
 
-struct GoogleCalendarConnectionDto: Codable, Equatable, Identifiable {
-    let id: String
-    let googleEmail: String
-    let scope: String
-    let status: GoogleConnectionStatus
-    let lastError: String?
-    let lastSyncedAt: String?
-    let createdAt: String
-}
-
-struct GoogleListedCalendarDto: Codable, Equatable, Identifiable {
-    let id: String
-    let summary: String
-    let timeZone: String
-    let accessRole: GoogleAccessRole
-    let primary: Bool
-    let backgroundColor: String?
-}
-
-struct GoogleCalendarSyncDto: Codable, Equatable, Identifiable {
-    let id: String
-    let googleCalendarId: String
-    let calendarSummary: String
-    let calendarTimeZone: String
-    let visibilityMode: VisibilityMode
-    let status: GoogleSyncStatus
-    let lastError: String?
-    let lastSyncedAt: String?
-    let enabled: Bool
-    let createdAt: String
-    let hasSyncToken: Bool
-}
-
-struct CreateGoogleSyncInput: Codable, Equatable {
-    let googleCalendarId: String
-    var visibilityMode: VisibilityMode?
-}
-
-struct UpdateGoogleSyncInput: Codable, Equatable {
-    var visibilityMode: VisibilityMode?
-    var enabled: Bool?
-}
-
 struct IcsImportDto: Codable, Equatable, Identifiable {
     let id: String
     let filename: String?
@@ -850,6 +864,22 @@ struct IcsTitleRuleDto: Codable, Equatable, Identifiable {
     let isDefault: Bool
     let createdAt: String
     let updatedAt: String
+}
+
+struct CreateIcsTitleRuleInput: Codable, Equatable {
+    var matchType: IcsMatchType
+    var pattern: String
+    var replaceWith: String?
+    var visibilityMode: VisibilityMode?
+    var priority: Int?
+}
+
+struct PatchIcsTitleRuleInput: Codable, Equatable {
+    var matchType: IcsMatchType?
+    var pattern: String?
+    var replaceWith: String?
+    var visibilityMode: VisibilityMode?
+    var priority: Int?
 }
 
 struct UserTimetableListResponse: Codable, Equatable {
@@ -959,6 +989,10 @@ struct RoomEventsResponse: Codable, Equatable {
 
 struct RoomEventResponse: Codable, Equatable {
     let event: RoomEventDto
+}
+
+struct PersonalCalendarShareResponse: Codable, Equatable {
+    let share: PersonalCalendarShareDto?
 }
 
 struct RoomInviteResponse: Codable, Equatable {

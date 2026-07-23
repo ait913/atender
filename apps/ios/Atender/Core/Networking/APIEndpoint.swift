@@ -98,6 +98,9 @@ enum Endpoints {
     static func createPersonalEvent(_ body: PersonalEventCreateInput) -> APIEndpoint { .init(path: "/api/personal-events", method: .post, body: body) }
     static func updatePersonalEvent(id: String, _ body: PersonalEventUpdateInput) -> APIEndpoint { .init(path: "/api/personal-events/\(id)", method: .patch, body: body) }
     static func deletePersonalEvent(id: String) -> APIEndpoint { .init(path: "/api/personal-events/\(id)", method: .delete) }
+    static func eventKitSync(_ body: EventKitSyncInput) -> APIEndpoint {
+        .init(path: "/api/personal-events/eventkit-sync", method: .post, body: body)
+    }
 
     static func friendships(status: String? = nil, direction: String? = nil) -> APIEndpoint {
         .init(path: "/api/friendships", method: .get, query: compactQuery(["status": status, "direction": direction]))
@@ -135,25 +138,26 @@ enum Endpoints {
     static func commitIcsImport(roomId: String, importId: String) -> APIEndpoint {
         .init(path: "/api/rooms/\(roomId)/ics-imports/\(importId)/commit", method: .post)
     }
-    static func googleSyncs(roomId: String) -> APIEndpoint { .init(path: "/api/rooms/\(roomId)/google-calendar-syncs", method: .get) }
-    static func createGoogleSync(roomId: String, _ body: CreateGoogleSyncInput) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/google-calendar-syncs", method: .post, body: body)
+    static func personalCalendarShare(roomId: String) -> APIEndpoint {
+        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .get)
     }
-    static func updateGoogleSync(roomId: String, syncId: String, _ body: UpdateGoogleSyncInput) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/google-calendar-syncs/\(syncId)", method: .patch, body: body)
+    static func setPersonalCalendarShare(roomId: String, _ body: SharePutInput) -> APIEndpoint {
+        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .post, body: body)
     }
-    static func runGoogleSync(roomId: String, syncId: String) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/google-calendar-syncs/\(syncId)/run", method: .post)
+    static func patchPersonalCalendarShare(roomId: String, _ body: SharePatchInput) -> APIEndpoint {
+        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .patch, body: body)
+    }
+    static func deletePersonalCalendarShare(roomId: String) -> APIEndpoint {
+        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .delete)
     }
 
-    static func googleConnection() -> APIEndpoint { .init(path: "/api/me/google-calendar/connection", method: .get) }
-    static func googleCalendars() -> APIEndpoint { .init(path: "/api/me/google-calendar/calendars", method: .get) }
-    static func completeGoogleLink() -> APIEndpoint { .init(path: "/api/me/google-calendar/link/complete", method: .post, body: EmptyJSONBody()) }
-    static func googleSyncAll() -> APIEndpoint { .init(path: "/api/me/google-calendar/sync-all", method: .post) }
     static func icsTitleRules() -> APIEndpoint { .init(path: "/api/me/ics-title-rules", method: .get) }
+    static func createIcsTitleRule(_ body: CreateIcsTitleRuleInput) -> APIEndpoint { .init(path: "/api/me/ics-title-rules", method: .post, body: body) }
+    static func patchIcsTitleRule(id: String, _ body: PatchIcsTitleRuleInput) -> APIEndpoint {
+        .init(path: "/api/me/ics-title-rules/\(id)", method: .patch, body: body)
+    }
+    static func deleteIcsTitleRule(id: String) -> APIEndpoint { .init(path: "/api/me/ics-title-rules/\(id)", method: .delete) }
 }
-
-private struct EmptyJSONBody: Encodable {}
 
 private func compactQuery(_ values: [String: String?]) -> [String: String] {
     values.compactMapValues { $0 }

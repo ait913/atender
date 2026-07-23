@@ -41,8 +41,5 @@ struct QueryKey: Hashable, ExpressibleByArrayLiteral {
     static func roomWeek(_ id: String) -> QueryKey { .init(["rooms", id, "week"]) }
     static func roomEvents(_ id: String) -> QueryKey { .init(["rooms", id, "events"]) }
     static func icsImports(_ id: String) -> QueryKey { .init(["rooms", id, "ics-imports"]) }
-    static func googleSyncs(_ roomId: String) -> QueryKey { .init(["rooms", roomId, "google-calendar-syncs"]) }
     static func icsTitleRules() -> QueryKey { .init(["me", "ics-title-rules"]) }
-    static func googleConnection() -> QueryKey { .init(["me", "google-calendar", "connection"]) }
-    static func googleCalendars() -> QueryKey { .init(["me", "google-calendar", "calendars"]) }
 }

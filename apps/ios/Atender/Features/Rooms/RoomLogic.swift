@@ -60,7 +60,7 @@ enum RoomCalendarLogic {
             return "#38bdf8"
         case .icsFile, .icsUrl:
             return "#94a3b8"
-        case .manual, .unknown:
+        case .manual, .personal, .unknown:
             return authorColor
         }
     }

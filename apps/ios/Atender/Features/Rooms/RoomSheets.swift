@@ -9,6 +9,7 @@ final class RoomSettingsViewModel {
     let roomId: String
     private(set) var room: RoomDto?
     private(set) var members: [RoomMemberDto] = []
+    private(set) var personalCalendarShare: PersonalCalendarShareDto?
     private(set) var meId: String?
     var isOwner: Bool { members.first { $0.userId == meId }?.role == .owner }
 
@@ -21,9 +22,11 @@ final class RoomSettingsViewModel {
         async let r = env.roomRepository.room(id: roomId, force: true)
         async let m = env.roomRepository.roomMembers(id: roomId, force: true)
         async let me = env.meRepository.me()
+        async let share = env.apiClient.send(Endpoints.personalCalendarShare(roomId: roomId), as: PersonalCalendarShareResponse.self)
         room = try? await r
         members = (try? await m) ?? []
         meId = (try? await me)?.user.id
+        personalCalendarShare = (try? await share)?.share
     }
 
     func persist(name: String? = nil, description: String? = nil, showMemberTimetables: Bool? = nil) async throws {
@@ -34,6 +37,26 @@ final class RoomSettingsViewModel {
     func regenerateInvite() async throws { _ = try await env.roomRepository.regenerateInvite(id: roomId) }
     func leave() async throws { try await env.roomRepository.leaveRoom(id: roomId) }
     func delete() async throws { try await env.roomRepository.deleteRoom(id: roomId) }
+    func setPersonalCalendarShare(enabled: Bool, visibilityMode: VisibilityMode) async throws {
+        if enabled {
+            let response = try await env.apiClient.send(
+                Endpoints.setPersonalCalendarShare(roomId: roomId, SharePutInput(visibilityMode: visibilityMode)),
+                as: PersonalCalendarShareResponse.self
+            )
+            personalCalendarShare = response.share
+        } else {
+            try await env.apiClient.send(Endpoints.deletePersonalCalendarShare(roomId: roomId))
+            personalCalendarShare = nil
+        }
+    }
+
+    func patchPersonalCalendarShare(visibilityMode: VisibilityMode) async throws {
+        let response = try await env.apiClient.send(
+            Endpoints.patchPersonalCalendarShare(roomId: roomId, SharePatchInput(visibilityMode: visibilityMode, enabled: true)),
+            as: PersonalCalendarShareResponse.self
+        )
+        personalCalendarShare = response.share
+    }
 }
 
 struct RoomSettingsSheet: View {
@@ -49,6 +72,9 @@ struct RoomSettingsSheet: View {
     @State private var copyMessage: String?
     @State private var confirm: Confirm?
     @State private var importOpen = false
+    @State private var ruleEditorOpen = false
+    @State private var shareEnabled = false
+    @State private var shareVisibility: VisibilityMode = .titleMapped
     @State private var lastSavedName = ""
     @State private var lastSavedDescription = ""
     @State private var skipDisappearPersist = false
@@ -90,6 +116,7 @@ struct RoomSettingsSheet: View {
                 }))
                 .disabled(model?.isOwner != true)
                 memberSection
+                personalCalendarShareSection
                 icsSection
                 if model?.isOwner == true { inviteSection }
             }
@@ -110,6 +137,13 @@ struct RoomSettingsSheet: View {
                 lastSavedName = name
                 lastSavedDescription = description
                 showMemberTimetables = room.showMemberTimetables
+            }
+            if let share = model?.personalCalendarShare {
+                shareEnabled = share.enabled
+                shareVisibility = share.visibilityMode
+            } else {
+                shareEnabled = false
+                shareVisibility = .titleMapped
             }
         }
         .onChange(of: focusedField) { old, new in
@@ -133,6 +167,9 @@ struct RoomSettingsSheet: View {
             IcsImportWizard(roomId: roomId, isPresented: $importOpen) {
                 await onChanged()
             }
+        }
+        .sheet(isPresented: $ruleEditorOpen) {
+            IcsTitleRuleEditorSheet(isPresented: $ruleEditorOpen)
         }
     }
 
@@ -188,6 +225,50 @@ struct RoomSettingsSheet: View {
             Text("外部カレンダー取込").font(.atenderSm).fontWeight(.semibold).foregroundStyle(Color.textSecondary)
             Text("ICS ファイルからルーム予定を取り込みます。").font(.atenderXs).foregroundStyle(Color.textTertiary)
             AtenderButton(title: "取り込み画面を開く", variant: .secondary) { importOpen = true }
+        }
+    }
+
+    private var personalCalendarShareSection: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("自分のカレンダーを共有").font(.atenderSm).fontWeight(.semibold).foregroundStyle(Color.textSecondary)
+            Toggle("共有する", isOn: Binding(get: { shareEnabled }, set: { value in
+                let previous = shareEnabled
+                shareEnabled = value
+                Task {
+                    do {
+                        try await model?.setPersonalCalendarShare(enabled: value, visibilityMode: shareVisibility)
+                        await onChanged()
+                    } catch {
+                        shareEnabled = previous
+                        environment.toastCenter.show("保存できませんでした、もう一度試してください")
+                    }
+                }
+            }))
+            Picker("表示モード", selection: Binding(get: { shareVisibility }, set: { value in
+                let previous = shareVisibility
+                shareVisibility = value
+                guard shareEnabled else { return }
+                Task {
+                    do {
+                        try await model?.patchPersonalCalendarShare(visibilityMode: value)
+                        await onChanged()
+                    } catch {
+                        shareVisibility = previous
+                        environment.toastCenter.show("保存できませんでした、もう一度試してください")
+                    }
+                }
+            })) {
+                Text("そのまま").tag(VisibilityMode.normal)
+                Text("マスキング").tag(VisibilityMode.titleMapped)
+                Text("予定のみ").tag(VisibilityMode.busyOnly)
+            }
+            .pickerStyle(.segmented)
+            .disabled(!shareEnabled)
+            if shareEnabled && shareVisibility == .titleMapped {
+                AtenderButton(title: "マスクルールを編集", variant: .secondary, size: .sm) {
+                    ruleEditorOpen = true
+                }
+            }
         }
     }
 

@@ -1,9 +1,9 @@
 import type { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { PersonalEventCreateInput, PersonalEventUpdateInput } from "@atender/shared";
+import { EventKitSyncInput, PersonalEventCreateInput, PersonalEventUpdateInput } from "@atender/shared";
 import { sessionMiddleware } from "../middleware/session";
-import { createPersonalEvent, deletePersonalEvent, listPersonalEvents, updatePersonalEvent } from "../services/personalEvent.service";
+import { createPersonalEvent, deletePersonalEvent, listPersonalEvents, reconcileEventKit, updatePersonalEvent } from "../services/personalEvent.service";
 
 const PersonalEventsQuery = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -25,6 +25,11 @@ export function registerPersonalEventRoutes(app: Hono) {
     const input = c.req.valid("json");
     const event = await createPersonalEvent({ userId: user.id, input });
     return c.json({ event }, 201);
+  });
+
+  app.post("/api/personal-events/eventkit-sync", sessionMiddleware, zValidator("json", EventKitSyncInput), async (c) => {
+    const user = c.get("user");
+    return c.json(await reconcileEventKit({ userId: user.id, input: c.req.valid("json") }));
   });
 
   app.patch("/api/personal-events/:id", sessionMiddleware, zValidator("param", PersonalEventParam), zValidator("json", PersonalEventUpdateInput), async (c) => {

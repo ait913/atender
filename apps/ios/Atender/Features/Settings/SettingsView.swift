@@ -9,7 +9,7 @@ struct SettingsView: View {
     @State private var isSigningOut = false
 
     enum SettingsSheet: String, Identifiable {
-        case profile, school, rules, semesters, google, requiredRate
+        case profile, school, rules, semesters, google, requiredRate, calendar
         var id: String { rawValue }
     }
 
@@ -29,6 +29,9 @@ struct SettingsView: View {
                 SettingsSection(title: "表示") {
                     ThemeRow(selection: $themePreference)
                 }
+                SettingsSection(title: "カレンダー同期", rows: [
+                    SettingsRowSpec(id: "settings-row-calendar", label: "iPhone のカレンダー") { activeSheet = .calendar },
+                ])
                 SettingsSection(title: "その他", rows: [
                     SettingsRowSpec(id: "settings-row-signout", label: "ログアウト", danger: true) {
                         Task { await signOut() }
@@ -61,6 +64,8 @@ struct SettingsView: View {
                 SemesterListSheet(isPresented: activeSheetBinding, onChanged: reloadUser)
             case .google:
                 EmptyView()
+            case .calendar:
+                CalendarSyncSettingsSheet(isPresented: activeSheetBinding)
             }
         }
     }

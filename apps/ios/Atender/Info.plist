@@ -40,7 +40,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>9</string>
+	<string>10</string>
 	<key>GIDClientID</key>
 	<string>562309257902-30d4j2sil5pd7sm0ph6sha6lmh3qg8ll.apps.googleusercontent.com</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
@@ -54,6 +54,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>iPhoneのカレンダーと予定を同期するためにカレンダーへのアクセスを使用します。</string>
 	<key>NSCameraUsageDescription</key>
 	<string>招待QRコードを読み取るためにカメラを使用します。</string>
 	<key>UIAppFonts</key>
