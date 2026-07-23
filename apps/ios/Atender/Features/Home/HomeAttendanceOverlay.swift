@@ -37,6 +37,7 @@ struct HomeAttendanceOverlay: View {
             Group {
                 if HomeAttendance.isActive(occurrences: occurrences) {
                     VStack(spacing: 0) {
+                        grabberBand(isExpanded: expanded)
                         if expanded {
                             AttendanceTile(
                                 state: state,
@@ -48,9 +49,7 @@ struct HomeAttendanceOverlay: View {
                             )
                             .transition(.move(edge: .bottom).combined(with: .opacity))
                         }
-                        grabberBand(isExpanded: expanded)
                     }
-                    .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
                     .padding(.horizontal, Space.s4)
                     .padding(.bottom, Space.s2)
                 }
@@ -155,6 +154,7 @@ struct AttendanceTile: View {
         }
         .padding(.vertical, Space.s3)
         .padding(.horizontal, Space.s4)
+        .atenderGlass(in: RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
     }
 
     private var markAllCTA: some View {
