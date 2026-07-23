@@ -158,10 +158,10 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 | 属性 | full-bleed 規則 |
 |---|---|
-| 外殻 | カード面にしない。`Color.bgBase`、角丸なし、`.atenderShadow` を**敷かない**。祖先の `Space.pagePxMobile` page margin を負マージンで打ち消し**画面左右端まで** |
+| 外殻 | カード面にしない。`Color.bgElevated` (ライトでは白)、角丸なし、`.atenderShadow` を**敷かない**。祖先の `Space.pagePxMobile` page margin を打ち消し**画面左右端まで** |
 | セル分離 | TimeTree 風 hairline (`Color.borderSubtle` = `.separator` の 1px)。週行上辺 + 列間。濃い罫線で表組みにしない |
-| 日セル | 枠なし・角丸なし。当月 `bgBase` / 当月外 `bgMuted`。日付左上。曜日色 (日=red / 土=blue / 平日=primary)。今日=accent 塗り丸、選択=accent アウトライン丸 |
-| イベント | 不透明 tint の細バー、`.caption2`、1 行 truncate、超過 `+M` |
+| 日セル | 枠なし・角丸なし。当月 `bgElevated` (ライトでは白) / 当月外 `bgMuted`。日付左上。曜日色 (日=red / 土=blue / 平日=primary)。今日=accent 塗り丸、選択=accent アウトライン丸 |
+| イベント | 時間割セル (§3.6.1) と同スタイルに寄せる。不透明 tint 面 (`surfaceTintRatio`・base=`bgElevated`) + 2pt solid 左バー (科目色, `Radius.full`) + `textPrimary`。`.caption2`、1 行 truncate、超過 `+M` |
 
 **月カレンダーは §3.3「浮くべき面は必ず影を持つ」の対象外** (カード面から除外)。時間割セル (§3.6.1) や他のカード面の影規定は不変。
 

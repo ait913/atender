@@ -5,10 +5,9 @@ enum CalendarMonthLayout {
     static let minRowHeight: CGFloat = 60
     static let weekdayHeaderHeight: CGFloat = 26
     static let rowCount: Int = 6
-    static let agendaHeight: CGFloat = 200
 
     static func rowHeight(available: CGFloat) -> CGFloat {
-        max(minRowHeight, (available - weekdayHeaderHeight - agendaHeight) / CGFloat(rowCount))
+        max(minRowHeight, (available - weekdayHeaderHeight) / CGFloat(rowCount))
     }
 
     static func contentHeight(available: CGFloat) -> CGFloat {

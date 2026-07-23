@@ -40,7 +40,9 @@ struct RoomDetailView: View {
             tabPicker
             Group {
                 if tab == .calendar {
-                    RoomCalendar(roomId: roomId)
+                    GeometryReader { proxy in
+                        RoomCalendar(roomId: roomId, available: proxy.size.height)
+                    }
                 } else {
                     GeometryReader { proxy in
                         RoomTimetable(roomId: roomId, available: proxy.size.height)
@@ -122,11 +124,10 @@ struct RoomDetailView: View {
 
 struct RoomCalendar: View {
     let roomId: String
+    var available: CGFloat? = nil
     @Environment(AppEnvironment.self) private var environment
-    @State private var viewMode: CalendarViewMode = .day
     @State private var anchor = SchoolClock.todayString()
     @State private var selectedDate = SchoolClock.todayString()
-    @State private var expanded = false
     @State private var activeSheet: RoomCalSheet?
     @State private var weeks: [RoomWeekDto] = []
     @State private var isLoading = false
@@ -145,99 +146,75 @@ struct RoomCalendar: View {
 
     var body: some View {
         let events = RoomCalendarLogic.buildCalendarEvents(weeks: weeks)
-        let eventMap = MeetingExpansion.eventsByDate(events)
-        let dayEvents = eventMap[selectedDate] ?? []
         ScrollView {
             VStack(spacing: Space.s3) {
                 HStack {
-                    PeriodNav(viewMode: viewMode, anchor: anchor) { next in
+                    PeriodNav(viewMode: .month, anchor: anchor) { next in
                         anchor = next
-                        if viewMode == .day { selectedDate = next }
                         Task { await reload(force: true) }
                     }
                     Spacer()
-                    CalendarSegmented(viewMode: Binding(get: { viewMode }, set: { viewMode = $0; Task { await reload(force: true) } }))
-                }
-                AvailabilityBar(date: selectedDate, members: weeks.first?.members ?? [], events: dayEvents, expanded: expanded) {
-                    expanded.toggle()
                 }
                 if isLoading {
-                    Skeleton(width: nil, height: viewMode == .day ? 620 : 360, radius: Radius.md)
+                    Skeleton(width: nil, height: 360, radius: Radius.md)
                 } else if loadError {
                     Panel { Text("カレンダーを読み込めませんでした。").foregroundStyle(Color.textSecondary) }
                 } else {
-                    switch viewMode {
-                    case .month:
-                        CalendarMonth(
-                            anchor: anchor,
-                            selectedDate: selectedDate,
-                            events: events,
-                            statusByDate: [:],
-                            onSelectDate: { date in
-                                selectedDate = date
-                                anchor = date
-                            },
-                            onChangeAnchor: { next in
-                                anchor = next
-                                Task { await reload(force: true) }
-                            },
-                            onSelectEvent: { event in
-                                selectRoomEvent(event)
-                            }
-                        )
-                        RoomDayEventList(date: selectedDate, events: dayEvents) { event in
-                            selectRoomEvent(event)
-                        }
-                    case .week:
-                        CalendarWeek(weekStart: CalendarRange.mondayOf(anchor), selectedDate: selectedDate, eventsByDateMap: eventMap, onSelectDate: { date in
+                    CalendarMonth(
+                        anchor: anchor,
+                        selectedDate: selectedDate,
+                        events: events,
+                        statusByDate: [:],
+                        available: available,
+                        onSelectDate: { date in
                             selectedDate = date
                             anchor = date
-                        }, onSelectEvent: { event in
-                            selectRoomEvent(event)
-                        })
-                    case .day:
-                        CalendarDay(date: selectedDate, events: dayEvents) { event in
+                        },
+                        onChangeAnchor: { next in
+                            anchor = next
+                            Task { await reload(force: true) }
+                        },
+                        onSelectEvent: { event in
                             selectRoomEvent(event)
                         }
-                    }
+                    )
                 }
             }
         }
         .scrollBounceBehavior(.basedOnSize)
+        .scrollClipDisabled()
         .accessibilityIdentifier("room-calendar")
         .overlay(alignment: .bottomTrailing) {
-            if viewMode != .month {
-                VStack(alignment: .trailing, spacing: Space.s3) {
-                    Button { activeSheet = .ics } label: {
-                        Image(systemName: "arrow.down.doc.fill")
-                            .frame(width: 44, height: 44)
-                            .foregroundStyle(Color.textPrimary)
-                            .background(Color.bgElevated)
-                            .clipShape(Circle())
-                            .atenderShadow(.card)
-                    }
-                    .accessibilityIdentifier("room-fab-ics")
-                    Button { activeSheet = .event } label: {
-                        HStack(spacing: Space.s2) {
-                            Image(systemName: "plus")
-                            Text("予定を追加")
-                        }
-                        .font(.atenderSm)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.textOnAccent)
-                        .padding(.horizontal, Space.s4)
-                        .frame(height: 48)
-                        .background(Color.accent500)
-                        .clipShape(Capsule())
-                        .atenderShadow(.glowSoft)
-                    }
-                    .accessibilityIdentifier("room-fab-event")
+            VStack(alignment: .trailing, spacing: Space.s3) {
+                Button { activeSheet = .ics } label: {
+                    Image(systemName: "arrow.down.doc.fill")
+                        .frame(width: 44, height: 44)
+                        .foregroundStyle(Color.textPrimary)
+                        .background(Color.bgElevated)
+                        .clipShape(Circle())
+                        .atenderShadow(.card)
                 }
-                .padding(.trailing, Space.s4)
-                .padding(.bottom, Space.s6)
+                .accessibilityIdentifier("room-fab-ics")
+                Button { activeSheet = .event } label: {
+                    HStack(spacing: Space.s2) {
+                        Image(systemName: "plus")
+                        Text("予定を追加")
+                    }
+                    .font(.atenderSm)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color.textOnAccent)
+                    .padding(.horizontal, Space.s4)
+                    .frame(height: 48)
+                    .background(Color.accent500)
+                    .clipShape(Capsule())
+                    .atenderShadow(.glowSoft)
+                }
+                .accessibilityIdentifier("room-fab-event")
             }
+            .padding(.trailing, Space.s4)
+            .padding(.bottom, Space.s6)
         }
-        .task(id: "\(viewMode.rawValue)-\(anchor)") {
+        .task(id: anchor) {
             await reload()
         }
         .sheet(item: $activeSheet) { sheet in
@@ -283,7 +260,7 @@ struct RoomCalendar: View {
         loadError = false
         defer { isLoading = false }
         do {
-            let starts = CalendarRange.weekStartsFor(viewMode, anchor: anchor)
+            let starts = CalendarRange.weekStartsFor(.month, anchor: anchor)
             var loaded: [RoomWeekDto] = []
             for start in starts {
                 let week = try await environment.roomRepository.roomWeek(id: roomId, weekStart: start, force: force)
