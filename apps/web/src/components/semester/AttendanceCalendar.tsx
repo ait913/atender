@@ -2,16 +2,13 @@ import dayjs from "dayjs";
 import { Ban, Check, ChevronLeft, ChevronRight, Clock, Minus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { AttendanceDaySummary } from "@atender/shared";
-import { usePersonalEvents } from "@/api/hooks";
 import { dayBackground, dayGlyphs, dayVisual, type DayMark, type DayVisualIcon } from "@/lib/dayStatusVisual";
-import { personalEventDates } from "@/lib/personalEventDays";
 
 type Props = {
   days: AttendanceDaySummary[];
   startDate: string;
   endDate: string;
   today: string;
-  semesterId?: string | null;
   onSelectDay: (date: string) => void;
   selectionMode: boolean;
   selectedDates: ReadonlySet<string>;
@@ -24,7 +21,6 @@ export function AttendanceCalendar({
   startDate,
   endDate,
   today,
-  semesterId,
   onSelectDay,
   selectionMode,
   selectedDates,
@@ -37,14 +33,6 @@ export function AttendanceCalendar({
   const monthStart = anchor.startOf("month");
   const gridStart = monthStart.startOf("week");
   const gridEnd = monthStart.endOf("month").endOf("week");
-  const personalEvents = usePersonalEvents({
-    from: gridStart.format("YYYY-MM-DD"),
-    to: gridEnd.format("YYYY-MM-DD"),
-  });
-  const eventDates = useMemo(
-    () => personalEventDates(personalEvents.data?.events ?? []),
-    [personalEvents.data?.events],
-  );
   const cells: dayjs.Dayjs[] = [];
   for (let d = gridStart; d.isBefore(gridEnd) || d.isSame(gridEnd); d = d.add(1, "day")) cells.push(d);
 
@@ -107,9 +95,9 @@ export function AttendanceCalendar({
           const visual = dayVisual(summary, { future: iso > today });
           const glyphs = dayGlyphs(visual.marks);
           const background = dayBackground(visual.marks);
-          const hasEvent = eventDates.has(iso);
           const selected = selectedDates.has(iso);
-          const disabled = selectionMode && !inSemester;
+          // 押せないことを不透明度でなく「不在」で示す (設計 §2.2 / §9-E W5)
+          if (selectionMode && !inSemester) return <div key={iso} className="aspect-square" aria-hidden="true" />;
           return (
             <button
               key={iso}
@@ -118,13 +106,12 @@ export function AttendanceCalendar({
                 if (selectionMode) onToggleDate(iso);
                 else onSelectDay(iso);
               }}
-              disabled={disabled}
               aria-label={cell.format("M月D日")}
               className={`relative flex aspect-square flex-col items-center justify-center rounded-lg border text-sm tabular-nums transition active:scale-95 ${
                 inMonth ? "text-fg-primary hover:border-accent-500/40" : "text-fg-tertiary opacity-40"
               } ${visual.dashed ? "border-dashed" : "border-border-subtle"} ${
                 iso === today ? "ring-1 ring-accent-500/60" : ""
-              } ${selected ? "ring-2 ring-accent-500" : ""} disabled:opacity-25`}
+              } ${selected ? "ring-2 ring-accent-500" : ""}`}
               style={{
                 ...(background ? { background } : {}),
                 ...(visual.dashed ? { borderColor: "color-mix(in srgb, var(--color-status-tardy) 40%, transparent)" } : {}),
@@ -135,7 +122,6 @@ export function AttendanceCalendar({
                   <Check className="h-3 w-3" strokeWidth={3} />
                 </span>
               ) : null}
-              {hasEvent ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-accent-500" aria-hidden="true" /> : null}
               <span className="font-bold">{cell.date()}</span>
               {glyphs.length === 0 ? (
                 <span className="mt-0.5 h-4 w-4" aria-hidden="true" />
@@ -208,7 +194,6 @@ function Legend() {
       <LegendItem icon="clock" color="var(--color-status-tardy)" label="遅刻・早退" />
       <LegendItem icon="ban" color="var(--color-status-suspended)" label="休講" />
       <span className="inline-flex items-center gap-1"><span className="h-3.5 w-3.5 rounded border border-dashed" style={{ borderColor: "color-mix(in srgb, var(--color-status-tardy) 40%, transparent)" }} />未記録</span>
-      <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent-500" />予定</span>
     </div>
   );
 }

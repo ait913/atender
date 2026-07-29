@@ -63,7 +63,6 @@ export function SemesterOverview() {
           startDate={startDate}
           endDate={endDate}
           today={today}
-          semesterId={semesterId}
           onSelectDay={setDayDetailDate}
           selectionMode={selectionMode}
           selectedDates={selectedDates}

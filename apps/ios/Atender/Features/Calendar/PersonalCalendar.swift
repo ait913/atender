@@ -217,6 +217,11 @@ struct PersonalCalendar: View {
             .scrollBounceBehavior(.basedOnSize)
             // ★ scrollClipDisabled は付けない。付けるとスクロール中の中身が
             //   ルーム選択チップや「時間割/カレンダー」ピッカーの上に描画される (実機 FB)。
+            // ★ 代わりに ScrollView を画面幅いっぱいに広げ、インセットは contentMargins で
+            //   中身側に戻す。こうしないとクリップ境界がカードの縁と一致し、
+            //   カードの影が左右だけ切れる (実機 FB / ContextChips と同じ手)。
+            .padding(.horizontal, -Space.pagePxMobile)
+            .contentMargins(.horizontal, Space.pagePxMobile, for: .scrollContent)
             .overlay { sheetHost(model) }
         }
     }
@@ -318,6 +323,8 @@ struct CalendarMonth: View {
     var onLongPressDate: ((String) -> Void)? = nil
 
     private let labels = ["月", "火", "水", "木", "金", "土", "日"]
+    @Environment(\.displayScale) private var displayScale
+
     var body: some View {
         let monthFirst = CalendarRange.monthFirst(anchor)
         let range = CalendarRange.monthGridRange(anchorMonthFirst: monthFirst)
@@ -341,30 +348,23 @@ struct CalendarMonth: View {
 
     @ViewBuilder
     private func monthGrid(dates: [String], eventMap: [String: [CalendarEvent]], monthFirst: String, rowHeight: CGFloat) -> some View {
-        let content = VStack(spacing: 0) {
-            HStack(spacing: 0) {
+        let content = VStack(spacing: CalendarMonthLayout.rowSpacing) {
+            EqualColumnsLayout(spacing: CalendarMonthLayout.columnSpacing, displayScale: displayScale) {
                 ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
                     Text(label)
                         .font(.atenderXs)
                         .fontWeight(.bold)
+                        .lineLimit(1)
                         .foregroundStyle(weekdayColor(index: index, outsideMonth: false))
-                        .frame(maxWidth: .infinity)
+                        .frame(minWidth: 0, maxWidth: .infinity)
                         .frame(height: CalendarMonthLayout.weekdayHeaderHeight)
                 }
             }
-            VStack(spacing: 0) {
-                ForEach(0..<CalendarMonthLayout.rowCount, id: \.self) { row in
-                    HStack(spacing: 0) {
-                        ForEach(0..<7, id: \.self) { column in
-                            let date = dates[row * 7 + column]
-                            dayCell(
-                                date,
-                                events: eventMap[date] ?? [],
-                                monthFirst: monthFirst,
-                                rowHeight: rowHeight,
-                                column: column
-                            )
-                        }
+            ForEach(0..<CalendarMonthLayout.rowCount, id: \.self) { row in
+                EqualColumnsLayout(spacing: CalendarMonthLayout.columnSpacing, displayScale: displayScale) {
+                    ForEach(0..<CalendarMonthLayout.columnCount, id: \.self) { column in
+                        let date = dates[row * CalendarMonthLayout.columnCount + column]
+                        dayCell(date, events: eventMap[date] ?? [], monthFirst: monthFirst, rowHeight: rowHeight)
                     }
                 }
             }
@@ -377,11 +377,24 @@ struct CalendarMonth: View {
             .atenderShadow(.card)
     }
 
-    private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat, column: Int) -> some View {
-        let emphasis = CalendarDayStyle.emphasis(date: date, todayString: SchoolClock.todayString(), selectedDate: selectedDate, monthFirst: monthFirst)
+    private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat) -> some View {
+        let emphasis = CalendarDayStyle.emphasis(
+            date: date, todayString: SchoolClock.todayString(),
+            selectedDate: selectedDate, monthFirst: monthFirst
+        )
+        let showsContent = CalendarDayStyle.showsDayContent(date: date, monthFirst: monthFirst)
+        let marks = showsContent
+            ? Array(AttendanceDayVisual.dayVisual(summary: daySummaries[date], isFuture: false).marks.prefix(3))
+            : []
+        let visibleEvents = showsContent ? events : []
+        // イベント領域は最大 2 行。溢れる日 (>2) は chip を 1 個に減らし、
+        // 残り 1 行を「+N」に充てる (番号 + chip1 + +N はどの端末でも rowHeight に収まる)。
+        let overflow = visibleEvents.count > 2
+        let visibleCount = overflow ? 1 : 2
+
         return Button { onSelectDate(date) } label: {
             VStack(alignment: .leading, spacing: 3) {
-                HStack {
+                VStack(spacing: 2) {
                     Text(String(Int(date.suffix(2)) ?? 0))
                         .font(.atenderSm)
                         .fontWeight(emphasis == .today ? .bold : .semibold)
@@ -394,23 +407,17 @@ struct CalendarMonth: View {
                             }
                         }
                         .clipShape(Circle())
-                    Spacer()
-                    // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個
+                    // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個。
+                    // marks が空でも 6pt を常時確保して、行間で chip の y を揃える
                     HStack(spacing: 2) {
-                        ForEach(Array(AttendanceDayVisual.dayVisual(summary: daySummaries[date], isFuture: false).marks.prefix(3)), id: \.kind) { mark in
+                        ForEach(marks, id: \.kind) { mark in
                             Circle().fill(mark.dotColor).frame(width: 6, height: 6)
                         }
                     }
+                    .frame(width: 24, height: 6)
                 }
-                .frame(height: 24)
-
-                // イベント領域は最大 2 行。溢れる日 (>2) は chip を 1 個に減らし、
-                // 残り 1 行を「+N」に充てる (番号 + chip1 + +N はどの端末でも rowHeight に収まる)。
-                // これで「+N」がセル枠 clip で切れず必ず読める (標準カレンダーの more 表記と同じ)。
-                let overflow = events.count > 2
-                let visibleCount = overflow ? 1 : 2
                 VStack(alignment: .leading, spacing: 3) {
-                    ForEach(Array(events.prefix(visibleCount))) { event in
+                    ForEach(Array(visibleEvents.prefix(visibleCount))) { event in
                         Text(CalendarEventDisplay.eventTitle(event))
                             .font(.caption2)
                             .fontWeight(.semibold)
@@ -435,7 +442,7 @@ struct CalendarMonth: View {
                             })
                     }
                     if overflow {
-                        Text("+\(events.count - visibleCount)")
+                        Text("+\(visibleEvents.count - visibleCount)")
                             .font(.caption2)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.textTertiary)
@@ -443,27 +450,15 @@ struct CalendarMonth: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .clipped()
             }
             .padding(.horizontal, 3)
             .padding(.vertical, 2)
-            .frame(maxWidth: .infinity)
-            .frame(height: max(44, rowHeight))
-            // ★ マス全体をタップ範囲にする。これが無いと描画されている要素
-            //   (日付の丸・イベント chip) の上でしか反応せず、
-            //   「日付表示の上部分しか押せない」状態になる (実機 FB)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+            .frame(height: rowHeight)
+            // ★ 背景塗りが無くなったので contentShape が唯一の当たり判定。絶対に消さない
             .contentShape(Rectangle())
-            .background(emphasis == .outsideMonth ? Color.bgMuted : Color.bgElevated)
-            .overlay(alignment: .top) {
-                Rectangle().fill(Color.borderSubtle).frame(height: 0.5)
-            }
-            .overlay(alignment: .leading) {
-                if column > 0 {
-                    Rectangle().fill(Color.borderSubtle).frame(width: 0.5)
-                }
-            }
-            .clipped()
         }
         .buttonStyle(.plain)
         .conditional(onLongPressDate != nil) { view in
