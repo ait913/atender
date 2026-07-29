@@ -357,3 +357,28 @@ export async function reconcileEventKit(args: { userId: string; input: EventKitS
   await projectEnabledSharesForUser(args.userId);
   return result;
 }
+
+/**
+ * build 11 以前がユーザーの既定カレンダーへ push した個人予定の外部 id 一覧
+ * (.designs/20260729-eventkit-dedicated-calendar-export.md §6.2)
+ */
+export async function listLegacyEkPushes(args: { userId: string }): Promise<{ externalIds: string[] }> {
+  const rows = await prisma.personalEvent.findMany({
+    where: { userId: args.userId, source: "MANUAL" as never, ekExternalId: { not: null } },
+    select: { ekExternalId: true },
+  });
+  const externalIds = Array.from(new Set(rows.map((row) => row.ekExternalId).filter((id): id is string => id != null))).sort();
+  return { externalIds };
+}
+
+export async function clearLegacyEkPushes(args: {
+  userId: string;
+  externalIds: string[];
+}): Promise<{ clearedCount: number }> {
+  if (args.externalIds.length === 0) return { clearedCount: 0 };
+  const result = await prisma.personalEvent.updateMany({
+    where: { userId: args.userId, source: "MANUAL" as never, ekExternalId: { in: args.externalIds } },
+    data: { ekExternalId: null, ekCalendarId: null },
+  });
+  return { clearedCount: result.count };
+}

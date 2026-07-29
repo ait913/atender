@@ -3,12 +3,21 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import {
   EventKitSyncInput,
+  LegacyEkPushClearInput,
   PersonalEventCreateInput,
   PersonalEventDeleteQuery,
   PersonalEventUpdateInput,
 } from "@atender/shared";
 import { sessionMiddleware } from "../middleware/session";
-import { createPersonalEvent, deletePersonalEvent, listPersonalEvents, reconcileEventKit, updatePersonalEvent } from "../services/personalEvent.service";
+import {
+  clearLegacyEkPushes,
+  createPersonalEvent,
+  deletePersonalEvent,
+  listLegacyEkPushes,
+  listPersonalEvents,
+  reconcileEventKit,
+  updatePersonalEvent,
+} from "../services/personalEvent.service";
 
 const PersonalEventsQuery = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -34,6 +43,16 @@ export function registerPersonalEventRoutes(app: Hono) {
   app.post("/api/personal-events/eventkit-sync", sessionMiddleware, zValidator("json", EventKitSyncInput), async (c) => {
     const user = c.get("user");
     return c.json(await reconcileEventKit({ userId: user.id, input: c.req.valid("json") }));
+  });
+
+  app.get("/api/personal-events/eventkit-legacy-pushes", sessionMiddleware, async (c) => {
+    const user = c.get("user");
+    return c.json(await listLegacyEkPushes({ userId: user.id }));
+  });
+
+  app.post("/api/personal-events/eventkit-legacy-pushes/clear", sessionMiddleware, zValidator("json", LegacyEkPushClearInput), async (c) => {
+    const user = c.get("user");
+    return c.json(await clearLegacyEkPushes({ userId: user.id, externalIds: c.req.valid("json").externalIds }));
   });
 
   app.patch("/api/personal-events/:id", sessionMiddleware, zValidator("param", PersonalEventParam), zValidator("json", PersonalEventUpdateInput), async (c) => {

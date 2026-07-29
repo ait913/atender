@@ -112,6 +112,11 @@ export const EventKitSyncInput = z.object({
   events: z.array(EventKitSyncEvent),
 });
 
+/** build 11 以前の EK push 済みイベント掃除 (.designs/20260729-eventkit-dedicated-calendar-export.md §4.4) */
+export const LegacyEkPushListDto  = z.object({ externalIds: z.array(z.string()) });
+export const LegacyEkPushClearInput = z.object({ externalIds: z.array(z.string()).max(2000) });
+export const LegacyEkPushClearDto  = z.object({ clearedCount: z.number().int() });
+
 export type OccurrenceDayDto = z.infer<typeof OccurrenceDayDto>;
 export type PersonalEventSeriesDto = z.infer<typeof PersonalEventSeriesDto>;
 export type PersonalEventOccurrenceDto = z.infer<typeof PersonalEventOccurrenceDto>;
@@ -121,3 +126,6 @@ export type PersonalEventUpdateInput = z.infer<typeof PersonalEventUpdateInput>;
 export type PersonalEventDeleteQuery = z.infer<typeof PersonalEventDeleteQuery>;
 export type EventKitSyncEvent = z.infer<typeof EventKitSyncEvent>;
 export type EventKitSyncInput = z.infer<typeof EventKitSyncInput>;
+export type LegacyEkPushListDto = z.infer<typeof LegacyEkPushListDto>;
+export type LegacyEkPushClearInput = z.infer<typeof LegacyEkPushClearInput>;
+export type LegacyEkPushClearDto = z.infer<typeof LegacyEkPushClearDto>;
