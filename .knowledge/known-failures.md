@@ -225,7 +225,7 @@ xcrun simctl create "iPhone 16" \
 | W4 | Setup 完了後の `/timetable` が redirect route (`→ /`) になった。テストの `/api/me` が `isComplete:false` を返し続けるので `requireCompleteSetup` が `/setup` に戻す | 1 | テスト陳腐化 | `4efb93c` |
 | W5 | `/login`→`/signin` 統合 + `redirectIfSignedIn` guard。MSW の `/api/me` が常に 200 を返すため `/` に弾かれる。加えてログイン画面は Apple/Google/メール の 3 ボタン選択式に統一済でメール入力欄は初期表示に無い | 6 | テスト陳腐化 (二重) | `17bf694` (2026-05-27) + `20260716-login-unify.md` |
 | W6 | Settings がメニュー行 + sheet 構成に再設計 (名前は text 表示、`出欠ルール` は sheet の先) | 3 | テスト陳腐化 | `4efb93c` (`20260528-v9-timetree-rework.md:1830,1879`) |
-| W7 | **Web `/templates` が `20260515-redesign.md` §4.3 の full rewrite を未実装** | 3 | **実装ギャップ (据え置き決定済)** | 未実装 (下記) |
+| W7 | **Web `/templates` が `20260515-redesign.md` §4.3 の full rewrite を未実装** | ~~3~~ → **2** | **実装ギャップ (据え置き決定済)**。W7-3 のみ 2026-07-29 に修正済 | 未実装 (下記) |
 | W8 | `Verify` の `findByText(/学校選択\|学校/)` が Setup 画面の複数要素に多重ヒット。`path()` の `/setup` アサートは pass、画面も正しい | 1 | テストのバグ (クエリが緩い) | — |
 
 **27 件中 24 件は 2026-05-27〜28 の 2 コミットで死んでおり、以降約 2 ヶ月間ベースラインとして無分類で放置されていた。**
@@ -246,14 +246,16 @@ xcrun simctl create "iPhone 16" \
 |---|---|---|---|
 | W7-1 | `renders school, department, and q filters` | placeholder `/検索\|q/i` → **placeholder 属性が無い** | `20260515-redesign.md` §4.3 |
 | W7-2 | `shows template cards with ... actions` | `button /詳細を見る/` → **存在しない** | `20260513-mvp.md:1368` |
-| W7-3 | **`shows the 409 copy conflict message`** | `/既に時間割があります\|上書き/` → **DOM 無変化** | `20260515-redesign.md:1047` 仕様 #125 |
+| ~~W7-3~~ | ~~`shows the 409 copy conflict message`~~ | **2026-07-29 修正済 → 緑** | `20260515-redesign.md:1047` 仕様 #125 |
 
-**★ W7-3 は本番で壊れている挙動**:
+**W7-3 は本番で壊れていた挙動 — 2026-07-29 に修正済 (`fix/templates-copy-409`)**:
 - 画面: https://atender.appily.run `/templates` (「みんなの時間割」)
-- 操作: 既に UserTimetable がある学期を選んだ状態でテンプレの `コピー` を押す
-- 実測 (決定的プローブ): click → **`409_HITS: 1`** (リクエストは確かに飛んでいる) → 1.5 秒後の `document.body.textContent` が click 前と **byte 一致** (`DOM_CHANGED: false`)。トースト無し・エラー行無し・成功表示も無し
-- ユーザーから見た症状: **「コピーを押しても何も起きない」**
-- 露出は限定的: `/templates` はボトムナビから消えており、`components/rooms/Rooms.tsx:26` の小さなテキストボタンからしか到達できない
+- 症状: 既に UserTimetable がある学期を選んだ状態でテンプレの `コピー` を押すと、API は 409 を返しているのに **UI が完全に無反応**。決定的プローブで click → `409_HITS: 1` (リクエストは飛んでいる) → 1.5 秒後の `document.body.textContent` が click 前と **byte 一致** (`DOM_CHANGED: false`) を確認していた。ユーザーからは「コピーを押しても何も起きない」
+- 原因: 表示側の JSX が無かっただけ。TanStack Query v5 は `onError` の有無に関わらず `mutation.error` を保持するので hook 側は元から正しい
+- 修正: `Templates.tsx` に inline エラーを追加 (409 は仕様 #125 の逐語文言、それ以外は汎用)。17 行・1 ファイル
+- **★ 教訓**: この 1 件は「Web の 27 件はどうせベースライン失敗」という扱いのまま**約 2 ヶ月間、本番でボタンが無反応のまま放置されていた**。台帳の存在理由 (「ベースラインの山に本物のバグが隠れる」) が Web でも再現した実例
+
+> **★ 同型の未修正バグ**: 同じ画面の `自分の時間割を公開` (`usePublishTimetable`) も**エラー表示が皆無**で、失敗すると同様に無反応になる。今回のスコープ外として手を付けていない。次に `/templates` を触るときに合わせて直すこと。
 
 ### 環境依存 / ハーネスの癖 (現時点で失敗数には出ていないが、次に触る人が踏む)
 
