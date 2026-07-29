@@ -1,9 +1,5 @@
 import Foundation
 
-struct ReconcilePlan: Equatable {
-    var uploads: [EventKitSyncEvent]
-}
-
 enum EventKitReconciler {
     static func uploads(from snapshots: [EKEventSnapshot]) -> [EventKitSyncEvent] {
         snapshots.map {

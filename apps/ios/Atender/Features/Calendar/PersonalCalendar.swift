@@ -116,9 +116,7 @@ struct PersonalCalendar: View {
         .task(id: semesterId) {
             if viewModel == nil { viewModel = PersonalCalendarViewModel(environment: environment) }
             await viewModel?.load(semesterId: semesterId)
-            if let range = viewModel?.currentRange {
-                await environment.calendarSyncCoordinator.sync(range: eventKitInterval(from: range.start, to: range.end))
-            }
+            await environment.calendarSyncCoordinator.sync(trigger: .calendarScreen)
             loadRevision += 1
         }
     }
@@ -165,6 +163,7 @@ struct PersonalCalendar: View {
         } else {
             ScrollView {
                 VStack(spacing: Space.s3) {
+                    CalendarSyncBanner()
                     HStack {
                         PeriodNav(viewMode: .month, anchor: model.anchor) { next in
                             model.anchor = next
@@ -213,11 +212,6 @@ struct PersonalCalendar: View {
         }
     }
 
-    private func eventKitInterval(from: String, to: String) -> DateInterval {
-        let start = EventKitTimeMapping.jstDayStart(from)
-        let end = EventKitTimeMapping.jstDayStart(CalendarRange.addDays(to, 1))
-        return DateInterval(start: start, end: end)
-    }
 }
 
 struct PeriodNav: View {
