@@ -26,19 +26,15 @@ export function personalEventDates(occurrences: PersonalEventOccurrenceDto[]): S
   return new Set(occurrences.flatMap((occurrence) => occurrence.days.map((day) => day.date)));
 }
 
-/** JST 日付 (YYYY-MM-DD) の 00:00 を ISO8601 instant にする */
+/** JST 日付 (YYYY-MM-DD) の 00:00 を ISO8601 instant (UTC "Z" 形式) にする */
 export function jstDayStartIso(date: string): string {
-  return `${date}T00:00:00.000+09:00`;
+  return new Date(`${date}T00:00:00.000+09:00`).toISOString();
 }
 
-/** 終日の包含終了日 -> 排他 end の ISO8601 instant */
+/** 終日の包含終了日 -> 排他 end の ISO8601 instant (UTC "Z" 形式)。JST に DST は無いので +24h で翌 00:00 */
 export function jstNextDayStartIso(date: string): string {
-  const [y, m, d] = date.split("-").map(Number);
-  const next = new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1) + 24 * 60 * 60 * 1000);
-  const yy = next.getUTCFullYear();
-  const mm = String(next.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(next.getUTCDate()).padStart(2, "0");
-  return `${yy}-${mm}-${dd}T00:00:00.000+09:00`;
+  const dayStart = new Date(`${date}T00:00:00.000+09:00`).getTime();
+  return new Date(dayStart + 24 * 60 * 60 * 1000).toISOString();
 }
 
 /** 終日 occurrence の「表示上の終了日 (包含)」= end - 1ms の JST 日 */
@@ -63,7 +59,7 @@ export function toDateTimeLocal(iso: string): string {
 }
 
 export function fromDateTimeLocal(value: string): string {
-  return `${value}:00.000+09:00`;
+  return new Date(`${value}:00.000+09:00`).toISOString();
 }
 
 /** 行の時刻表記。終日/単日/複数日で出し分ける */
