@@ -95,16 +95,25 @@ export const PersonalEventDeleteQuery = z.object({
   originalDate: z.string().datetime().optional(),
 });
 
+/**
+ * ★ request スキーマ: Swift の合成 Codable は nil の Optional を encodeIfPresent で書くため
+ *   キーごと JSON から消える。zod の bare .nullable() は null を許すが「キー欠落」は許さない
+ *   (invalid_type / received: undefined / "Required") ので、クライアントが nil を送りうる
+ *   フィールドは必ず .nullable().optional() にする。
+ *   iOS 側 DTO: apps/ios/Atender/Core/Models/DTOs.swift の struct EventKitSyncEvent と 1:1。
+ *   そこで Optional (`String?`) なのは ekLastModified / location の 2 つだけ。
+ *   詳細: Muraki/knowledge/gotcha/swift-codable-omits-nil-vs-zod-nullable.md
+ */
 export const EventKitSyncEvent = z.object({
   ekExternalId:      z.string(),
   ekCalendarId:      z.string(),
   ekOccurrenceStart: z.string().datetime(),          // EKEvent.occurrenceDate
-  ekLastModified:    z.string().datetime().nullable(),
+  ekLastModified:    z.string().datetime().nullable().optional(),
   start:             z.string().datetime(),
   end:               z.string().datetime(),
   isAllDay:          z.boolean(),
   title:             z.string().min(1).max(100),
-  location:          z.string().max(200).nullable(),
+  location:          z.string().max(200).nullable().optional(),
 });
 
 export const EventKitSyncInput = z.object({

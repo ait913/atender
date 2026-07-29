@@ -1,5 +1,5 @@
 import type { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/validator";
 import { OccurrenceRangeQuery } from "@atender/shared";
 import { AppError } from "../lib/appError";
 import { sessionMiddleware } from "../middleware/session";

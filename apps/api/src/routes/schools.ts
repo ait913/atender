@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/validator";
 import { DepartmentCreateInput, SchoolCreateInput, SchoolSearchQuery } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
