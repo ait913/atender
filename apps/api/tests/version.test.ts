@@ -20,6 +20,14 @@ function expectVersionShape(body: unknown) {
   });
 }
 
+// 設計 §8: 境界はすべて MIN_IOS_BUILD に対する相対的な性質。
+// リリースのたびに MIN_IOS_BUILD が上がるので、テストは定数から標本を導出する
+// (リテラルで埋めると版数を上げた瞬間に落ちる)。
+const BUILD_ABOVE_MIN = MIN_IOS_BUILD + 1; // #G2: build > MIN_IOS_BUILD
+const BUILD_AT_MIN = MIN_IOS_BUILD; // #G4: build === MIN_IOS_BUILD (境界は素通し)
+const BUILD_BELOW_MIN = MIN_IOS_BUILD - 1; // #G3: build < MIN_IOS_BUILD
+const iosHeader = (build: number) => `ios/${build}`;
+
 async function expectGatePassedWithUnauthorized(headerValue?: string) {
   const headers = headerValue === undefined ? undefined : { "X-Atender-Client": headerValue };
   const { res, body } = await getJson("/api/me", { headers });
@@ -78,7 +86,7 @@ describe("version API", () => {
     expect(res.status).not.toBe(426);
   });
 
-  it("[version #V6] minIOSBuild matches MIN_IOS_BUILD and the approved initial value", async () => {
+  it("[version #V6] minIOSBuild matches MIN_IOS_BUILD and is an integer >= 1", async () => {
     const { res, body } = await getJson("/version");
     const minIOSBuild = (body as { minIOSBuild: number }).minIOSBuild;
 
@@ -86,7 +94,6 @@ describe("version API", () => {
     expect(minIOSBuild).toBe(MIN_IOS_BUILD);
     expect(Number.isInteger(minIOSBuild)).toBe(true);
     expect(minIOSBuild).toBeGreaterThanOrEqual(1);
-    expect(MIN_IOS_BUILD).toBe(1);
   });
 
   it.each(["HEAD", "unknown"])("[version #V7] SOURCE_COMMIT=%s still satisfies the version response shape", async (commit) => {
@@ -105,13 +112,16 @@ describe("clientVersionGuard", () => {
     await expectGatePassedWithUnauthorized();
   });
 
-  it("[version #G2] ios/2 passes through because build is greater than MIN_IOS_BUILD", async () => {
-    await expectGatePassedWithUnauthorized("ios/2");
+  it("[version #G2] a build greater than MIN_IOS_BUILD passes through", async () => {
+    await expectGatePassedWithUnauthorized(iosHeader(BUILD_ABOVE_MIN));
   });
 
-  it("[version #G3] ios/0 is rejected with CLIENT_UPGRADE_REQUIRED details", async () => {
+  it("[version #G3] a build below MIN_IOS_BUILD is rejected with CLIENT_UPGRADE_REQUIRED details", async () => {
+    // 標本が正当なヘッダである前提 (#V6 の「1 以上」): MIN_IOS_BUILD - 1 >= 0
+    expect(MIN_IOS_BUILD).toBeGreaterThanOrEqual(1);
+
     const { res, body } = await getJson("/api/me", {
-      headers: { "X-Atender-Client": "ios/0" },
+      headers: { "X-Atender-Client": iosHeader(BUILD_BELOW_MIN) },
     });
 
     expect(res.status).toBe(426);
@@ -119,13 +129,13 @@ describe("clientVersionGuard", () => {
     expect((body as { error: { message: unknown; details: unknown } }).error.message).toEqual(expect.any(String));
     expect((body as { error: { details: unknown } }).error.details).toEqual({
       platform: "ios",
-      build: 0,
-      minIOSBuild: 1,
+      build: BUILD_BELOW_MIN,
+      minIOSBuild: MIN_IOS_BUILD,
     });
   });
 
-  it("[version #G4] ios/1 at the MIN_IOS_BUILD boundary passes through", async () => {
-    await expectGatePassedWithUnauthorized("ios/1");
+  it("[version #G4] a build exactly at the MIN_IOS_BUILD boundary passes through", async () => {
+    await expectGatePassedWithUnauthorized(iosHeader(BUILD_AT_MIN));
   });
 
   it.each(["ios/abc", "ios/", "ios", "ios/6/7", "android/6", "IOS/6", "", "ios/-1", "ios/1234567890"])(

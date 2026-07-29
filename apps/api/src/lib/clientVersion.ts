@@ -1,12 +1,18 @@
 /**
  * 受け入れる最小の iOS CFBundleVersion。これ未満を名乗るクライアントは 426 で弾く。
  *
- * 初期値 1 の理由 (2026-07-17):
- * - block は「そのビルドでは主要機能が壊れる / データを壊す」ときの最終手段
- * - 実ビルドは 1 以上なので、初期値 1 は「誰も弾かれない」= 新設 middleware の本番誤爆余地がゼロ
- * - 値の上げ方は CLAUDE.md の TestFlight 手順を参照
+ * block は「そのビルドでは主要機能が壊れる / データを壊す」ときの最終手段。
+ * 値の上げ方は CLAUDE.md の TestFlight 手順を参照。
+ *
+ * 1 → 12 (2026-07-29, カレンダー3レーン / build 12):
+ * - PersonalEvent を date+startMinute/endMinute から start/end の instant に作り替え、
+ *   semesterId 列を削除した (破壊的 migration、Touri 承認済)
+ * - build 11 以下は消えたフィールドを前提に個人予定 API を叩くため、
+ *   デプロイ後は正常動作しない。426 でアップデートを促す方が安全
+ * - 必ず MIN_IOS_BUILD <= これから配る CFBundleVersion を確認すること
+ *   (逆にすると配った直後に全員が 426 で自滅する)
  */
-export const MIN_IOS_BUILD = 1;
+export const MIN_IOS_BUILD = 12;
 
 export type ClientInfo = { platform: "ios"; build: number };
 
