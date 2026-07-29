@@ -92,6 +92,42 @@ rrulestr は `DTSTART;TZID=...` 形式なら食えるが `DTSTART:...Z` 形式�
 
 **本 worktree では `git log` / `git blame` に pathspec を付けるとハングする** (iCloud `~/Documents` 配下。pathspec 無しの `git log --oneline` は即返る)。陳腐化の起点コミット特定は断念した。必要なら iCloud 外へ clone して調べること。
 
+### ★ 実測ベースライン更新 (2026-07-29, commit `fcfdc4d`, Researcher / カレンダー3レーン着手時)
+
+`cd apps/api ; pnpm exec vitest run` → **Test Files 12 failed | 23 passed (35) / Tests 28 failed | 339 passed | 1 skipped (368)**
+
+内訳: `28 = 17 (2026-07-16 の既存台帳) + 6 (下記 C 群 = 新規) + 5 (dev .env 漏れ)`。
+`.env.test` 相当を当てた場合は **23 failed**。**未分類 0**。
+
+### C. テスト陳腐化 — ハードコード日付の腐敗 (`personal-calendar-share.test.ts` 6 件)
+
+**分類: テスト陳腐化 (実装・設計とも正しい)。原因コミット `2d6fece` (2026-07-23、main へは `7583538` build 10)。ただし「コミットで壊れた」のではなく、テスト内のリテラル日付が実行日より過去に滑ったことで 2026-07-26 (M9 のみ 07-27) から自動的に落ち始めた。**
+
+台帳のベースライン実測 `f30391f` (2026-07-16) 時点ではファイル自体が存在しない (`git ls-tree` で確認) ので、台帳に無いのは当然。
+
+`projectShare` (`personalCalendarShare.service.ts:100-105`) は投影範囲を `today().startOfDay 〜 +3ヶ月` で取る。これは設計 `.designs/20260723-calendar-eventkit-sync-and-redesign.md:230` の仕様どおり。一方テストは執筆日 (07-23) の 2〜3 日後である `2026-07-25` / `2026-07-26` を「未来の日付」としてリテラルで埋めていた。
+
+| # | テスト (file:line) | 期待 → 実測 | 設計の根拠 |
+|---|---|---|---|
+| C1 | `[M2] POST creates a share and projects…` (`:63`) | `length 1` → **0** | `:506` M1 + `:230` 範囲 |
+| C2 | `[M3] projects only events in the today-to-three-month range` (`:104`) | `["range later","range start"]` → **`["range later"]`** | `:230` 範囲 |
+| C3 | `[M3/M4] TITLE_MAPPED applies matching rule…` (`:150`) | `"予定"` → **`undefined`** | `:508` M3 + `:509` M4 |
+| C4 | `[M5] BUSY_ONLY projects busy titles…` (`:187`) | `length 1` → **0** | `:507` M2 |
+| C5 | `[M6] updating a share replaces stale projections` (`:222`) | `length 1` → **0** | `:510` M5 |
+| C6 | `[M9] each room member's share projects only that member's…` (`:327`) | `length 1` → **0** | `:225-236` (userId スコープ) |
+
+**決定的プローブ (2026-07-29 実測、後始末済)**:
+1. 全日付を +1ヶ月 (`07-25→08-25`, `07-26→08-26`) にしたコピーを実行 → **9 tests passed (9)**。6 件全 PASS。
+2. M2 のみ `date` を「今日 (07-29)」/「昨日 (07-28)」で実行 → 今日 **PASS** / 昨日 **FAIL**。`date >= today().startOfDay` の境界そのもの。
+
+→ **実装バグではない。修正不要** (下記のとおり進行中レーンで消える)。
+
+**対応方針**: `.designs/20260729-personal-calendar-rebuild.md:1423` が「`tests/personal-calendar-share.test.ts` — P1〜P10 へ書き換え (既存 9 件は単発前提)」と明記しており、本ファイルは `feature/personal-calendar-rebuild` で**丸ごと置換される**。今直すのは二重手間。§5.5 (`:549-564`) は範囲仕様・マスク規則・`externalUid` を据え置くので、C1-C6 が守る仕様は新設計でも生きる。
+
+> **★ 次に触る人への警告**: 新設計の §P テスト仕様 `:1344` (P4 = 7/23-24) / `:1345` (P5 = 7/27) は**既に過去日**。投影窓が `today()〜+3ヶ月` のままなので、逐語実装すると **P4/P5 は生成直後に RED** になる。日付は実行時計算 (相対) で書くこと。関連: `Muraki/knowledge/gotcha/hardcoded-future-dates-decay-into-baseline-failures.md`
+
+**なお `eventkit-sync.test.ts` は同じ `2026-07-25` を使っているが全 PASS** — `reconcileEventKit` は `range` を明示引数で受けるため `today()` に依存しない。時限爆弾は「`today()` アンカーの窓を持つ機能」に限る。
+
 ### テスト陳腐化 (better-auth 1.6.11 の挙動変化。feature 非依存・親コミットでも同一)
 
 これらは `tests/auth.test.ts` の Magic Link 系。**送信自体は正常** (probe で 200 + Verification 1 行 + Resend 1 回を確認)。旧テストが better-auth の旧挙動を前提にしている。
@@ -162,6 +198,75 @@ xcrun simctl create "iPhone 16" \
 ```
 
 **iPhone 17 Pro で代用しない** — 画面寸法が変わると §10.1 が要求する「P2 前後の同一スクショ比較」が成立しなくなる (18.2 側は iPhone 16 のため)。名前が同じでも OS が違えば destination は一意に解決する。
+
+## Web (apps/web, Vitest + RTL + MSW)
+
+### ★ 実測ベースライン (2026-07-29, commit `fcfdc4d`, Researcher / カレンダー3レーン着手時)
+
+`cd apps/web ; pnpm exec vitest run` → **Test Files 7 failed | 37 passed (44) / Tests 27 failed | 231 passed (258)**
+(Node v25.9.0 / vitest 2.1.9。2 回走らせて同一集合)
+
+**`apps/web` には `test` script が無い。`pnpm --filter @atender/web test` は `ERR_PNPM_NO_SCRIPT`。`pnpm exec vitest run` を使う。**
+
+失敗 27 件は**全て `tests/routes/*` の `renderApp` 経由**。`tests/components/*` `tests/lib/*` は全 GREEN。
+**未分類 0**。内訳: テスト陳腐化 23 / テストのバグ 1 / 実装ギャップ 3 (うち 1 件は本番実害)。
+
+**API 側と違い dev `.env` 汚染は起きていない。** `apps/web/.env` は `VITE_API_URL=http://localhost:8787` を持つが、`vitest.config.ts` の `define: { "import.meta.env.VITE_API_URL": "http://localhost:3000" }` が transform 時に上書きし MSW の `API_URL` と一致させている。**この define 1 行が汚染を防いでいる。消すと全崩壊する。**
+
+### 根本原因: ルートテストと MSW フィクスチャが 2 ヶ月間刷新に置き去り
+
+`git log -- apps/web/tests/routes/*.test.tsx`: Home / Setup / SignIn / Templates / Verify は **`d016daf` (2026-05-13 MVP) の 1 コミットのみ**で以降無変更。Settings は +1、Stats は +2 (いずれも 2026-06-11 まで)。`tests/msw/handlers.ts` も最終更新 2026-06-11。その後の v9 全面再構築 / login-unify / home-collapsible / semester 再設計を**一度も取り込んでいない**。
+
+| # | グループ | 件数 | 分類 | 原因コミット |
+|---|---|---|---|---|
+| W1 | Home 画面の全面刷新 (挨拶/マスコット/今日のコマカード/mark-all/空日文言がすべて消え、`ContextChips + HomeViewModeTabs + HomeBody + SelfTodayCTA` に置換) | 9 | テスト陳腐化 | `4efb93c` (2026-05-28 v9) + build 9 折りたたみ CTA |
+| W2 | ボトムナビが 5 タブ IA (ホーム/学期・科目/ルーム/友達/設定) になり Timetable/Templates/Stats リンクが消滅 | 1 | テスト陳腐化 | `4efb93c` |
+| W3 | `/stats` が `/semester` への redirect route になり、画面は `/api/stats` でなく `/api/semesters/:id/overview` を叩く (MSW にハンドラ無し) | 3 | テスト陳腐化 | `4efb93c` |
+| W4 | Setup 完了後の `/timetable` が redirect route (`→ /`) になった。テストの `/api/me` が `isComplete:false` を返し続けるので `requireCompleteSetup` が `/setup` に戻す | 1 | テスト陳腐化 | `4efb93c` |
+| W5 | `/login`→`/signin` 統合 + `redirectIfSignedIn` guard。MSW の `/api/me` が常に 200 を返すため `/` に弾かれる。加えてログイン画面は Apple/Google/メール の 3 ボタン選択式に統一済でメール入力欄は初期表示に無い | 6 | テスト陳腐化 (二重) | `17bf694` (2026-05-27) + `20260716-login-unify.md` |
+| W6 | Settings がメニュー行 + sheet 構成に再設計 (名前は text 表示、`出欠ルール` は sheet の先) | 3 | テスト陳腐化 | `4efb93c` (`20260528-v9-timetree-rework.md:1830,1879`) |
+| W7 | **Web `/templates` が `20260515-redesign.md` §4.3 の full rewrite を未実装** | 3 | **実装ギャップ (据え置き決定済)** | 未実装 (下記) |
+| W8 | `Verify` の `findByText(/学校選択\|学校/)` が Setup 画面の複数要素に多重ヒット。`path()` の `/setup` アサートは pass、画面も正しい | 1 | テストのバグ (クエリが緩い) | — |
+
+**27 件中 24 件は 2026-05-27〜28 の 2 コミットで死んでおり、以降約 2 ヶ月間ベースラインとして無分類で放置されていた。**
+
+#### 実装が正しいことの決定的プローブ (2026-07-29 実測、プローブファイルは削除済)
+
+- **W5**: `/api/me` を 401 に差し替えて `/signin` を render → 逐語で `下記のアカウントを使用してログイン / Appleで続ける / Google で続ける / メールで続ける`。設計どおり。
+- **W5 (sign-out)**: sign-out 成功後に `/api/me` を 401 に切り替えるプローブ → **`signedOut=true path=/signin`**。実装 (`components/settings/Settings.tsx:42`) は完全に正しい。既存テストは「セッションが終わること」をモデル化していないだけ。
+- **W2**: `/` の実ナビ href は `/|ホーム ;; /semester|学期・科目 ;; /rooms|ルーム ;; /friends|友達 ;; /settings|設定`。CLAUDE.md の「ボトムタブ = 5項目」と完全一致。
+
+#### W7. Web `/templates` — ★ 409 コピー衝突が UI に一切出ない (本番実害)
+
+**分類: 実装ギャップ。ただし `20260721-public-timetable-search.md:22` が「Web UI (`apps/web`) は今回いじらない (「Web いったん放置」方針)」と明記しており、意図的な据え置き。**
+
+`apps/web/src/routes/Templates.tsx` は MVP 相当の dev グレードのまま (`学校 ID` / `学科 ID` を生入力、placeholder 無し、詳細ビュー無し、`useCopyTemplate` に `onError` 無し、エラー表示 JSX ゼロ)。`20260515-redesign.md` §4.3 が指示した `components/templates/{TemplateCard,TemplateCopySheet,TemplatePublishSheet}.tsx` は**ディレクトリごと存在しない**。
+
+| # | テスト | 期待 → 実測 | 仕様の根拠 |
+|---|---|---|---|
+| W7-1 | `renders school, department, and q filters` | placeholder `/検索\|q/i` → **placeholder 属性が無い** | `20260515-redesign.md` §4.3 |
+| W7-2 | `shows template cards with ... actions` | `button /詳細を見る/` → **存在しない** | `20260513-mvp.md:1368` |
+| W7-3 | **`shows the 409 copy conflict message`** | `/既に時間割があります\|上書き/` → **DOM 無変化** | `20260515-redesign.md:1047` 仕様 #125 |
+
+**★ W7-3 は本番で壊れている挙動**:
+- 画面: https://atender.appily.run `/templates` (「みんなの時間割」)
+- 操作: 既に UserTimetable がある学期を選んだ状態でテンプレの `コピー` を押す
+- 実測 (決定的プローブ): click → **`409_HITS: 1`** (リクエストは確かに飛んでいる) → 1.5 秒後の `document.body.textContent` が click 前と **byte 一致** (`DOM_CHANGED: false`)。トースト無し・エラー行無し・成功表示も無し
+- ユーザーから見た症状: **「コピーを押しても何も起きない」**
+- 露出は限定的: `/templates` はボトムナビから消えており、`components/rooms/Rooms.tsx:26` の小さなテキストボタンからしか到達できない
+
+### 環境依存 / ハーネスの癖 (現時点で失敗数には出ていないが、次に触る人が踏む)
+
+1. **Node v25.9.0 + jsdom 29 では `window.localStorage.getItem is not a function`。** `src/lib/useTheme.ts:10` を通る画面 (= `/settings`) を素で render すると ErrorBoundary に落ちる。`tests/routes/Settings.test.tsx` は `beforeAll` で自前 polyfill を入れて回避済。**新規に `/settings` 系を render するテストを書くなら同じ polyfill が要る。**
+2. **MSW ハンドラ集合が 2026-06-11 で凍結。** `tests/setup.ts:6` が `onUnhandledRequest: "error"` なので、以降に増えた `GET /api/rooms` / `GET /api/user-timetables` / `GET /api/semesters/:id/overview` などは全て落ちる。**W1/W3 は設計の前提を直しただけでは通らず、ハンドラ追加が必須。**
+3. **`tests/setup.ts:50` が `console.error` を throw に変えている。** React 19 の `act(...)` 警告を踏むと、テストの合否とは別枠の "Unhandled Errors" としてラン全体に出る。
+4. **`git log` / `git blame` の pathspec は、本体リポジトリ (`projects/atender`) では正常に動く。** 台帳の API 節にある「pathspec でハングする」は **worktree (`Muraki/worktrees/*`) 固有**。
+
+### 未分類の失敗
+
+- **なし** (0 件)。
+
+---
 
 ## iOS (apps/ios, XCTest)
 
