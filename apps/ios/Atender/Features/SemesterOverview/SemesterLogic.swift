@@ -156,6 +156,31 @@ enum SemesterCalendarGrid {
     }
 }
 
+extension SemesterCalendarGrid {
+    /// 複数選択モードで学期範囲外の日は「空セル」にする。
+    /// 押せないことを不透明度でなく「不在」で示す (通常モードでは常に false = 現行踏襲)
+    static func isBlanked(iso: String, startDate: String, endDate: String, selectionMode: Bool) -> Bool {
+        guard selectionMode else { return false }
+        return !(startDate <= iso && iso <= endDate)
+    }
+}
+
+enum SemesterCalendarMetrics {
+    static let cardHorizontalPadding: CGFloat = Space.s2   // 8
+    static let cardVerticalPadding: CGFloat = Space.s4     // 16
+    static let innerInset: CGFloat = Space.s2              // 非グリッド要素の追い padding (実効 16pt)
+    static let gridSpacing: CGFloat = 3
+    static let columnCount: Int = 7
+    static let minTapTarget: CGFloat = 44
+
+    /// 画面幅から日セルの一辺 (= 正方形なので tap 領域の縦横) を求める
+    static func dayCellSide(screenWidth: CGFloat, pageMargin: CGFloat = Space.pagePxMobile) -> CGFloat {
+        let content = screenWidth - pageMargin * 2 - cardHorizontalPadding * 2
+            - gridSpacing * CGFloat(columnCount - 1)
+        return max(0, content) / CGFloat(columnCount)
+    }
+}
+
 enum DayDetailLogic {
     static func courseSuspendedIds(_ d: DayDetailDto) -> Set<String> {
         Set(d.courseSuspensions.map(\.courseId))

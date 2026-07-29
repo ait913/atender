@@ -69,17 +69,17 @@ struct AttendanceCalendar: View {
     let startDate: String
     let endDate: String
     let today: String
-    let semesterId: String?
     let selectionMode: Bool
     let selectedDates: Set<String>
     let onSelectDay: (String) -> Void
     let onToggleSelectionMode: () -> Void
     let onToggleDate: (String) -> Void
-    @Environment(AppEnvironment.self) private var environment
     @State private var anchor: String = CalendarRange.monthFirst(SchoolClock.todayString())
-    @State private var eventDates: Set<String> = []
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 3), count: 7)
+    private let columns = Array(
+        repeating: GridItem(.flexible(), spacing: SemesterCalendarMetrics.gridSpacing),
+        count: SemesterCalendarMetrics.columnCount
+    )
     private let weekdays = ["日", "月", "火", "水", "木", "金", "土"]
 
     var body: some View {
@@ -97,6 +97,7 @@ struct AttendanceCalendar: View {
                     anchor = CalendarRange.addMonths(anchor, 1)
                 }
             }
+            .padding(.horizontal, SemesterCalendarMetrics.innerInset)
             HStack {
                 Spacer()
                 if CalendarRange.monthFirst(anchor) != CalendarRange.monthFirst(today) {
@@ -106,7 +107,8 @@ struct AttendanceCalendar: View {
                 }
                 chip(selectionMode ? "選択中" : "複数選択", active: selectionMode, action: onToggleSelectionMode)
             }
-            LazyVGrid(columns: columns, spacing: 3) {
+            .padding(.horizontal, SemesterCalendarMetrics.innerInset)
+            LazyVGrid(columns: columns, spacing: SemesterCalendarMetrics.gridSpacing) {
                 ForEach(weekdays, id: \.self) { label in
                     Text(label)
                         .font(.atenderXs)
@@ -119,8 +121,10 @@ struct AttendanceCalendar: View {
                 }
             }
             legend
+                .padding(.horizontal, SemesterCalendarMetrics.innerInset)
         }
-        .padding(Space.s4)
+        .padding(.vertical, SemesterCalendarMetrics.cardVerticalPadding)
+        .padding(.horizontal, SemesterCalendarMetrics.cardHorizontalPadding)
         .background(Color.bgElevated)
         .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
         .atenderShadow(.card)
@@ -128,96 +132,93 @@ struct AttendanceCalendar: View {
         .onAppear {
             anchor = SemesterCalendarGrid.clampMonth(today, start: startDate, end: endDate)
         }
-        .task(id: "\(anchor):\(semesterId ?? "")") {
-            await loadEventDots()
-        }
     }
 
     private var daysByDate: [String: AttendanceDaySummary] {
         Dictionary(days.map { ($0.date, $0) }, uniquingKeysWith: { _, latest in latest })
     }
 
+    @ViewBuilder
     private func dayCell(_ iso: String) -> some View {
-        let visual = AttendanceDayVisual.dayVisual(summary: daysByDate[iso], isFuture: iso > today)
-        let glyphs = AttendanceDayVisual.glyphs(visual.marks)
-        let glyphSize: CGFloat = glyphs.count >= 2 ? 12 : 16
-        let inMonth = iso.prefix(7) == anchor.prefix(7)
-        let inSemester = startDate <= iso && iso <= endDate
-        let selected = selectedDates.contains(iso)
-        let disabled = selectionMode && !inSemester
-        let hasStateStroke = visual.dashed || iso == today || selected
-        return Button {
-            selectionMode ? onToggleDate(iso) : onSelectDay(iso)
-        } label: {
-            ZStack(alignment: .topTrailing) {
-                ZStack {
-                    Color.bgElevated
-                    HStack(spacing: 0) {
-                        ForEach(Array(AttendanceDayVisual.backgroundSlices(visual.marks).enumerated()), id: \.offset) { _, slice in
-                            Rectangle()
-                                .fill(slice.color)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                    }
-                }
-                .clipShape(Circle())
-                VStack(spacing: 3) {
-                    Text(String(Int(iso.suffix(2)) ?? 0))
-                        .font(.atenderSm.weight(.semibold))
-                    HStack(spacing: 2) {
-                        if glyphs.isEmpty {
-                            statusIcon(.none, size: glyphSize)
-                        } else {
-                            ForEach(Array(glyphs.enumerated()), id: \.offset) { _, mark in
-                                statusIcon(mark.icon, size: glyphSize)
-                                    .foregroundStyle(mark.iconColor)
+        if SemesterCalendarGrid.isBlanked(iso: iso, startDate: startDate, endDate: endDate, selectionMode: selectionMode) {
+            // 押せないことを不透明度でなく「不在」で示す (§2.2)
+            Color.clear
+                .aspectRatio(1, contentMode: .fit)
+                .accessibilityHidden(true)
+        } else {
+            let visual = AttendanceDayVisual.dayVisual(summary: daysByDate[iso], isFuture: iso > today)
+            let glyphs = AttendanceDayVisual.glyphs(visual.marks)
+            let glyphSize: CGFloat = glyphs.count >= 2 ? 12 : 16
+            let inMonth = iso.prefix(7) == anchor.prefix(7)
+            let selected = selectedDates.contains(iso)
+            let hasStateStroke = visual.dashed || iso == today || selected
+            Button {
+                selectionMode ? onToggleDate(iso) : onSelectDay(iso)
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    ZStack {
+                        Color.bgElevated
+                        HStack(spacing: 0) {
+                            ForEach(Array(AttendanceDayVisual.backgroundSlices(visual.marks).enumerated()), id: \.offset) { _, slice in
+                                Rectangle()
+                                    .fill(slice.color)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                             }
                         }
                     }
+                    .clipShape(Circle())
+                    VStack(spacing: 3) {
+                        Text(String(Int(iso.suffix(2)) ?? 0))
+                            .font(.atenderSm.weight(.semibold))
+                        HStack(spacing: 2) {
+                            if glyphs.isEmpty {
+                                statusIcon(.none, size: glyphSize)
+                            } else {
+                                ForEach(Array(glyphs.enumerated()), id: \.offset) { _, mark in
+                                    statusIcon(mark.icon, size: glyphSize)
+                                        .foregroundStyle(mark.iconColor)
+                                }
+                            }
+                        }
+                    }
+                    .foregroundStyle(inMonth ? Color.textPrimary : Color.textTertiary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    if selected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Color.textOnAccent)
+                            .frame(width: 16, height: 16)
+                            .background(Color.accent500)
+                            .clipShape(Circle())
+                            .offset(x: -4, y: 4)
+                    }
                 }
-                .foregroundStyle(inMonth ? Color.textPrimary : Color.textTertiary)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                if selected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(Color.textOnAccent)
-                        .frame(width: 16, height: 16)
-                        .background(Color.accent500)
-                        .clipShape(Circle())
-                        .offset(x: -4, y: 4)
-                } else if eventDates.contains(iso) {
-                    Circle()
-                        .fill(Color.accent500)
-                        .frame(width: 8, height: 8)
-                        .offset(x: -6, y: 6)
+                .aspectRatio(1, contentMode: .fit)
+                .overlay {
+                    if !hasStateStroke {
+                        Circle().strokeBorder(Color.borderSubtle, lineWidth: 1)
+                    }
                 }
+                .overlay {
+                    if visual.dashed {
+                        Circle()
+                            .stroke(Color.statusTardy.opacity(0.40), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    }
+                }
+                .overlay {
+                    if iso == today {
+                        Circle()
+                            .stroke(Color.accent500.opacity(0.60), lineWidth: 1)
+                    }
+                    if selected {
+                        Circle()
+                            .stroke(Color.accent500, lineWidth: 2)
+                    }
+                }
+                .opacity(inMonth ? 1 : 0.4)
             }
-            .aspectRatio(1, contentMode: .fit)
-            .overlay {
-                if !hasStateStroke {
-                    Circle().strokeBorder(Color.borderSubtle, lineWidth: 1)
-                }
-            }
-            .overlay {
-                if visual.dashed {
-                    Circle()
-                        .stroke(Color.statusTardy.opacity(0.40), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                }
-            }
-            .overlay {
-                if iso == today {
-                    Circle()
-                        .stroke(Color.accent500.opacity(0.60), lineWidth: 1)
-                }
-                if selected {
-                    Circle()
-                        .stroke(Color.accent500, lineWidth: 2)
-                }
-            }
-            .opacity((inMonth ? 1 : 0.4) * (disabled ? 0.25 : 1))
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
-        .disabled(disabled)
     }
 
     private func monthButton(_ systemName: String, disabled: Bool, action: @escaping () -> Void) -> some View {
@@ -275,7 +276,7 @@ struct AttendanceCalendar: View {
             }
             .lineLimit(1)
             .minimumScaleFactor(0.75)
-            Text("− / 破線 = 未記録 ・ ● = 予定")
+            Text("− / 破線 = 未記録")
         }
         .font(.caption2)
         .fontWeight(.bold)
@@ -290,13 +291,6 @@ struct AttendanceCalendar: View {
         }
     }
 
-    private func loadEventDots() async {
-        let cells = SemesterCalendarGrid.cells(monthAnchor: anchor)
-        guard let from = cells.first, let to = cells.last else { return }
-        if let events = try? await environment.personalEventRepository.personalEvents(from: from, to: to) {
-            eventDates = Set(events.flatMap { $0.days.map(\.date) })
-        }
-    }
 }
 
 struct CourseListItem: View {

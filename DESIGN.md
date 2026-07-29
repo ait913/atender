@@ -86,6 +86,7 @@ Web の 8/10/18/24/28 を iOS の `Radius` トークン (既に同値) に対応
 - グリッド (時間割/カレンダー) 以外では、隣接する情報ブロックの間隔が **16pt (`sectionGapMobile`) を下回らない**。
 - タップターゲットは **44×44pt** 以上 (汎用層 §2 / HIG)。
 - グリッドの内部密度 (§3.6) は例外的に詰めてよいが、**月カレンダー (§3.6.3) を含むグリッド全体は card として `sectionGap` で周囲から離す**。
+- **例外 (7 列グリッドを内包するカード)**: 月カレンダー / 学期の出席カレンダーの**横** padding は `Space.s2` (8)。理由は §6 の 44×44pt タップ規定で、横 16pt だと 375pt 端末 (SE3 / 13 mini) の日セルが 41.9pt となり満たせないため (縦は 16pt 維持)。カード内の非グリッド要素 (月ヘッダー・凡例など) は内側で +8pt して実効 16pt を保つ。
 
 ### 3.3 影と奥行き (Touri 不満: 「フラットで安っぽい」に直結)
 
@@ -159,8 +160,8 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 | 属性 | 規則 |
 |---|---|
 | 外殻 | `Color.bgElevated` + `Radius.lg` (24) + `.atenderShadow(.card)` + `Space.s2` の内側 padding。祖先の `Space.pagePxMobile` (16pt) page margin の**内側**に収まる。負マージン・幅拡張・`offset` を使わない |
-| セル分離 | TimeTree 風 hairline (`Color.borderSubtle` = `.separator` の 0.5pt)。週行上辺 + 列間。濃い罫線で表組みにしない |
-| 日セル | 枠なし・角丸なし。当月 `bgElevated` / 当月外 `bgMuted`。日付左上。曜日色 (日=`#E5484D` / 土=`#0091FF` / 平日=`textPrimary`、当月外は 0.38 不透明度)。今日=accent 塗り丸、選択=accent アウトライン丸。高さ `max(44, rowHeight)` |
+| セル分離 | **罫線を引かない (hairline 全廃)。** 列間のみ `Space.s0_5` (2pt) の gap で分ける (行間 gap は 0)。列幅は `EqualColumnsLayout` が提案幅を device pixel に丸めて配分し、子の intrinsic 幅を参照しない。Web `CalendarMonth` (`grid-cols-7 gap-px`・罫線ゼロ・`min-w-0`) が正典。§7 検収表 #2「月カレンダーは枠全廃」と一致させる |
+| 日セル | 枠なし・角丸なし・**背景塗りなし** (カード面 `bgElevated` が透ける。当月外の `bgMuted` は**廃止** — gap 分離では背景色の差が唯一の分離線になり、当月外だけが灰色の塊で目立つため)。日付は左上、**その真下にステータスドット** (6pt・最大 3 個・24pt 幅に中央寄せ・marks が空でも 6pt を常時確保)。**当月外は日付数字のみ** (イベント chip / ドットを描かない。Web `CalendarMonth` と同一)。曜日色 (日=`#E5484D` / 土=`#0091FF` / 平日=`textPrimary`、当月外は 0.38 不透明度)。今日=accent 塗り丸、選択=accent アウトライン丸。高さ `CalendarMonthLayout.rowHeight` (最小 70pt) |
 | イベント | 時間割セル (§3.6.1) と同スタイル。不透明 tint 面 (`surfaceTintRatio`・base=`bgElevated`) + 2pt solid 左バー (`Radius.full`) + `textPrimary`。`.caption2` semibold、1 行 truncate、最大 2 行、超過は chip 1 個 + `+N` |
 | 高さ算出 | `CalendarMonthLayout.rowHeight(available: gridAvailable(available:))`。`gridAvailable = available - cardChromeHeight(16)` |
 

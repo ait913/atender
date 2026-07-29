@@ -59,7 +59,6 @@ struct SemesterOverviewView: View {
                                 startDate: overview.startDate,
                                 endDate: overview.endDate,
                                 today: overview.today,
-                                semesterId: semesterId,
                                 selectionMode: selectionMode,
                                 selectedDates: selectedDates,
                                 onSelectDay: { activeSheet = .day($0) },
@@ -82,7 +81,6 @@ struct SemesterOverviewView: View {
                 .refreshable {
                     if let semesterId { await model.reload(semesterId: semesterId) }
                 }
-                .scrollClipDisabled()
             }
         } else {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
