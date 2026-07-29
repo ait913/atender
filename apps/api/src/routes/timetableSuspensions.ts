@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/validator";
 import { BulkTimetableSuspensionInput, BulkTimetableSuspensionRemoveInput, TimetableSuspensionCreateInput } from "@atender/shared";
 import { sessionMiddleware } from "../middleware/session";
 import {

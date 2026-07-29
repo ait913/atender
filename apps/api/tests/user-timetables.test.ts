@@ -166,7 +166,7 @@ describe("user timetables daysOfWeek", () => {
     expect(body.userTimetable.daysOfWeek).toEqual([1, 3, 6]);
   });
 
-  it("PATCH daysOfWeek rejects duplicate values with ZodError", async () => {
+  it("PATCH daysOfWeek rejects duplicate values with VALIDATION_ERROR", async () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
 
@@ -178,10 +178,11 @@ describe("user timetables daysOfWeek", () => {
     const body = await json(res);
 
     expect(res.status).toBe(400);
-    expect(JSON.stringify(body)).toContain("ZodError");
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(body.error.message).toContain("daysOfWeek");
   });
 
-  it("PATCH daysOfWeek rejects an empty array with ZodError", async () => {
+  it("PATCH daysOfWeek rejects an empty array with VALIDATION_ERROR", async () => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
 
@@ -193,10 +194,11 @@ describe("user timetables daysOfWeek", () => {
     const body = await json(res);
 
     expect(res.status).toBe(400);
-    expect(JSON.stringify(body)).toContain("ZodError");
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(body.error.message).toContain("daysOfWeek");
   });
 
-  it.each([[0], [8]])("PATCH daysOfWeek rejects out-of-range value %j with ZodError", async (daysOfWeek) => {
+  it.each([[[0]], [[8]]])("PATCH daysOfWeek rejects out-of-range value %j with VALIDATION_ERROR", async (daysOfWeek) => {
     const db = prisma();
     const complete = await setupCompleteUser(db);
 
@@ -208,7 +210,8 @@ describe("user timetables daysOfWeek", () => {
     const body = await json(res);
 
     expect(res.status).toBe(400);
-    expect(JSON.stringify(body)).toContain("ZodError");
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(body.error.message).toContain("daysOfWeek");
   });
 
   it("PATCH daysOfWeek does not change existing occurrence count or schedule fields", async () => {

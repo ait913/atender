@@ -1,6 +1,6 @@
 import type { Hono } from "hono";
 import { z } from "zod";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/validator";
 import { prisma } from "../db";
 import { dateStringToJstDay, toIsoDate, today } from "../lib/tz";
 import { sessionMiddleware } from "../middleware/session";

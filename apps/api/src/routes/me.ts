@@ -1,5 +1,5 @@
 import type { Hono } from "hono";
-import { zValidator } from "@hono/zod-validator";
+import { zValidator } from "../lib/validator";
 import { z } from "zod";
 import { MeResponseDto, MeUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
