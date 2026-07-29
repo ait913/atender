@@ -1,13 +1,23 @@
 {
-  "id": "personal_01",
-  "semesterId": null,
-  "date": "2026-06-08",
-  "title": "課題締切",
+  "seriesId": "personal_01",
+  "occurrenceDate": "2026-06-07T15:00:00.000Z",
+  "start": "2026-06-07T15:00:00.000Z",
+  "end": "2026-06-08T15:00:00.000Z",
+  "days": [
+    { "date": "2026-06-08", "startMinute": 0, "endMinute": 1440 }
+  ],
   "isAllDay": true,
-  "startMinute": null,
-  "endMinute": null,
-  "color": null,
+  "title": "課題締切",
+  "location": null,
   "note": null,
+  "color": null,
+  "isRecurringOccurrence": false,
+  "recurrenceRule": null,
+  "recurrenceSpec": null,
+  "overrideId": null,
+  "source": "MANUAL",
+  "ekExternalId": null,
+  "ekCalendarId": null,
   "createdAt": "2026-06-01T00:00:00.000Z",
   "updatedAt": "2026-06-01T00:00:00.000Z"
 }

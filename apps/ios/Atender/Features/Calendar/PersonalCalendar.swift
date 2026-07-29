@@ -9,7 +9,7 @@ final class PersonalCalendarViewModel {
     var timetables: [UserTimetableDto] = []
     var semesters: [SemesterDto] = []
     var overview: SemesterOverviewDto?
-    var personalEvents: [PersonalEventDto] = []
+    var occurrences: [PersonalEventOccurrenceDto] = []
     var isLoading = false
     var hasError = false
 
@@ -18,21 +18,26 @@ final class PersonalCalendarViewModel {
     }
 
     func load(semesterId: String?) async {
-        guard let semesterId else { return }
         isLoading = true
         hasError = false
         defer { isLoading = false }
+        let range = currentRange
         do {
+            async let occ = environment.personalEventRepository.personalEvents(from: range.start, to: range.end)
             async let tt = environment.timetableRepository.userTimetables()
             async let sem = environment.semesterRepository.semesters()
-            async let ov = environment.semesterRepository.semesterOverview(id: semesterId)
+            occurrences = try await occ
             timetables = try await tt
             semesters = try await sem
-            overview = try await ov
-            let range = currentRange
-            personalEvents = try await environment.personalEventRepository.personalEvents(from: range.start, to: range.end, semesterId: semesterId)
         } catch {
             hasError = true
+            return
+        }
+        // 出席オーバーレイは学期があるときだけ。失敗しても hasError を立てない (予定は見えるべき)
+        if let semesterId {
+            overview = try? await environment.semesterRepository.semesterOverview(id: semesterId)
+        } else {
+            overview = nil
         }
     }
 
@@ -41,39 +46,39 @@ final class PersonalCalendarViewModel {
     }
 
     func events(semesterId: String?) -> [CalendarEvent] {
-        guard let semesterId,
-              let timetable = timetables.first(where: { $0.semesterId == semesterId }),
-              let semester = semesters.first(where: { $0.id == semesterId })
-        else { return [] }
-        let statusByDate = Dictionary(uniqueKeysWithValues: (overview?.days ?? []).map { ($0.date, $0.status) })
-        let range = currentRange
-        let meetings = MeetingExpansion.expandUserTimetable(
-            meetings: timetable.meetings,
-            courses: timetable.courses,
-            daySlots: timetable.daySlots,
-            rangeStart: range.start,
-            rangeEnd: range.end,
-            semesterStart: semester.startDate,
-            semesterEnd: semester.endDate,
-            statusByDate: statusByDate
-        )
-        let own = personalEvents.map { event in
-            CalendarEvent(
-                kind: .personal,
-                id: "e:\(event.id)",
-                date: event.date,
-                title: event.title,
-                startMinute: event.isAllDay ? 0 : event.startMinute ?? 0,
-                endMinute: event.isAllDay ? 1440 : event.endMinute ?? event.startMinute ?? 0,
-                color: event.color ?? "#8b5cf6",
-                subtitle: "自分",
-                courseId: nil
+        var out: [CalendarEvent] = []
+        if let semesterId,
+           let timetable = timetables.first(where: { $0.semesterId == semesterId }),
+           let semester = semesters.first(where: { $0.id == semesterId }) {
+            let statusByDate = Dictionary(uniqueKeysWithValues: (overview?.days ?? []).map { ($0.date, $0.status) })
+            let range = currentRange
+            out += MeetingExpansion.expandUserTimetable(
+                meetings: timetable.meetings,
+                courses: timetable.courses,
+                daySlots: timetable.daySlots,
+                rangeStart: range.start,
+                rangeEnd: range.end,
+                semesterStart: semester.startDate,
+                semesterEnd: semester.endDate,
+                statusByDate: statusByDate
             )
         }
-        return (meetings + own).sorted {
+        out += PersonalEventDisplay.calendarEvents(occurrences: occurrences)
+        return out.sorted {
             if $0.date != $1.date { return $0.date < $1.date }
             return $0.startMinute < $1.startMinute
         }
+    }
+
+    func occurrences(on date: String) -> [PersonalEventOccurrenceDto] {
+        occurrences
+            .filter { $0.days.contains { $0.date == date } }
+            .sorted { lhs, rhs in
+                let l = lhs.days.first(where: { $0.date == date })?.startMinute ?? 0
+                let r = rhs.days.first(where: { $0.date == date })?.startMinute ?? 0
+                if l != r { return l < r }
+                return lhs.title < rhs.title
+            }
     }
 
     func selectDate(_ date: String) {
@@ -86,19 +91,21 @@ final class PersonalCalendarViewModel {
     }
 }
 
+enum PersonalCalendarSheet: Equatable {
+    case day(String)
+}
+
 struct PersonalCalendar: View {
     @Environment(AppEnvironment.self) private var environment
     let semesterId: String?
     let available: CGFloat
     @State private var viewModel: PersonalCalendarViewModel?
     @State private var loadRevision = 0
-    @State private var isAddingPersonalEvent = false
+    @State private var activeSheet: PersonalCalendarSheet?
 
     var body: some View {
         Group {
-            if semesterId == nil {
-                Panel { Text("学期を選択してください。").foregroundStyle(Color.textSecondary) }
-            } else if let model = viewModel {
+            if let model = viewModel {
                 content(model)
             } else {
                 Color.clear
@@ -116,6 +123,28 @@ struct PersonalCalendar: View {
         }
     }
 
+    private var activeSheetBinding: Binding<Bool> {
+        Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
+    }
+
+    @ViewBuilder
+    private func sheetHost(_ model: PersonalCalendarViewModel) -> some View {
+        switch activeSheet {
+        case .day(let date):
+            BottomSheet(title: nil, isPresented: activeSheetBinding, stackLevel: 1) {
+                PersonalDaySheet(
+                    date: date,
+                    meetings: model.events(semesterId: semesterId).filter { $0.date == date ? $0.kind == .meeting : false },
+                    occurrences: model.occurrences(on: date),
+                    onChanged: { await model.load(semesterId: semesterId) },
+                    onClose: { activeSheet = nil }
+                )
+            }
+        case nil:
+            EmptyView()
+        }
+    }
+
     @ViewBuilder
     private func content(_ model: PersonalCalendarViewModel) -> some View {
         let events = model.events(semesterId: semesterId)
@@ -125,11 +154,14 @@ struct PersonalCalendar: View {
                 Skeleton(width: nil, height: 360, radius: Radius.md)
             }
         } else if model.hasError {
-            Panel { Text("カレンダーを読み込めませんでした。").foregroundStyle(Color.textSecondary) }
-        } else if semesterId != nil && model.timetables.first(where: { $0.semesterId == semesterId }) == nil {
-            Panel { Text("この学期の時間割がありません").foregroundStyle(Color.textSecondary) }
-        } else if semesterId != nil && model.semesters.first(where: { $0.id == semesterId }) == nil {
-            Panel { Text("学期を読み込めませんでした。").foregroundStyle(Color.textSecondary) }
+            Panel {
+                VStack(spacing: Space.s3) {
+                    Text("カレンダーを読み込めませんでした。").foregroundStyle(Color.textSecondary)
+                    AtenderButton(title: "再試行", variant: .secondary, size: .sm) {
+                        Task { await model.load(semesterId: semesterId) }
+                    }
+                }
+            }
         } else {
             ScrollView {
                 VStack(spacing: Space.s3) {
@@ -139,6 +171,16 @@ struct PersonalCalendar: View {
                             Task { await model.load(semesterId: semesterId) }
                         }
                         Spacer()
+                        Button {
+                            activeSheet = .day(model.selectedDate)
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 17, weight: .semibold))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("予定を追加")
                     }
                     CalendarMonth(
                         anchor: model.anchor,
@@ -147,7 +189,16 @@ struct PersonalCalendar: View {
                         statusByDate: model.statusByDate(),
                         available: available,
                         onSelectDate: { date in
+                            let needsReload = PersonalCalendarLogic.monthChanged(anchor: model.anchor, date: date)
                             model.selectDate(date)
+                            if needsReload {
+                                Task {
+                                    await model.load(semesterId: semesterId)
+                                    activeSheet = .day(date)
+                                }
+                            } else {
+                                activeSheet = .day(date)
+                            }
                         },
                         onChangeAnchor: { next in
                             model.anchor = next
@@ -158,53 +209,14 @@ struct PersonalCalendar: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .scrollClipDisabled()
-            .overlay {
-                PersonalEventEditModal(
-                    date: model.selectedDate,
-                    event: nil,
-                    semesterId: semesterId,
-                    onSaved: { saved in
-                        Task {
-                            try? await environment.calendarSyncCoordinator.pushManualEvent(saved)
-                            await model.load(semesterId: semesterId)
-                        }
-                    },
-                    isPresented: $isAddingPersonalEvent,
-                    stackLevel: 2
-                )
-            }
+            .overlay { sheetHost(model) }
         }
     }
 
     private func eventKitInterval(from: String, to: String) -> DateInterval {
-        let start = EventKitTimeMapping.toAbsolute(date: from, isAllDay: true, startMinute: nil, endMinute: nil).start
-        let end = EventKitTimeMapping.toAbsolute(date: CalendarRange.addDays(to, 1), isAllDay: true, startMinute: nil, endMinute: nil).start
+        let start = EventKitTimeMapping.jstDayStart(from)
+        let end = EventKitTimeMapping.jstDayStart(CalendarRange.addDays(to, 1))
         return DateInterval(start: start, end: end)
-    }
-}
-
-struct CalendarSegmented: View {
-    @Binding var viewMode: CalendarViewMode
-    var body: some View {
-        HStack(spacing: 0) {
-            item("日", .day)
-            item("週", .week)
-            item("月", .month)
-        }
-        .padding(3)
-        .background(Color.bgMuted)
-        .clipShape(Capsule())
-    }
-    private func item(_ label: String, _ mode: CalendarViewMode) -> some View {
-        Button { viewMode = mode } label: {
-            Text(label)
-                .font(.atenderXs)
-                .fontWeight(.bold)
-                .foregroundStyle(viewMode == mode ? Color.textOnAccent : Color.textSecondary)
-                .frame(width: 38, height: 30)
-                .background(viewMode == mode ? Color.accent500 : Color.clear)
-                .clipShape(Capsule())
-        }.buttonStyle(.plain)
     }
 }
 
@@ -246,18 +258,12 @@ struct PeriodNav: View {
     }
 }
 
-enum CalendarMonthChrome {
-    case card
-    case fullBleed
-}
-
 struct CalendarMonth: View {
     let anchor: String
     let selectedDate: String
     let events: [CalendarEvent]
     let statusByDate: [String: AttendanceDayStatus]
     var available: CGFloat? = nil
-    var chrome: CalendarMonthChrome = .fullBleed
     let onSelectDate: (String) -> Void
     var onChangeAnchor: ((String) -> Void)? = nil
     var onSelectEvent: ((CalendarEvent) -> Void)? = nil
@@ -268,7 +274,7 @@ struct CalendarMonth: View {
         let range = CalendarRange.monthGridRange(anchorMonthFirst: monthFirst)
         let dates = (0..<42).map { CalendarRange.addDays(range.start, $0) }
         let eventMap = MeetingExpansion.eventsByDate(events)
-        let rowHeight = available.map { CalendarMonthLayout.rowHeight(available: $0) } ?? 86
+        let rowHeight = available.map { CalendarMonthLayout.rowHeight(available: CalendarMonthLayout.gridAvailable(available: $0)) } ?? 86
         monthGrid(dates: dates, eventMap: eventMap, monthFirst: monthFirst, rowHeight: rowHeight)
             .gesture(
                 DragGesture(minimumDistance: 20)
@@ -315,22 +321,11 @@ struct CalendarMonth: View {
             }
         }
 
-        switch chrome {
-        case .card:
-            content
-                .padding(Space.s2)
-                .background(Color.bgElevated)
-                .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-                .atenderShadow(.card)
-        case .fullBleed:
-            GeometryReader { proxy in
-                content
-                    .frame(width: proxy.size.width + Space.pagePxMobile * 2)
-                    .background(Color.bgElevated)
-                    .offset(x: -Space.pagePxMobile)
-            }
-            .frame(height: CalendarMonthLayout.weekdayHeaderHeight + rowHeight * CGFloat(CalendarMonthLayout.rowCount))
-        }
+        content
+            .padding(Space.s2)
+            .background(Color.bgElevated)
+            .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
+            .atenderShadow(.card)
     }
 
     private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat, column: Int) -> some View {
@@ -443,153 +438,5 @@ struct CalendarMonth: View {
         guard let parsed = CalendarRange.parse(date) else { return 0 }
         let weekday = CalendarRange.utcCalendar.component(.weekday, from: parsed)
         return weekday == 1 ? 6 : weekday - 2
-    }
-}
-
-struct DayAgendaPanel: View {
-    let date: String
-    let events: [CalendarEvent]
-    var onAdd: (() -> Void)?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            HStack {
-                Text("\(CalendarRange.format(date, .monthDay)) の予定")
-                    .font(.atenderBase)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-                if let onAdd {
-                    Button(action: onAdd) {
-                        Image(systemName: "plus")
-                            .font(.atenderSm)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Color.textPrimary)
-                            .frame(width: 36, height: 36)
-                            .background(Color.textPrimary.opacity(0.08))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("予定を追加")
-                }
-            }
-            ScrollView {
-                if events.isEmpty {
-                    Text("予定はありません")
-                        .font(.atenderSm)
-                        .foregroundStyle(Color.textTertiary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, Space.s1)
-                } else {
-                    VStack(spacing: Space.s2) {
-                        ForEach(events) { event in
-                            HStack(spacing: Space.s2) {
-                                Circle().fill(Color(hexString: event.color)).frame(width: 8, height: 8)
-                                Text(event.title)
-                                    .font(.atenderSm)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(Color.textPrimary)
-                                    .lineLimit(1)
-                                Spacer()
-                                Text("\(TimeFormatting.minutesToTime(event.startMinute))-\(TimeFormatting.minutesToTime(event.endMinute))")
-                                    .font(.atenderXs)
-                                    .foregroundStyle(Color.textTertiary)
-                            }
-                        }
-                    }
-                }
-            }
-            .scrollBounceBehavior(.basedOnSize)
-        }
-        .padding(.horizontal, Space.pagePxMobile)
-        .padding(.vertical, Space.s3)
-        .background(Color.bgBase)
-        .padding(.horizontal, -Space.pagePxMobile)
-    }
-}
-
-struct CalendarWeek: View {
-    let weekStart: String
-    let selectedDate: String
-    let eventsByDateMap: [String: [CalendarEvent]]
-    let onSelectDate: (String) -> Void
-    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
-
-    var body: some View {
-        VStack(spacing: Space.s2) {
-            ForEach((0..<7).map { CalendarRange.addDays(weekStart, $0) }, id: \.self) { date in
-                let events = eventsByDateMap[date] ?? []
-                Button { onSelectDate(date) } label: {
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        HStack {
-                            Text(CalendarRange.format(date, .monthDay))
-                                .font(.atenderBase)
-                                .fontWeight(.bold)
-                                .foregroundStyle(selectedDate == date ? Color.accent500 : Color.textPrimary)
-                            Spacer()
-                            Text("\(events.count)件").font(.atenderXs).foregroundStyle(Color.textTertiary)
-                        }
-                        if events.isEmpty {
-                            Text("予定なし").font(.atenderSm).foregroundStyle(Color.textTertiary)
-                        } else {
-                            ForEach(events) { event in
-                                EventTile(title: event.title, color: event.color, subtitle: event.subtitle, meta: TimeFormatting.minutesToTime(event.startMinute))
-                                    .frame(height: 48)
-                                    .contentShape(Rectangle())
-                                    .simultaneousGesture(TapGesture().onEnded {
-                                        if event.kind == .roomEvent {
-                                            onSelectEvent?(event)
-                                        }
-                                    })
-                            }
-                        }
-                    }
-                    .padding(Space.s3)
-                    .background(Color.bgElevated)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-                }.buttonStyle(.plain)
-            }
-        }
-    }
-}
-
-struct CalendarDay: View {
-    let date: String
-    let events: [CalendarEvent]
-    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
-
-    var body: some View {
-        let laned = CalendarLane.assignLanes(events)
-        GeometryReader { proxy in
-            let height = proxy.size.height
-            ZStack(alignment: .topLeading) {
-                ForEach(9...21, id: \.self) { hour in
-                    let y = CGFloat(hour - 9) / 12 * height
-                    Text("\(hour):00")
-                        .font(.caption2)
-                        .foregroundStyle(Color.textTertiary)
-                        .position(x: 24, y: y + 8)
-                    Rectangle().fill(Color.borderSubtle).frame(height: 1).position(x: proxy.size.width / 2 + 28, y: y)
-                }
-                ForEach(laned, id: \.event.id) { item in
-                    let top = CGFloat(max(540, item.event.startMinute) - 540) / 720 * height
-                    let eventHeight = max(28, CGFloat(min(1260, item.event.endMinute) - max(540, item.event.startMinute)) / 720 * height)
-                    let laneWidth = (proxy.size.width - 62) / CGFloat(max(1, item.laneCount))
-                    EventTile(title: item.event.title, color: item.event.color, subtitle: "\(item.event.subtitle) · \(TimeFormatting.minutesToTime(item.event.startMinute))", leadingSystemImage: item.event.source == .googleOauth ? "cloud.fill" : (item.event.source == .icsFile || item.event.source == .icsUrl ? "calendar.badge.arrow.down" : nil))
-                        .frame(width: laneWidth - 2, height: eventHeight)
-                        .position(x: 58 + laneWidth * CGFloat(item.lane) + laneWidth / 2, y: top + eventHeight / 2)
-                        .contentShape(Rectangle())
-                        .simultaneousGesture(TapGesture().onEnded {
-                            if item.event.kind == .roomEvent {
-                                onSelectEvent?(item.event)
-                            }
-                        })
-                }
-            }
-        }
-        .frame(height: 620)
-        .padding(Space.s3)
-        .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 }

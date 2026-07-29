@@ -66,40 +66,19 @@ final class EventKitService {
         let calendars = store.calendars(for: .event).filter { calendarIds.contains($0.calendarIdentifier) }
         guard !calendars.isEmpty else { return [] }
         let predicate = store.predicateForEvents(withStart: range.start, end: range.end, calendars: calendars)
-        return store.events(matching: predicate).flatMap { event in
-            EventKitTimeMapping.toPersonalDays(start: event.startDate, end: event.endDate, isAllDay: event.isAllDay).map { day in
-                EKEventSnapshot(
-                    externalId: event.calendarItemExternalIdentifier,
-                    calendarId: event.calendar.calendarIdentifier,
-                    lastModified: event.lastModifiedDate,
-                    date: day.date,
-                    title: event.title.isEmpty ? "予定" : event.title,
-                    isAllDay: day.isAllDay,
-                    startMinute: day.startMinute,
-                    endMinute: day.endMinute
-                )
-            }
+        return store.events(matching: predicate).map { event in
+            EKEventSnapshot(
+                externalId: event.calendarItemExternalIdentifier,
+                calendarId: event.calendar.calendarIdentifier,
+                occurrenceStart: event.occurrenceDate ?? event.startDate,
+                lastModified: event.lastModifiedDate,
+                start: event.startDate,
+                end: event.endDate,
+                isAllDay: event.isAllDay,
+                title: event.title.isEmpty ? "予定" : event.title,
+                location: event.location
+            )
         }
-    }
-
-    func createEvent(_ pe: PersonalEventDto, in calendarId: String) throws -> String {
-        guard currentAccess() == .fullAccess else { throw EventKitServiceError.accessDenied }
-        guard let calendar = store.calendar(withIdentifier: calendarId) ?? store.defaultCalendarForNewEvents else {
-            throw EventKitServiceError.calendarNotFound
-        }
-        guard calendar.allowsContentModifications else { throw EventKitServiceError.calendarReadOnly }
-        let event = EKEvent(eventStore: store)
-        apply(pe, to: event)
-        event.calendar = calendar
-        try store.save(event, span: .thisEvent, commit: true)
-        return event.calendarItemExternalIdentifier
-    }
-
-    func updateEvent(externalId: String, _ pe: PersonalEventDto) throws {
-        guard currentAccess() == .fullAccess else { throw EventKitServiceError.accessDenied }
-        guard let event = findEvent(externalId: externalId) else { throw EventKitServiceError.eventNotFound }
-        apply(pe, to: event)
-        try store.save(event, span: .thisEvent, commit: true)
     }
 
     func deleteEvent(externalId: String) throws {
@@ -119,15 +98,6 @@ final class EventKitService {
                 Task { @MainActor in onChange() }
             }
         }
-    }
-
-    private func apply(_ pe: PersonalEventDto, to event: EKEvent) {
-        let absolute = EventKitTimeMapping.toAbsolute(date: pe.date, isAllDay: pe.isAllDay, startMinute: pe.startMinute, endMinute: pe.endMinute)
-        event.title = pe.title
-        event.notes = pe.note
-        event.isAllDay = pe.isAllDay
-        event.startDate = absolute.start
-        event.endDate = absolute.end
     }
 
     private func findEvent(externalId: String) -> EKEvent? {

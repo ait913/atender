@@ -122,7 +122,7 @@ struct SemesterOverviewView: View {
             ) {
                 DayDetailSheet(date: date, semesterId: semesterId, onChanged: {
                     await reloadOverview()
-                }, onClose: { activeSheet = nil })
+                })
             }
         case .bulk:
             BottomSheet(
