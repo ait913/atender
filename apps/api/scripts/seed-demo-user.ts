@@ -117,9 +117,9 @@ async function main() {
   const evtBase = dayjs().startOf("day");
   await prisma.personalEvent.createMany({
     data: [
-      { userId: user.id, semesterId: semester.id, date: evtBase.toDate(), title: "バイト", isAllDay: false, startMinute: 18 * 60, endMinute: 22 * 60, color: "#8B5CF6" },
-      { userId: user.id, semesterId: semester.id, date: evtBase.add(1, "day").toDate(), title: "健康診断", isAllDay: true, color: "#10B981" },
-      { userId: user.id, semesterId: semester.id, date: evtBase.add(3, "day").toDate(), title: "課題提出締切", isAllDay: true, color: "#EF4444" },
+      { userId: user.id, start: evtBase.add(18, "hour").toDate(), end: evtBase.add(22, "hour").toDate(), title: "バイト", isAllDay: false, color: "#8B5CF6" },
+      { userId: user.id, start: evtBase.add(1, "day").toDate(), end: evtBase.add(2, "day").toDate(), title: "健康診断", isAllDay: true, color: "#10B981" },
+      { userId: user.id, start: evtBase.add(3, "day").toDate(), end: evtBase.add(4, "day").toDate(), title: "課題提出締切", isAllDay: true, color: "#EF4444" },
     ],
   });
 

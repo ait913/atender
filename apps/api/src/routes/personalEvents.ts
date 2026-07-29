@@ -1,14 +1,18 @@
 import type { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { EventKitSyncInput, PersonalEventCreateInput, PersonalEventUpdateInput } from "@atender/shared";
+import {
+  EventKitSyncInput,
+  PersonalEventCreateInput,
+  PersonalEventDeleteQuery,
+  PersonalEventUpdateInput,
+} from "@atender/shared";
 import { sessionMiddleware } from "../middleware/session";
 import { createPersonalEvent, deletePersonalEvent, listPersonalEvents, reconcileEventKit, updatePersonalEvent } from "../services/personalEvent.service";
 
 const PersonalEventsQuery = z.object({
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  semesterId: z.string().optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 const PersonalEventParam = z.object({ id: z.string() });
 
@@ -16,7 +20,7 @@ export function registerPersonalEventRoutes(app: Hono) {
   app.get("/api/personal-events", sessionMiddleware, zValidator("query", PersonalEventsQuery), async (c) => {
     const user = c.get("user");
     const query = c.req.valid("query");
-    const events = await listPersonalEvents({ userId: user.id, from: query.from, to: query.to, semesterId: query.semesterId });
+    const events = await listPersonalEvents({ userId: user.id, from: query.from, to: query.to });
     return c.json({ events });
   });
 
@@ -40,10 +44,11 @@ export function registerPersonalEventRoutes(app: Hono) {
     return c.json({ event });
   });
 
-  app.delete("/api/personal-events/:id", sessionMiddleware, zValidator("param", PersonalEventParam), async (c) => {
+  app.delete("/api/personal-events/:id", sessionMiddleware, zValidator("param", PersonalEventParam), zValidator("query", PersonalEventDeleteQuery), async (c) => {
     const user = c.get("user");
     const { id } = c.req.valid("param");
-    await deletePersonalEvent({ userId: user.id, id });
+    const query = c.req.valid("query");
+    await deletePersonalEvent({ userId: user.id, id, query });
     return c.json({ ok: true });
   });
 }

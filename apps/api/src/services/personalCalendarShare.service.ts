@@ -1,7 +1,8 @@
+import type { PersonalEventOverride } from "@prisma/client";
 import type { PersonalCalendarShareDto } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
-import { dateStringToJstDay, toIsoDate, today } from "../lib/tz";
+import { today } from "../lib/tz";
 import { applyTitleRules, listRules } from "./icsTitleRule.service";
 
 type VisibilityMode = "NORMAL" | "TITLE_MAPPED" | "BUSY_ONLY";
@@ -99,9 +100,17 @@ export async function projectShare(shareId: string): Promise<{ upserted: number;
 
   const start = today().startOfDay;
   const end = addMonths(start, DEFAULT_PROJECTION_MONTHS);
+  // 系列単位で取る (occurrence でなく)。条件は expandPersonalEvents と同じ OR 条件
   const personalEvents = await prisma.personalEvent.findMany({
-    where: { userId: share.userId, date: { gte: start, lte: end } },
-    orderBy: [{ date: "asc" }, { startMinute: "asc" }],
+    where: {
+      userId: share.userId,
+      OR: [
+        { recurrenceRule: null, start: { lte: end }, end: { gte: start } },
+        { recurrenceRule: { not: null }, start: { lte: end } },
+      ],
+    },
+    include: { overrides: true },
+    orderBy: [{ start: "asc" }],
   });
   const rules = share.visibilityMode === "TITLE_MAPPED"
     ? (await listRules(share.userId)).filter((rule) => !rule.isDefault)
@@ -113,8 +122,8 @@ export async function projectShare(shareId: string): Promise<{ upserted: number;
     const externalUid = `pe:${pe.id}`;
     aliveUids.add(externalUid);
     const mappedTitle = mapTitle(pe.title, share.visibilityMode as VisibilityMode, rules);
-    const timing = personalEventTiming(toIsoDate(pe.date), pe.isAllDay, pe.startMinute, pe.endMinute);
-    await prisma.roomEvent.upsert({
+    const projectedEnd = projectEnd(pe.end, pe.isAllDay);
+    const projected = await prisma.roomEvent.upsert({
       where: { roomId_externalUid: { roomId: share.roomId, externalUid } },
       create: {
         roomId: share.roomId,
@@ -122,10 +131,13 @@ export async function projectShare(shareId: string): Promise<{ upserted: number;
         title: mappedTitle,
         rawTitle: pe.title,
         description: pe.note,
-        start: timing.start,
-        end: timing.end,
+        start: pe.start,
+        end: projectedEnd,
         isAllDay: pe.isAllDay,
         color: pe.color,
+        recurrenceRule: pe.recurrenceRule,
+        exDates: pe.exDates,
+        rDates: pe.rDates,
         source: "PERSONAL" as any,
         externalUid,
         visibilityMode: share.visibilityMode as any,
@@ -133,13 +145,18 @@ export async function projectShare(shareId: string): Promise<{ upserted: number;
       update: {
         title: mappedTitle,
         rawTitle: pe.title,
-        start: timing.start,
-        end: timing.end,
+        description: pe.note,
+        start: pe.start,
+        end: projectedEnd,
         isAllDay: pe.isAllDay,
         color: pe.color,
+        recurrenceRule: pe.recurrenceRule,
+        exDates: pe.exDates,
+        rDates: pe.rDates,
         visibilityMode: share.visibilityMode as any,
       } as any,
     });
+    await projectOverrides(projected.id, pe, share.visibilityMode as VisibilityMode, rules);
     upserted++;
   }
 
@@ -147,13 +164,62 @@ export async function projectShare(shareId: string): Promise<{ upserted: number;
     where: { roomId: share.roomId, authorId: share.userId, source: "PERSONAL" as any, externalUid: { startsWith: "pe:" } },
     select: { id: true, externalUid: true },
   });
-  const staleIds = existingProjected.filter((event) => event.externalUid && !aliveUids.has(event.externalUid)).map((event) => event.id);
+  const staleIds = existingProjected.filter((event) => event.externalUid ? !aliveUids.has(event.externalUid) : false).map((event) => event.id);
   const deleted = staleIds.length > 0
     ? (await prisma.roomEvent.deleteMany({ where: { id: { in: staleIds } } })).count
     : 0;
 
   await (prisma as any).personalCalendarShare.update({ where: { id: share.id }, data: { lastProjectedAt: new Date() } });
   return { upserted, deleted };
+}
+
+/** RoomEvent は終日を「包含 end」で持つので、投影時に 1ms 戻す */
+function projectEnd(end: Date, isAllDay: boolean): Date {
+  return isAllDay ? new Date(end.getTime() - 1) : end;
+}
+
+async function projectOverrides(
+  roomEventId: string,
+  pe: { overrides: PersonalEventOverride[] },
+  visibilityMode: VisibilityMode,
+  rules: Awaited<ReturnType<typeof listRules>>,
+) {
+  const aliveKeys = new Set<string>();
+  for (const override of pe.overrides) {
+    aliveKeys.add(override.originalDate.toISOString());
+    const newTitle = override.newTitle != null ? mapTitle(override.newTitle, visibilityMode, rules) : null;
+    const isAllDay = override.newIsAllDay ?? false;
+    const newEnd = override.newEnd != null ? projectEnd(override.newEnd, isAllDay) : null;
+    await prisma.roomEventOverride.upsert({
+      where: { seriesId_originalDate: { seriesId: roomEventId, originalDate: override.originalDate } },
+      create: {
+        seriesId: roomEventId,
+        originalDate: override.originalDate,
+        isCancelled: override.isCancelled,
+        newStart: override.newStart,
+        newEnd,
+        newTitle,
+        newDescription: override.newNote,
+        newColor: override.newColor,
+      },
+      update: {
+        isCancelled: override.isCancelled,
+        newStart: override.newStart,
+        newEnd,
+        newTitle,
+        newDescription: override.newNote,
+        newColor: override.newColor,
+      },
+    });
+  }
+  const existing = await prisma.roomEventOverride.findMany({
+    where: { seriesId: roomEventId },
+    select: { id: true, originalDate: true },
+  });
+  const staleIds = existing.filter((row) => !aliveKeys.has(row.originalDate.toISOString())).map((row) => row.id);
+  if (staleIds.length > 0) {
+    await prisma.roomEventOverride.deleteMany({ where: { id: { in: staleIds } } });
+  }
 }
 
 export async function projectEnabledSharesForUser(userId: string): Promise<void> {
@@ -169,16 +235,6 @@ function mapTitle(rawTitle: string, visibilityMode: VisibilityMode, rules: Await
   return applyTitleRules(rawTitle, rules).title;
 }
 
-function personalEventTiming(date: string, isAllDay: boolean, startMinute: number | null, endMinute: number | null) {
-  const startOfDay = dateStringToJstDay(date).startOfDay;
-  if (isAllDay) {
-    return { start: startOfDay, end: dateStringToJstDay(date).endOfDay };
-  }
-  return {
-    start: new Date(startOfDay.getTime() + (startMinute ?? 0) * 60_000),
-    end: new Date(startOfDay.getTime() + (endMinute ?? startMinute ?? 0) * 60_000),
-  };
-}
 
 async function assertRoomMember(roomId: string, userId: string) {
   const membership = await prisma.roomMembership.findUnique({ where: { roomId_userId: { roomId, userId } } });

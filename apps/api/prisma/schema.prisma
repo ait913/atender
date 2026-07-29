@@ -169,7 +169,6 @@ model Semester {
 
   userTimetables UserTimetable[]
   usersAsDefault User[]          @relation("UserDefaultSemester")
-  personalEvents PersonalEvent[] @relation("SemesterPersonalEvents")
 
   @@index([userId])
 }
@@ -289,28 +288,51 @@ model TimetableSuspension {
 }
 
 model PersonalEvent {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  semesterId  String?
-  semester    Semester? @relation("SemesterPersonalEvents", fields: [semesterId], references: [id], onDelete: SetNull)
-  date        DateTime
-  title       String
-  isAllDay    Boolean   @default(true)
-  startMinute Int?
-  endMinute   Int?
-  color       String?
-  note        String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  source         EventSource @default(MANUAL)
-  ekExternalId   String?
-  ekCalendarId   String?
-  ekLastModified DateTime?
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title          String
+  start          DateTime          // DTSTART (絶対時刻)
+  end            DateTime          // 排他。duration = end - start は全 occurrence 共通
+  isAllDay       Boolean   @default(false)
+  location       String?
+  note           String?
+  color          String?
+  recurrenceRule String?           // "FREQ=WEEKLY;BYDAY=MO" (DTSTART 行を含まない)
+  exDates        String?           // "20260615T000000Z,..." CSV (UTC ICS)
+  rDates         String?           // 同上
+  source            EventSource @default(MANUAL)
+  ekExternalId      String?        // EKCalendarItem.calendarItemExternalIdentifier
+  ekCalendarId      String?
+  ekOccurrenceStart DateTime?      // EKEvent.occurrenceDate 相当 (EK 由来ミラーの occurrence 識別)
+  ekLastModified    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  @@index([userId, date])
-  @@index([semesterId])
+  overrides PersonalEventOverride[]
+
+  @@index([userId, start])
   @@index([userId, ekExternalId])
+}
+
+model PersonalEventOverride {
+  id           String        @id @default(cuid())
+  seriesId     String
+  series       PersonalEvent @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  originalDate DateTime      // 元 occurrence の開始 (RECURRENCE-ID 相当)
+  isCancelled  Boolean       @default(false)
+  newStart     DateTime?
+  newEnd       DateTime?
+  newTitle     String?
+  newLocation  String?
+  newNote      String?
+  newColor     String?
+  newIsAllDay  Boolean?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([seriesId, originalDate])
+  @@index([seriesId])
 }
 
 enum EventSource {
