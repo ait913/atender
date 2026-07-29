@@ -17,7 +17,7 @@ Web (`apps/web/src/styles.css` + 時間割/カレンダーコンポーネント)
 
 | 性格 | Web での実体 (実測) | iOS での写し方 (方針) |
 |---|---|---|
-| **丸み (ポップ)** | card = radius 18–28px、時間割セル 8px、chip 4px。角が大きく柔らかい | `RoundedRectangle(cornerRadius:)` を **`Radius` トークン (§3.1)** で。月カレンダー外殻は full-bleed のため角丸なし (§3.6.3) |
+| **丸み (ポップ)** | card = radius 18–28px、時間割セル 8px、chip 4px。角が大きく柔らかい | `RoundedRectangle(cornerRadius:)` を **`Radius` トークン (§3.1)** で。月カレンダー外殻もカードとして `Radius.lg` (§3.6.3) |
 | **奥行き (綺麗)** | `--shadow-card` = 2 層ソフトシャドウ (`0 1px 3px /.08` + `0 4px 16px /.06`)。card が背景から浮く | `.atenderShadow(.card)` を面に敷く (§3.3)。iOS の `AtenderShadow.card` は既に Web と同値 |
 | **余白 (呼吸)** | 4px グリッド + `--section-gap-mobile 16px` + card padding 12/16px。要素が窮屈でない | `Space` トークンで一貫適用 (§3.2)。「余白をケチらない」を原則化 |
 | **多色のポップさ** | azure accent + 6 色ブランドリング (科目/ルーム色) を**面塗り (15–18% tint)** で使う | 科目色は tint 面 + solid 左バー (§3.5/§3.6)。中立は system semantic のまま |
@@ -43,7 +43,7 @@ iOS の `Radius.swift` / `Shadow.swift` / `Color+Atender.swift` は Web の値�
 | 画面 | iOS 現状 (スクショ) | Web (ソース実測) | 差の性質 |
 |---|---|---|---|
 | **時間割セル** (`01-home-timetable`, `E03-room-timetable`) | 科目名が**セルの縦中央**に配置。tint 面が**半透明**でマス目の罫線が透ける。空きセルにも罫線が回り**表組み (table)** に見える | `EventTile` = tint `color-mix(subject 15%, bg-elevated)` = **不透明**、`align="top"` = **上寄せ**、2px 左バー `rounded-full`、radius 8px、title 12px semibold `line-clamp-2`。空きセル = `bg-bg-base` **不透明**でページ地に溶ける | 透過 vs 不透明 / 中央 vs 上寄せ / 罫線が主役 vs 面が主役 |
-| **月カレンダー** (`02-home-calendar`) | **全セルに灰色の枠**が回り、完全な**スプレッドシート**。密度が高く「10年前」 | `CalendarMonth` = full-bleed、外殻カード/影なし、TimeTree 風 hairline、日付**左上**、イベント chip は不透明 tint の細バー `rounded-4px` | 表組み罫線 vs 極薄 hairline。この画面が最も「10年前」の主因 |
+| **月カレンダー** (`02-home-calendar`) | **全セルに灰色の枠**が回り、完全な**スプレッドシート**。密度が高く「10年前」 | `CalendarMonth` = カード外殻 (`Radius.lg` + shadow) の中に TimeTree 風 hairline、日付**左上**、イベント chip は不透明 tint の細バー `rounded-4px` | 表組み罫線 vs 極薄 hairline。この画面が最も「10年前」の主因 |
 | **学期カレンダー** (`C01-semester-overview`) | 出席カレンダーは各日が**枠付きボックス**。カード自体は白角丸 + 影で綺麗 (ここは Web に近い) | 同上 (`CalendarMonth` 系) | カード外殻は良い。内側の日セル枠が過剰 |
 | **ヘッダー** (`01` vs `C01` vs `E02`) | **バラバラ**: Home = タイトル無し (switcher が最上部)。学期 = `largeTitle`「学期・科目」。ルーム詳細 = **カスタム丸 back + nav タイトル + さらに本文に大タイトル (重複) + 浮遊 gear** | — (iOS 規約統一が必要) | 見出しスケール・back・gear 配置が画面ごとに不統一 |
 | **セグメント** (時間割/カレンダー) | pill 型 segmented。Home とルームで位置・体裁が微妙に違う | Web は `CalendarSegmented` で統一 | 体裁は近いが配置規約が未固定 |
@@ -64,7 +64,7 @@ Web の 8/10/18/24/28 を iOS の `Radius` トークン (既に同値) に対応
 | 時間割セル / 小 chip | `Radius.timetableCell` | 8 | 時間割イベントセル、カレンダー月セルのイベント chip |
 | ピル / 小コントロール | `Radius.sm` | 10 | セグメント内タブ、丸バッジ、日セル (月カレンダー) |
 | **カード (標準)** | `Radius.md` | 18 | 出席率カード、リスト行カード、フォーム面。**「ポップ」の主役** |
-| 大カード / シート上端 | `Radius.lg` | 24 | 大きな情報面、シート上端。月カレンダー外殻は対象外 (§3.6.3) |
+| 大カード / シート上端 | `Radius.lg` | 24 | 大きな情報面、シート上端、**月カレンダー外殻** (§3.6.3) |
 | 特大 / hero 面 | `Radius.xl` | 28 | full-bleed hero カード (使用は限定) |
 | 完全丸 | `Radius.full` | 9999 | switcher ピル、CTA ボタン、丸アイコンボタン、左バー |
 
@@ -85,13 +85,13 @@ Web の 8/10/18/24/28 を iOS の `Radius` トークン (既に同値) に対応
 **原則**:
 - グリッド (時間割/カレンダー) 以外では、隣接する情報ブロックの間隔が **16pt (`sectionGapMobile`) を下回らない**。
 - タップターゲットは **44×44pt** 以上 (汎用層 §2 / HIG)。
-- グリッドの内部密度 (§3.6) は例外的に詰めてよいが、**月カレンダー (§3.6.3) 以外のグリッド全体は card として `sectionGap` で周囲から離す**。
+- グリッドの内部密度 (§3.6) は例外的に詰めてよいが、**月カレンダー (§3.6.3) を含むグリッド全体は card として `sectionGap` で周囲から離す**。
 
 ### 3.3 影と奥行き (Touri 不満: 「フラットで安っぽい」に直結)
 
 Web の 2 層ソフトシャドウを iOS の `AtenderShadow.card` (既に Web と同値) で再現する。
 
-- **浮くべき面は必ず影を持つ**: 出席率カード、リスト行カード、FAB → `.atenderShadow(.card)`。ただし**月カレンダー (§3.6.3) は full-bleed でありカード面ではない**ため影を敷かない (2026-07-23 裁定)。
+- **浮くべき面は必ず影を持つ**: 出席率カード、リスト行カード、月カレンダー外殻 (§3.6.3)、FAB → `.atenderShadow(.card)`。
 - light: `0 1px 3px rgba(15,23,42,.08)` + `0 4px 16px rgba(15,23,42,.06)` (§`Shadow.swift` 実装済)。dark: 同ファイルの dark 分岐。
 - **フラットな塗り面 (影なし) を card に使わない。** 背景色との差だけで面を分けると「安っぽい」。
 - **例外**: 標準部品由来の面 (`List insetGrouped` の行、`.sheet`、Liquid Glass の tab/nav bar) はシステムの奥行き表現に任せ、`.atenderShadow` を**重ねない** (二重影・Liquid Glass 干渉を防ぐ)。影を自前で敷くのは「システム部品でない自前カード面」だけ。
@@ -154,16 +154,17 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 #### 3.6.3 月カレンダー (personal / room 共通)
 
-**2026-07-23 Touri 裁定により、月カレンダーは full-bleed に統一** (旧「角丸白カード + `.atenderShadow(.card)`」規定は撤回)。TimeTree の月表示を参考に、**全幅・背景/角丸/外殻カードなし・影なし**で描く。personal (Home) と room (ルーム詳細) の両方に適用し、`CalendarMonth(chrome: .fullBleed)` を既定とする。
+**2026-07-29 Touri 裁定により、月カレンダーは「タイル (カード) の中」に収める** (2026-07-23 の full-bleed 裁定は**撤回**)。要望の逐語は「タイルの中に入れて欲しい。今は横幅いっぱいになってると思うから。中の UI はそのままでいい」。personal (Home) と room (ルーム詳細) の両方に適用し、`CalendarMonth` は**単一スタイル**とする (`CalendarMonthChrome` enum は廃止)。
 
-| 属性 | full-bleed 規則 |
+| 属性 | 規則 |
 |---|---|
-| 外殻 | カード面にしない。`Color.bgElevated` (ライトでは白)、角丸なし、`.atenderShadow` を**敷かない**。祖先の `Space.pagePxMobile` page margin を打ち消し**画面左右端まで** |
-| セル分離 | TimeTree 風 hairline (`Color.borderSubtle` = `.separator` の 1px)。週行上辺 + 列間。濃い罫線で表組みにしない |
-| 日セル | 枠なし・角丸なし。当月 `bgElevated` (ライトでは白) / 当月外 `bgMuted`。日付左上。曜日色 (日=red / 土=blue / 平日=primary)。今日=accent 塗り丸、選択=accent アウトライン丸 |
-| イベント | 時間割セル (§3.6.1) と同スタイルに寄せる。不透明 tint 面 (`surfaceTintRatio`・base=`bgElevated`) + 2pt solid 左バー (科目色, `Radius.full`) + `textPrimary`。`.caption2`、1 行 truncate、超過 `+M` |
+| 外殻 | `Color.bgElevated` + `Radius.lg` (24) + `.atenderShadow(.card)` + `Space.s2` の内側 padding。祖先の `Space.pagePxMobile` (16pt) page margin の**内側**に収まる。負マージン・幅拡張・`offset` を使わない |
+| セル分離 | TimeTree 風 hairline (`Color.borderSubtle` = `.separator` の 0.5pt)。週行上辺 + 列間。濃い罫線で表組みにしない |
+| 日セル | 枠なし・角丸なし。当月 `bgElevated` / 当月外 `bgMuted`。日付左上。曜日色 (日=`#E5484D` / 土=`#0091FF` / 平日=`textPrimary`、当月外は 0.38 不透明度)。今日=accent 塗り丸、選択=accent アウトライン丸。高さ `max(44, rowHeight)` |
+| イベント | 時間割セル (§3.6.1) と同スタイル。不透明 tint 面 (`surfaceTintRatio`・base=`bgElevated`) + 2pt solid 左バー (`Radius.full`) + `textPrimary`。`.caption2` semibold、1 行 truncate、最大 2 行、超過は chip 1 個 + `+N` |
+| 高さ算出 | `CalendarMonthLayout.rowHeight(available: gridAvailable(available:))`。`gridAvailable = available - cardChromeHeight(16)` |
 
-**月カレンダーは §3.3「浮くべき面は必ず影を持つ」の対象外** (カード面から除外)。時間割セル (§3.6.1) や他のカード面の影規定は不変。
+**月カレンダーは §3.3「浮くべき面は必ず影を持つ」の対象**である (2026-07-23 の除外規定は撤回)。時間割セル (§3.6.1) や他のカード面の影規定は不変。
 
 ### 3.7 ヘッダー規格の統一 (Touri 不満: 「ヘッダーの規格を統一して」)
 
@@ -217,7 +218,7 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 | 階層 | 要素 | 表現 |
 |---|---|---|
 | L0 | 出席率 % (hero 数値) | `.largeTitle`/`.title` bold monospacedDigit、周囲 24pt 余白で孤立 |
-| L1 | 出席率カード / 月カレンダー | 出席率カードは `Radius.md` + shadow。月カレンダーは full-bleed + hairline (§3.6.3) |
+| L1 | 出席率カード / 月カレンダー | 出席率カードは `Radius.md` + shadow。月カレンダーも `Radius.lg` + shadow のカード。内側は hairline (§3.6.3) |
 | L2 | 未記録アラート (`未記録7件`) | tint 面 (tardy/warn 色) + `Radius.sm` |
 | L3 | 「期間 6/5〜8/28」、凡例 | `.footnote` secondary |
 
@@ -266,7 +267,7 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 
 - **Web トークンを pt に 1:1 移植する**: 却下。中立色/書体は system semantic/built-in text style に明け渡す規約 (CLAUDE.md) に反し、Liquid Glass と干渉する。移植するのは**性格 (丸み/余白/奥行き/密度/配置)** であって値の全量ではない。
 - **新しい radius/shadow/color トークンを追加定義する**: 却下。iOS の既存トークンは既に Web と同値 (§1.1)。問題は値でなく適用。新設は正典を二重化する。
-- **時間割/カレンダーを自前で凝ったグラフィックにする**: 却下。Web の描画ロジックと 2026-07-23 裁定 (不透明 tint + 左バー + 上寄せ + 月カレンダー full-bleed hairline) が既に「綺麗」の実体。これを iOS 語彙で忠実に写すのが最短。独自の見た目を発明しない。
+- **時間割/カレンダーを自前で凝ったグラフィックにする**: 却下。Web の描画ロジックと確定裁定 (不透明 tint + 左バー + 上寄せ + 月カレンダーの**カード外殻 + 内側 hairline**) が既に「綺麗」の実体。これを iOS 語彙で忠実に写すのが最短。独自の見た目を発明しない。
 - **タブアイコン/ラベル間隔を本書で「こう調整する」と確定する**: 却下 (保留)。native `TabView` の制御可否が未確認。憶測で pt を書くと Developer が実装で詰まる。§10 の researcher 検証後に確定する。
 - **ヘッダー統一のため Home を含む全画面から大タイトルを排し switcher 起点に揃える**: 不採用寄り (要 Touri 判断)。iOS 慣習では large title 付与が自然。§9 で Leader に上げる。
 
