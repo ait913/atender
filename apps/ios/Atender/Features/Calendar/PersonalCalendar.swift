@@ -89,6 +89,11 @@ final class PersonalCalendarViewModel {
     func statusByDate() -> [String: AttendanceDayStatus] {
         Dictionary(uniqueKeysWithValues: (overview?.days ?? []).map { ($0.date, $0.status) })
     }
+
+    /// CalendarMonth のドット用。日別の内訳をそのまま渡す (D1 §2.6)
+    func daySummaries() -> [String: AttendanceDaySummary] {
+        Dictionary((overview?.days ?? []).map { ($0.date, $0) }, uniquingKeysWith: { _, last in last })
+    }
 }
 
 enum PersonalCalendarSheet: Equatable {
@@ -185,7 +190,7 @@ struct PersonalCalendar: View {
                         anchor: model.anchor,
                         selectedDate: model.selectedDate,
                         events: events,
-                        statusByDate: model.statusByDate(),
+                        daySummaries: model.daySummaries(),
                         available: available,
                         onSelectDate: { date in
                             let needsReload = PersonalCalendarLogic.monthChanged(anchor: model.anchor, date: date)
@@ -256,7 +261,7 @@ struct CalendarMonth: View {
     let anchor: String
     let selectedDate: String
     let events: [CalendarEvent]
-    let statusByDate: [String: AttendanceDayStatus]
+    let daySummaries: [String: AttendanceDaySummary]
     var available: CGFloat? = nil
     let onSelectDate: (String) -> Void
     var onChangeAnchor: ((String) -> Void)? = nil
@@ -340,8 +345,11 @@ struct CalendarMonth: View {
                         }
                         .clipShape(Circle())
                     Spacer()
-                    if let status = statusByDate[date], status != .noClass {
-                        Circle().fill(CalendarEventDisplay.dayStatusColor(status)).frame(width: 6, height: 6)
+                    // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個
+                    HStack(spacing: 2) {
+                        ForEach(Array(AttendanceDayVisual.dayVisual(summary: daySummaries[date], isFuture: false).marks.prefix(3)), id: \.kind) { mark in
+                            Circle().fill(mark.dotColor).frame(width: 6, height: 6)
+                        }
                     }
                 }
                 .frame(height: 24)

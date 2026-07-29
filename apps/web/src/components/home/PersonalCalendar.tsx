@@ -32,6 +32,14 @@ export function PersonalCalendar({ semesterId }: Props) {
     return map;
   }, [overview.data?.days]);
 
+  // CalendarMonth のドットは日別の内訳をそのまま描く (D1 §2.6)。
+  // 上の statusByDate は expandUserTimetable の NO_CLASS 判定に使い続ける
+  const daySummaries = useMemo(() => {
+    const map = new Map<string, AttendanceDaySummary>();
+    for (const day of overview.data?.days ?? []) map.set(day.date, day);
+    return map;
+  }, [overview.data?.days]);
+
   const range = useMemo(() => {
     if (viewMode === "month") {
       return monthGridRange(anchor);
@@ -115,7 +123,7 @@ export function PersonalCalendar({ semesterId }: Props) {
       </div>
       {viewMode === "month" ? (
         <>
-          <CalendarMonth anchor={anchor} selectedDate={selectedDate} events={events} statusByDate={statusByDate} onSelectDate={selectDate} />
+          <CalendarMonth anchor={anchor} selectedDate={selectedDate} events={events} daySummaries={daySummaries} onSelectDate={selectDate} />
           <DayAgendaPanel date={selectedDate} events={dayEvents} />
         </>
       ) : viewMode === "week" ? (
