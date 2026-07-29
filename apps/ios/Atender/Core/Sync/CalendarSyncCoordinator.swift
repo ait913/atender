@@ -191,7 +191,7 @@ final class CalendarSyncCoordinator {
                 )
                 _ = try await client.send(Endpoints.eventKitSync(input), as: EventKitSyncResponse.self)
             } catch {
-                status.lastError = .network(error.localizedDescription)
+                status.lastError = .network(error.userFacingMessage)
                 status.phase = .failed
             }
         }
@@ -211,7 +211,7 @@ final class CalendarSyncCoordinator {
                     )
                     if range.hasActiveTimetable { prunableKinds.insert(.meeting) }
                 } catch {
-                    status.lastError = .network(error.localizedDescription)
+                    status.lastError = .network(error.userFacingMessage)
                     status.phase = .failed
                     return
                 }
@@ -228,7 +228,7 @@ final class CalendarSyncCoordinator {
                     desired += PersonalExportMapping.items(occurrences: response.events)
                     prunableKinds.insert(.personal)
                 } catch {
-                    status.lastError = .network(error.localizedDescription)
+                    status.lastError = .network(error.userFacingMessage)
                     status.phase = .failed
                     return
                 }

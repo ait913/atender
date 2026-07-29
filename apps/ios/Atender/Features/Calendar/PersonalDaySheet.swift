@@ -17,7 +17,24 @@ struct PersonalDaySheet: View {
         var defaultDate: String
     }
 
-    @State private var mode: Mode = .list
+    @State private var mode: Mode
+
+    /// 既定は一覧。日付セルの長押しからは editor で直接開く (+ ボタンを廃したため)
+    init(
+        date: String,
+        meetings: [CalendarEvent],
+        occurrences: [PersonalEventOccurrenceDto],
+        initialMode: Mode? = nil,
+        onChanged: @escaping () async -> Void,
+        onClose: @escaping () -> Void
+    ) {
+        self.date = date
+        self.meetings = meetings
+        self.occurrences = occurrences
+        self.onChanged = onChanged
+        self.onClose = onClose
+        _mode = State(initialValue: initialMode ?? .list)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {

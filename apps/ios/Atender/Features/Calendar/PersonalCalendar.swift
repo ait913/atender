@@ -98,6 +98,14 @@ final class PersonalCalendarViewModel {
 
 enum PersonalCalendarSheet: Equatable {
     case day(String)
+    /// 日付セルの長押しから、その日の予定作成を直接開く (旧「+」ボタンの置き換え)
+    case addEvent(String)
+
+    var date: String {
+        switch self {
+        case .day(let date), .addEvent(let date): return date
+        }
+    }
 }
 
 struct PersonalCalendar: View {
@@ -132,19 +140,23 @@ struct PersonalCalendar: View {
 
     @ViewBuilder
     private func sheetHost(_ model: PersonalCalendarViewModel) -> some View {
-        switch activeSheet {
-        case .day(let date):
+        if let activeSheet {
+            let date = activeSheet.date
             BottomSheet(title: nil, isPresented: activeSheetBinding, stackLevel: 1) {
                 PersonalDaySheet(
                     date: date,
                     meetings: model.events(semesterId: semesterId).filter { $0.date == date ? $0.kind == .meeting : false },
                     occurrences: model.occurrences(on: date),
+                    initialMode: {
+                        if case .addEvent = activeSheet {
+                            return .editor(.init(occurrence: nil, defaultDate: date))
+                        }
+                        return .list
+                    }(),
                     onChanged: { await model.load(semesterId: semesterId) },
-                    onClose: { activeSheet = nil }
+                    onClose: { self.activeSheet = nil }
                 )
             }
-        case nil:
-            EmptyView()
         }
     }
 
@@ -167,24 +179,11 @@ struct PersonalCalendar: View {
             }
         } else {
             ScrollView {
-                VStack(spacing: Space.s3) {
+                VStack(spacing: Space.s2) {
                     CalendarSyncBanner()
-                    HStack {
-                        PeriodNav(viewMode: .month, anchor: model.anchor) { next in
-                            model.anchor = next
-                            Task { await model.load(semesterId: semesterId) }
-                        }
-                        Spacer()
-                        Button {
-                            activeSheet = .day(model.selectedDate)
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 17, weight: .semibold))
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("予定を追加")
+                    CalendarMonthHeader(anchor: model.anchor) { next in
+                        model.anchor = next
+                        Task { await model.load(semesterId: semesterId) }
                     }
                     CalendarMonth(
                         anchor: model.anchor,
@@ -207,16 +206,65 @@ struct PersonalCalendar: View {
                         onChangeAnchor: { next in
                             model.anchor = next
                             Task { await model.load(semesterId: semesterId) }
+                        },
+                        onLongPressDate: { date in
+                            model.selectDate(date)
+                            activeSheet = .addEvent(date)
                         }
                     )
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
-            .scrollClipDisabled()
+            // ★ scrollClipDisabled は付けない。付けるとスクロール中の中身が
+            //   ルーム選択チップや「時間割/カレンダー」ピッカーの上に描画される (実機 FB)。
             .overlay { sheetHost(model) }
         }
     }
 
+}
+
+/// 月の移動ヘッダー。
+///
+/// ★ 旧実装は `PeriodNav` を 44pt の行に置き、右端に 44×44 の「+」を並べていた。
+///   実機 FB「余計に縦幅を取ってカレンダー自体が小さい / ボタンが質素」を受けて:
+///   - 高さを 32pt に詰め、月名を主役 (title3 bold) にした
+///   - 「+」は廃止し、**日付セルの長押し**に移した (タップは従来どおり日別シート)
+///   - 書き出しエラーはここの警告グリフに集約 (バナーで縦幅を食わない)
+struct CalendarMonthHeader: View {
+    let anchor: String
+    let onChange: (String) -> Void
+
+    var body: some View {
+        HStack(spacing: Space.s2) {
+            Text(CalendarRange.format(CalendarRange.monthFirst(anchor), .yearMonth))
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.textPrimary)
+                .contentTransition(.numericText())
+            CalendarSyncWarningButton()
+            Spacer(minLength: Space.s2)
+            Button { onChange(CalendarRange.addMonths(anchor, -1)) } label: {
+                chevron("chevron.left")
+            }
+            .accessibilityLabel("前の月")
+            Button { onChange(CalendarRange.addMonths(anchor, 1)) } label: {
+                chevron("chevron.right")
+            }
+            .accessibilityLabel("次の月")
+        }
+        .buttonStyle(.plain)
+        .frame(height: 32)
+    }
+
+    private func chevron(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.accent500)
+            .frame(width: 32, height: 32)
+            .background(Color.bgElevated, in: Circle())
+            .overlay(Circle().stroke(Color.borderSubtle, lineWidth: 1))
+            .contentShape(Circle())
+    }
 }
 
 struct PeriodNav: View {
@@ -266,6 +314,8 @@ struct CalendarMonth: View {
     let onSelectDate: (String) -> Void
     var onChangeAnchor: ((String) -> Void)? = nil
     var onSelectEvent: ((CalendarEvent) -> Void)? = nil
+    /// 日付セルの長押し。予定の新規作成に使う (旧「+」ボタンの置き換え)
+    var onLongPressDate: ((String) -> Void)? = nil
 
     private let labels = ["月", "火", "水", "木", "金", "土", "日"]
     var body: some View {
@@ -400,6 +450,10 @@ struct CalendarMonth: View {
             .padding(.vertical, 2)
             .frame(maxWidth: .infinity)
             .frame(height: max(44, rowHeight))
+            // ★ マス全体をタップ範囲にする。これが無いと描画されている要素
+            //   (日付の丸・イベント chip) の上でしか反応せず、
+            //   「日付表示の上部分しか押せない」状態になる (実機 FB)
+            .contentShape(Rectangle())
             .background(emphasis == .outsideMonth ? Color.bgMuted : Color.bgElevated)
             .overlay(alignment: .top) {
                 Rectangle().fill(Color.borderSubtle).frame(height: 0.5)
@@ -412,6 +466,11 @@ struct CalendarMonth: View {
             .clipped()
         }
         .buttonStyle(.plain)
+        .conditional(onLongPressDate != nil) { view in
+            view.onLongPressGesture(minimumDuration: 0.4) {
+                onLongPressDate?(date)
+            }
+        }
     }
 
     private func dayNumberColor(date: String, emphasis: CalendarDayEmphasis) -> Color {
