@@ -538,7 +538,7 @@ type Props = {
   - 日付数字: **text-sm** font-bold (旧 text-[11px])。
   - 状態表示: 数字の下に **lucide アイコン h-4 w-4** (旧 1 文字マーカー text-[12px])。`statusVisual` v2 の `icon` 名 → コンポーネント対応: `check→Check, x→X, clock→Clock, ban→Ban, minus→Minus`。
   - bg 薄塗り: `statusVisual` v2 の `bg` (濃度を 12-16% → 20-26% に増)。
-  - **未来日** (`iso > today`): `status !== "ALL_SUSPENDED"` なら状態表示なし (undefined を渡したのと同じ中立描画)。休講だけは未来でも表示。
+  - **未来日** (`iso > today`): ~~`status !== "ALL_SUSPENDED"` なら状態表示なし~~ → **本規定は `.designs/20260729-semester-calendar-multi-status.md` §2.5 で置換済**。未来日は「未記録を 0 件とみなす」のみで、公欠・欠席・休講など**記録済みのステータスは過去日と同じ見た目で表示する**。記録が 1 件も無い未来日だけが無表示。
   - **今日**: ring-1 ring-accent-500/60 で常時マーク。
   - 未記録日 (`PARTIAL_UNRECORDED`、過去のみ): `border border-dashed` (`--color-status-tardy` 40%) で「やり残し」を可視化。
   - イベントドット: 右上 h-2 w-2 (旧 1.5) bg-accent-500。既存 `usePersonalEvents` 取得方式維持。

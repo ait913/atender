@@ -157,6 +157,8 @@ struct AttendanceCalendar: View {
 
 #### statusVisual マッピング (Web `lib/dayStatusVisual.ts` 忠実)
 
+> ★ **本節は `.designs/20260729-semester-calendar-multi-status.md` で置換済**。`AttendanceDayVisual.of(status:isFuture:)` は削除され、日単位の内訳 (`counts`) を入力とする `AttendanceDayVisual.dayVisual(summary:isFuture:)` に替わった。1 日 N ステータスは背景セグメント + グリフ 2 個で描かれ、**未来日でも記録済みステータスは表示される**。以下の表は当時の実装記録として残す (現行仕様ではない)。
+
 純粋関数 `AttendanceDayVisual.of(status:isFuture:)` を新規追加 (下記「純粋ロジック」)。`isFuture = iso > today`。
 
 | status | isFuture 分岐 | icon (SF Symbol) | iconColor | 背景 bg | dashed |
@@ -490,7 +492,7 @@ enum BulkToast {
 }
 ```
 
-- `AttendanceDayVisual.of` の分岐順は Web と厳密一致 (未来判定が最優先、次に status 別、最後に default=none)。iconColor / bgFraction の値は上の statusVisual 表の通り。
+- ~~`AttendanceDayVisual.of` の分岐順は Web と厳密一致 (未来判定が最優先、次に status 別、最後に default=none)~~ → **`.designs/20260729-semester-calendar-multi-status.md` §4.3 で置換済**。現行は `dayVisual(summary:isFuture:)` が `counts` から severity 順 (absent > excused > tardy > suspended > present > unrecorded) の marks を組み立て、未来日は `unrecorded` を 0 件とみなすのみ。
 - `SemesterCalendarGrid.cells` は **日曜始まり**。既存 `CalendarRange` は月曜始まりなので流用せず、`CalendarRange.parse/addDays/yyyyMMdd/monthFirst` を土台に日曜版 helper を新設する。
 - `mMd(_:)` (期間ラベル "M/D") は `CalendarRange.format(_, .monthDay)` を流用可 ("7/1")。
 
@@ -585,7 +587,7 @@ func deletePersonalEvent(id: String, date: String) async throws
 - `of(.allSuspended, false)` → ban/statusSuspended/0.20/false。
 - `of(.partialUnrecorded, false)` → minus/textTertiary/0.12/**dashed=true**。
 - `of(.noClass, false)` / `of(nil, false)` / `of(.unknown, false)` → none/statusNone/bgStatusColor=nil/dashed=false。
-- **未来分岐 (最優先)**: `of(.allPresent, isFuture:true)` → none (bg 無し)。`of(.hasAbsent, true)` → none。`of(.allSuspended, isFuture:true)` → **ban のまま**表示 (例外)。
+- ~~**未来分岐 (最優先)**: `of(.allPresent, isFuture:true)` → none (bg 無し)。`of(.hasAbsent, true)` → none。`of(.allSuspended, isFuture:true)` → **ban のまま**表示 (例外)。~~ → **`.designs/20260729-semester-calendar-multi-status.md` §5.3 で置換済**。現行のテスト観点は同 doc の D11〜D16 (未来 + `counts` あり) / D23〜D26 (未来 + legacy 経路) を参照。旧仕様は `counts` を返さない旧 API に対する legacy フォールバックとしてのみ生き残る。
 
 ### SemesterCalendarGrid
 
