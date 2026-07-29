@@ -2,7 +2,6 @@ import Foundation
 
 struct ReconcilePlan: Equatable {
     var uploads: [EventKitSyncEvent]
-    var pushToEK: [PersonalEventDto]
 }
 
 enum EventKitReconciler {
@@ -11,20 +10,14 @@ enum EventKitReconciler {
             EventKitSyncEvent(
                 ekExternalId: $0.externalId,
                 ekCalendarId: $0.calendarId,
+                ekOccurrenceStart: Self.iso($0.occurrenceStart),
                 ekLastModified: $0.lastModified.map(Self.iso),
-                date: $0.date,
-                title: $0.title,
+                start: Self.iso($0.start),
+                end: Self.iso($0.end),
                 isAllDay: $0.isAllDay,
-                startMinute: $0.startMinute,
-                endMinute: $0.endMinute
+                title: $0.title,
+                location: $0.location
             )
-        }
-    }
-
-    static func pushTargets(manualNeedingPush: [PersonalEventDto], recentlyWritten: Set<String>) -> [PersonalEventDto] {
-        manualNeedingPush.filter { event in
-            guard let externalId = event.ekExternalId else { return true }
-            return !recentlyWritten.contains(externalId)
         }
     }
 

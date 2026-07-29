@@ -450,33 +450,92 @@ struct BulkTimetableSuspensionRemoveResponse: Codable, Equatable {
     let removedCount: Int
 }
 
-struct PersonalEventDto: Codable, Equatable, Identifiable {
-    let id: String
-    let semesterId: String?
+struct RecurrenceEndDto: Codable, Equatable {
+    let kind: String            // "never" | "until" | "count"
+    var date: String? = nil     // kind == "until"
+    var count: Int? = nil       // kind == "count"
+}
+
+struct RecurrenceSpecDto: Codable, Equatable {
+    var freq: String            // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+    var interval: Int
+    var byDay: [String]         // "MO".."SU"
+    var monthlyMode: String?    // "BYMONTHDAY" | "BYDAY" | nil
+    var end: RecurrenceEndDto
+}
+
+struct OccurrenceDayDto: Codable, Equatable {
     let date: String
+    let startMinute: Int
+    let endMinute: Int
+}
+
+struct PersonalEventSeriesDto: Codable, Equatable, Identifiable {
+    let id: String
     let title: String
+    let start: String
+    let end: String
     let isAllDay: Bool
-    let startMinute: Int?
-    let endMinute: Int?
-    let color: String?
+    let location: String?
     let note: String?
-    let source: String?
+    let color: String?
+    let recurrenceRule: String?
+    let recurrenceSpec: RecurrenceSpecDto?
+    let exDates: [String]
+    let rDates: [String]
+    let source: String
     let ekExternalId: String?
     let ekCalendarId: String?
-    let ekLastModified: String?
     let createdAt: String
     let updatedAt: String
 }
 
-struct PersonalEventCreateInput: Codable, Equatable {
-    var semesterId: String? = nil
-    let date: String
+struct PersonalEventOccurrenceDto: Codable, Equatable, Identifiable {
+    let seriesId: String
+    let occurrenceDate: String
+    let start: String
+    let end: String
+    let days: [OccurrenceDayDto]
+    let isAllDay: Bool
     let title: String
-    var isAllDay: Bool = true
-    var startMinute: Int? = nil
-    var endMinute: Int? = nil
-    var color: String? = nil
+    let location: String?
+    let note: String?
+    let color: String?
+    let isRecurringOccurrence: Bool
+    let recurrenceRule: String?
+    let recurrenceSpec: RecurrenceSpecDto?
+    let overrideId: String?
+    let source: String
+    let ekExternalId: String?
+    let ekCalendarId: String?
+    let createdAt: String
+    let updatedAt: String
+
+    // wire に id は無い。Identifiable は計算プロパティで満たす
+    var id: String { "\(seriesId):\(occurrenceDate)" }
+    private enum CodingKeys: String, CodingKey {
+        case seriesId, occurrenceDate, start, end, days, isAllDay, title, location, note, color
+        case isRecurringOccurrence, recurrenceRule, recurrenceSpec, overrideId, source
+        case ekExternalId, ekCalendarId, createdAt, updatedAt
+    }
+}
+
+struct PersonalEventRecurrenceInput: Codable, Equatable {
+    var spec: RecurrenceSpecDto? = nil
+    var rrule: String? = nil
+    var exDates: [String] = []
+    var rDates: [String] = []
+}
+
+struct PersonalEventCreateInput: Codable, Equatable {
+    let title: String
+    let start: String
+    let end: String
+    var isAllDay: Bool = false
+    var location: String? = nil
     var note: String? = nil
+    var color: String? = nil
+    var recurrence: PersonalEventRecurrenceInput? = nil
     var source: String? = nil
     var ekExternalId: String? = nil
     var ekCalendarId: String? = nil
@@ -484,29 +543,31 @@ struct PersonalEventCreateInput: Codable, Equatable {
 }
 
 struct PersonalEventUpdateInput: Codable, Equatable {
-    var semesterId: String? = nil
-    var date: String? = nil
     var title: String? = nil
+    var start: String? = nil
+    var end: String? = nil
     var isAllDay: Bool? = nil
-    var startMinute: Int? = nil
-    var endMinute: Int? = nil
-    var color: String? = nil
+    var location: String? = nil
     var note: String? = nil
-    var source: String? = nil
+    var color: String? = nil
+    var recurrence: PersonalEventRecurrenceInput? = nil
+    var clearRecurrence: Bool = false
+    var editScope: String = "all"          // "single" | "future" | "all"
+    var originalDate: String? = nil
     var ekExternalId: String? = nil
     var ekCalendarId: String? = nil
-    var ekLastModified: String? = nil
 }
 
 struct EventKitSyncEvent: Codable, Equatable {
     let ekExternalId: String
     let ekCalendarId: String
+    let ekOccurrenceStart: String
     let ekLastModified: String?
-    let date: String
-    let title: String
+    let start: String
+    let end: String
     let isAllDay: Bool
-    let startMinute: Int?
-    let endMinute: Int?
+    let title: String
+    let location: String?
 }
 
 struct EventKitSyncInput: Codable, Equatable {
@@ -520,8 +581,7 @@ struct EventKitSyncInput: Codable, Equatable {
 }
 
 struct EventKitSyncResponse: Codable, Equatable {
-    let mirrors: [PersonalEventDto]
-    let manualNeedingPush: [PersonalEventDto]
+    let mirrors: [PersonalEventSeriesDto]
 }
 
 struct DayDetailDto: Codable, Equatable {
@@ -529,7 +589,7 @@ struct DayDetailDto: Codable, Equatable {
     let occurrences: [OccurrenceDto]
     let courseSuspensions: [CourseSuspensionDto]
     let timetableSuspension: TimetableSuspensionDto?
-    let personalEvents: [PersonalEventDto]
+    let personalEvents: [PersonalEventOccurrenceDto]
 }
 
 struct FriendshipUserDto: Codable, Equatable, Identifiable {
@@ -963,11 +1023,11 @@ struct TimetableSuspensionResponse: Codable, Equatable {
 }
 
 struct PersonalEventsResponse: Codable, Equatable {
-    let events: [PersonalEventDto]
+    let events: [PersonalEventOccurrenceDto]
 }
 
 struct PersonalEventResponse: Codable, Equatable {
-    let event: PersonalEventDto
+    let event: PersonalEventSeriesDto
 }
 
 struct FriendshipsResponse: Codable, Equatable {

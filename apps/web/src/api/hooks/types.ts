@@ -33,8 +33,11 @@ import type {
   MeetingUpdateInput,
   OccurrenceDto,
   PersonalEventCreateInput,
-  PersonalEventDto,
+  PersonalEventDeleteQuery,
+  PersonalEventOccurrenceDto,
+  PersonalEventSeriesDto,
   PersonalEventUpdateInput,
+  RecurrenceSpec,
   RoomDto,
   RoomEventDto,
   RoomMemberDto,
@@ -86,8 +89,8 @@ export type CourseSuspensionsResponse = { suspensions: CourseSuspensionDto[] };
 export type CourseSuspensionResponse = { suspension: CourseSuspensionDto };
 export type TimetableSuspensionsResponse = { suspensions: TimetableSuspensionDto[] };
 export type TimetableSuspensionResponse = { suspension: TimetableSuspensionDto };
-export type PersonalEventsResponse = { events: PersonalEventDto[] };
-export type PersonalEventResponse = { event: PersonalEventDto };
+export type PersonalEventsResponse = { events: PersonalEventOccurrenceDto[] };
+export type PersonalEventResponse = { event: PersonalEventSeriesDto };
 export type DayDetailResponse = DayDetailDto;
 export type FriendshipsResponse = { friendships: FriendshipDto[] };
 export type FriendshipResponse = { friendship: FriendshipDto };
@@ -130,8 +133,11 @@ export type {
   IcsImportPreview,
   IcsTitleRuleDto,
   PersonalEventCreateInput,
-  PersonalEventDto,
+  PersonalEventDeleteQuery,
+  PersonalEventOccurrenceDto,
+  PersonalEventSeriesDto,
   PersonalEventUpdateInput,
+  RecurrenceSpec,
   UpdateRoomInput,
   UpdateRoomEventInput,
   RoomWeekDto,

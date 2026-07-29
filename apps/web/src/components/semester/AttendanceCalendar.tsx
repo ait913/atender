@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { AttendanceDaySummary } from "@atender/shared";
 import { usePersonalEvents } from "@/api/hooks";
 import { dayBackground, dayGlyphs, dayVisual, type DayMark, type DayVisualIcon } from "@/lib/dayStatusVisual";
+import { personalEventDates } from "@/lib/personalEventDays";
 
 type Props = {
   days: AttendanceDaySummary[];
@@ -39,10 +40,9 @@ export function AttendanceCalendar({
   const personalEvents = usePersonalEvents({
     from: gridStart.format("YYYY-MM-DD"),
     to: gridEnd.format("YYYY-MM-DD"),
-    semesterId,
   });
   const eventDates = useMemo(
-    () => new Set((personalEvents.data?.events ?? []).map((event) => event.date)),
+    () => personalEventDates(personalEvents.data?.events ?? []),
     [personalEvents.data?.events],
   );
   const cells: dayjs.Dayjs[] = [];

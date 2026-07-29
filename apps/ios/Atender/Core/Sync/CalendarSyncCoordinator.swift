@@ -7,7 +7,6 @@ final class CalendarSyncCoordinator {
     @ObservationIgnored private let eventKit: EventKitService
     @ObservationIgnored private let client: APIClient
     @ObservationIgnored private let cache: QueryClient
-    @ObservationIgnored private var recentlyWritten: Set<String> = []
 
     var lastError: String?
     var isSyncing = false
@@ -64,39 +63,16 @@ final class CalendarSyncCoordinator {
                 range: .init(from: SchoolClock.todayString(range.start), to: SchoolClock.todayString(range.end.addingTimeInterval(-1))),
                 events: EventKitReconciler.uploads(from: snapshots)
             )
-            let response = try await client.send(Endpoints.eventKitSync(input), as: EventKitSyncResponse.self)
-            for event in EventKitReconciler.pushTargets(manualNeedingPush: response.manualNeedingPush, recentlyWritten: recentlyWritten) {
-                try await pushManualEvent(event)
-            }
+            _ = try await client.send(Endpoints.eventKitSync(input), as: EventKitSyncResponse.self)
             cache.invalidate(prefixes: [.personalEvents()])
         } catch {
             lastError = error.localizedDescription
         }
     }
 
-    func pushManualEvent(_ event: PersonalEventDto) async throws {
-        guard event.ekExternalId == nil, eventKit.currentAccess() == .fullAccess else { return }
-        let target = writeTargetCalendarId ?? eventKit.defaultWriteCalendarId()
-        guard let target else { return }
-        let externalId = try eventKit.createEvent(event, in: target)
-        recentlyWritten.insert(externalId)
-        _ = try await client.send(
-            Endpoints.updatePersonalEvent(id: event.id, PersonalEventUpdateInput(
-                ekExternalId: externalId,
-                ekCalendarId: target
-            )),
-            as: PersonalEventResponse.self
-        )
-        Task { [weak self] in
-            try? await Task.sleep(nanoseconds: 5_000_000_000)
-            await MainActor.run { self?.recentlyWritten.remove(externalId) }
-        }
-        cache.invalidate(prefixes: [.personalEvents()])
-    }
-
     private func dateInterval(from: String, to: String) -> DateInterval {
-        let start = EventKitTimeMapping.toAbsolute(date: from, isAllDay: true, startMinute: nil, endMinute: nil).start
-        let end = EventKitTimeMapping.toAbsolute(date: CalendarRange.addDays(to, 1), isAllDay: true, startMinute: nil, endMinute: nil).start
+        let start = EventKitTimeMapping.jstDayStart(from)
+        let end = EventKitTimeMapping.jstDayStart(CalendarRange.addDays(to, 1))
         return DateInterval(start: start, end: end)
     }
 

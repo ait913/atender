@@ -6,6 +6,8 @@ export * from "./schemas/day.js";
 export * from "./schemas/me.js";
 export * from "./schemas/meeting.js";
 export * from "./schemas/personalEvent.js";
+export * from "./schemas/recurrence.js";
+export * from "./recurrence/rrule.js";
 export * from "./schemas/friendship.js";
 export * from "./schemas/google.js";
 export * from "./schemas/ics.js";

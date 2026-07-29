@@ -315,13 +315,15 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertEqual(populated.personalEvents.count, 1)
     }
 
-    func testDecodePersonalEventAllDayNullTimes() throws {
-        let event = try makeDecoder().decode(PersonalEventDto.self, from: try loadFixture("personalEvent"))
-        XCTAssertEqual(event.id, "personal_01")
-        XCTAssertNil(event.semesterId)
+    func testDecodePersonalEventOccurrenceAllDay() throws {
+        let event = try makeDecoder().decode(PersonalEventOccurrenceDto.self, from: try loadFixture("personalEvent"))
+        XCTAssertEqual(event.seriesId, "personal_01")
+        XCTAssertEqual(event.id, "personal_01:2026-06-07T15:00:00.000Z")
         XCTAssertTrue(event.isAllDay)
-        XCTAssertNil(event.startMinute)
-        XCTAssertNil(event.endMinute)
+        XCTAssertEqual(event.days.count, 1)
+        XCTAssertEqual(event.days[0].date, "2026-06-08")
+        XCTAssertEqual(event.days[0].startMinute, 0)
+        XCTAssertEqual(event.days[0].endMinute, 1440)
     }
 
     func testDecodeRoomSummaryAndRoomNulls() throws {

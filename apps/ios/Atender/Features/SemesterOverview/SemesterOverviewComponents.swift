@@ -293,8 +293,8 @@ struct AttendanceCalendar: View {
     private func loadEventDots() async {
         let cells = SemesterCalendarGrid.cells(monthAnchor: anchor)
         guard let from = cells.first, let to = cells.last else { return }
-        if let events = try? await environment.personalEventRepository.personalEvents(from: from, to: to, semesterId: semesterId) {
-            eventDates = Set(events.map(\.date))
+        if let events = try? await environment.personalEventRepository.personalEvents(from: from, to: to) {
+            eventDates = Set(events.flatMap { $0.days.map(\.date) })
         }
     }
 }

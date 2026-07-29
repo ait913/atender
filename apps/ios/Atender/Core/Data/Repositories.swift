@@ -195,26 +195,26 @@ final class PersonalEventRepository {
         self.cache = cache
     }
 
-    func personalEvents(from: String, to: String, semesterId: String?) async throws -> [PersonalEventDto] {
-        let response = try await client.send(Endpoints.personalEvents(from: from, to: to, semesterId: semesterId), as: PersonalEventsResponse.self)
+    func personalEvents(from: String, to: String) async throws -> [PersonalEventOccurrenceDto] {
+        let response = try await client.send(Endpoints.personalEvents(from: from, to: to), as: PersonalEventsResponse.self)
         cache.setData(response.events, for: .personalEvents())
         return response.events
     }
 
-    func createPersonalEvent(_ input: PersonalEventCreateInput) async throws -> PersonalEventDto {
+    func createPersonalEvent(_ input: PersonalEventCreateInput) async throws -> PersonalEventSeriesDto {
         let response = try await client.send(Endpoints.createPersonalEvent(input), as: PersonalEventResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: input.date)))
+        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: nil)))
         return response.event
     }
 
-    func updatePersonalEvent(id: String, _ input: PersonalEventUpdateInput) async throws -> PersonalEventDto {
+    func updatePersonalEvent(id: String, _ input: PersonalEventUpdateInput) async throws -> PersonalEventSeriesDto {
         let response = try await client.send(Endpoints.updatePersonalEvent(id: id, input), as: PersonalEventResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: input.date)))
+        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: nil)))
         return response.event
     }
 
-    func deletePersonalEvent(id: String, date: String) async throws {
-        try await client.send(Endpoints.deletePersonalEvent(id: id))
-        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: date)))
+    func deletePersonalEvent(id: String, scope: String, originalDate: String?, invalidateDate: String?) async throws {
+        try await client.send(Endpoints.deletePersonalEvent(id: id, scope: scope, originalDate: originalDate))
+        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: invalidateDate)))
     }
 }

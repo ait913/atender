@@ -1,111 +1,89 @@
 import XCTest
 @testable import Atender
 
+// Reviewer 生成: 設計doc §5.6 / §6.10 を根拠に検証。実装コードは未読。
+// 旧 S1-S6 (toPersonalDays = 日単位分解) は §6.8 で削除された。ここは置換テスト。
 final class EventKitTimeMappingTests: XCTestCase {
 
-    private var calendar: Calendar {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Asia/Tokyo")!
-        return cal
+    private func instant(_ iso: String) -> Date {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f.date(from: iso)!
     }
 
-    private func jst(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int) -> Date {
-        calendar.date(from: DateComponents(timeZone: TimeZone(identifier: "Asia/Tokyo")!,
-                                           year: year, month: month, day: day,
-                                           hour: hour, minute: minute))!
+    func testJstDayStartIsJstMidnight() {
+        XCTAssertEqual(EventKitTimeMapping.jstDayStart("2026-07-20"),
+                       instant("2026-07-19T15:00:00.000Z"),
+                       "[§6.10] JST 2026-07-20 00:00 = UTC 前日 15:00")
     }
 
-    // S1
-    func testS1TimedEventMapsToJSTDateAndMinutes() {
-        let days = EventKitTimeMapping.toPersonalDays(
-            start: jst(2026, 7, 23, 9, 0),
-            end: jst(2026, 7, 23, 10, 30),
-            isAllDay: false
-        )
-
-        XCTAssertEqual(days.count, 1, "[S1]")
-        XCTAssertEqual(days[0].date, "2026-07-23", "[S1]")
-        XCTAssertFalse(days[0].isAllDay, "[S1]")
-        XCTAssertEqual(days[0].startMinute, 540, "[S1]")
-        XCTAssertEqual(days[0].endMinute, 630, "[S1]")
+    func testJstDayStartAcrossMonthAndYearBoundaries() {
+        XCTAssertEqual(EventKitTimeMapping.jstDayStart("2026-08-01"),
+                       instant("2026-07-31T15:00:00.000Z"), "[§6.10]")
+        XCTAssertEqual(EventKitTimeMapping.jstDayStart("2027-01-01"),
+                       instant("2026-12-31T15:00:00.000Z"), "[§6.10]")
     }
 
-    // S2
-    func testS2EarlyMorningTimedEventUsesJSTCalendarDay() {
-        let days = EventKitTimeMapping.toPersonalDays(
-            start: jst(2026, 7, 23, 0, 30),
-            end: jst(2026, 7, 23, 1, 0),
-            isAllDay: false
-        )
+    func testJstDayStartIsExactly24HoursApartForConsecutiveDays() {
+        let a = EventKitTimeMapping.jstDayStart("2026-07-20")
+        let b = EventKitTimeMapping.jstDayStart("2026-07-21")
 
-        XCTAssertEqual(days.count, 1, "[S2]")
-        XCTAssertEqual(days[0].date, "2026-07-23", "[S2]")
-        XCTAssertEqual(days[0].startMinute, 30, "[S2]")
-        XCTAssertEqual(days[0].endMinute, 60, "[S2]")
+        XCTAssertEqual(b.timeIntervalSince(a), 86400, accuracy: 0.001, "[§6.10] 日本に DST は無い")
     }
 
-    // S3
-    func testS3SingleAllDayEventMapsToOneAllDayPersonalDay() {
-        let days = EventKitTimeMapping.toPersonalDays(
-            start: jst(2026, 7, 23, 0, 0),
-            end: jst(2026, 7, 24, 0, 0),
-            isAllDay: true
-        )
+    /// §5.6 の削除伝播レンジ: [range.from の JST 00:00, range.to の JST 23:59:59]
+    func testRangeBoundsFromJstDayStart() {
+        let from = EventKitTimeMapping.jstDayStart("2026-07-20")
+        let toExclusive = EventKitTimeMapping.jstDayStart("2026-08-17") // to=2026-08-16 の翌日
 
-        XCTAssertEqual(days.count, 1, "[S3]")
-        XCTAssertEqual(days[0].date, "2026-07-23", "[S3]")
-        XCTAssertTrue(days[0].isAllDay, "[S3]")
-        XCTAssertNil(days[0].startMinute, "[S3]")
-        XCTAssertNil(days[0].endMinute, "[S3]")
+        XCTAssertEqual(from, instant("2026-07-19T15:00:00.000Z"), "[§5.6]")
+        XCTAssertEqual(toExclusive, instant("2026-08-16T15:00:00.000Z"), "[§5.6]")
+
+        // 危険窓 (JST 00:00〜08:59) の occurrence が範囲に入ること
+        let dangerous = instant("2026-07-19T15:30:00.000Z") // JST 2026-07-20 00:30
+        XCTAssertGreaterThanOrEqual(dangerous, from, "[§5.6] 危険窓が範囲内")
+        XCTAssertLessThan(dangerous, toExclusive, "[§5.6] 危険窓が範囲内")
     }
 
-    // S4
-    func testS4MultiDayAllDayEventContainsEveryJSTDayBeforeExclusiveEnd() {
-        let days = EventKitTimeMapping.toPersonalDays(
-            start: jst(2026, 7, 23, 0, 0),
-            end: jst(2026, 7, 26, 0, 0),
-            isAllDay: true
-        )
-        let dates = Set(days.map { $0.date })
-
-        XCTAssertTrue(dates.isSuperset(of: ["2026-07-23", "2026-07-24", "2026-07-25"]), "[S4]")
-        for day in days where ["2026-07-23", "2026-07-24", "2026-07-25"].contains(day.date) {
-            XCTAssertTrue(day.isAllDay, "[S4]")
-            XCTAssertNil(day.startMinute, "[S4]")
-            XCTAssertNil(day.endMinute, "[S4]")
-        }
-    }
-
-    // S5
-    func testS5TimedToAbsoluteRoundTripsThroughPersonalDays() {
-        let absolute = EventKitTimeMapping.toAbsolute(
-            date: "2026-07-23",
-            isAllDay: false,
-            startMinute: 540,
-            endMinute: 630
-        )
-
-        XCTAssertEqual(absolute.start, jst(2026, 7, 23, 9, 0), "[S5]")
-        XCTAssertEqual(absolute.end, jst(2026, 7, 23, 10, 30), "[S5]")
-
-        let days = EventKitTimeMapping.toPersonalDays(start: absolute.start, end: absolute.end, isAllDay: false)
-        XCTAssertEqual(days.count, 1, "[S5]")
-        XCTAssertEqual(days[0].date, "2026-07-23", "[S5]")
-        XCTAssertEqual(days[0].startMinute, 540, "[S5]")
-        XCTAssertEqual(days[0].endMinute, 630, "[S5]")
-    }
-
-    // S6
-    func testS6AllDayToAbsoluteUsesJSTMidnightAndNextMidnight() {
-        let absolute = EventKitTimeMapping.toAbsolute(
-            date: "2026-07-23",
+    func testEKEventSnapshotCarriesOccurrenceWithoutDaySplitting() {
+        // §5.6: 複数日 EK イベントは分解しない (1 occurrence = 1 行)
+        let snapshot = EKEventSnapshot(
+            externalId: "ek-multi",
+            calendarId: "cal-a",
+            occurrenceStart: instant("2026-07-22T15:00:00.000Z"),
+            lastModified: nil,
+            start: instant("2026-07-22T15:00:00.000Z"),
+            end: instant("2026-07-25T15:00:00.000Z"),
             isAllDay: true,
-            startMinute: nil,
-            endMinute: nil
+            title: "旅行",
+            location: nil
         )
 
-        XCTAssertEqual(absolute.start, jst(2026, 7, 23, 0, 0), "[S6]")
-        XCTAssertEqual(absolute.end, jst(2026, 7, 24, 0, 0), "[S6]")
-        XCTAssertEqual(absolute.end.timeIntervalSince(absolute.start), 24 * 60 * 60, "[S6]")
+        let uploads = EventKitReconciler.uploads(from: [snapshot])
+
+        XCTAssertEqual(uploads.count, 1, "[§5.6] 3 日ぶんに分解しない")
+        XCTAssertEqual(uploads[0].start, "2026-07-22T15:00:00.000Z", "[§5.6]")
+        XCTAssertEqual(uploads[0].end, "2026-07-25T15:00:00.000Z", "[§5.6] 排他 end をそのまま渡す")
+        XCTAssertEqual(uploads[0].ekOccurrenceStart, "2026-07-22T15:00:00.000Z", "[§5.6] 鍵は (externalId, occurrenceStart)")
+    }
+
+    func testUploadsKeepsSameExternalIdWithDifferentOccurrences() {
+        // §9 K11: 同じ ekExternalId で occurrenceStart が違う 2 件は別行
+        let base = { (occ: String) in
+            EKEventSnapshot(externalId: "ek-same", calendarId: "cal-a",
+                            occurrenceStart: self.instant(occ), lastModified: nil,
+                            start: self.instant(occ), end: self.instant(occ).addingTimeInterval(3600),
+                            isAllDay: false, title: "定例", location: nil)
+        }
+
+        let uploads = EventKitReconciler.uploads(from: [
+            base("2026-07-23T00:00:00.000Z"),
+            base("2026-07-30T00:00:00.000Z"),
+        ])
+
+        XCTAssertEqual(uploads.count, 2, "[#K11]")
+        XCTAssertEqual(Set(uploads.map(\.ekExternalId)), ["ek-same"], "[#K11]")
+        XCTAssertEqual(uploads.map(\.ekOccurrenceStart),
+                       ["2026-07-23T00:00:00.000Z", "2026-07-30T00:00:00.000Z"], "[#K11]")
     }
 }

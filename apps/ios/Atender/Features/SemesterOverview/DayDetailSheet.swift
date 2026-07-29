@@ -1,15 +1,18 @@
 import SwiftUI
 
+enum DayDetailSheetKind: Equatable {
+    case create
+    case edit(PersonalEventOccurrenceDto)
+}
+
 struct DayDetailSheet: View {
     let date: String
     let semesterId: String?
     let onChanged: () async -> Void
-    let onClose: () -> Void
     @Environment(AppEnvironment.self) private var environment
     @State private var model: DayDetailViewModel?
     @State private var reason = ""
-    @State private var editingEvent: PersonalEventDto?
-    @State private var creatingEvent = false
+    @State private var activeSheet: DayDetailSheetKind?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
@@ -31,28 +34,42 @@ struct DayDetailSheet: View {
             if model == nil { model = DayDetailViewModel(env: environment, date: date, onChanged: onChanged) }
             await model?.load()
         }
-        .background {
-            BottomSheet(title: "予定を追加", isPresented: $creatingEvent, stackLevel: 2) {
-                PersonalEventEditModalContent(date: date, event: nil, semesterId: semesterId) { event in
-                    creatingEvent = false
-                    Task { await afterEventSaved(event) }
-                }
+        .background { sheetHost }
+    }
+
+    private var activeSheetBinding: Binding<Bool> {
+        Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
+    }
+
+    @ViewBuilder
+    private var sheetHost: some View {
+        switch activeSheet {
+        case .create:
+            BottomSheet(title: "予定を追加", isPresented: activeSheetBinding, stackLevel: 2) {
+                PersonalEventEditorContent(
+                    defaultDate: date,
+                    occurrence: nil,
+                    onSaved: { activeSheet = nil; await afterEventChanged() },
+                    onDeleted: { activeSheet = nil; await afterEventChanged() },
+                    onCancel: { activeSheet = nil }
+                )
             }
-            BottomSheet(title: "予定を編集", isPresented: Binding(
-                get: { editingEvent != nil },
-                set: { if !$0 { editingEvent = nil } }
-            ), stackLevel: 2) {
-                if let editingEvent {
-                    PersonalEventEditModalContent(date: date, event: editingEvent, semesterId: semesterId) { event in
-                        self.editingEvent = nil
-                        Task { await afterEventSaved(event) }
-                    }
-                }
+        case .edit(let occurrence):
+            BottomSheet(title: "予定を編集", isPresented: activeSheetBinding, stackLevel: 2) {
+                PersonalEventEditorContent(
+                    defaultDate: date,
+                    occurrence: occurrence,
+                    onSaved: { activeSheet = nil; await afterEventChanged() },
+                    onDeleted: { activeSheet = nil; await afterEventChanged() },
+                    onCancel: { activeSheet = nil }
+                )
             }
+        case nil:
+            EmptyView()
         }
     }
 
-    private func afterEventSaved(_ event: PersonalEventDto) async {
+    private func afterEventChanged() async {
         await model?.load()
         await onChanged()
     }
@@ -126,7 +143,7 @@ struct DayDetailSheet: View {
                     .font(.atenderBase.weight(.bold))
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                AtenderButton(title: "追加", variant: .secondary, size: .sm) { creatingEvent = true }
+                AtenderButton(title: "追加", variant: .secondary, size: .sm) { activeSheet = .create }
                     .frame(width: 80)
             }
             if detail.personalEvents.isEmpty {
@@ -137,13 +154,13 @@ struct DayDetailSheet: View {
                         Circle().fill(Color(hexString: event.color ?? "#10b981")).frame(width: 10, height: 10)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(event.title).font(.atenderSm.weight(.bold)).foregroundStyle(Color.textPrimary)
-                            Text(event.isAllDay ? "終日" : "\(TimeFormatting.minutesToTime(event.startMinute ?? 0)) - \(TimeFormatting.minutesToTime(event.endMinute ?? 0))")
+                            Text(PersonalDaySheetFormat.occurrenceTime(event))
                                 .font(.atenderXs)
                                 .foregroundStyle(Color.textTertiary)
                         }
                         Spacer()
-                        iconButton("pencil") { editingEvent = event }
-                        iconButton("trash", danger: true) { Task { await model.deletePersonalEvent(id: event.id) } }
+                        iconButton("pencil") { activeSheet = .edit(event) }
+                        iconButton("trash", danger: true) { activeSheet = .edit(event) }
                     }
                     .padding(Space.s3)
                     .background(Color.bgElevated)
@@ -201,7 +218,6 @@ final class DayDetailViewModel {
     func createCourseSuspension(courseId: String) async { await mutate { _ = try await env.dayRepository.createCourseSuspension(courseId: courseId, date: date, reason: nil) } }
     func deleteCourseSuspension(courseId: String, id: String) async { await mutate { try await env.dayRepository.deleteCourseSuspension(courseId: courseId, id: id) } }
     func bulkMark(status: AttendanceStatus, mode: BulkMode) async { await mutate { _ = try await env.dayRepository.bulkMark(dates: [date], status: status, mode: mode) } }
-    func deletePersonalEvent(id: String) async { await mutate { try await env.personalEventRepository.deletePersonalEvent(id: id, date: date) } }
 
     private func mutate(_ operation: () async throws -> Void) async {
         isMutating = true

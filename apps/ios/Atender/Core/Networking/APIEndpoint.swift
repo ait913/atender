@@ -92,12 +92,15 @@ enum Endpoints {
         .init(path: "/api/timetable-suspensions/bulk-remove", method: .post, body: body)
     }
 
-    static func personalEvents(from: String? = nil, to: String? = nil, semesterId: String? = nil) -> APIEndpoint {
-        .init(path: "/api/personal-events", method: .get, query: compactQuery(["from": from, "to": to, "semesterId": semesterId]))
+    static func personalEvents(from: String, to: String) -> APIEndpoint {
+        .init(path: "/api/personal-events", method: .get, query: ["from": from, "to": to])
     }
     static func createPersonalEvent(_ body: PersonalEventCreateInput) -> APIEndpoint { .init(path: "/api/personal-events", method: .post, body: body) }
     static func updatePersonalEvent(id: String, _ body: PersonalEventUpdateInput) -> APIEndpoint { .init(path: "/api/personal-events/\(id)", method: .patch, body: body) }
-    static func deletePersonalEvent(id: String) -> APIEndpoint { .init(path: "/api/personal-events/\(id)", method: .delete) }
+    static func deletePersonalEvent(id: String, scope: String, originalDate: String?) -> APIEndpoint {
+        .init(path: "/api/personal-events/\(id)", method: .delete,
+              query: compactQuery(["scope": scope, "originalDate": originalDate]))
+    }
     static func eventKitSync(_ body: EventKitSyncInput) -> APIEndpoint {
         .init(path: "/api/personal-events/eventkit-sync", method: .post, body: body)
     }

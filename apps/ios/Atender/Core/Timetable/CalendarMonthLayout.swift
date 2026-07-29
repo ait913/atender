@@ -10,6 +10,11 @@ enum CalendarMonthLayout {
         max(minRowHeight, (available - weekdayHeaderHeight) / CGFloat(rowCount))
     }
 
+    /// card chrome (Space.s2 の上下 padding) ぶんを差し引いた、グリッドに使える高さ
+    static let cardChromeHeight: CGFloat = 8 * 2
+
+    static func gridAvailable(available: CGFloat) -> CGFloat { max(0, available - cardChromeHeight) }
+
     static func contentHeight(available: CGFloat) -> CGFloat {
         weekdayHeaderHeight + rowHeight(available: available) * CGFloat(rowCount)
     }

@@ -3,7 +3,8 @@ import { prisma } from "../db";
 import { dateStringToJstDay, toIsoDate } from "../lib/tz";
 import { findActiveUserTimetable } from "./activeTimetable";
 import { suspensionDto } from "./courseSuspension.service";
-import { personalEventDto } from "./personalEvent.service";
+import { personalEventOccurrenceDto } from "./personalEvent.service";
+import { expandPersonalEvents } from "./personalRecurrence.service";
 import { timetableSuspensionDto } from "./timetableSuspension.service";
 
 function occurrenceDto(occurrence: {
@@ -37,10 +38,10 @@ function occurrenceDto(occurrence: {
 
 export async function getDayDetail(args: { userId: string; date: string }): Promise<DayDetailDto> {
   const day = dateStringToJstDay(args.date);
-  const personalEvents = await prisma.personalEvent.findMany({
-    where: { userId: args.userId, date: { gte: day.startOfDay, lte: day.endOfDay } },
-    orderBy: [{ date: "asc" }, { startMinute: "asc" }],
-  });
+  const personalOccurrences = await expandPersonalEvents(args.userId, day.startOfDay, day.endOfDay);
+  const personalEvents = personalOccurrences
+    .map((occurrence) => personalEventOccurrenceDto(occurrence, day.isoDate, day.isoDate))
+    .filter((dto) => dto.days.length > 0);
   const timetable = await findActiveUserTimetable(args.userId);
   if (!timetable) {
     return {
@@ -48,7 +49,7 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
       occurrences: [],
       courseSuspensions: [],
       timetableSuspension: null,
-      personalEvents: personalEvents.map(personalEventDto),
+      personalEvents: personalEvents,
     };
   }
 
@@ -82,6 +83,6 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
     occurrences: occurrences.map(occurrenceDto),
     courseSuspensions: courseSuspensions.map(suspensionDto),
     timetableSuspension: timetableSuspension ? timetableSuspensionDto(timetableSuspension) : null,
-    personalEvents: personalEvents.map(personalEventDto),
+    personalEvents: personalEvents,
   };
 }

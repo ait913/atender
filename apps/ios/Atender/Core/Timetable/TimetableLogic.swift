@@ -169,6 +169,34 @@ enum DateFormatPattern {
     case yearMonth
 }
 
+enum PersonalEventDisplay {
+    /// occurrence を days ごとに 1 CalendarEvent へ割る。日付演算はしない (days をそのまま使う)
+    static func calendarEvents(occurrences: [PersonalEventOccurrenceDto]) -> [CalendarEvent] {
+        occurrences.flatMap { occurrence in
+            occurrence.days.map { day in
+                CalendarEvent(
+                    kind: .personal,
+                    id: "e:\(occurrence.seriesId):\(occurrence.occurrenceDate):\(day.date)",
+                    date: day.date,
+                    title: occurrence.title,
+                    startMinute: day.startMinute,
+                    endMinute: day.endMinute,
+                    color: occurrence.color ?? "#8b5cf6",
+                    subtitle: "自分",
+                    courseId: nil
+                )
+            }
+        }
+    }
+}
+
+enum PersonalCalendarLogic {
+    /// anchor を date に移すと表示月が変わるか (= 再取得が要るか)
+    static func monthChanged(anchor: String, date: String) -> Bool {
+        CalendarRange.monthFirst(anchor) != CalendarRange.monthFirst(date)
+    }
+}
+
 enum CalendarRange {
     static let utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)

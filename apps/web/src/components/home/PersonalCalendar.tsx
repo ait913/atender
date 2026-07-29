@@ -11,6 +11,7 @@ import { DayAgendaPanel } from "@/components/rooms/calendar/DayAgendaPanel";
 import { PeriodNav } from "@/components/rooms/calendar/PeriodNav";
 import { monthGridRange, weekStartsFor, type CalendarViewMode } from "@/lib/calendarRange";
 import { eventsByDate, expandUserTimetable, type CalendarEvent } from "@/lib/meetingExpansion";
+import { personalEventsToCalendarEvents } from "@/lib/personalEventDays";
 
 type Props = { semesterId: string | null };
 
@@ -41,7 +42,7 @@ export function PersonalCalendar({ semesterId }: Props) {
     }
     return { start: selectedDate, end: selectedDate };
   }, [anchor, selectedDate, viewMode, weekStarts]);
-  const personalEvents = usePersonalEvents({ from: range.start, to: range.end, semesterId });
+  const personalEvents = usePersonalEvents({ from: range.start, to: range.end });
 
   const events = useMemo<CalendarEvent[]>(() => {
     if (!timetable || !semester) return [];
@@ -53,17 +54,7 @@ export function PersonalCalendar({ semesterId }: Props) {
       semesterEnd: semester.endDate,
       statusByDate,
     });
-    const ownEvents: CalendarEvent[] = (personalEvents.data?.events ?? []).map((event) => ({
-      kind: "personal",
-      eventId: event.id,
-      date: event.date,
-      title: event.title,
-      startMinute: event.isAllDay ? 0 : event.startMinute ?? 0,
-      endMinute: event.isAllDay ? 1440 : event.endMinute ?? event.startMinute ?? 0,
-      authorName: "自分",
-      authorColor: event.color ?? "#8b5cf6",
-      occurrenceDate: event.date,
-    }));
+    const ownEvents: CalendarEvent[] = personalEventsToCalendarEvents(personalEvents.data?.events ?? []);
     return [...meetingEvents, ...ownEvents].sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return a.startMinute - b.startMinute;

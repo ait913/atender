@@ -142,7 +142,15 @@ struct BulkEditSheet: View {
             for date in dates {
                 group.addTask {
                     do {
-                        _ = try await environment.personalEventRepository.createPersonalEvent(.init(semesterId: semesterId, date: date, title: title, isAllDay: true, startMinute: nil, endMinute: nil, color: "#10b981", note: nil))
+                        let dayStart = EventKitTimeMapping.jstDayStart(date)
+                        let nextDay = EventKitTimeMapping.jstDayStart(CalendarRange.addDays(date, 1))
+                        _ = try await environment.personalEventRepository.createPersonalEvent(.init(
+                            title: title,
+                            start: PersonalEventTimeMath.string(dayStart),
+                            end: PersonalEventTimeMath.string(nextDay),
+                            isAllDay: true,
+                            color: "#10b981"
+                        ))
                         return true
                     } catch {
                         return false
@@ -183,155 +191,6 @@ struct BulkEditSheet: View {
         case .earlyLeave: return "早"
         case .cancelled: return "休"
         case .unknown: return "未"
-        }
-    }
-}
-
-struct PersonalEventEditModalContent: View {
-    let date: String
-    var event: PersonalEventDto?
-    let semesterId: String?
-    let onSaved: (PersonalEventDto) -> Void
-    @Environment(AppEnvironment.self) private var environment
-    @State private var title = ""
-    @State private var eventDate = ""
-    @State private var isAllDay = true
-    @State private var startMinute = 540
-    @State private var endMinute = 600
-    @State private var color = "#10b981"
-    @State private var note = ""
-    @State private var isPending = false
-    @State private var errorMessage: String?
-    private let colors = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            field("タイトル") {
-                TextField("タイトル", text: $title)
-                    .textFieldStyle(.atender)
-                    .onChange(of: title) { _, value in title = String(value.prefix(100)) }
-            }
-            field("日付") {
-                DatePicker("", selection: Binding(
-                    get: { SemesterDateBinding.date(from: eventDate) },
-                    set: { eventDate = SemesterDateBinding.string(from: $0) }
-                ), displayedComponents: .date)
-                .datePickerStyle(.compact)
-                .labelsHidden()
-            }
-            Toggle("終日", isOn: $isAllDay)
-                .font(.atenderSm)
-                .foregroundStyle(Color.textSecondary)
-            if !isAllDay {
-                Stepper("開始 \(TimeFormatting.minutesToTime(startMinute))", value: $startMinute, in: 0...1439, step: 15)
-                Stepper("終了 \(TimeFormatting.minutesToTime(endMinute))", value: $endMinute, in: 1...1440, step: 15)
-            }
-            field("色") {
-                HStack(spacing: Space.s3) {
-                    ForEach(colors, id: \.self) { candidate in
-                        Button { color = candidate } label: {
-                            Circle()
-                                .fill(Color(hexString: candidate))
-                                .frame(width: 34, height: 34)
-                                .overlay(Circle().stroke(color == candidate ? Color.textPrimary : Color.clear, lineWidth: 2))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    ColorPicker("", selection: Binding(
-                        get: { Color(hexString: color) },
-                        set: { color = $0.toHexString() }
-                    ))
-                    .labelsHidden()
-                }
-            }
-            field("メモ") {
-                TextField("メモ", text: $note, axis: .vertical)
-                    .lineLimit(3...6)
-                    .textFieldStyle(.atender)
-                    .onChange(of: note) { _, value in note = String(value.prefix(500)) }
-            }
-            if let errorMessage {
-                Text(errorMessage).font(.atenderSm).foregroundStyle(Color.statusAbsent)
-            }
-            AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: canSave) {
-                Task { await save() }
-            }
-        }
-        .onAppear(perform: initialize)
-    }
-
-    private var canSave: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !eventDate.isEmpty && !isPending
-    }
-
-    private func initialize() {
-        title = event?.title ?? ""
-        eventDate = event?.date ?? date
-        isAllDay = event?.isAllDay ?? true
-        startMinute = event?.startMinute ?? 540
-        endMinute = event?.endMinute ?? 600
-        color = event?.color ?? colors[0]
-        note = event?.note ?? ""
-        errorMessage = nil
-    }
-
-    private func save() async {
-        guard canSave else { return }
-        isPending = true
-        defer { isPending = false }
-        do {
-            let saved: PersonalEventDto
-            if let event {
-                saved = try await environment.personalEventRepository.updatePersonalEvent(id: event.id, .init(
-                    semesterId: semesterId,
-                    date: eventDate,
-                    title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                    isAllDay: isAllDay,
-                    startMinute: isAllDay ? nil : startMinute,
-                    endMinute: isAllDay ? nil : endMinute,
-                    color: color,
-                    note: note.trimmedNil
-                ))
-            } else {
-                saved = try await environment.personalEventRepository.createPersonalEvent(.init(
-                    semesterId: semesterId,
-                    date: eventDate,
-                    title: title.trimmingCharacters(in: .whitespacesAndNewlines),
-                    isAllDay: isAllDay,
-                    startMinute: isAllDay ? nil : startMinute,
-                    endMinute: isAllDay ? nil : endMinute,
-                    color: color,
-                    note: note.trimmedNil
-                ))
-            }
-            onSaved(saved)
-        } catch {
-            errorMessage = error.userFacingMessage
-        }
-    }
-
-    private func field<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text(title).font(.atenderSm.weight(.bold)).foregroundStyle(Color.textSecondary)
-            content()
-        }
-    }
-}
-
-struct PersonalEventEditModal: View {
-    let date: String
-    var event: PersonalEventDto?
-    let semesterId: String?
-    let onSaved: (PersonalEventDto) -> Void
-    @Binding var isPresented: Bool
-    var stackLevel: Int = 2
-
-    var body: some View {
-        BottomSheet(title: event == nil ? "予定を追加" : "予定を編集", isPresented: $isPresented, stackLevel: stackLevel) {
-            PersonalEventEditModalContent(date: date, event: event, semesterId: semesterId) { saved in
-                onSaved(saved)
-                isPresented = false
-            }
         }
     }
 }

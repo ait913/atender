@@ -1,7 +1,7 @@
 import type { RoomEvent, RoomEventOverride } from "@prisma/client";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
-import { expandBetween, parseCsvDates, toIcsDate } from "../lib/rruleExpand";
+import { appendOrReplaceUntil, datesToCsv, expandBetweenJst, parseCsvDates, stripUntil, toIcsDate } from "../lib/rruleExpand";
 
 export type ExpandedOccurrence = {
   seriesId: string;
@@ -45,7 +45,7 @@ export async function expandRoomEvents(roomId: string, from: Date, to: Date): Pr
       result.push(toOccurrence(event, event.start, durationMs, null, false));
       continue;
     }
-    const dates = expandBetween({
+    const dates = expandBetweenJst({
       rrule: event.recurrenceRule,
       dtstart: event.start,
       exDates: parseCsvDates(event.exDates),
@@ -194,16 +194,4 @@ export async function applyEditScope(args: {
   return { affectedSeriesIds: [series.id] };
 }
 
-function appendOrReplaceUntil(rrule: string, until: Date): string {
-  const parts = rrule.split(";").filter((part) => !part.startsWith("UNTIL=") && !part.startsWith("COUNT="));
-  parts.push(`UNTIL=${toIcsDate(until)}`);
-  return parts.join(";");
-}
 
-function stripUntil(rrule: string) {
-  return rrule.split(";").filter((part) => !part.startsWith("UNTIL=") && !part.startsWith("COUNT=")).join(";");
-}
-
-function datesToCsv(values: string[]) {
-  return values.length > 0 ? values.map((value) => toIcsDate(new Date(value))).join(",") : null;
-}
