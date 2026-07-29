@@ -133,9 +133,14 @@ struct AttendanceCalendar: View {
         }
     }
 
+    private var daysByDate: [String: AttendanceDaySummary] {
+        Dictionary(days.map { ($0.date, $0) }, uniquingKeysWith: { _, latest in latest })
+    }
+
     private func dayCell(_ iso: String) -> some View {
-        let map = Dictionary(uniqueKeysWithValues: days.map { ($0.date, $0.status) })
-        let visual = AttendanceDayVisual.of(status: map[iso], isFuture: iso > today)
+        let visual = AttendanceDayVisual.dayVisual(summary: daysByDate[iso], isFuture: iso > today)
+        let glyphs = AttendanceDayVisual.glyphs(visual.marks)
+        let glyphSize: CGFloat = glyphs.count >= 2 ? 12 : 16
         let inMonth = iso.prefix(7) == anchor.prefix(7)
         let inSemester = startDate <= iso && iso <= endDate
         let selected = selectedDates.contains(iso)
@@ -147,16 +152,28 @@ struct AttendanceCalendar: View {
             ZStack(alignment: .topTrailing) {
                 ZStack {
                     Color.bgElevated
-                    if let color = visual.bgStatusColor {
-                        color.opacity(visual.bgFraction)
+                    HStack(spacing: 0) {
+                        ForEach(Array(AttendanceDayVisual.backgroundSlices(visual.marks).enumerated()), id: \.offset) { _, slice in
+                            Rectangle()
+                                .fill(slice.color)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
                     }
                 }
                 .clipShape(Circle())
                 VStack(spacing: 3) {
                     Text(String(Int(iso.suffix(2)) ?? 0))
                         .font(.atenderSm.weight(.semibold))
-                    statusIcon(visual.icon)
-                        .foregroundStyle(visual.iconColor)
+                    HStack(spacing: 2) {
+                        if glyphs.isEmpty {
+                            statusIcon(.none, size: glyphSize)
+                        } else {
+                            ForEach(Array(glyphs.enumerated()), id: \.offset) { _, mark in
+                                statusIcon(mark.icon, size: glyphSize)
+                                    .foregroundStyle(mark.iconColor)
+                            }
+                        }
+                    }
                 }
                 .foregroundStyle(inMonth ? Color.textPrimary : Color.textTertiary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -228,39 +245,47 @@ struct AttendanceCalendar: View {
         .buttonStyle(.plain)
     }
 
-    private func statusIcon(_ icon: AttendanceDayVisual.Icon) -> some View {
+    private func statusIcon(_ icon: AttendanceDayVisual.Icon, size: CGFloat) -> some View {
         Group {
             switch icon {
             case .check: Image(systemName: "checkmark")
             case .x: Image(systemName: "xmark")
+            case .excused:
+                Text("公")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             case .clock: Image(systemName: "clock")
             case .ban: Image(systemName: "nosign")
             case .minus: Image(systemName: "minus")
             case .none: Image(systemName: "minus").opacity(0)
             }
         }
-        .font(.system(size: 16, weight: .bold))
-        .frame(height: 16)
+        .font(.system(size: size, weight: .bold))
+        .frame(height: size)
     }
 
     private var legend: some View {
-        HStack(spacing: Space.s2) {
-            legendItem(.check, .statusPresent, "出席")
-            legendItem(.x, .statusAbsent, "欠席あり")
-            legendItem(.clock, .statusTardy, "遅刻・早退")
-            legendItem(.ban, .statusSuspended, "休講")
-            Text("破線=未記録あり ・ ●=予定")
+        VStack(alignment: .leading, spacing: Space.s1) {
+            HStack(spacing: Space.s2) {
+                legendItem(.check, .statusPresent, "出席")
+                legendItem(.x, .statusAbsent, "欠席")
+                legendItem(.excused, .statusExcused, "公欠")
+                legendItem(.clock, .statusTardy, "遅刻・早退")
+                legendItem(.ban, .statusSuspended, "休講")
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            Text("− / 破線 = 未記録 ・ ● = 予定")
         }
         .font(.caption2)
-                        .fontWeight(.bold)
+        .fontWeight(.bold)
         .foregroundStyle(Color.textTertiary)
-        .lineLimit(2)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func legendItem(_ icon: AttendanceDayVisual.Icon, _ color: Color, _ label: String) -> some View {
         HStack(spacing: 2) {
-            statusIcon(icon).foregroundStyle(color).frame(width: 14)
+            statusIcon(icon, size: 14).foregroundStyle(color).frame(width: 14)
             Text(label)
         }
     }

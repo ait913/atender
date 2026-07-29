@@ -10,6 +10,7 @@ Last synced: 2026-06-26
 | `SemesterOverviewDto` | `packages/shared/src/schemas/semester.ts` `SemesterOverviewDto` |
 | `AttendanceRateToDate` | `packages/shared/src/schemas/stats.ts` `CourseStatsDto.toDate`; `packages/shared/src/schemas/semester.ts` `SemesterOverviewDto.overall.toDate` |
 | `AttendanceDaySummary` | `packages/shared/src/schemas/semester.ts` `AttendanceDaySummary` |
+| `AttendanceDayCounts` | `packages/shared/src/schemas/semester.ts` `AttendanceDayCounts` |
 | `CourseStatsDto` | `packages/shared/src/schemas/stats.ts` `CourseStatsDto` |
 | `UserTimetableDto` | `packages/shared/src/schemas/userTimetable.ts` `UserTimetableDto` |
 | `UserTimetableListResponse` | `apps/api/src/routes/userTimetables.ts` `GET /api/user-timetables` |

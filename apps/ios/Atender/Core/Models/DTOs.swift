@@ -51,11 +51,22 @@ struct SemesterDto: Codable, Equatable, Identifiable {
     let endDate: String
 }
 
+struct AttendanceDayCounts: Codable, Equatable {
+    let present: Int
+    let absent: Int
+    let excused: Int
+    let tardy: Int
+    let earlyLeave: Int
+    let suspended: Int
+    let unrecorded: Int
+}
+
 struct AttendanceDaySummary: Codable, Equatable, Identifiable {
     var id: String { date }
     let date: String
-    let status: AttendanceDayStatus
+    let status: AttendanceDayStatus   // legacy 互換 (.designs/20260729-semester-calendar-multi-status.md §3.1)
     let occurrenceCount: Int
+    let counts: AttendanceDayCounts?  // nil = counts を返さない旧 API
 }
 
 struct SemesterOverviewDto: Codable, Equatable {

@@ -6,66 +6,100 @@ final class SemesterLogicTests: XCTestCase {
 
     // MARK: - AttendanceDayVisual
 
-    func testAttendanceDayVisualForPastStatuses() {
-        assertVisual(
-            AttendanceDayVisual.of(status: .allPresent, isFuture: false),
-            icon: .check,
-            iconColor: .statusPresent,
-            bgStatusColor: .statusPresent,
-            bgFraction: Double(Color.surfaceTintRatio),
+    func testD1ToD10PastDayMarks() {
+        assertMarks(visual(counts(present: 2), occurrenceCount: 2), [(.present, 2)], dashed: false)                      // D1
+        assertMarks(visual(counts(present: 3, absent: 1), occurrenceCount: 4), [(.absent, 1), (.present, 3)], dashed: false)  // D2
+        assertMarks(visual(counts(present: 2, excused: 1), occurrenceCount: 3), [(.excused, 1), (.present, 2)], dashed: false) // D3
+        assertMarks(visual(counts(present: 1, tardy: 1, earlyLeave: 1), occurrenceCount: 3), [(.tardy, 2), (.present, 1)], dashed: false) // D4
+        assertMarks(visual(counts(suspended: 2), occurrenceCount: 2), [(.suspended, 2)], dashed: false)                  // D5
+        assertMarks(visual(counts(unrecorded: 3), occurrenceCount: 3), [(.unrecorded, 3)], dashed: true)                 // D6
+        assertMarks(visual(counts(present: 1, unrecorded: 2), occurrenceCount: 3), [(.present, 1), (.unrecorded, 2)], dashed: true) // D7
+        assertMarks(visual(counts(), occurrenceCount: 0), [], dashed: false)                                             // D8
+        assertMarks(
+            visual(counts(present: 1, absent: 1, excused: 1, tardy: 1, suspended: 1), occurrenceCount: 5),
+            [(.absent, 1), (.excused, 1), (.tardy, 1), (.suspended, 1), (.present, 1)],
             dashed: false
-        )
-        assertVisual(
-            AttendanceDayVisual.of(status: .hasAbsent, isFuture: false),
-            icon: .x,
-            iconColor: .statusAbsent,
-            bgStatusColor: .statusAbsent,
-            bgFraction: Double(Color.surfaceTintRatio),
-            dashed: false
-        )
-        assertVisual(
-            AttendanceDayVisual.of(status: .hasTardy, isFuture: false),
-            icon: .clock,
-            iconColor: .statusTardy,
-            bgStatusColor: .statusTardy,
-            bgFraction: Double(Color.surfaceTintRatio),
-            dashed: false
-        )
-        assertVisual(
-            AttendanceDayVisual.of(status: .allSuspended, isFuture: false),
-            icon: .ban,
-            iconColor: .statusSuspended,
-            bgStatusColor: .statusSuspended,
-            bgFraction: Double(Color.surfaceTintRatio),
-            dashed: false
-        )
-        assertVisual(
-            AttendanceDayVisual.of(status: .partialUnrecorded, isFuture: false),
-            icon: .minus,
-            iconColor: .textTertiary,
-            bgStatusColor: .statusNone,
-            bgFraction: 0.12,
-            dashed: true
-        )
+        )                                                                                                                // D9
+        assertMarks(visual(counts(excused: 2, unrecorded: 1), occurrenceCount: 3), [(.excused, 2), (.unrecorded, 1)], dashed: true) // D10
     }
 
-    func testAttendanceDayVisualForNoClassNilAndUnknown() {
-        assertNoBackgroundVisual(AttendanceDayVisual.of(status: .noClass, isFuture: false))
-        assertNoBackgroundVisual(AttendanceDayVisual.of(status: nil, isFuture: false))
-        assertNoBackgroundVisual(AttendanceDayVisual.of(status: .unknown, isFuture: false))
+    func testD11ToD16FutureDayMarks() {
+        assertMarks(visual(counts(unrecorded: 2), occurrenceCount: 2, isFuture: true), [], dashed: false)                 // D11
+        assertMarks(visual(counts(excused: 1, unrecorded: 1), occurrenceCount: 2, isFuture: true), [(.excused, 1)], dashed: false) // D12
+        assertMarks(visual(counts(suspended: 1), occurrenceCount: 1, isFuture: true), [(.suspended, 1)], dashed: false)   // D13
+        assertMarks(visual(counts(absent: 1, unrecorded: 1), occurrenceCount: 2, isFuture: true), [(.absent, 1)], dashed: false) // D14
+        assertMarks(visual(counts(present: 2), occurrenceCount: 2, isFuture: true), [(.present, 2)], dashed: false)       // D15
+        assertMarks(visual(counts(), occurrenceCount: 0, isFuture: true), [], dashed: false)                              // D16
     }
 
-    func testAttendanceDayVisualFuturePriorityKeepsOnlyAllSuspended() {
-        assertNoBackgroundVisual(AttendanceDayVisual.of(status: .allPresent, isFuture: true))
-        assertNoBackgroundVisual(AttendanceDayVisual.of(status: .hasAbsent, isFuture: true))
-        assertVisual(
-            AttendanceDayVisual.of(status: .allSuspended, isFuture: true),
-            icon: .ban,
-            iconColor: .statusSuspended,
-            bgStatusColor: .statusSuspended,
-            bgFraction: Double(Color.surfaceTintRatio),
-            dashed: false
+    func testD17ToD27LegacyPathWithoutCounts() {
+        assertMarks(legacyVisual(.allPresent), [(.present, 1)], dashed: false)          // D17
+        assertMarks(legacyVisual(.hasAbsent), [(.absent, 1)], dashed: false)            // D18
+        assertMarks(legacyVisual(.hasTardy), [(.tardy, 1)], dashed: false)              // D19
+        assertMarks(legacyVisual(.allSuspended), [(.suspended, 1)], dashed: false)      // D20
+        assertMarks(legacyVisual(.partialUnrecorded), [(.unrecorded, 1)], dashed: true) // D21
+        assertMarks(legacyVisual(.noClass), [], dashed: false)                          // D22
+        assertMarks(legacyVisual(.allPresent, isFuture: true), [], dashed: false)       // D23
+        assertMarks(legacyVisual(.hasAbsent, isFuture: true), [], dashed: false)        // D24
+        assertMarks(legacyVisual(.partialUnrecorded, isFuture: true), [], dashed: false) // D25
+        assertMarks(legacyVisual(.allSuspended, isFuture: true), [(.suspended, 1)], dashed: false) // D26
+        assertMarks(legacyVisual(.unknown), [], dashed: false)                          // D27
+    }
+
+    func testD28ToD30EdgeCases() {
+        assertMarks(AttendanceDayVisual.dayVisual(summary: nil, isFuture: false), [], dashed: false)   // D28
+        assertMarks(visual(counts(), occurrenceCount: 3), [], dashed: false)                            // D29
+        assertMarks(visual(counts(present: 1, absent: -1), occurrenceCount: 0), [(.present, 1)], dashed: false) // D30
+    }
+
+    func testM1ToM7MarkAttributes() {
+        // M7: severity 順は Web の DAY_MARK_ORDER と完全一致
+        XCTAssertEqual(
+            AttendanceDayVisual.Kind.allCases.map(\.rawValue),
+            ["absent", "excused", "tardy", "suspended", "present", "unrecorded"]
         )
+
+        let all = visual(counts(present: 1, absent: 1, excused: 1, tardy: 1, suspended: 1, unrecorded: 1), occurrenceCount: 6).marks
+        let byKind = Dictionary(uniqueKeysWithValues: all.map { ($0.kind, $0) })
+        assertMark(byKind[.absent], icon: .x, iconColor: .statusAbsent, tintColor: .statusAbsent, tintFraction: Double(Color.surfaceTintRatio))       // M1
+        assertMark(byKind[.excused], icon: .excused, iconColor: .statusExcused, tintColor: .statusExcused, tintFraction: Double(Color.surfaceTintRatio)) // M2
+        assertMark(byKind[.tardy], icon: .clock, iconColor: .statusTardy, tintColor: .statusTardy, tintFraction: Double(Color.surfaceTintRatio))      // M3
+        assertMark(byKind[.suspended], icon: .ban, iconColor: .statusSuspended, tintColor: .statusSuspended, tintFraction: Double(Color.surfaceTintRatio)) // M4
+        assertMark(byKind[.present], icon: .check, iconColor: .statusPresent, tintColor: .statusPresent, tintFraction: Double(Color.surfaceTintRatio)) // M5
+        assertMark(byKind[.unrecorded], icon: .minus, iconColor: .textTertiary, tintColor: .statusNone, tintFraction: 0.12)                            // M6
+    }
+
+    func testB1ToB8BackgroundSlicesAndGlyphs() {
+        let mixed = visual(counts(present: 3, absent: 1), occurrenceCount: 4).marks
+        let mixedSlices = AttendanceDayVisual.backgroundSlices(mixed)
+        // B1
+        XCTAssertEqual(mixedSlices.count, 4)
+        XCTAssertEqual(mixedSlices[0].color, Color.statusAbsent.opacity(Double(Color.surfaceTintRatio)))
+        for index in 1...3 {
+            XCTAssertEqual(mixedSlices[index].color, Color.statusPresent.opacity(Double(Color.surfaceTintRatio)))
+        }
+        for slice in mixedSlices {
+            XCTAssertEqual(slice.fraction, 0.25, accuracy: 0.0001)
+        }
+
+        // B2
+        let singleSlices = AttendanceDayVisual.backgroundSlices(visual(counts(present: 2), occurrenceCount: 2).marks)
+        XCTAssertEqual(singleSlices.count, 2)
+        for slice in singleSlices {
+            XCTAssertEqual(slice.fraction, 0.5, accuracy: 0.0001)
+        }
+
+        // B3
+        XCTAssertTrue(AttendanceDayVisual.backgroundSlices([]).isEmpty)
+        XCTAssertTrue(AttendanceDayVisual.glyphs([]).isEmpty)                              // B8
+
+        // B6
+        let many = visual(counts(present: 1, absent: 1, excused: 1, tardy: 1, suspended: 1), occurrenceCount: 5).marks
+        XCTAssertEqual(AttendanceDayVisual.glyphs(many).map(\.kind), [.absent, .excused])
+
+        // B7
+        XCTAssertEqual(AttendanceDayVisual.glyphs(mixed).count, 2)
+        XCTAssertEqual(AttendanceDayVisual.glyphs(visual(counts(present: 2), occurrenceCount: 2).marks).count, 1)
     }
 
     // MARK: - SemesterCalendarGrid
@@ -169,36 +203,75 @@ final class SemesterLogicTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func assertVisual(
-        _ visual: AttendanceDayVisual.Visual,
-        icon: AttendanceDayVisual.Icon,
-        iconColor: Color,
-        bgStatusColor: Color,
-        bgFraction: Double,
+    private func counts(
+        present: Int = 0,
+        absent: Int = 0,
+        excused: Int = 0,
+        tardy: Int = 0,
+        earlyLeave: Int = 0,
+        suspended: Int = 0,
+        unrecorded: Int = 0
+    ) -> AttendanceDayCounts {
+        AttendanceDayCounts(
+            present: present,
+            absent: absent,
+            excused: excused,
+            tardy: tardy,
+            earlyLeave: earlyLeave,
+            suspended: suspended,
+            unrecorded: unrecorded
+        )
+    }
+
+    private func visual(
+        _ counts: AttendanceDayCounts,
+        status: AttendanceDayStatus = .allPresent,
+        occurrenceCount: Int,
+        isFuture: Bool = false
+    ) -> AttendanceDayVisual.DayVisual {
+        let summary = AttendanceDaySummary(
+            date: "2026-06-03",
+            status: status,
+            occurrenceCount: occurrenceCount,
+            counts: counts
+        )
+        return AttendanceDayVisual.dayVisual(summary: summary, isFuture: isFuture)
+    }
+
+    private func legacyVisual(_ status: AttendanceDayStatus, isFuture: Bool = false) -> AttendanceDayVisual.DayVisual {
+        let summary = AttendanceDaySummary(date: "2026-06-03", status: status, occurrenceCount: 1, counts: nil)
+        return AttendanceDayVisual.dayVisual(summary: summary, isFuture: isFuture)
+    }
+
+    private func assertMarks(
+        _ visual: AttendanceDayVisual.DayVisual,
+        _ expected: [(AttendanceDayVisual.Kind, Int)],
         dashed: Bool,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(visual.icon, icon, file: file, line: line)
-        XCTAssertEqual(visual.iconColor, iconColor, file: file, line: line)
-        guard let actualBgStatusColor = visual.bgStatusColor else {
-            XCTFail("bgStatusColor should not be nil", file: file, line: line)
-            return
-        }
-        XCTAssertEqual(actualBgStatusColor, bgStatusColor, file: file, line: line)
-        XCTAssertEqual(visual.bgFraction, bgFraction, accuracy: 0.0001, file: file, line: line)
+        XCTAssertEqual(visual.marks.map(\.kind), expected.map(\.0), file: file, line: line)
+        XCTAssertEqual(visual.marks.map(\.count), expected.map(\.1), file: file, line: line)
         XCTAssertEqual(visual.dashed, dashed, file: file, line: line)
     }
 
-    private func assertNoBackgroundVisual(
-        _ visual: AttendanceDayVisual.Visual,
+    private func assertMark(
+        _ mark: AttendanceDayVisual.Mark?,
+        icon: AttendanceDayVisual.Icon,
+        iconColor: Color,
+        tintColor: Color,
+        tintFraction: Double,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        XCTAssertEqual(visual.icon, .none, file: file, line: line)
-        XCTAssertEqual(visual.iconColor, .statusNone, file: file, line: line)
-        XCTAssertNil(visual.bgStatusColor, file: file, line: line)
-        XCTAssertFalse(visual.dashed, file: file, line: line)
+        guard let mark else {
+            XCTFail("mark should exist", file: file, line: line)
+            return
+        }
+        XCTAssertEqual(mark.icon, icon, file: file, line: line)
+        XCTAssertEqual(mark.iconColor, iconColor, file: file, line: line)
+        XCTAssertEqual(mark.tintColor, tintColor, file: file, line: line)
+        XCTAssertEqual(mark.tintFraction, tintFraction, accuracy: 0.0001, file: file, line: line)
     }
 
     private func decodeDayDetail(occurrences: [String], courseSuspensions: [String]) throws -> DayDetailDto {

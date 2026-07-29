@@ -6,12 +6,19 @@ vi.mock("@/api/hooks", () => ({
   usePersonalEvents: vi.fn(),
 }));
 
+function counts(over: Partial<Record<"present" | "absent" | "excused" | "tardy" | "earlyLeave" | "suspended" | "unrecorded", number>> = {}) {
+  return { present: 0, absent: 0, excused: 0, tardy: 0, earlyLeave: 0, suspended: 0, unrecorded: 0, ...over };
+}
+
 const days = [
-  { date: "2026-06-03", status: "HAS_ABSENT" },
-  { date: "2026-06-04", status: "ALL_PRESENT" },
-  { date: "2026-06-05", status: "PARTIAL_UNRECORDED" },
-  { date: "2026-06-12", status: "ALL_PRESENT" },
-  { date: "2026-06-13", status: "ALL_SUSPENDED" },
+  { date: "2026-06-03", status: "HAS_ABSENT", occurrenceCount: 4, counts: counts({ absent: 1, present: 3 }) },
+  { date: "2026-06-04", status: "ALL_PRESENT", occurrenceCount: 2, counts: counts({ present: 2 }) },
+  { date: "2026-06-05", status: "PARTIAL_UNRECORDED", occurrenceCount: 2, counts: counts({ unrecorded: 2 }) },
+  { date: "2026-06-08", status: "ALL_PRESENT", occurrenceCount: 1, counts: counts({ excused: 1 }) },
+  { date: "2026-06-12", status: "ALL_PRESENT", occurrenceCount: 2, counts: counts({ present: 2 }) },
+  { date: "2026-06-13", status: "ALL_SUSPENDED", occurrenceCount: 1, counts: counts({ suspended: 1 }) },
+  { date: "2026-06-20", status: "PARTIAL_UNRECORDED", occurrenceCount: 2, counts: counts({ unrecorded: 2 }) },
+  { date: "2026-06-21", status: "ALL_PRESENT", occurrenceCount: 2, counts: counts({ excused: 1, unrecorded: 1 }) },
 ];
 
 function renderCalendar(overrides: Partial<any> = {}) {
@@ -142,13 +149,62 @@ describe("AttendanceCalendar v2", () => {
     expect(dayButton("4月5日")).toBeDisabled();
   });
 
-  it("suppresses future non-suspension status but shows future suspension status", () => {
+  it("[C1] paints both statuses of a mixed past day", () => {
+    renderCalendar();
+    const style = dayButton("6月3日").getAttribute("style") ?? "";
+
+    // 設計 §5.8 C1
+    expect(style).toContain("--color-status-absent");
+    expect(style).toContain("--color-status-present");
+  });
+
+  it("[C2] paints an excused-only past day with the excused token", () => {
+    renderCalendar();
+    const style = dayButton("6月8日").getAttribute("style") ?? "";
+
+    // 設計 §5.8 C2
+    expect(style).toContain("--color-status-excused");
+    expect(style).not.toContain("--color-status-present");
+  });
+
+  it("[C3] keeps future excused visible", () => {
+    renderCalendar();
+    const style = dayButton("6月21日").getAttribute("style") ?? "";
+
+    // 設計 §5.8 C3
+    expect(style).toContain("--color-status-excused");
+  });
+
+  it("[C4] shows nothing for a future day that only has unrecorded occurrences", () => {
+    renderCalendar();
+    const cell = dayButton("6月20日");
+
+    // 設計 §5.8 C4
+    expect(cell.getAttribute("style") ?? "").not.toContain("--color-status-");
+    expect(cell.className).not.toContain("border-dashed");
+  });
+
+  it("[C5] still shows future suspension status", () => {
     const { container } = renderCalendar();
-    const futurePresent = dayButton("6月12日");
     const futureSuspended = dayButton("6月13日");
 
-    // 仕様 #59
-    expect(futurePresent.getAttribute("style") ?? "").not.toContain("--color-status-present");
+    // 設計 §5.8 C5
     expect(futureSuspended.getAttribute("style") ?? container.innerHTML).toContain("--color-status-suspended");
+  });
+
+  it("[C6] dashes a past day that has unrecorded occurrences", () => {
+    renderCalendar();
+
+    // 設計 §5.8 C6
+    expect(dayButton("6月5日").className).toContain("border-dashed");
+  });
+
+  it("[C9] renders the five status labels in the legend", () => {
+    renderCalendar();
+
+    // 設計 §5.8 C9
+    for (const label of ["出席", "欠席", "公欠", "遅刻・早退", "休講"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
   });
 });

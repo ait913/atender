@@ -23,9 +23,19 @@ export const SemesterUpdateInput = z.object({
   return v.startDate <= v.endDate;
 }, { message: "startDate must be <= endDate" });
 
+export const AttendanceDayCounts = z.object({
+  present: z.number().int(),
+  absent: z.number().int(),
+  excused: z.number().int(),
+  tardy: z.number().int(),
+  earlyLeave: z.number().int(),
+  suspended: z.number().int(),
+  unrecorded: z.number().int(),
+});
+
 export const AttendanceDaySummary = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  status: z.enum([
+  status: z.enum([              // legacy 互換。値も並びも変更しない (.designs/20260729-semester-calendar-multi-status.md §3.1)
     "ALL_PRESENT",
     "HAS_ABSENT",
     "HAS_TARDY",
@@ -34,6 +44,7 @@ export const AttendanceDaySummary = z.object({
     "NO_CLASS",
   ]),
   occurrenceCount: z.number().int(),
+  counts: AttendanceDayCounts,
 });
 
 export const SemesterOverviewDto = z.object({
@@ -63,5 +74,6 @@ export const SemesterOverviewDto = z.object({
 export type SemesterDto = z.infer<typeof SemesterDto>;
 export type SemesterCreateInput = z.infer<typeof SemesterCreateInput>;
 export type SemesterUpdateInput = z.infer<typeof SemesterUpdateInput>;
+export type AttendanceDayCounts = z.infer<typeof AttendanceDayCounts>;
 export type AttendanceDaySummary = z.infer<typeof AttendanceDaySummary>;
 export type SemesterOverviewDto = z.infer<typeof SemesterOverviewDto>;
