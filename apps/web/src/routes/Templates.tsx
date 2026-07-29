@@ -1,9 +1,20 @@
 import { useState } from "react";
+import { ApiError } from "@/api/client";
 import { useCopyTemplate, useMe, usePublishTimetable, useSemesters, useTemplates, useUserTimetables } from "@/api/hooks";
 import { Button, Field, Input, PageTitle, Panel, Select } from "@/components/ui";
 
 function authorHandle(template: { author?: { handle?: string | null } | null; authorName?: string | null; authorUserId: string }) {
   return template.author?.handle ?? template.authorName ?? template.authorUserId;
+}
+
+const COPY_CONFLICT_MESSAGE = "この学期には既に時間割があります。別の学期を選ぶか、既存を削除してください";
+const COPY_GENERIC_MESSAGE = "コピーに失敗しました。時間をおいて再度お試しください";
+
+function copyErrorMessage(error: Error) {
+  if (error instanceof ApiError) {
+    if (error.status === 409) return COPY_CONFLICT_MESSAGE;
+  }
+  return COPY_GENERIC_MESSAGE;
 }
 
 export function Templates() {
@@ -18,6 +29,9 @@ export function Templates() {
   const copy = useCopyTemplate();
   const current = timetables.data?.userTimetables.find((item) => item.semesterId === (semesterId || me.data?.user.defaultSemesterId));
   const publish = usePublishTimetable(current?.id);
+  const copyError = copy.error;
+  const copyErrorTemplateId = copyError ? copy.variables?.templateId : undefined;
+  const copyErrorText = copyError ? copyErrorMessage(copyError) : "";
 
   return (
     <div>
@@ -44,6 +58,9 @@ export function Templates() {
               <p className="mt-1 text-sm text-fg-tertiary">copy x {template.copyCount} / 更新: {template.updatedAt.slice(0, 10)}</p>
             </div>
             <Button type="button" variant="primary" disabled={!semesterId && !me.data?.user.defaultSemesterId} onClick={() => copy.mutate({ templateId: template.id, input: { semesterId: semesterId || me.data!.user.defaultSemesterId! } })}>コピー</Button>
+            {copyErrorTemplateId === template.id ? (
+              <p className="rounded-2xl bg-status-absent/15 px-4 py-3 text-sm font-bold text-status-absent">{copyErrorText}</p>
+            ) : null}
           </Panel>
         ))}
       </div>
