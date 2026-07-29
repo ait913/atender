@@ -199,6 +199,20 @@ xcrun simctl create "iPhone 16" \
 
 **iPhone 17 Pro で代用しない** — 画面寸法が変わると §10.1 が要求する「P2 前後の同一スクショ比較」が成立しなくなる (18.2 側は iPhone 16 のため)。名前が同じでも OS が違えば destination は一意に解決する。
 
+### ★ 統合後の実測 (2026-07-29, commit `3939509` = レーンA+B+409修正マージ後, Leader)
+
+3 パッケージをマージ後のツリーで実測。**未分類 0。本作業による新規ベースライン失敗 0。**
+
+| | 実測 | 内訳 |
+|---|---|---|
+| **apps/api** | **17 failed / 449 passed / 1 skipped (467)** | A1-A8 + B1-B5 + Magic Link 4 と集合完全一致。`.env` を退避して測定 |
+| **apps/web** | **26 failed / 349 passed (375)** | ベースライン 27 − W7-3 (409 修正) = 26 |
+| **apps/ios** | **398 passed / 0 failed** | `** TEST SUCCEEDED **` |
+
+iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」と指定した分) + 40 (個人カレンダー reviewer 生成) + 46 (学期カレンダー reviewer 生成) + 3 = **398**。
+
+---
+
 ## Web (apps/web, Vitest + RTL + MSW)
 
 ### ★ 実測ベースライン (2026-07-29, commit `fcfdc4d`, Researcher / カレンダー3レーン着手時)
@@ -272,7 +286,9 @@ xcrun simctl create "iPhone 16" \
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 268 GREEN / 0 RED** (main = `0368155` = UI 刷新 P3 マージ後、2026-07-18 Leader 実測)。
+**ベースライン: 398 GREEN / 0 RED** (main = `3939509` = カレンダー3レーン マージ後、2026-07-29 Leader 実測)。`Executed 398 tests, with 0 failures` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。`TEST_RUNNER_TZ=UTC` でも緑 (JST 導出が端末 TZ に依存しないことの証明、Reviewer 実測)。
+
+旧記載: 268 GREEN / 0 RED (main = `0368155` = UI 刷新 P3 マージ後、2026-07-18 Leader 実測)。
 `Executed 268 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。264 + ColorTintTests 4 = 268。**未分類の失敗 0**。
 
 ### ★ このスイートは「壊れた画面」を検出しない (2026-07-17 の教訓)
