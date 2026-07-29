@@ -1,0 +1,21 @@
+{
+  "event": {
+    "id": "cms5na43r000uelrtm6bb57zr",
+    "title": "面談",
+    "start": "2026-08-01T00:00:00.000Z",
+    "end": "2026-08-01T01:30:00.000Z",
+    "isAllDay": false,
+    "location": null,
+    "note": null,
+    "color": null,
+    "recurrenceRule": null,
+    "recurrenceSpec": null,
+    "exDates": [],
+    "rDates": [],
+    "source": "MANUAL",
+    "ekExternalId": null,
+    "ekCalendarId": null,
+    "createdAt": "2026-07-29T05:29:09.448Z",
+    "updatedAt": "2026-07-29T05:29:09.448Z"
+  }
+}

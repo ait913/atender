@@ -86,4 +86,19 @@ final class CalendarLayoutTests: XCTestCase {
                        .selected,
                        "[ui-revamp #CA10]")
     }
+    // MARK: - 個人カレンダー再構築 §6.3 / §9 U7-U8 (Reviewer 生成)
+
+    func testU7GridAvailableSubtractsCardChrome() {
+        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 600), 584, accuracy: 0.001, "[#U7]")
+        XCTAssertEqual(CalendarMonthLayout.cardChromeHeight, 16, accuracy: 0.001, "[#U7] Space.s2 * 2")
+    }
+
+    func testU7GridAvailableNeverGoesNegative() {
+        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 10), 0, accuracy: 0.001, "[#U7]")
+        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 0), 0, accuracy: 0.001, "[#U7]")
+    }
+
+    func testU8RowHeightFormulaUnchanged() {
+        XCTAssertEqual(CalendarMonthLayout.rowHeight(available: 626), 100, accuracy: 0.001, "[#U8] (available - 26) / 6")
+    }
 }
