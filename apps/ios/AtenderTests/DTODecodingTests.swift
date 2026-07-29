@@ -116,6 +116,23 @@ final class DTODecodingTests: XCTestCase {
         // days[].status は enum (AttendanceDayStatus) にミラーされている。rawValue で検証。
         XCTAssertEqual(dto.days[1].status.rawValue, "NO_CLASS")
         XCTAssertEqual(dto.days[1].occurrenceCount, 0)
+        // T1: days[].counts (日単位の内訳) が fixture 経由で decode できる
+        XCTAssertEqual(try XCTUnwrap(dto.days[0].counts).present, 2)
+        XCTAssertEqual(try XCTUnwrap(dto.days[3].counts).unrecorded, 2)
+        XCTAssertEqual(try XCTUnwrap(dto.days[4].counts).absent, 1)
+        for day in dto.days {
+            let counts = try XCTUnwrap(day.counts)
+            let total = counts.present + counts.absent + counts.excused + counts.tardy
+                + counts.earlyLeave + counts.suspended + counts.unrecorded
+            XCTAssertEqual(total, day.occurrenceCount)
+        }
+
+        // T2: counts を持たない旧 API の JSON も decode できる (Optional の担保)
+        let legacyDay = """
+        { "date": "2026-06-06", "status": "ALL_PRESENT", "occurrenceCount": 1 }
+        """.data(using: .utf8)!
+        let decodedLegacy = try makeDecoder().decode(AttendanceDaySummary.self, from: legacyDay)
+        XCTAssertNil(decodedLegacy.counts)
 
         XCTAssertEqual(dto.courses.count, 2)
         let c1 = dto.courses[0]

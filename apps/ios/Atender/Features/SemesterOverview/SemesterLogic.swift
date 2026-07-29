@@ -1,41 +1,108 @@
 import SwiftUI
 
 enum AttendanceDayVisual {
-    struct Visual: Equatable {
-        let icon: Icon
-        let iconColor: Color
-        let bgStatusColor: Color?
-        let bgFraction: Double
-        let dashed: Bool
+    /// severity 順。CaseIterable の宣言順 = 表示順 (Web の DAY_MARK_ORDER と一致させる)
+    enum Kind: String, CaseIterable, Equatable {
+        case absent, excused, tardy, suspended, present, unrecorded
     }
 
     enum Icon: Equatable {
-        case check
-        case x
-        case clock
-        case ban
-        case minus
-        case none
+        case check, x, excused, clock, ban, minus, none
     }
 
-    static func of(status: AttendanceDayStatus?, isFuture: Bool) -> Visual {
-        if isFuture, status != .allSuspended {
-            return .init(icon: .none, iconColor: .statusNone, bgStatusColor: nil, bgFraction: 0, dashed: false)
-        }
+    struct Mark: Equatable {
+        let kind: Kind
+        let count: Int        // 1 以上
+        let icon: Icon
+        let iconColor: Color
+        let tintColor: Color
+        let tintFraction: Double
 
+        /// ホーム個人カレンダーのドット色 (§4.5)
+        var dotColor: Color { kind == .unrecorded ? .statusNone : iconColor }
+    }
+
+    struct DayVisual: Equatable {
+        let marks: [Mark]     // severity 順。count == 0 のものは含まない
+        let dashed: Bool
+    }
+
+    /// 唯一の描画決定関数。
+    static func dayVisual(summary: AttendanceDaySummary?, isFuture: Bool) -> DayVisual {
+        guard let summary else { return DayVisual(marks: [], dashed: false) }
+        guard let counts = summary.counts else {
+            return legacyVisual(status: summary.status, isFuture: isFuture)
+        }
+        let unrecorded = isFuture ? 0 : counts.unrecorded
+        let byKind: [Kind: Int] = [
+            .absent: counts.absent,
+            .excused: counts.excused,
+            .tardy: counts.tardy + counts.earlyLeave,
+            .suspended: counts.suspended,
+            .present: counts.present,
+            .unrecorded: unrecorded,
+        ]
+        let marks: [Mark] = Kind.allCases.compactMap { kind in
+            guard let count = byKind[kind], count > 0 else { return nil }
+            return mark(kind, count: count)
+        }
+        return DayVisual(marks: marks, dashed: unrecorded > 0)
+    }
+
+    /// 背景に敷く縦スライス列 (occurrence 1 件 = 1 スライス、等幅)。marks が空なら []
+    static func backgroundSlices(_ marks: [Mark]) -> [(color: Color, fraction: Double)] {
+        let total = marks.reduce(0) { $0 + $1.count }
+        guard total > 0 else { return [] }
+        let fraction = 1.0 / Double(total)
+        var slices: [(color: Color, fraction: Double)] = []
+        for mark in marks {
+            let color = mark.tintColor.opacity(mark.tintFraction)
+            for _ in 0..<mark.count {
+                slices.append((color: color, fraction: fraction))
+            }
+        }
+        return slices
+    }
+
+    /// セルに描くグリフ (severity 順に先頭 2 件)
+    static func glyphs(_ marks: [Mark]) -> [Mark] {
+        Array(marks.prefix(2))
+    }
+
+    /// counts を返さない旧 API 向けの legacy 経路 (§4.4)。
+    private static func legacyVisual(status: AttendanceDayStatus, isFuture: Bool) -> DayVisual {
+        if status == .allSuspended {
+            return DayVisual(marks: [mark(.suspended, count: 1)], dashed: false)
+        }
+        if isFuture { return DayVisual(marks: [], dashed: false) }
         switch status {
         case .allPresent:
-            return .init(icon: .check, iconColor: .statusPresent, bgStatusColor: .statusPresent, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
+            return DayVisual(marks: [mark(.present, count: 1)], dashed: false)
         case .hasAbsent:
-            return .init(icon: .x, iconColor: .statusAbsent, bgStatusColor: .statusAbsent, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
+            return DayVisual(marks: [mark(.absent, count: 1)], dashed: false)
         case .hasTardy:
-            return .init(icon: .clock, iconColor: .statusTardy, bgStatusColor: .statusTardy, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
-        case .allSuspended:
-            return .init(icon: .ban, iconColor: .statusSuspended, bgStatusColor: .statusSuspended, bgFraction: Double(Color.surfaceTintRatio), dashed: false)
+            return DayVisual(marks: [mark(.tardy, count: 1)], dashed: false)
         case .partialUnrecorded:
-            return .init(icon: .minus, iconColor: .textTertiary, bgStatusColor: .statusNone, bgFraction: 0.12, dashed: true)
-        case .noClass, .unknown, .none:
-            return .init(icon: .none, iconColor: .statusNone, bgStatusColor: nil, bgFraction: 0, dashed: false)
+            return DayVisual(marks: [mark(.unrecorded, count: 1)], dashed: true)
+        case .allSuspended, .noClass, .unknown:
+            return DayVisual(marks: [], dashed: false)
+        }
+    }
+
+    private static func mark(_ kind: Kind, count: Int) -> Mark {
+        switch kind {
+        case .absent:
+            return Mark(kind: kind, count: count, icon: .x, iconColor: .statusAbsent, tintColor: .statusAbsent, tintFraction: Double(Color.surfaceTintRatio))
+        case .excused:
+            return Mark(kind: kind, count: count, icon: .excused, iconColor: .statusExcused, tintColor: .statusExcused, tintFraction: Double(Color.surfaceTintRatio))
+        case .tardy:
+            return Mark(kind: kind, count: count, icon: .clock, iconColor: .statusTardy, tintColor: .statusTardy, tintFraction: Double(Color.surfaceTintRatio))
+        case .suspended:
+            return Mark(kind: kind, count: count, icon: .ban, iconColor: .statusSuspended, tintColor: .statusSuspended, tintFraction: Double(Color.surfaceTintRatio))
+        case .present:
+            return Mark(kind: kind, count: count, icon: .check, iconColor: .statusPresent, tintColor: .statusPresent, tintFraction: Double(Color.surfaceTintRatio))
+        case .unrecorded:
+            return Mark(kind: kind, count: count, icon: .minus, iconColor: .textTertiary, tintColor: .statusNone, tintFraction: 0.12)
         }
     }
 }

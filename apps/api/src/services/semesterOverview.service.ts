@@ -1,4 +1,4 @@
-import type { AttendanceDaySummary, SemesterOverviewDto } from "@atender/shared";
+import type { AttendanceDayCounts, AttendanceDaySummary, SemesterOverviewDto } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { toIsoDate } from "../lib/tz";
@@ -112,13 +112,35 @@ async function buildDaySummaries(args: {
     const items = byDate.get(iso) ?? [];
     days.push({
       date: iso,
-      status: classifyDay(items),
+      status: classifyDay(items),   // legacy 互換 (.designs/20260729-semester-calendar-multi-status.md §3.1)
       occurrenceCount: items.length,
+      counts: countDay(items),
     });
   }
   return days;
 }
 
+function countDay(items: Array<{ status: DayStatus }>): AttendanceDayCounts {
+  const counts: AttendanceDayCounts = {
+    present: 0, absent: 0, excused: 0, tardy: 0,
+    earlyLeave: 0, suspended: 0, unrecorded: 0,
+  };
+  for (const item of items) {
+    switch (item.status) {
+      case "PRESENT": counts.present += 1; break;
+      case "ABSENT": counts.absent += 1; break;
+      case "EXCUSED": counts.excused += 1; break;
+      case "TARDY": counts.tardy += 1; break;
+      case "EARLY_LEAVE": counts.earlyLeave += 1; break;
+      case "CANCELLED":
+      case "SUSPENDED": counts.suspended += 1; break;
+      case "UNRECORDED": counts.unrecorded += 1; break;
+    }
+  }
+  return counts;
+}
+
+// legacy 互換フィールド。表示は counts を使う (.designs/20260729-semester-calendar-multi-status.md §3.1)
 function classifyDay(items: Array<{ status: DayStatus }>): AttendanceDaySummary["status"] {
   if (items.length === 0) return "NO_CLASS";
   if (items.every((item) => item.status === "SUSPENDED" || item.status === "CANCELLED")) return "ALL_SUSPENDED";

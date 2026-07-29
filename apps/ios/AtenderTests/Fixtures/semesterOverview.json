@@ -19,11 +19,11 @@
     "allowedAbsences": 4
   },
   "days": [
-    { "date": "2026-06-01", "status": "ALL_PRESENT", "occurrenceCount": 2 },
-    { "date": "2026-06-02", "status": "NO_CLASS", "occurrenceCount": 0 },
-    { "date": "2026-06-03", "status": "HAS_TARDY", "occurrenceCount": 1 },
-    { "date": "2026-06-04", "status": "PARTIAL_UNRECORDED", "occurrenceCount": 3 },
-    { "date": "2026-06-05", "status": "HAS_ABSENT", "occurrenceCount": 2 }
+    { "date": "2026-06-01", "status": "ALL_PRESENT", "occurrenceCount": 2, "counts": { "present": 2, "absent": 0, "excused": 0, "tardy": 0, "earlyLeave": 0, "suspended": 0, "unrecorded": 0 } },
+    { "date": "2026-06-02", "status": "NO_CLASS", "occurrenceCount": 0, "counts": { "present": 0, "absent": 0, "excused": 0, "tardy": 0, "earlyLeave": 0, "suspended": 0, "unrecorded": 0 } },
+    { "date": "2026-06-03", "status": "HAS_TARDY", "occurrenceCount": 1, "counts": { "present": 0, "absent": 0, "excused": 0, "tardy": 1, "earlyLeave": 0, "suspended": 0, "unrecorded": 0 } },
+    { "date": "2026-06-04", "status": "PARTIAL_UNRECORDED", "occurrenceCount": 3, "counts": { "present": 1, "absent": 0, "excused": 0, "tardy": 0, "earlyLeave": 0, "suspended": 0, "unrecorded": 2 } },
+    { "date": "2026-06-05", "status": "HAS_ABSENT", "occurrenceCount": 2, "counts": { "present": 1, "absent": 1, "excused": 0, "tardy": 0, "earlyLeave": 0, "suspended": 0, "unrecorded": 0 } }
   ],
   "courses": [
     {

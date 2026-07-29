@@ -3,7 +3,7 @@ import { Ban, Check, ChevronLeft, ChevronRight, Clock, Minus, X } from "lucide-r
 import { useMemo, useState } from "react";
 import type { AttendanceDaySummary } from "@atender/shared";
 import { usePersonalEvents } from "@/api/hooks";
-import { statusVisual, type DayVisualIcon } from "@/lib/dayStatusVisual";
+import { dayBackground, dayGlyphs, dayVisual, type DayMark, type DayVisualIcon } from "@/lib/dayStatusVisual";
 
 type Props = {
   days: AttendanceDaySummary[];
@@ -104,7 +104,9 @@ export function AttendanceCalendar({
           const summary = daysByDate.get(iso);
           const inMonth = cell.isSame(monthStart, "month");
           const inSemester = iso >= startDate && iso <= endDate;
-          const visual = statusVisual(summary?.status, { future: iso > today });
+          const visual = dayVisual(summary, { future: iso > today });
+          const glyphs = dayGlyphs(visual.marks);
+          const background = dayBackground(visual.marks);
           const hasEvent = eventDates.has(iso);
           const selected = selectedDates.has(iso);
           const disabled = selectionMode && !inSemester;
@@ -124,7 +126,7 @@ export function AttendanceCalendar({
                 iso === today ? "ring-1 ring-accent-500/60" : ""
               } ${selected ? "ring-2 ring-accent-500" : ""} disabled:opacity-25`}
               style={{
-                ...(visual.bg ? { background: visual.bg } : {}),
+                ...(background ? { background } : {}),
                 ...(visual.dashed ? { borderColor: "color-mix(in srgb, var(--color-status-tardy) 40%, transparent)" } : {}),
               }}
             >
@@ -135,7 +137,15 @@ export function AttendanceCalendar({
               ) : null}
               {hasEvent ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-accent-500" aria-hidden="true" /> : null}
               <span className="font-bold">{cell.date()}</span>
-              <StatusIcon icon={visual.icon} color={visual.iconColor} className="mt-0.5 h-4 w-4" />
+              {glyphs.length === 0 ? (
+                <span className="mt-0.5 h-4 w-4" aria-hidden="true" />
+              ) : (
+                <span className="mt-0.5 flex items-center justify-center gap-0.5">
+                  {glyphs.map((glyph) => (
+                    <DayGlyph key={glyph.kind} mark={glyph} small={glyphs.length >= 2} />
+                  ))}
+                </span>
+              )}
             </button>
           );
         })}
@@ -154,24 +164,50 @@ export function clampMonth(value: dayjs.Dayjs, startDate: string, endDate: strin
   return month;
 }
 
-function StatusIcon({ icon, color, className }: { icon: DayVisualIcon; color: string; className?: string }) {
+function StatusIcon({
+  icon,
+  color,
+  className,
+  textClassName,
+}: {
+  icon: DayVisualIcon;
+  color: string;
+  className?: string;
+  textClassName?: string;
+}) {
   const props = { className, style: { color }, strokeWidth: 2.5, "aria-hidden": true };
   if (icon === "check") return <Check {...props} />;
   if (icon === "x") return <X {...props} />;
   if (icon === "clock") return <Clock {...props} />;
   if (icon === "ban") return <Ban {...props} />;
   if (icon === "minus") return <Minus {...props} />;
-  return <span className={className} aria-hidden="true" />;
+  return (
+    <span className={`font-bold leading-none ${textClassName ?? "text-[12px]"}`} style={{ color }} aria-hidden="true">
+      公
+    </span>
+  );
+}
+
+function DayGlyph({ mark, small }: { mark: DayMark; small: boolean }) {
+  return (
+    <StatusIcon
+      icon={mark.icon}
+      color={mark.iconColor}
+      className={small ? "h-3 w-3" : "h-4 w-4"}
+      textClassName={small ? "text-[12px]" : "text-[16px]"}
+    />
+  );
 }
 
 function Legend() {
   return (
     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] font-bold text-fg-tertiary">
       <LegendItem icon="check" color="var(--color-status-present)" label="出席" />
-      <LegendItem icon="x" color="var(--color-status-absent)" label="欠席あり" />
+      <LegendItem icon="x" color="var(--color-status-absent)" label="欠席" />
+      <LegendItem icon="excused" color="var(--color-status-excused)" label="公欠" />
       <LegendItem icon="clock" color="var(--color-status-tardy)" label="遅刻・早退" />
       <LegendItem icon="ban" color="var(--color-status-suspended)" label="休講" />
-      <span className="inline-flex items-center gap-1"><span className="h-3.5 w-3.5 rounded border border-dashed" style={{ borderColor: "color-mix(in srgb, var(--color-status-tardy) 40%, transparent)" }} />未記録あり</span>
+      <span className="inline-flex items-center gap-1"><span className="h-3.5 w-3.5 rounded border border-dashed" style={{ borderColor: "color-mix(in srgb, var(--color-status-tardy) 40%, transparent)" }} />未記録</span>
       <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent-500" />予定</span>
     </div>
   );
