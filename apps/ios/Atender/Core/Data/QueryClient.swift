@@ -30,8 +30,12 @@ final class QueryClient {
         }
     }
 
+    /// QueryClient は @MainActor なので、クロージャも MainActor 隔離で宣言する
+    @ObservationIgnored var onInvalidate: (@MainActor ([QueryKey]) -> Void)?
+
     func invalidate(prefixes: [QueryKey]) {
         prefixes.forEach { invalidate(prefix: $0) }
+        onInvalidate?(prefixes)
     }
 
     func isStale(_ key: QueryKey) -> Bool {

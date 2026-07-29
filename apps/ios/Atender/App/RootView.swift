@@ -34,6 +34,10 @@ struct RootView: View {
         .task {
             await environment.versionStore.check()
         }
+        .task(id: isReadyForCalendarSync) {
+            guard isReadyForCalendarSync else { return }
+            await environment.calendarSyncCoordinator.sync(trigger: .appLaunch)
+        }
         .onOpenURL { url in
             if GIDSignIn.sharedInstance.handle(url) {
                 return
@@ -56,6 +60,13 @@ struct RootView: View {
             environment.appRouter.applyPendingDeepLinkIfPossible(canNavigate: value)
         }
         .preferredColorScheme((ThemePreference(rawValue: themePreference) ?? .light).colorScheme)
+    }
+
+    private var isReadyForCalendarSync: Bool {
+        if case .signedIn = environment.authStore.state {
+            return environment.authStore.me?.setupStatus.isComplete == true
+        }
+        return false
     }
 
     private var canNavigate: Bool {

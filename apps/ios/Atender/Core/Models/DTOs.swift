@@ -584,6 +584,29 @@ struct EventKitSyncResponse: Codable, Equatable {
     let mirrors: [PersonalEventSeriesDto]
 }
 
+// MARK: - 書き出し (.designs/20260729-eventkit-dedicated-calendar-export.md §6.6)
+
+struct OccurrenceRangeResponse: Codable, Equatable {
+    let from: String
+    let to: String
+    let hasActiveTimetable: Bool
+    let occurrences: [OccurrenceDto]
+    let courseSuspensions: [CourseSuspensionDto]
+    let timetableSuspensions: [TimetableSuspensionDto]
+}
+
+struct LegacyEkPushListResponse: Codable, Equatable {
+    let externalIds: [String]
+}
+
+struct LegacyEkPushClearInput: Codable, Equatable {
+    let externalIds: [String]
+}
+
+struct LegacyEkPushClearResponse: Codable, Equatable {
+    let clearedCount: Int
+}
+
 struct DayDetailDto: Codable, Equatable {
     let date: String
     let occurrences: [OccurrenceDto]

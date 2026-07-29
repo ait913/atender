@@ -101,6 +101,16 @@ enum Endpoints {
         .init(path: "/api/personal-events/\(id)", method: .delete,
               query: compactQuery(["scope": scope, "originalDate": originalDate]))
     }
+    static func occurrenceRange(from: String, to: String) -> APIEndpoint {
+        .init(path: "/api/occurrences", method: .get, query: ["from": from, "to": to])
+    }
+    static func legacyEkPushes() -> APIEndpoint {
+        .init(path: "/api/personal-events/eventkit-legacy-pushes", method: .get)
+    }
+    static func clearLegacyEkPushes(_ body: LegacyEkPushClearInput) -> APIEndpoint {
+        .init(path: "/api/personal-events/eventkit-legacy-pushes/clear", method: .post, body: body)
+    }
+
     static func eventKitSync(_ body: EventKitSyncInput) -> APIEndpoint {
         .init(path: "/api/personal-events/eventkit-sync", method: .post, body: body)
     }

@@ -1,21 +1,22 @@
 import dayjs, { type Dayjs } from "dayjs";
 import type { AttendanceDaySummary } from "@atender/shared";
-import { dayStatusColor, eventColor, eventTitle } from "@/lib/calendarEventDisplay";
+import { eventColor, eventTitle } from "@/lib/calendarEventDisplay";
 import { monthGridRange } from "@/lib/calendarRange";
+import { dayVisual } from "@/lib/dayStatusVisual";
 import type { CalendarEvent } from "@/lib/meetingExpansion";
 
 export function CalendarMonth({
   anchor,
   selectedDate,
   events,
-  statusByDate,
+  daySummaries,
   onSelectDate,
   maxChipsPerCell = 3,
 }: {
   anchor: Dayjs;
   selectedDate: string;
   events: CalendarEvent[];
-  statusByDate?: Map<string, AttendanceDaySummary["status"]>;
+  daySummaries?: Map<string, AttendanceDaySummary>;
   onSelectDate: (date: string) => void;
   maxChipsPerCell?: number;
 }) {
@@ -45,8 +46,8 @@ export function CalendarMonth({
           const dayEvents = (eventsByDate.get(dateString) ?? []).sort((a, b) => a.startMinute - b.startMinute);
           const visibleEvents = inMonth ? dayEvents.slice(0, maxChipsPerCell) : [];
           const extraCount = inMonth ? dayEvents.length - visibleEvents.length : 0;
-          const status = statusByDate?.get(dateString);
-          const showStatusDot = inMonth && status != null && status !== "NO_CLASS";
+          // §2.6: ホームは「ドットのみ」。グリフ・背景セグメントは持ち込まない
+          const marks = inMonth ? dayVisual(daySummaries?.get(dateString)).marks.slice(0, 3) : [];
 
           return (
             <button
@@ -75,8 +76,12 @@ export function CalendarMonth({
                 >
                   {date.date()}
                 </span>
-                {showStatusDot && status ? (
-                  <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: dayStatusColor(status) }} />
+                {marks.length > 0 ? (
+                  <span className="flex shrink-0 items-center gap-0.5">
+                    {marks.map((mark) => (
+                      <span key={mark.kind} className="h-1.5 w-1.5 rounded-full" style={{ background: mark.dotColor }} />
+                    ))}
+                  </span>
                 ) : null}
               </span>
               {visibleEvents.length > 0 ? (

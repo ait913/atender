@@ -164,7 +164,7 @@ struct RoomCalendar: View {
                         anchor: anchor,
                         selectedDate: selectedDate,
                         events: events,
-                        statusByDate: [:],
+                        daySummaries: [:],
                         available: available,
                         onSelectDate: { date in
                             selectedDate = date

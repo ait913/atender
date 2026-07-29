@@ -55,7 +55,7 @@
 		<true/>
 	</dict>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>iPhoneのカレンダーと予定を同期するためにカレンダーへのアクセスを使用します。</string>
+	<string>授業と予定を「Atender」カレンダーに書き出し、選んだカレンダーの予定を読み込むためにカレンダーへのアクセスを使用します。</string>
 	<key>NSCameraUsageDescription</key>
 	<string>招待QRコードを読み取るためにカメラを使用します。</string>
 	<key>UIAppFonts</key>

@@ -138,6 +138,8 @@ struct SettingsView: View {
     private func signOut() async {
         guard !isSigningOut else { return }
         isSigningOut = true
+        // 別アカウントでログインしたときに前のアカウントの授業が残らないようにする (§7.7)
+        await environment.calendarSyncCoordinator.wipeExport()
         await environment.authStore.signOut()
         environment.queryClient.removeAll()
         router.settingsPath = NavigationPath()

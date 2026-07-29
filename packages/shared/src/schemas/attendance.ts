@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { ATTENDANCE_STATUS } from "../enums.js";
+import { CourseSuspensionDto } from "./course.js";
+import { TimetableSuspensionDto } from "./timetableSuspension.js";
 
 export const OccurrenceDto = z.object({
   id: z.string(),
@@ -61,6 +63,21 @@ export const BulkClearAttendanceResponse = z.object({
   deletedCount: z.number().int(),
 });
 
+/** 書き出し用の授業 occurrence 範囲取得 (.designs/20260729-eventkit-dedicated-calendar-export.md §4.4) */
+export const OccurrenceRangeQuery = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export const OccurrenceRangeDto = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  hasActiveTimetable: z.boolean(),
+  occurrences: z.array(OccurrenceDto),
+  courseSuspensions: z.array(CourseSuspensionDto),
+  timetableSuspensions: z.array(TimetableSuspensionDto),
+});
+
 export type OccurrenceDto = z.infer<typeof OccurrenceDto>;
 export type TodayResponse = z.infer<typeof TodayResponse>;
 export type MarkAttendanceInput = z.infer<typeof MarkAttendanceInput>;
@@ -70,3 +87,5 @@ export type BulkMarkAttendanceInput = z.infer<typeof BulkMarkAttendanceInput>;
 export type BulkMarkAttendanceResponse = z.infer<typeof BulkMarkAttendanceResponse>;
 export type BulkClearAttendanceInput = z.infer<typeof BulkClearAttendanceInput>;
 export type BulkClearAttendanceResponse = z.infer<typeof BulkClearAttendanceResponse>;
+export type OccurrenceRangeQuery = z.infer<typeof OccurrenceRangeQuery>;
+export type OccurrenceRangeDto = z.infer<typeof OccurrenceRangeDto>;

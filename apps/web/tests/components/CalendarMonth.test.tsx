@@ -38,6 +38,49 @@ function dayCell(dayText: string): HTMLElement {
   return candidates[0];
 }
 
+type CountOverrides = Partial<{
+  present: number;
+  absent: number;
+  excused: number;
+  tardy: number;
+  earlyLeave: number;
+  suspended: number;
+  unrecorded: number;
+}>;
+
+function summary(date: string, overrides: CountOverrides) {
+  const counts = {
+    present: 0,
+    absent: 0,
+    excused: 0,
+    tardy: 0,
+    earlyLeave: 0,
+    suspended: 0,
+    unrecorded: 0,
+    ...overrides,
+  };
+  const occurrenceCount = Object.values(counts).reduce((sum, n) => sum + n, 0);
+  return { date, status: "NO_CLASS" as const, occurrenceCount, counts };
+}
+
+function summaries(spec: Record<string, CountOverrides>) {
+  return new Map(Object.entries(spec).map(([date, counts]) => [date, summary(date, counts)]));
+}
+
+/** ドット = 葉ノードで inline style に status トークンを持つ要素 (親要素の二重計上を避ける) */
+function dots(scope: HTMLElement): HTMLElement[] {
+  return Array.from(scope.querySelectorAll<HTMLElement>("[style]"))
+    .filter((element) => element.children.length === 0)
+    .filter((element) => /var\(--color-status-/.test(element.getAttribute("style") ?? ""));
+}
+
+function dotColors(elements: HTMLElement[]): string[] {
+  return elements.map((element) => {
+    const match = /var\(--color-status-[a-z-]+\)/.exec(element.getAttribute("style") ?? "");
+    return match ? match[0] : "";
+  });
+}
+
 describe("CalendarMonth", () => {
   it("renders date numbers without event chips or overflow counters when there are no events", () => {
     renderMonth();
@@ -78,10 +121,10 @@ describe("CalendarMonth", () => {
     expect(onSelectDate).toHaveBeenCalledWith("2026-06-02");
   });
 
-  it("does not render chips or status dots for out-of-month cells", () => {
+  it("[P4] does not render chips or status dots for out-of-month cells", () => {
     renderMonth({
       events: [meeting({ date: "2026-05-31", courseName: "前月授業" })] as any,
-      statusByDate: new Map([["2026-05-31", "HAS_ABSENT"]]),
+      daySummaries: summaries({ "2026-05-31": { absent: 1 } }),
     });
 
     expect(screen.queryByText("前月授業")).not.toBeInTheDocument();
@@ -105,17 +148,86 @@ describe("CalendarMonth", () => {
     expect(screen.getByText("とても長い授業名").className).toContain("truncate");
   });
 
-  it("renders a status dot for HAS_ABSENT and no dot for NO_CLASS or missing status", () => {
+  // §5.9 P1-P3 / P5-P8 — 設計doc: .designs/20260729-semester-calendar-multi-status.md
+  it("[P1] renders one dot per mark in severity order", () => {
+    renderMonth({ daySummaries: summaries({ "2026-06-02": { absent: 1, present: 1 } }) });
+
+    const cellDots = dots(dayCell("2"));
+
+    expect(cellDots).toHaveLength(2);
+    expect(dotColors(cellDots)).toEqual([
+      "var(--color-status-absent)",
+      "var(--color-status-present)",
+    ]);
+  });
+
+  it("[P2] renders no dot when every count is zero (NO_CLASS)", () => {
+    renderMonth({ daySummaries: summaries({ "2026-06-02": {} }) });
+
+    expect(dots(dayCell("2"))).toHaveLength(0);
+  });
+
+  it("[P3] renders no dot for a date missing from daySummaries", () => {
+    renderMonth({ daySummaries: summaries({ "2026-06-02": { absent: 1 } }) });
+
+    expect(dots(dayCell("3"))).toHaveLength(0);
+  });
+
+  it("[P5] caps the dots at three even with four or more marks", () => {
     renderMonth({
-      statusByDate: new Map([
-        ["2026-06-02", "HAS_ABSENT"],
-        ["2026-06-03", "NO_CLASS"],
-      ]),
+      daySummaries: summaries({
+        "2026-06-02": { absent: 1, excused: 1, tardy: 1, suspended: 1, present: 1 },
+      }),
     });
 
-    expect(document.querySelector('[style*="var(--color-status-absent)"]')).toBeInTheDocument();
-    expect(
-      document.querySelector('[style*="var(--color-status-none)"]'),
-    ).not.toBeInTheDocument();
+    const cellDots = dots(dayCell("2"));
+
+    expect(cellDots).toHaveLength(3);
+    expect(dotColors(cellDots)).toEqual([
+      "var(--color-status-absent)",
+      "var(--color-status-excused)",
+      "var(--color-status-tardy)",
+    ]);
+  });
+
+  it("[P6] renders the excused colour for an excused-only day", () => {
+    renderMonth({ daySummaries: summaries({ "2026-06-02": { excused: 1 } }) });
+
+    const cellDots = dots(dayCell("2"));
+
+    expect(dotColors(cellDots)).toEqual(["var(--color-status-excused)"]);
+    expect(dotColors(cellDots)).not.toContain("var(--color-status-present)");
+  });
+
+  it("[P7] renders no dot at all when daySummaries is omitted (room detail)", () => {
+    renderMonth({ events: [meeting()] as any });
+
+    expect(document.querySelector('[style*="var(--color-status-"]')).not.toBeInTheDocument();
+  });
+
+  it("[P8] keeps chips, +N overflow, and cell styling unchanged when daySummaries is supplied", () => {
+    const events = [
+      meeting({ courseName: "数学" }),
+      meeting({ courseId: "c2", courseName: "英語", startMinute: 640 }),
+      meeting({ courseId: "c3", courseName: "物理", startMinute: 780 }),
+    ] as any;
+
+    const before = renderMonth({ maxChipsPerCell: 2, events });
+    const baselineSelected = dayCell("2").className;
+    const baselineOther = dayCell("5").className;
+    before.unmount();
+
+    renderMonth({
+      maxChipsPerCell: 2,
+      events,
+      daySummaries: summaries({ "2026-06-02": { absent: 1, present: 1 } }),
+    });
+
+    expect(screen.getByText("数学")).toBeInTheDocument();
+    expect(screen.getByText("英語")).toBeInTheDocument();
+    expect(screen.queryByText("物理")).not.toBeInTheDocument();
+    expect(screen.getByText("+1")).toBeInTheDocument();
+    expect(dayCell("2").className).toBe(baselineSelected);
+    expect(dayCell("5").className).toBe(baselineOther);
   });
 });
