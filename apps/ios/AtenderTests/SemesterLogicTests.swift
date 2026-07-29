@@ -352,4 +352,122 @@ final class SemesterLogicTests: XCTestCase {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }
+
+    // MARK: - カレンダー実機不具合の是正 §9-D (Reviewer 生成 / 設計docのみ根拠)
+
+    private var sStart: String { "2026-06-05" }
+    private var sEnd: String { "2026-06-25" }
+
+    /// [calendar-defects #S1] 通常モードでは常に false (= 描画・押せる)。モードで意味が反転しない
+    func testS1IsBlankedIsAlwaysFalseInNormalMode() {
+        for iso in ["2026-06-03", "2026-06-04", "2026-06-05", "2026-06-15", "2026-06-25", "2026-06-26", "2026-07-30", "2020-01-01"] {
+            XCTAssertFalse(
+                SemesterCalendarGrid.isBlanked(iso: iso, startDate: sStart, endDate: sEnd, selectionMode: false),
+                "[calendar-defects #S1] \(iso)"
+            )
+        }
+    }
+
+    /// [calendar-defects #S2/#S3] 複数選択モードで学期範囲外 → true
+    func testS2AndS3IsBlankedOutsideSemesterInSelectionMode() {
+        XCTAssertTrue(SemesterCalendarGrid.isBlanked(iso: "2026-06-03", startDate: sStart, endDate: sEnd, selectionMode: true),
+                      "[calendar-defects #S2] 開始日より前")
+        XCTAssertTrue(SemesterCalendarGrid.isBlanked(iso: "2026-06-04", startDate: sStart, endDate: sEnd, selectionMode: true),
+                      "[calendar-defects #S2] 開始日の前日")
+        XCTAssertTrue(SemesterCalendarGrid.isBlanked(iso: "2026-06-26", startDate: sStart, endDate: sEnd, selectionMode: true),
+                      "[calendar-defects #S3] 終了日の翌日")
+    }
+
+    /// [calendar-defects #S4/#S5/#S6] 学期内 (境界含む) は false
+    func testS4ToS6IsBlankedInsideSemesterInSelectionMode() {
+        XCTAssertFalse(SemesterCalendarGrid.isBlanked(iso: "2026-06-05", startDate: sStart, endDate: sEnd, selectionMode: true),
+                       "[calendar-defects #S4] 開始日ちょうど")
+        XCTAssertFalse(SemesterCalendarGrid.isBlanked(iso: "2026-06-25", startDate: sStart, endDate: sEnd, selectionMode: true),
+                       "[calendar-defects #S5] 終了日ちょうど")
+        XCTAssertFalse(SemesterCalendarGrid.isBlanked(iso: "2026-06-15", startDate: sStart, endDate: sEnd, selectionMode: true),
+                       "[calendar-defects #S6] 学期の中")
+    }
+
+    /// [calendar-defects #S2-b] 学期グリッド全セルを走査し、blank になるのは範囲外だけであること
+    func testS2bIsBlankedMatchesRangeExactlyAcrossGrid() {
+        for iso in SemesterCalendarGrid.cells(monthAnchor: "2026-06-01") {
+            let inside = [sStart <= iso, iso <= sEnd].allSatisfy { $0 }
+            XCTAssertEqual(
+                SemesterCalendarGrid.isBlanked(iso: iso, startDate: sStart, endDate: sEnd, selectionMode: true),
+                !inside,
+                "[calendar-defects #S2-b] \(iso)"
+            )
+            XCTAssertFalse(
+                SemesterCalendarGrid.isBlanked(iso: iso, startDate: sStart, endDate: sEnd, selectionMode: false),
+                "[calendar-defects #S2-b] normal mode \(iso)"
+            )
+        }
+    }
+
+    /// [calendar-defects #S7] 375pt (SE3 / 13 mini) の日セル一辺
+    func testS7DayCellSideOnSmallestDevice() {
+        let side = SemesterCalendarMetrics.dayCellSide(screenWidth: 375)
+
+        XCTAssertEqual(side, (375 - 32 - 16 - 18) / 7, accuracy: 1e-3, "[calendar-defects #S7]")
+        XCTAssertEqual(side, 44.142857, accuracy: 1e-3, "[calendar-defects #S7] 実値")
+        XCTAssertGreaterThanOrEqual(side, 44, "[calendar-defects #S7] HIG 44pt")
+    }
+
+    /// [calendar-defects #S8] 実機幅すべてで 44pt 以上
+    func testS8DayCellSideMeetsTapTargetOnAllDevices() {
+        for screenWidth in [CGFloat(375), 393, 402, 430, 440] {
+            let side = SemesterCalendarMetrics.dayCellSide(screenWidth: screenWidth)
+            XCTAssertGreaterThanOrEqual(side, SemesterCalendarMetrics.minTapTarget,
+                                        "[calendar-defects #S8] \(screenWidth) -> \(side)")
+        }
+        // 設計 §2.3 の表と一致するか
+        XCTAssertEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: 393), 46.71, accuracy: 0.01, "[calendar-defects #S8]")
+        XCTAssertEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: 402), 47.99, accuracy: 0.01, "[calendar-defects #S8]")
+        XCTAssertEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: 430), 52.00, accuracy: 0.01, "[calendar-defects #S8]")
+        XCTAssertEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: 440), 53.43, accuracy: 0.01, "[calendar-defects #S8]")
+    }
+
+    /// [calendar-defects #S8-b] 修正前の横 padding 16 のままだと 375pt で 44pt に届かない
+    /// (= 定数を戻したらテストが落ちる形で 8pt 化を固定する)
+    func testS8bOldCardPaddingWouldViolateTapTarget() {
+        let oldSide = (CGFloat(375) - Space.pagePxMobile * 2 - Space.s4 * 2
+                       - SemesterCalendarMetrics.gridSpacing * 6) / 7
+        XCTAssertLessThan(oldSide, SemesterCalendarMetrics.minTapTarget,
+                          "[calendar-defects #S8-b] 旧 padding では 41.86pt で規定違反だった")
+        XCTAssertGreaterThan(SemesterCalendarMetrics.dayCellSide(screenWidth: 375), oldSide,
+                             "[calendar-defects #S8-b]")
+    }
+
+    /// [calendar-defects #S9] 定数
+    func testS9SemesterCalendarMetricsConstants() {
+        XCTAssertEqual(SemesterCalendarMetrics.cardHorizontalPadding, Space.s2, accuracy: 1e-6, "[calendar-defects #S9]")
+        XCTAssertEqual(SemesterCalendarMetrics.cardHorizontalPadding, 8, accuracy: 1e-6, "[calendar-defects #S9] Space.s2 == 8")
+        XCTAssertEqual(SemesterCalendarMetrics.cardVerticalPadding, Space.s4, accuracy: 1e-6, "[calendar-defects #S9]")
+        XCTAssertEqual(SemesterCalendarMetrics.cardVerticalPadding, 16, accuracy: 1e-6, "[calendar-defects #S9] Space.s4 == 16")
+        XCTAssertEqual(SemesterCalendarMetrics.innerInset, Space.s2, accuracy: 1e-6, "[calendar-defects #S9]")
+        XCTAssertEqual(SemesterCalendarMetrics.gridSpacing, 3, accuracy: 1e-6, "[calendar-defects #S9]")
+        XCTAssertEqual(SemesterCalendarMetrics.columnCount, 7, "[calendar-defects #S9]")
+        XCTAssertEqual(SemesterCalendarMetrics.minTapTarget, 44, accuracy: 1e-6, "[calendar-defects #S9]")
+        // 非グリッド要素は内側で +8 して実効 16pt を保つ
+        XCTAssertEqual(SemesterCalendarMetrics.cardHorizontalPadding + SemesterCalendarMetrics.innerInset,
+                       Space.s4, accuracy: 1e-6, "[calendar-defects #S9] 実効 16pt")
+    }
+
+    /// [calendar-defects #S10] 画面幅 0 / 負でも負値を返さない
+    func testS10DayCellSideNeverNegative() {
+        XCTAssertEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: 0), 0, accuracy: 1e-6, "[calendar-defects #S10]")
+        XCTAssertEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: 10), 0, accuracy: 1e-6, "[calendar-defects #S10]")
+        XCTAssertGreaterThanOrEqual(SemesterCalendarMetrics.dayCellSide(screenWidth: -100), 0, "[calendar-defects #S10]")
+    }
+
+    /// [calendar-defects #S11] glyphs は最大 2 件 = 学期セルの子 intrinsic 幅が 26pt を超えない根拠
+    func testS11GlyphsAreCappedAtTwo() {
+        let many = visual(counts(present: 1, absent: 1, excused: 1, tardy: 1, suspended: 1), occurrenceCount: 5).marks
+        XCTAssertGreaterThan(many.count, 2, "[calendar-defects #S11] marks 側は 2 件超え")
+        XCTAssertEqual(AttendanceDayVisual.glyphs(many).count, 2, "[calendar-defects #S11]")
+
+        let childIntrinsicWidth = CGFloat(2) * 12 + 2   // glyph 12pt x2 + spacing 2
+        XCTAssertLessThan(childIntrinsicWidth, SemesterCalendarMetrics.dayCellSide(screenWidth: 375),
+                          "[calendar-defects #S11] 子 intrinsic 幅 < 最小列幅")
+    }
 }

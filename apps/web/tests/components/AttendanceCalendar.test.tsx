@@ -142,11 +142,30 @@ describe("AttendanceCalendar v2", () => {
     expect(cell.querySelector("svg")).toBeInTheDocument();
   });
 
-  it("disables out-of-semester cells in selection mode", () => {
+  // 旧「仕様 #58: 範囲外セルを disabled にする」は
+  // 設計 .designs/20260730-calendar-ui-defects.md §2.2 で廃止され、
+  // 「複数選択モードでは学期範囲外を完全な空セルにする」に置換された (§9-E W5/W7/W9)。
+  // → 陳腐化テストとして Reviewer が置換 (置換前は "4月5日" が見つからず fail していた)。
+  it("[W5/W7] blanks out-of-semester cells in selection mode instead of disabling them", () => {
     renderCalendar({ today: "2026-04-10", selectionMode: true });
 
-    // 仕様 #58
-    expect(dayButton("4月5日")).toBeDisabled();
+    // 設計 §9-E W5 / W7: 範囲外 (startDate=2026-04-06 より前) は DOM から消える
+    expect(screen.queryByLabelText("4月5日")).toBeNull();
+    expect(screen.queryByRole("button", { name: "4月5日" })).toBeNull();
+    // 学期内の日は押せるまま
+    expect(dayButton("4月6日")).toBeInTheDocument();
+    expect(dayButton("4月6日")).not.toBeDisabled();
+  });
+
+  it("[W9] leaves no disabled day-cell button in selection mode", () => {
+    const { container } = renderCalendar({ today: "2026-04-10", selectionMode: true });
+
+    // 設計 §9-E W9: 「無効ボタン」という表現自体を廃止した
+    const dayCells = Array.from(container.querySelectorAll<HTMLButtonElement>("button[aria-label]")).filter((b) =>
+      /^\d+月\d+日$/.test(b.getAttribute("aria-label") ?? ""),
+    );
+    expect(dayCells.length).toBeGreaterThan(20);
+    expect(dayCells.filter((b) => b.hasAttribute("disabled"))).toHaveLength(0);
   });
 
   it("[C1] paints both statuses of a mixed past day", () => {
