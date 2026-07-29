@@ -33,6 +33,7 @@ export type RoomEventEvent = {
 export type PersonalEvent = {
   kind: "personal";
   eventId: string;
+  seriesId: string;
   date: string;
   title: string;
   startMinute: number;
@@ -40,6 +41,8 @@ export type PersonalEvent = {
   authorName: string;
   authorColor: string;
   occurrenceDate: string;
+  isAllDay: boolean;
+  isRecurringOccurrence: boolean;
 };
 
 export type CalendarEvent = MeetingEvent | RoomEventEvent | PersonalEvent;

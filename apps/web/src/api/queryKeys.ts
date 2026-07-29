@@ -11,7 +11,7 @@ export const QK = {
   stats: (semesterId?: string | null) => ["stats", semesterId ?? "current"] as const,
   courseSuspensions: (courseId: string) => ["courses", courseId, "suspensions"] as const,
   timetableSuspensions: (range: { from?: string; to?: string } = {}) => ["timetable-suspensions", range] as const,
-  personalEvents: (range: { from?: string; to?: string; semesterId?: string | null } = {}) => ["personal-events", range] as const,
+  personalEvents: (range: { from?: string; to?: string } = {}) => ["personal-events", range] as const,
   semesterOverview: (semesterId?: string | null) => ["semesters", semesterId ?? "any", "overview"] as const,
   rules: (scope: { schoolId?: string | null; departmentId?: string | null }) => ["attendance-rules", scope] as const,
   friendships: (q: { status?: string; direction?: string } = {}) => ["friendships", q] as const,

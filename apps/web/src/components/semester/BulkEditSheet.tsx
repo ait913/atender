@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { api } from "@/api/client";
+import { jstDayStartIso, jstNextDayStartIso } from "@/lib/personalEventDays";
 import {
   useBulkClearAttendance,
   useBulkCreateTimetableSuspensions,
@@ -69,7 +70,7 @@ export function BulkEditSheet({ open, onClose, dates, semesterId, onDone }: Prop
       dates.map((date) =>
         api<PersonalEventResponse>("/api/personal-events", {
           method: "POST",
-          body: { date, title, isAllDay: true, semesterId },
+          body: { title, start: jstDayStartIso(date), end: jstNextDayStartIso(date), isAllDay: true },
         }),
       ),
     );

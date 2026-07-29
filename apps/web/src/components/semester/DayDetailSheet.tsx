@@ -1,8 +1,8 @@
 import dayjs from "dayjs";
-import { ChevronDown, Edit3, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Edit3, Plus, Repeat, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { AttendanceStatus, CourseSuspensionDto, OccurrenceDto, PersonalEventDto } from "@atender/shared";
+import type { AttendanceStatus, CourseSuspensionDto, OccurrenceDto, PersonalEventOccurrenceDto } from "@atender/shared";
 import {
   useCreateCourseSuspension,
   useCreateTimetableSuspension,
@@ -16,6 +16,8 @@ import {
 } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { Button, Input, ListSkeleton, statusLongLabels } from "@/components/ui";
+import { RecurrenceEditDialog } from "@/components/recurrence/RecurrenceEditDialog";
+import { personalEventTimeLabel } from "@/lib/personalEventDays";
 import { PersonalEventEditModal } from "./PersonalEventEditModal";
 
 type Props = {
@@ -41,8 +43,9 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
   const deleteTimetableSuspension = useDeleteTimetableSuspension(date);
   const deleteEvent = useDeletePersonalEvent(date);
   const [reason, setReason] = useState("");
-  const [editingEvent, setEditingEvent] = useState<PersonalEventDto | null>(null);
+  const [editingEvent, setEditingEvent] = useState<PersonalEventOccurrenceDto | null>(null);
   const [creatingEvent, setCreatingEvent] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState<PersonalEventOccurrenceDto | null>(null);
   const data = detail.data;
   const title = date ? dayjs(date).format("YYYY年M月D日 (ddd)") : "";
   const timetableSuspension = data?.timetableSuspension ?? null;
@@ -134,14 +137,24 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
             </div>
             <div className="space-y-2">
               {data.personalEvents.map((event) => (
-                <div key={event.id} className="flex items-center gap-2 rounded-2xl bg-bg-muted/50 px-3 py-2">
+                <div key={`${event.seriesId}:${event.occurrenceDate}`} className="flex items-center gap-2 rounded-2xl bg-bg-muted/50 px-3 py-2">
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: event.color ?? "var(--color-accent-500)" }} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold">{event.title}</p>
-                    <p className="text-xs text-fg-tertiary">{event.isAllDay ? "終日" : `${minuteLabel(event.startMinute)} - ${minuteLabel(event.endMinute)}`}</p>
+                    <p className="flex items-center gap-1 text-xs text-fg-tertiary">
+                      {event.isRecurringOccurrence ? <Repeat aria-label="繰り返し" className="h-3 w-3" /> : null}
+                      <span>{personalEventTimeLabel(event)}</span>
+                      {event.location ? <span>・{event.location}</span> : null}
+                    </p>
                   </div>
                   <IconButton label="編集" onClick={() => setEditingEvent(event)}><Edit3 className="h-4 w-4" /></IconButton>
-                  <IconButton label="削除" danger onClick={() => deleteEvent.mutate(event.id)}><Trash2 className="h-4 w-4" /></IconButton>
+                  <IconButton label="削除" danger onClick={() => {
+                    if (event.isRecurringOccurrence) {
+                      setDeletingEvent(event);
+                    } else {
+                      deleteEvent.mutate({ id: event.seriesId, scope: "all", originalDate: event.occurrenceDate });
+                    }
+                  }}><Trash2 className="h-4 w-4" /></IconButton>
                 </div>
               ))}
               {data.personalEvents.length === 0 ? (
@@ -155,14 +168,22 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
                 open={creatingEvent}
                 onClose={() => setCreatingEvent(false)}
                 date={date}
-                semesterId={semesterId}
               />
               <PersonalEventEditModal
                 open={editingEvent != null}
                 onClose={() => setEditingEvent(null)}
                 date={date}
                 event={editingEvent}
-                semesterId={semesterId}
+              />
+              <RecurrenceEditDialog
+                open={deletingEvent != null}
+                mode="delete"
+                onClose={() => setDeletingEvent(null)}
+                onConfirm={(scope) => {
+                  const target = deletingEvent;
+                  setDeletingEvent(null);
+                  if (target) deleteEvent.mutate({ id: target.seriesId, scope, originalDate: target.occurrenceDate });
+                }}
               />
             </>
           ) : null}
