@@ -290,7 +290,13 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 512 GREEN / 0 RED** (main = `86c6b9d` = build 15 出荷後、2026-07-30 Reviewer 実測 / build 16 P1 レビュー時)。`Executed 512 tests, with 0 failures` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。測り方: worktree で `-derivedDataPath <scratchpad>/dd-p1` 隔離 + 本レーンの新規 3 クラスを `-skip-testing` して純ベースラインを直接測った。
+**ベースライン: 566 GREEN / 0 RED** (main = `928be50` = build 16 の 2 レーン マージ後、2026-07-30 Leader 実測)。`Executed 566 tests, with 0 failures` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。測り方: main で `-derivedDataPath <scratchpad>/dd-merged` 隔離。**マージ後の合流状態は各レーンでは誰も測っていない**ので、マージ直後に Leader が 1 回走らせるのを手順に含めた。
+
+**XCUITest は別枠: `AtenderUITests` 10 本** (`B16NavTrailingUITests` 9 + `B16Round2SheetGeometryUITests` 1) + `ScreenshotFlow` 6。**`localhost:8787` の API が稼働している前提**で緑になる (デモデータ依存)。API 停止時に落ちるのは「環境依存」であり実装の失敗ではない。
+
+内訳の推移: 512 (build 15 出荷後) − 2 (build 16 の設計 §9.1 が削除を指定した `testCA5SelectedWinsOverToday` / `testCA10SelectedWinsForOutsideMonth`) + 9 (P1 マスコット/版数の Reviewer 生成) + 47 (P2〜P4 の Reviewer 生成) = **566**。
+
+旧記載: 512 GREEN / 0 RED (main = `86c6b9d` = build 15 出荷後、2026-07-30 Reviewer 実測 / build 16 P1 レビュー時)。測り方は worktree で `-derivedDataPath <scratchpad>/dd-p1` 隔離 + 本レーンの新規 3 クラスを `-skip-testing`。
 
 旧記載: 398 GREEN / 0 RED (main = `3939509` = カレンダー3レーン マージ後、2026-07-29 Leader 実測)。`TEST_RUNNER_TZ=UTC` でも緑 (JST 導出が端末 TZ に依存しないことの証明、Reviewer 実測)。**398 → 512 の +114 は build 14 / build 15 の 2 レーン (カレンダー UI 修正 5 点 / タップ判定修正) が台帳に記録されずに積み上がった分**で、失敗ではない。件数を記録せずにレーンをマージすると次の Reviewer が「+114 は何か」を毎回調べ直すことになる (role note 41)。
 
