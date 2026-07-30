@@ -290,7 +290,9 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 
 ## iOS (apps/ios, XCTest)
 
-**ベースライン: 398 GREEN / 0 RED** (main = `3939509` = カレンダー3レーン マージ後、2026-07-29 Leader 実測)。`Executed 398 tests, with 0 failures` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。`TEST_RUNNER_TZ=UTC` でも緑 (JST 導出が端末 TZ に依存しないことの証明、Reviewer 実測)。
+**ベースライン: 512 GREEN / 0 RED** (main = `86c6b9d` = build 15 出荷後、2026-07-30 Reviewer 実測 / build 16 P1 レビュー時)。`Executed 512 tests, with 0 failures` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。測り方: worktree で `-derivedDataPath <scratchpad>/dd-p1` 隔離 + 本レーンの新規 3 クラスを `-skip-testing` して純ベースラインを直接測った。
+
+旧記載: 398 GREEN / 0 RED (main = `3939509` = カレンダー3レーン マージ後、2026-07-29 Leader 実測)。`TEST_RUNNER_TZ=UTC` でも緑 (JST 導出が端末 TZ に依存しないことの証明、Reviewer 実測)。**398 → 512 の +114 は build 14 / build 15 の 2 レーン (カレンダー UI 修正 5 点 / タップ判定修正) が台帳に記録されずに積み上がった分**で、失敗ではない。件数を記録せずにレーンをマージすると次の Reviewer が「+114 は何か」を毎回調べ直すことになる (role note 41)。
 
 旧記載: 268 GREEN / 0 RED (main = `0368155` = UI 刷新 P3 マージ後、2026-07-18 Leader 実測)。
 `Executed 268 tests, with 0 failures (0 unexpected)` / `** TEST SUCCEEDED **`。264 + ColorTintTests 4 = 268。**未分類の失敗 0**。
