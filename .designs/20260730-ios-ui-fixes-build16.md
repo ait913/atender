@@ -1304,5 +1304,3 @@ DESIGN.md 以外: `CLAUDE.md` の「ユニットテスト: … (157 GREEN 基準
 - `Muraki/knowledge/gotcha/stale-deriveddata-false-red-after-resource-deletion.md` (P1 の後)
 - `Muraki/knowledge/gotcha/xcodegen-info-plist-regenerated-every-run.md` (#V3)
 - `.knowledge/known-failures.md` (ベースライン)
-</content>
-</invoke>
