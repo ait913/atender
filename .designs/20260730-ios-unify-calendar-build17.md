@@ -175,6 +175,8 @@ ScrollView(.horizontal) {
 | 可視月が失敗、かつ過去に何か読めている | 直前の内容を残したまま、ヘッダーの `ProgressView` 位置に**再試行ボタン** (`arrow.clockwise`、`accessibilityLabel("再読み込み")`) |
 | 初回から失敗 | 現行どおり `Panel` + 「再試行」 |
 
+**★ この規則は「月をめくったとき」だけでなく、`semesterId` が変わったときにも同じく適用される。** 学期メニューで別学期を選んだ瞬間・アプリ起動直後に既定学期が確定した瞬間のどちらも、既に読めているグリッドを消してはいけない (`setSemester` は payload を捨てず stale 印だけを付ける。#B30 / #B30a / #B30b)。
+
 **先読み**: 可視月の取得が完了したら、`Task(priority: .utility)` で **前後 1 ヶ月**を `force: false` で取りに行く (窓外はスキップ)。既に取得済 / 取得中の月は何もしない。
 
 ### 3.6 タブ (セグメント) の統一
@@ -601,7 +603,9 @@ Reviewer はここだけを根拠にテストを書く。#番号はテスト名�
 - **#B27** `setVisible("2026-08-01", prefetch: ["2026-07-01", "2026-09-01"])` は `visibleMonth == "2026-08-01"` にし、**3 ヶ月ぶんの loader 呼び出し**を起こす。可視月の呼び出しが**先**に完了する (記録順の先頭が可視月)。
 - **#B28** `setVisible(m, prefetch: [])` は可視月だけを読む。
 - **#B29** `Request` の `rangeStart` は `CalendarRange.monthGridRange(anchorMonthFirst: m).start`、`rangeEnd` は同 `.end` と一致する。`monthFirst` は `CalendarRange.monthFirst(m)`。
-- **#B30** `setSemester("s2")` は `payloads` / `failed` / `stale` を全消しし、可視月を読み直す。以後の `Request.semesterId == "s2"`。
+- **#B30** `setSemester("s2")` は **`payloads` を残したまま**全月を stale にし (`stale = Set(payloads.keys)`)、`failed` をクリアして可視月を読み直す。以後の `Request.semesterId == "s2"`。★ `payloads.removeAll()` は**してはいけない** (下記 #B30a の理由)。
+- **#B30a** `setSemester` の**前後で `hasEverLoaded` が false に落ちない**。`hasEverLoaded` は `payloads.isEmpty == false` で導出されるため、全消しすると false に戻り `CalendarScreenLogic.body` が `.skeleton` に落ちる (= §3.5 の「グリッドを消さない」規則と要望 3 に違反する)。テスト: 1 月分を `ensureLoaded` して `hasEverLoaded == true` にした後 `setSemester("s2")` を呼び、**その直後に `hasEverLoaded == true` のまま**であること。
+- **#B30b** `setSemester` 直後の `body(hasEverLoaded:payloadExists:failed:)` は `.grid` (`.skeleton` ではない)。**学期を切り替えても、グリッドは表示されたまま新しい学期のデータに差し替わる**。同じ規則が**アプリ起動直後**にも効く: `HomeView.task` の `applyDefaultSemester` が `nil` → 実 ID を書いた瞬間に `setSemester` が走るため、ここで全消しするとカレンダーを開いた直後にグリッドが一瞬消える。
 - **#B31** `setSemester` に**同じ値**を渡したときは何も起きない (loader 呼び出し 0 回、`payloads` 保持)。
 - **#B32** `invalidateAll()` は `payloads` を**残したまま** 全月を stale にする。直後の `ensureLoaded(m)` は loader を呼ぶ (`force` は false)。
 - **#B33** `refreshVisible()` は可視月を `force: true` で読み直し、他の月を stale にする。
@@ -786,18 +790,22 @@ API 側 (`apps/api/tests`):
   - `AtenderTests/RoomLogicTests.swift` に追記 — #B56-#B60
   - `apps/api/tests/room.test.ts` に追記 — #A1-#A5
 
-### 10.1 意図的に壊れる既存テスト (自分で数え直した結果 **3 件**)
+### 10.1 意図的に壊れる既存テスト (**5 件**)
 
 | テスト | フェーズ | 処置 |
 |---|---|---|
 | `BuildVersionTests.testV1BundleVersionIs16` | P1 | `17` に更新 (メソッド名も `testV1BundleVersionIs17`) |
 | `CalendarLayoutTests.testU7GridAvailableSubtractsCardChrome` | P1 | **削除** (`cardChromeHeight` / `gridAvailable` が消えるため) |
 | `CalendarLayoutTests.testU7GridAvailableNeverGoesNegative` | P1 | **削除** (同上) |
+| `CalendarLayoutTests.testG17ToG20FormulasUnchanged` | P1 | `gridAvailable` を参照する 1 行を**削除** (シンボルが消えるためコンパイル不能。他の assert は残す) |
+| `CalendarLayoutTests.testG16GridConstants` | P1 | `columnSpacing == Space.s0_5` (= 2) の 1 行を **`== 0` に置換** (#B1 の「列間 gap 0 / 分離は 1pt 罫線」と両立しない)。**緩めるのではなく厳密な新しい値に更新する** |
+
+★ **当初 doc は「3 件」と書いていたが実測は 5 件だった。** 追加の 2 件は Architect の監査漏れ (下の「壊れないことを確認した既存テスト」で `columnSpacing` / `gridAvailable` を**リテラル値で assert している**テストを見落とした) であり、Developer の実装に非は無い。
 
 **壊れないことを確認した既存テスト** (Reviewer が「なぜ緑のままか」を調べ直さずに済むように):
 
 - `CalendarMonthRenderTests` #R1-#R4 / `B16CalendarSelectionRenderTests`: すべて**差分の対**での判定なので、罫線追加・chip の左バー削除・カード外殻の移動では invariant が壊れない。`CalendarMonth` の引数名も維持する (`anchor` / `selectedDate` / `events` / `daySummaries` / `onSelectDate`)。`onChangeAnchor` は default 付きで呼ばれていないので削除しても call site は無傷。
-- `CalendarLayoutTests` の `columnWidths` 系 (#G1-#G8, 10 メソッド): `columnSpacing` を参照する #G3-dev も「等幅 / pixel 境界 / 非溢れ」の invariant のみを見るので spacing 0 で緑。
+- `CalendarLayoutTests` の `columnWidths` 系 (#G1-#G8): 「等幅 / pixel 境界 / 非溢れ」の **invariant のみ**を見るメソッドは spacing 0 で緑。★ ただし**リテラル値を assert している 2 メソッドは例外で壊れる** (`testG16GridConstants` の `columnSpacing == 2` / `testG17ToG20FormulasUnchanged` の `gridAvailable` 参照)。上の表に処置を記載。
 - `PersonalCalendarLogicTests` (#U6, 6 メソッド): `PersonalCalendarLogic.monthChanged` は本番から呼ばれなくなるが**関数は残す** (純関数 + テスト済。孤児化の事実は §10.2 に報告)。
 - `RoomLogicTests` の `resolveDaySlots` 系: 新引数に default があるので既存呼び出しがそのままコンパイルできる。
 - `DesignTokenTests` / `B16SymbolAndTokenTests`: `CalendarMonthLayout` のトークンを参照していない (grep 0 件)。
@@ -846,8 +854,9 @@ API 側 (`apps/api/tests`):
 
 内容: §3.5 ページャ / §4.4 `CalendarWindow` / 先読み / skeleton 全消しの廃止 / `CalendarMonth` の `DragGesture` と `onChangeAnchor` の削除 / ヘッダー chevron の窓端 disabled。
 
-- テスト: #B14-#B20, #B45-#B46, および #B37/#B38 が実挙動として効いていることを #B46 で確認。
+- テスト: #B14-#B20, #B45-#B46, #B30/#B30a/#B30b、および #B37/#B38 が実挙動として効いていることを #B46 で確認。
 - 単独マージ可: P2 の殻の中の月コンテナを差し替えるだけ。
+- ★ **設計の自己矛盾 (実装後の Claude 側レビューで発見・本 doc で修正済)**: 当初 #B30 は `setSemester` で `payloads` を全消しすると書いており、§3.5 の「1 度でも読めていたらグリッドを消さない」と正面衝突していた。実装は #B30 に忠実だったため**学期を切り替えると skeleton 全消しが復活**していた。設計docの中で「原則を書いた節」と「挙動仕様の 1 行」が食い違うと、Reviewer は挙動仕様側からテストを起こすので 2LLM 突合でも表面化しない。**原則を変えたら挙動仕様を全部 grep して突合すること。**
 
 ---
 
