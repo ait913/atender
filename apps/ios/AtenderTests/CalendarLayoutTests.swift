@@ -33,19 +33,9 @@ final class CalendarLayoutTests: XCTestCase {
                                     "[ui-revamp #CA4]")
     }
 
-    func testCA5SelectedWinsOverToday() {
-        XCTAssertEqual(CalendarDayStyle.emphasis(date: "2026-07-17",
-                                                 todayString: "2026-07-17",
-                                                 selectedDate: "2026-07-17",
-                                                 monthFirst: "2026-07-01"),
-                       .selected,
-                       "[ui-revamp #CA5]")
-    }
-
     func testCA6TodayInCurrentMonth() {
         XCTAssertEqual(CalendarDayStyle.emphasis(date: "2026-07-17",
                                                  todayString: "2026-07-17",
-                                                 selectedDate: "2026-07-16",
                                                  monthFirst: "2026-07-01"),
                        .today,
                        "[ui-revamp #CA6]")
@@ -54,7 +44,6 @@ final class CalendarLayoutTests: XCTestCase {
     func testCA7TodayWinsOverOutsideMonth() {
         XCTAssertEqual(CalendarDayStyle.emphasis(date: "2026-06-30",
                                                  todayString: "2026-06-30",
-                                                 selectedDate: "2026-07-01",
                                                  monthFirst: "2026-07-01"),
                        .today,
                        "[ui-revamp #CA7]")
@@ -63,7 +52,6 @@ final class CalendarLayoutTests: XCTestCase {
     func testCA8OutsideMonthWhenNotSelectedOrToday() {
         XCTAssertEqual(CalendarDayStyle.emphasis(date: "2026-06-30",
                                                  todayString: "2026-07-17",
-                                                 selectedDate: "2026-07-01",
                                                  monthFirst: "2026-07-01"),
                        .outsideMonth,
                        "[ui-revamp #CA8]")
@@ -72,20 +60,11 @@ final class CalendarLayoutTests: XCTestCase {
     func testCA9NormalCurrentMonthDay() {
         XCTAssertEqual(CalendarDayStyle.emphasis(date: "2026-07-16",
                                                  todayString: "2026-07-17",
-                                                 selectedDate: "2026-07-01",
                                                  monthFirst: "2026-07-01"),
                        .normal,
                        "[ui-revamp #CA9]")
     }
 
-    func testCA10SelectedWinsForOutsideMonth() {
-        XCTAssertEqual(CalendarDayStyle.emphasis(date: "2026-06-30",
-                                                 todayString: "2026-07-17",
-                                                 selectedDate: "2026-06-30",
-                                                 monthFirst: "2026-07-01"),
-                       .selected,
-                       "[ui-revamp #CA10]")
-    }
     // MARK: - 個人カレンダー再構築 §6.3 / §9 U7-U8 (Reviewer 生成)
 
     func testU7GridAvailableSubtractsCardChrome() {

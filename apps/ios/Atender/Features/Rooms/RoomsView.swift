@@ -40,7 +40,6 @@ struct RoomsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s6) {
-                header
                 if let model {
                     content(model)
                 }
@@ -50,6 +49,18 @@ struct RoomsView: View {
         .background(Color.bgBase)
         .navigationTitle("ルーム")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button("ルームを作成") { activeSheet = .create }
+                    Button("リンクで参加") { activeSheet = .join }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel("ルームを追加")
+                .accessibilityIdentifier("rooms-add")
+            }
+        }
         .task {
             if model == nil { model = RoomsViewModel(env: environment) }
             await model?.load()
@@ -74,25 +85,6 @@ struct RoomsView: View {
 
     private var activeSheetBinding: Binding<Bool> {
         Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
-    }
-
-    private var header: some View {
-        VStack(alignment: .trailing, spacing: Space.s2) {
-            HStack(spacing: Space.s3) {
-                Text("ルーム")
-                    .font(.atender2xl)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-                AtenderButton(title: "リンクで参加", variant: .secondary, size: .sm) { activeSheet = .join }
-                AtenderButton(title: "作成", variant: .primary, size: .sm) { activeSheet = .create }
-            }
-            Button("みんなの時間割") {
-                router.roomsPath.append(RoomsRoute.templates)
-            }
-            .font(.atenderXs)
-            .foregroundStyle(Color.textTertiary)
-        }
     }
 
     @ViewBuilder

@@ -1,6 +1,13 @@
 import Foundation
 
 enum RoomCalendarLogic {
+    static func parseRoomEventKey(_ id: String) -> (seriesId: String, occurrenceDate: String)? {
+        guard id.hasPrefix("room:") else { return nil }
+        let parts = id.split(separator: ":", maxSplits: 2).map(String.init)
+        guard parts.count == 3 else { return nil }
+        return (seriesId: parts[1], occurrenceDate: parts[2])
+    }
+
     static func buildCalendarEvents(weeks: [RoomWeekDto]) -> [CalendarEvent] {
         var seenMeetings = Set<String>()
         var seenRoomEvents = Set<String>()

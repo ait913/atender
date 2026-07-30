@@ -12,6 +12,7 @@ extension Color {
     static let bgMuted = Color(uiColor: .tertiarySystemGroupedBackground)
     static let bgElevated = Color(uiColor: .secondarySystemGroupedBackground)
     static let bgOverlay = Color(uiColor: .systemFill)
+    static let calendarSelectedDay = Color.bgMuted
 
     static let textPrimary = Color(uiColor: .label)
     static let textSecondary = Color(uiColor: .secondaryLabel)

@@ -40,11 +40,6 @@ struct FriendsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Space.s6) {
-                HStack {
-                    Text("友達").font(.atender2xl).fontWeight(.bold).foregroundStyle(Color.textPrimary)
-                    Spacer()
-                    AtenderButton(title: "友達を追加", variant: .primary, size: .sm) { addOpen = true }
-                }
                 if let model { content(model) }
             }
             .padding(Space.pagePxMobile)
@@ -52,6 +47,13 @@ struct FriendsView: View {
         .background(Color.bgBase)
         .navigationTitle("友達")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { addOpen = true } label: { Image(systemName: "person.badge.plus") }
+                    .accessibilityLabel("友達を追加")
+                    .accessibilityIdentifier("friends-add")
+            }
+        }
         .task {
             if model == nil { model = FriendsViewModel(env: environment) }
             await model?.load()

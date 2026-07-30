@@ -377,78 +377,12 @@ struct RoomSettingsSheet: View {
     }
 }
 
-struct RoomEventCreateSheet: View {
+struct RoomEventEditorContent: View {
     let roomId: String
     let defaultDate: String
-    @Binding var isPresented: Bool
-    let onCreated: () async -> Void
-    @Environment(AppEnvironment.self) private var environment
-    @State private var title = ""
-    @State private var start: Date
-    @State private var end: Date
-    @State private var rrule: String?
-    @State private var visibility: VisibilityMode = .normal
-    @State private var isPending = false
-
-    init(roomId: String, defaultDate: String, isPresented: Binding<Bool>, onCreated: @escaping () async -> Void) {
-        self.roomId = roomId
-        self.defaultDate = defaultDate
-        self._isPresented = isPresented
-        self.onCreated = onCreated
-        let base = CalendarRange.parse(defaultDate) ?? Date()
-        _start = State(initialValue: base)
-        _end = State(initialValue: Calendar.current.date(byAdding: .hour, value: 1, to: base) ?? base)
-    }
-
-    var body: some View {
-        SheetScaffold(title: "予定を追加", isPresented: $isPresented) {
-            VStack(alignment: .leading, spacing: Space.s4) {
-                LabeledInput(label: "タイトル", text: $title)
-                DatePicker("開始", selection: $start, displayedComponents: [.date, .hourAndMinute])
-                DatePicker("終了", selection: $end, displayedComponents: [.date, .hourAndMinute])
-                RecurrencePicker(rrule: $rrule, start: start)
-                Picker("表示モード", selection: $visibility) {
-                    Text("通常").tag(VisibilityMode.normal)
-                    Text("タイトル隠す").tag(VisibilityMode.titleMapped)
-                    Text("予定ありのみ").tag(VisibilityMode.busyOnly)
-                }
-            }
-        } footer: {
-            AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: !title.isEmpty && !isPending) {
-                Task {
-                    isPending = true
-                    defer { isPending = false }
-                    do {
-                        _ = try await environment.roomEventRepository.createRoomEvent(roomId: roomId, CreateRoomEventInput(
-                            title: title,
-                            description: nil,
-                            start: iso(start),
-                            end: iso(end),
-                            isAllDay: false,
-                            color: nil,
-                            recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
-                            visibilityMode: visibility
-                        ))
-                        await onCreated()
-                        isPresented = false
-                    } catch {
-                        environment.toastCenter.show("保存できませんでした、もう一度試してください")
-                    }
-                }
-            }
-        }
-    }
-
-    private func iso(_ date: Date) -> String {
-        ISO8601DateFormatter().string(from: date)
-    }
-}
-
-struct RoomEventEditSheet: View {
-    let roomId: String
-    let event: RoomEventDto
-    @Binding var isPresented: Bool
-    let onChanged: () async -> Void
+    let event: RoomEventDto?
+    let onSaved: () async -> Void
+    let onDeleted: () async -> Void
     @Environment(AppEnvironment.self) private var environment
     @State private var title: String
     @State private var start: Date
@@ -458,38 +392,51 @@ struct RoomEventEditSheet: View {
     @State private var isPending = false
     @State private var confirmDelete = false
 
-    init(roomId: String, event: RoomEventDto, isPresented: Binding<Bool>, onChanged: @escaping () async -> Void) {
+    init(
+        roomId: String,
+        defaultDate: String,
+        event: RoomEventDto?,
+        onSaved: @escaping () async -> Void,
+        onDeleted: @escaping () async -> Void
+    ) {
         self.roomId = roomId
+        self.defaultDate = defaultDate
         self.event = event
-        self._isPresented = isPresented
-        self.onChanged = onChanged
-        let parsedStart = Self.parseISO(event.start) ?? Date()
-        let parsedEnd = Self.parseISO(event.end) ?? Calendar.current.date(byAdding: .hour, value: 1, to: parsedStart) ?? parsedStart
-        _title = State(initialValue: event.title)
-        _start = State(initialValue: parsedStart)
-        _end = State(initialValue: parsedEnd)
-        _rrule = State(initialValue: event.recurrenceRule)
-        _visibility = State(initialValue: event.visibilityMode)
+        self.onSaved = onSaved
+        self.onDeleted = onDeleted
+        if let event {
+            let parsedStart = Self.parseISO(event.start) ?? Date()
+            let parsedEnd = Self.parseISO(event.end) ?? Calendar.current.date(byAdding: .hour, value: 1, to: parsedStart) ?? parsedStart
+            _title = State(initialValue: event.title)
+            _start = State(initialValue: parsedStart)
+            _end = State(initialValue: parsedEnd)
+            _rrule = State(initialValue: event.recurrenceRule)
+            _visibility = State(initialValue: event.visibilityMode)
+        } else {
+            let base = CalendarRange.parse(defaultDate) ?? Date()
+            _title = State(initialValue: "")
+            _start = State(initialValue: base)
+            _end = State(initialValue: Calendar.current.date(byAdding: .hour, value: 1, to: base) ?? base)
+            _rrule = State(initialValue: nil)
+            _visibility = State(initialValue: .normal)
+        }
     }
 
     var body: some View {
-        SheetScaffold(title: "予定を編集", isPresented: $isPresented) {
-            VStack(alignment: .leading, spacing: Space.s4) {
-                LabeledInput(label: "タイトル", text: $title)
-                DatePicker("開始", selection: $start, displayedComponents: [.date, .hourAndMinute])
-                DatePicker("終了", selection: $end, displayedComponents: [.date, .hourAndMinute])
-                RecurrencePicker(rrule: $rrule, start: start)
-                Picker("表示モード", selection: $visibility) {
-                    Text("通常").tag(VisibilityMode.normal)
-                    Text("タイトル隠す").tag(VisibilityMode.titleMapped)
-                    Text("予定ありのみ").tag(VisibilityMode.busyOnly)
-                }
+        VStack(alignment: .leading, spacing: Space.s4) {
+            LabeledInput(label: "タイトル", text: $title)
+            DatePicker("開始", selection: $start, displayedComponents: [.date, .hourAndMinute])
+            DatePicker("終了", selection: $end, displayedComponents: [.date, .hourAndMinute])
+            RecurrencePicker(rrule: $rrule, start: start)
+            Picker("表示モード", selection: $visibility) {
+                Text("通常").tag(VisibilityMode.normal)
+                Text("タイトル隠す").tag(VisibilityMode.titleMapped)
+                Text("予定ありのみ").tag(VisibilityMode.busyOnly)
             }
-        } footer: {
-            VStack(spacing: Space.s3) {
-                AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: !title.isEmpty && !isPending) {
-                    Task { await save() }
-                }
+            AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: !title.isEmpty && !isPending) {
+                Task { await save() }
+            }
+            if event != nil {
                 AtenderButton(title: "削除", variant: .destructive, isEnabled: !isPending) {
                     confirmDelete = true
                 }
@@ -507,32 +454,44 @@ struct RoomEventEditSheet: View {
         isPending = true
         defer { isPending = false }
         do {
-            _ = try await environment.roomEventRepository.updateRoomEvent(roomId: roomId, eventId: event.id, UpdateRoomEventInput(
-                title: title,
-                description: event.description,
-                start: iso(start),
-                end: iso(end),
-                isAllDay: event.isAllDay,
-                color: event.color,
-                recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
-                visibilityMode: visibility,
-                editScope: "all",
-                originalDate: nil
-            ))
-            await onChanged()
-            isPresented = false
+            if let event {
+                _ = try await environment.roomEventRepository.updateRoomEvent(roomId: roomId, eventId: event.id, UpdateRoomEventInput(
+                    title: title,
+                    description: event.description,
+                    start: iso(start),
+                    end: iso(end),
+                    isAllDay: event.isAllDay,
+                    color: event.color,
+                    recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
+                    visibilityMode: visibility,
+                    editScope: "all",
+                    originalDate: nil
+                ))
+            } else {
+                _ = try await environment.roomEventRepository.createRoomEvent(roomId: roomId, CreateRoomEventInput(
+                    title: title,
+                    description: nil,
+                    start: iso(start),
+                    end: iso(end),
+                    isAllDay: false,
+                    color: nil,
+                    recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
+                    visibilityMode: visibility
+                ))
+            }
+            await onSaved()
         } catch {
             environment.toastCenter.show("保存できませんでした、もう一度試してください")
         }
     }
 
     private func delete() async {
+        guard let event else { return }
         isPending = true
         defer { isPending = false }
         do {
             try await environment.roomEventRepository.deleteRoomEvent(roomId: roomId, eventId: event.id, scope: "all")
-            await onChanged()
-            isPresented = false
+            await onDeleted()
         } catch {
             environment.toastCenter.show("削除できませんでした")
         }

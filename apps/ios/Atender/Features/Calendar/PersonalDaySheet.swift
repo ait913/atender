@@ -4,184 +4,73 @@ struct PersonalDaySheet: View {
     let date: String
     let meetings: [CalendarEvent]
     let occurrences: [PersonalEventOccurrenceDto]
+    @Binding var path: NavigationPath
     let onChanged: () async -> Void
     let onClose: () -> Void
 
-    enum Mode: Equatable {
-        case list
-        case editor(EditorTarget)
-    }
-
-    struct EditorTarget: Equatable {
-        var occurrence: PersonalEventOccurrenceDto?
-        var defaultDate: String
-    }
-
-    @State private var mode: Mode
-
-    /// 既定は一覧。日付セルの長押しからは editor で直接開く (+ ボタンを廃したため)
-    init(
-        date: String,
-        meetings: [CalendarEvent],
-        occurrences: [PersonalEventOccurrenceDto],
-        initialMode: Mode? = nil,
-        onChanged: @escaping () async -> Void,
-        onClose: @escaping () -> Void
-    ) {
-        self.date = date
-        self.meetings = meetings
-        self.occurrences = occurrences
-        self.onChanged = onChanged
-        self.onClose = onClose
-        _mode = State(initialValue: initialMode ?? .list)
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            switch mode {
-            case .list:
-                listContent
-            case .editor(let target):
-                editorContent(target)
-            }
-        }
-        .accessibilityIdentifier("personal-day-sheet")
-    }
-
-    // MARK: - list
-
-    @ViewBuilder
-    private var listContent: some View {
-        Text(PersonalDaySheetFormat.heading(date))
-            .font(.atender2xl.weight(.bold))
-            .foregroundStyle(Color.textPrimary)
-
-        if !meetings.isEmpty {
-            section("授業 (\(meetings.count))") {
-                ForEach(meetings) { meeting in
-                    row(color: meeting.color, title: meeting.title,
-                        detail: PersonalDaySheetFormat.timeRange(startMinute: meeting.startMinute, endMinute: meeting.endMinute),
-                        meta: nil, showsRecurrence: false, onTap: nil, onDelete: nil)
-                }
-            }
-        }
-
-        section("予定 (\(occurrences.count))") {
-            if occurrences.isEmpty {
-                Text("予定はありません")
-                    .font(.footnote)
-                    .foregroundStyle(Color.textTertiary)
-            } else {
-                ForEach(occurrences) { occurrence in
-                    row(
-                        color: occurrence.color ?? "#8b5cf6",
-                        title: occurrence.title,
-                        detail: PersonalDaySheetFormat.occurrenceTime(occurrence),
-                        meta: occurrence.location,
-                        showsRecurrence: occurrence.isRecurringOccurrence,
-                        onTap: { mode = .editor(EditorTarget(occurrence: occurrence, defaultDate: date)) },
-                        onDelete: { mode = .editor(EditorTarget(occurrence: occurrence, defaultDate: date)) }
-                    )
-                }
-            }
-        }
-
-        AtenderButton(title: "＋ 予定を追加", variant: .primary) {
-            mode = .editor(EditorTarget(occurrence: nil, defaultDate: date))
+        CalendarDaySheet(
+            date: date,
+            sections: CalendarDaySheetLogic.personalSections(date: date, meetings: meetings, occurrences: occurrences),
+            addTitle: "＋ 予定を追加",
+            path: $path,
+            onClose: onClose
+        ) { target in
+            editor(target)
         }
     }
 
     @ViewBuilder
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text(title).font(.footnote).foregroundStyle(Color.textSecondary)
-            content()
+    private func editor(_ target: CalendarDayEditorTarget) -> some View {
+        switch resolveTarget(target) {
+        case .create(let defaultDate):
+            editorContent(occurrence: nil, defaultDate: defaultDate)
+        case .edit(let occurrence, let defaultDate):
+            editorContent(occurrence: occurrence, defaultDate: defaultDate)
+        case .unresolved:
+            unresolvedTarget
         }
     }
 
-    @ViewBuilder
-    private func row(
-        color: String,
-        title: String,
-        detail: String,
-        meta: String?,
-        showsRecurrence: Bool,
-        onTap: (() -> Void)?,
-        onDelete: (() -> Void)?
-    ) -> some View {
-        let body = HStack(alignment: .top, spacing: Space.s3) {
-            Capsule().fill(Color(hexString: color)).frame(width: 2)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(title).font(.atenderSm.weight(.semibold)).foregroundStyle(Color.textPrimary).lineLimit(1)
-                    Spacer()
-                    Text(detail).font(.footnote).foregroundStyle(Color.textSecondary)
-                }
-                if showsRecurrence || meta != nil {
-                    HStack(spacing: Space.s1) {
-                        if showsRecurrence {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.caption2)
-                                .foregroundStyle(Color.textSecondary)
-                        }
-                        if let meta, !meta.isEmpty {
-                            Text(meta).font(.footnote).foregroundStyle(Color.textSecondary).lineLimit(1)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(Space.s3)
-        .frame(minHeight: 44)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.bgMuted)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-
-        if let onTap {
-            Button(action: onTap) { body }
-                .buttonStyle(.plain)
-                .contentShape(Rectangle())
-        } else {
-            body
-        }
-    }
-
-    // MARK: - editor
-
-    @ViewBuilder
-    private func editorContent(_ target: EditorTarget) -> some View {
-        HStack(spacing: Space.s1) {
-            Button {
-                mode = .list
-            } label: {
-                HStack(spacing: 2) {
-                    Image(systemName: "chevron.left")
-                    Text("予定")
-                }
-                .font(.atenderSm)
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            Spacer()
-        }
-        Text(target.occurrence == nil ? "予定を追加" : "予定を編集")
-            .font(.atender2xl.weight(.bold))
-            .foregroundStyle(Color.textPrimary)
+    private func editorContent(occurrence: PersonalEventOccurrenceDto?, defaultDate: String) -> some View {
         PersonalEventEditorContent(
-            defaultDate: target.defaultDate,
-            occurrence: target.occurrence,
+            defaultDate: defaultDate,
+            occurrence: occurrence,
             onSaved: {
                 await onChanged()
-                mode = .list
+                if !path.isEmpty { path.removeLast() }
             },
             onDeleted: {
                 await onChanged()
-                mode = .list
+                if !path.isEmpty { path.removeLast() }
             },
-            onCancel: { mode = .list }
+            onCancel: { if !path.isEmpty { path.removeLast() } }
         )
-        .id(target.occurrence?.id ?? "new")
+        .id(occurrence?.id ?? "new")
+    }
+
+    /// rowId が解決できないときは editor を開かない (旧実装の `guard let … else { return }` 相当)。
+    /// 空の作成フォームに化けさせないため、push されていたら即座に一覧へ戻す。
+    private var unresolvedTarget: some View {
+        Color.clear
+            .frame(height: 0)
+            .onAppear { if !path.isEmpty { path.removeLast() } }
+    }
+
+    private enum EditorResolution {
+        case create(defaultDate: String)
+        case edit(occurrence: PersonalEventOccurrenceDto, defaultDate: String)
+        case unresolved
+    }
+
+    private func resolveTarget(_ target: CalendarDayEditorTarget) -> EditorResolution {
+        switch target {
+        case .create(let date):
+            return .create(defaultDate: date)
+        case .edit(let rowId, let date):
+            guard let occurrence = occurrences.first(where: { $0.id == rowId }) else { return .unresolved }
+            return .edit(occurrence: occurrence, defaultDate: date)
+        }
     }
 }
 

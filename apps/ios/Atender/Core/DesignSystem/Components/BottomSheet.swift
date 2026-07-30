@@ -1,43 +1,29 @@
 import SwiftUI
 
-private struct SheetContentHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat { 0 }
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
-private struct SheetFooterHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat { 0 }
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
-private struct SheetHeaderHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat { 0 }
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
 struct BottomSheet<Content: View, Footer: View>: View {
     let title: String?
     @Binding var isPresented: Bool
+    var navigationPath: Binding<NavigationPath>? = nil
     var detents: Set<PresentationDetent> = [.medium, .large]
     var stackLevel: Int = 1
     var onDismiss: (() -> Void)?
     @ViewBuilder var content: () -> Content
     @ViewBuilder var footer: () -> Footer
     @State private var sheetPresented = false
+    @State private var ownPath = NavigationPath()
     @State private var contentHeight: CGFloat = 0
     @State private var footerHeight: CGFloat = 0
-    @State private var headerHeight: CGFloat = 0
+    @State private var chromeHeight: CGFloat = 0
+    /// シートを開き直した最初の実測で前回値を捨てるためのフラグ (単調 max が張り付くのを防ぐ)
+    @State private var needsChromeRemeasure = true
 
-    // 実測したヘッダ+コンテンツ+フッタ高にスナップする detent。測定前は呼び出し側 detents をフォールバックに使う。
-    // 概算値を使わず全区画を実測するので、内容の短いシートは余白なく hug する。
-    // 長い内容は画面の 92% で頭打ちにして内部スクロールへ委ねる。
     private var fittedDetents: Set<PresentationDetent> {
-        guard contentHeight > 0, headerHeight > 0 else { return detents }
-        let bottomInset: CGFloat = 8
-        let screenH = UIScreen.main.bounds.height
-        let target = headerHeight + contentHeight + footerHeight + bottomInset
-        let capped = min(max(target, 180), screenH * 0.92)
-        return [.height(capped)]
+        guard let height = BottomSheetDetent.fittedHeight(
+            chrome: chromeHeight, content: contentHeight, footer: footerHeight,
+            screenHeight: UIScreen.main.bounds.height,
+            isPushed: !(navigationPath?.wrappedValue.isEmpty ?? true)
+        ) else { return detents }
+        return [.height(height)]
     }
 
     var body: some View {
@@ -56,8 +42,24 @@ struct BottomSheet<Content: View, Footer: View>: View {
                 }
             }
             .onChange(of: isPresented) { _, newValue in
+                if newValue { needsChromeRemeasure = true }
                 sheetPresented = newValue
             }
+    }
+
+    /// chrome (grabber + nav bar) の実測を取り込む。
+    /// - 0 / 非有限は無視する (transient な 0 報告で detent を縮退させない)
+    /// - 開き直した後の 1 回目は前回値を上書きする (前回の max が張り付くのを防ぐ)
+    /// - 2 回目以降は max で溜める (レイアウト収束とスクロールによる minY 減少への保護)
+    private func applyChromeMeasurement(_ raw: CGFloat) {
+        let measured = BottomSheetDetent.clampChrome(raw)
+        guard measured > 0 else { return }
+        if needsChromeRemeasure {
+            needsChromeRemeasure = false
+            chromeHeight = measured
+        } else {
+            chromeHeight = max(chromeHeight, measured)
+        }
     }
 
     private func dismiss() {
@@ -65,77 +67,58 @@ struct BottomSheet<Content: View, Footer: View>: View {
     }
 
     private func dismissBinding() {
+        needsChromeRemeasure = true
         isPresented = false
         onDismiss?()
     }
 
     private func sheetChrome() -> some View {
         VStack(spacing: 0) {
-            VStack(spacing: 0) {
-                Capsule()
-                    .fill(Color.borderEmphasis)
-                    .frame(width: 42, height: 5)
-                    .padding(.top, Space.s2)
-                    .padding(.bottom, Space.s3)
-                HStack {
-                    if let title {
-                        Text(title)
-                            .font(.atenderLg)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Color.textPrimary)
+            Capsule()
+                .fill(Color.borderEmphasis)
+                .frame(width: 42, height: 5)
+                .padding(.top, Space.s2)
+                .padding(.bottom, Space.s3)
+            NavigationStack(path: navigationPath ?? $ownPath) {
+                VStack(spacing: 0) {
+                    ScrollView {
+                        content()
+                            .padding(.horizontal, Space.s5)
+                            .padding(.bottom, Space.s5)
+                            .background(
+                                GeometryReader { proxy in
+                                    Color.clear
+                                        .preference(key: SheetContentHeightKey.self, value: proxy.size.height)
+                                        .preference(
+                                            key: SheetChromeHeightKey.self,
+                                            value: proxy.frame(in: .named(BottomSheetSpace.name)).minY
+                                        )
+                                }
+                            )
                     }
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.atenderSm)
-                            .fontWeight(.bold)
-                            .foregroundStyle(Color.textPrimary)
-                            .frame(width: 36, height: 36)
-                            .background(Color.textPrimary.opacity(0.08))
-                            .clipShape(Circle())
-                    }
-                    .accessibilityIdentifier("sheet-close")
+                    .scrollBounceBehavior(.basedOnSize)
+                    footer()
+                        .padding(Space.s5)
+                        .background(Color.bgElevated)
+                        .background(GeometryReader { proxy in
+                            Color.clear.preference(key: SheetFooterHeightKey.self, value: proxy.size.height)
+                        })
                 }
-                .padding(.horizontal, Space.s5)
-                .padding(.bottom, Space.s4)
-            }
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(key: SheetHeaderHeightKey.self, value: proxy.size.height)
-                }
-            )
-
-            ScrollView {
-                content()
-                    .padding(.horizontal, Space.s5)
-                    .padding(.bottom, Space.s5)
-                    .background(
-                        GeometryReader { proxy in
-                            Color.clear.preference(key: SheetContentHeightKey.self, value: proxy.size.height)
-                        }
-                    )
-            }
-
-            footer()
-                .padding(Space.s5)
                 .background(Color.bgElevated)
-                .background(
-                    GeometryReader { proxy in
-                        Color.clear.preference(key: SheetFooterHeightKey.self, value: proxy.size.height)
-                    }
-                )
+                .atenderModalHeader(title: title, onClose: dismiss)
+            }
         }
         .background(Color.bgElevated)
+        .coordinateSpace(.named(BottomSheetSpace.name))
         .onPreferenceChange(SheetContentHeightKey.self) { contentHeight = $0 }
         .onPreferenceChange(SheetFooterHeightKey.self) { footerHeight = $0 }
-        .onPreferenceChange(SheetHeaderHeightKey.self) { headerHeight = $0 }
+        .onPreferenceChange(SheetChromeHeightKey.self) { applyChromeMeasurement($0) }
     }
 
     init(
         title: String?,
         isPresented: Binding<Bool>,
+        navigationPath: Binding<NavigationPath>? = nil,
         detents: Set<PresentationDetent> = [.medium, .large],
         stackLevel: Int = 1,
         onDismiss: (() -> Void)? = nil,
@@ -144,6 +127,7 @@ struct BottomSheet<Content: View, Footer: View>: View {
     ) {
         self.title = title
         self._isPresented = isPresented
+        self.navigationPath = navigationPath
         self.detents = detents
         self.stackLevel = stackLevel
         self.onDismiss = onDismiss
@@ -156,6 +140,7 @@ extension BottomSheet where Footer == EmptyView {
     init(
         title: String?,
         isPresented: Binding<Bool>,
+        navigationPath: Binding<NavigationPath>? = nil,
         detents: Set<PresentationDetent> = [.medium, .large],
         stackLevel: Int = 1,
         onDismiss: (() -> Void)? = nil,
@@ -163,6 +148,7 @@ extension BottomSheet where Footer == EmptyView {
     ) {
         self.title = title
         self._isPresented = isPresented
+        self.navigationPath = navigationPath
         self.detents = detents
         self.stackLevel = stackLevel
         self.onDismiss = onDismiss
