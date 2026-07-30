@@ -323,7 +323,6 @@ struct CalendarMonth: View {
     var onLongPressDate: ((String) -> Void)? = nil
 
     private let labels = ["月", "火", "水", "木", "金", "土", "日"]
-    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         let monthFirst = CalendarRange.monthFirst(anchor)
@@ -346,10 +345,23 @@ struct CalendarMonth: View {
             .sensoryFeedback(.selection, trigger: anchor)
     }
 
+    /// 7 列等幅グリッドの列定義。SwiftUI 標準の `LazyVGrid` に等幅配分を任せる。
+    /// ★ `.flexible()` の `minimum` を省くと子の内容の最小幅が下限として残り等幅が崩れる。
+    ///   必ず `minimum: 0` を指定する
+    ///   (Muraki/knowledge/gotcha/swiftui-hstack-equal-columns-need-minwidth-zero)
+    private var columns: [GridItem] {
+        Array(
+            repeating: GridItem(.flexible(minimum: 0), spacing: CalendarMonthLayout.columnSpacing),
+            count: CalendarMonthLayout.columnCount
+        )
+    }
+
     @ViewBuilder
     private func monthGrid(dates: [String], eventMap: [String: [CalendarEvent]], monthFirst: String, rowHeight: CGFloat) -> some View {
         let content = VStack(spacing: CalendarMonthLayout.rowSpacing) {
-            EqualColumnsLayout(spacing: CalendarMonthLayout.columnSpacing, displayScale: displayScale) {
+            // ★ 曜日ヘッダーと日セルは同一の `columns` 定義を共有する。
+            //   これで列とラベルの x が必ず揃う (別々に幅を計算しない)
+            LazyVGrid(columns: columns, spacing: CalendarMonthLayout.rowSpacing) {
                 ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
                     Text(label)
                         .font(.atenderXs)
@@ -360,12 +372,9 @@ struct CalendarMonth: View {
                         .frame(height: CalendarMonthLayout.weekdayHeaderHeight)
                 }
             }
-            ForEach(0..<CalendarMonthLayout.rowCount, id: \.self) { row in
-                EqualColumnsLayout(spacing: CalendarMonthLayout.columnSpacing, displayScale: displayScale) {
-                    ForEach(0..<CalendarMonthLayout.columnCount, id: \.self) { column in
-                        let date = dates[row * CalendarMonthLayout.columnCount + column]
-                        dayCell(date, events: eventMap[date] ?? [], monthFirst: monthFirst, rowHeight: rowHeight)
-                    }
+            LazyVGrid(columns: columns, spacing: CalendarMonthLayout.rowSpacing) {
+                ForEach(dates, id: \.self) { date in
+                    dayCell(date, events: eventMap[date] ?? [], monthFirst: monthFirst, rowHeight: rowHeight)
                 }
             }
         }
@@ -392,79 +401,91 @@ struct CalendarMonth: View {
         let overflow = visibleEvents.count > 2
         let visibleCount = overflow ? 1 : 2
 
-        return Button { onSelectDate(date) } label: {
-            VStack(alignment: .leading, spacing: 3) {
-                VStack(spacing: 2) {
-                    Text(String(Int(date.suffix(2)) ?? 0))
-                        .font(.atenderSm)
-                        .fontWeight(emphasis == .today ? .bold : .semibold)
-                        .foregroundStyle(dayNumberColor(date: date, emphasis: emphasis))
-                        .frame(width: 24, height: 24)
-                        .background(emphasis == .today ? Color.accent500 : Color.clear)
-                        .overlay {
-                            if emphasis == .selected {
-                                Circle().stroke(Color.accent500, lineWidth: 1.5)
-                            }
-                        }
-                        .clipShape(Circle())
-                    // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個。
-                    // marks が空でも 6pt を常時確保して、行間で chip の y を揃える
-                    HStack(spacing: 2) {
-                        ForEach(marks, id: \.kind) { mark in
-                            Circle().fill(mark.dotColor).frame(width: 6, height: 6)
+        return VStack(alignment: .leading, spacing: 3) {
+            VStack(spacing: 2) {
+                Text(String(Int(date.suffix(2)) ?? 0))
+                    .font(.atenderSm)
+                    .fontWeight(emphasis == .today ? .bold : .semibold)
+                    .foregroundStyle(dayNumberColor(date: date, emphasis: emphasis))
+                    .frame(width: 24, height: 24)
+                    .background(emphasis == .today ? Color.accent500 : Color.clear)
+                    .overlay {
+                        if emphasis == .selected {
+                            Circle().stroke(Color.accent500, lineWidth: 1.5)
                         }
                     }
-                    .frame(width: 24, height: 6)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(Array(visibleEvents.prefix(visibleCount))) { event in
-                        Text(CalendarEventDisplay.eventTitle(event))
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                            .foregroundStyle(Color.textPrimary)
-                            .padding(.leading, 5)
-                            .padding(.trailing, 4)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .frame(height: 14)
-                            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
-                            .overlay(alignment: .leading) {
-                                Capsule()
-                                    .fill(Color(hexString: event.color))
-                                    .frame(width: 2)
-                            }
-                            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                            .contentShape(Rectangle())
-                            .simultaneousGesture(TapGesture().onEnded {
-                                if event.kind == .roomEvent {
-                                    onSelectEvent?(event)
-                                }
-                            })
-                    }
-                    if overflow {
-                        Text("+\(visibleEvents.count - visibleCount)")
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.textTertiary)
-                            .padding(.horizontal, 3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    .clipShape(Circle())
+                // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個。
+                // marks が空でも 6pt を常時確保して、行間で chip の y を揃える
+                HStack(spacing: 2) {
+                    ForEach(marks, id: \.kind) { mark in
+                        Circle().fill(mark.dotColor).frame(width: 6, height: 6)
                     }
                 }
-                .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .clipped()
+                .frame(width: 24, height: 6)
             }
-            .padding(.horizontal, 3)
-            .padding(.vertical, 2)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-            .frame(height: rowHeight)
-            // ★ 背景塗りが無くなったので contentShape が唯一の当たり判定。絶対に消さない
-            .contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(Array(visibleEvents.prefix(visibleCount))) { event in
+                    Text(CalendarEventDisplay.eventTitle(event))
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+                        .foregroundStyle(Color.textPrimary)
+                        .padding(.leading, 5)
+                        .padding(.trailing, 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(height: 14)
+                        .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
+                        .overlay(alignment: .leading) {
+                            Capsule()
+                                .fill(Color(hexString: event.color))
+                                .frame(width: 2)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(TapGesture().onEnded {
+                            if event.kind == .roomEvent {
+                                onSelectEvent?(event)
+                            }
+                        })
+                }
+                if overflow {
+                    Text("+\(visibleEvents.count - visibleCount)")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.textTertiary)
+                        .padding(.horizontal, 3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .clipped()
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 3)
+        .padding(.vertical, 2)
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+        .frame(height: rowHeight)
+        // ★ 背景塗りが無くなったので contentShape が唯一の当たり判定。絶対に消さない
+        .contentShape(Rectangle())
+        // ★ Button は使わない。Button 内部のタップ認識と onLongPressGesture が競合し
+        //   「微妙に長押ししないとタップ判定にならない」実機 FB になった (build 14)。
+        //   長押しを内側・タップを外側に付けると、素早く離したときは長押しが失敗して
+        //   タップが即通り、押し続けたときだけ長押しが勝つ
         .conditional(onLongPressDate != nil) { view in
             view.onLongPressGesture(minimumDuration: 0.4) {
                 onLongPressDate?(date)
             }
+        }
+        .onTapGesture { onSelectDate(date) }
+        // ★ Button を外したので「ボタンである」意味論を明示的に復元する。
+        //   children: .combine は Button が内部でやっていた結合と同じラベル
+        //   (例: "6、プログラミング演習、英語") を作るので、既存の
+        //   XCUITest / 計測ハーネスの app.buttons[...] がそのまま引ける
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { onSelectDate(date) }
+        .conditional(onLongPressDate != nil) { view in
+            view.accessibilityAction(named: "予定を追加") { onLongPressDate?(date) }
         }
     }
 
