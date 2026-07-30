@@ -897,6 +897,9 @@ VStack(alignment: .leading, spacing: Space.s4) {
             .accessibilityIdentifier("day-sheet-add")
     }
 }
+// ★ 親の identifier は子孫を上書きする。コンテナ要素として宣言しないと
+//   内側の `day-sheet-add` がアクセシビリティツリーから消える (実装時に実測。§11 の記述漏れ参照)
+.accessibilityElement(children: .contain)
 .accessibilityIdentifier("calendar-day-sheet")
 .navigationDestination(for: CalendarDayEditorTarget.self) { target in
     ScrollView {
@@ -910,6 +913,8 @@ VStack(alignment: .leading, spacing: Space.s4) {
     )
 }
 ```
+
+★ **identifier を階層に複数置く場合は、外側の要素に `.accessibilityElement(children: .contain)` が必須**。SwiftUI は外側の `accessibilityIdentifier` を子孫に伝播させて内側を上書きするので、これが無いと内側の identifier (ここでは `day-sheet-add`) は XCUITest から到達できない。**アダプタ側 (`PersonalDaySheet` / `RoomDaySheet`) は自前の identifier を持たない** — 共通部品の `calendar-day-sheet` / `day-sheet-add` が唯一の契約 (詳細: `Muraki/knowledge/gotcha/swiftui-outer-accessibility-identifier-shadows-inner-hook.md`)。
 
 `CalendarDayRowView` の見た目は現行 `PersonalDaySheet.row` を踏襲 (`bgMuted` 面 + `Radius.md` + 幅 2pt の色 Capsule + `minHeight: 44`)。room 側の行の見た目が personal に揃う (現行の色 15% tint 面は廃止) = 意図した統一。
 
@@ -1157,7 +1162,7 @@ xcodebuild test -project Atender.xcodeproj -scheme Atender \
 | **(a) 単体テストで担保** | #C1〜#C10, #D1〜#D15, #M1, #M10〜#M17, #A1〜#A5, #N9, #V1 | 純関数 / 定数 / ファイル |
 | **(a') オフスクリーン描画で担保** | #C11, #C12, #H4 | `ImageRenderer` の PNG 等値。★ 「変わらないこと」だけでなく「同じ内容を別の日に足すと変わること」の**対**で書く (`pattern/offscreen-render-diff-pair-for-negative-drawing.md`)。`CalendarMonth` は `AppEnvironment` 不要でレンダリングできる (既存 `CalendarMonthRenderTests` が実証) |
 | **(b) スクショ / 目視のみ** | #S1〜#S3, #C13, #M3〜#M7, #M18, #A6, #A7 | **toolbar の glass カプセル・`ButtonRole.close` の描画・detent の hug は UI 層のシステム描画で、単体テストから観測できない。** iOS 26.5 sim + iOS 18.2 sim の 2 本でスクショを撮って目視する |
-| **(c) 当たり判定 / 遷移 (実機 or XCUITest)** | #H3, #D16〜#D25, #N2, #N6, #N7 | ★ XCUITest の tap は当たらなくても失敗しない (`gotcha/screenshot-byte-identity-conflates-noop-tap-with-lost-harness.md`)。**「タップした結果 `calendar-day-sheet` が存在する」を assert する形にする** (スクショの byte 一致で判定しない)。`AtenderUITests/ScreenshotFlow.swift` は寛容な収集ハーネスなので、ここに足す場合も判定は `waitForExistence` で書く |
+| **(c) 当たり判定 / 遷移 (実機 or XCUITest)** | #H3, #D16〜#D25, #N2, #N6, #N7 | ★ XCUITest の tap は当たらなくても失敗しない (`gotcha/screenshot-byte-identity-conflates-noop-tap-with-lost-harness.md`)。**「タップした結果 `calendar-day-sheet` が存在する」を assert する形にする** (スクショの byte 一致で判定しない)。`AtenderUITests/ScreenshotFlow.swift` は寛容な収集ハーネスなので、ここに足す場合も判定は `waitForExistence` で書く。★ この assert が成立する前提として §5.2 の `.accessibilityElement(children: .contain)` が必要 (無いと `day-sheet-add` 側が到達不能で、identifier 契約の検証が片側だけ通ってしまう) |
 
 **(c) の最小手順 (Touri の実機確認用)**:
 1. ホーム → カレンダー → **予定 chip の真上をタップ** → その日の日別シートが開く (#H3)
@@ -1286,6 +1291,8 @@ DESIGN.md 以外: `CLAUDE.md` の「ユニットテスト: … (157 GREEN 基準
 | R5 | 選択日のグレーが light モードで弱い (#FFF の上に #F2F2F7) | 「選択が分からない」 | 変更点は `Color.calendarSelectedDay` の 1 行。`Color.bgOverlay` (`systemFill`) に上げられる |
 | R6 | `.allowsHitTesting(false)` を付けた chip で長押しが効かなくなる | 長押しで editor が開かない | 長押しは親セルの modifier なので影響しない (researcher の 9 点タップ + 長押し実測)。実機で 1 回確認する |
 | R7 | 再切り出し PNG のライブラリ差 (cv2/Pillow の版) で出力が変わる | 穴の数値が §3.6.3 の出力と一致しない | 受入は絶対値でなく閾値 (面積 64px / 0.2%) で切ってある。Architect 検証環境は cv2 4.12.0 / Pillow 11.3.0 / numpy 2.2.6 |
+
+**★ 設計の記述漏れ (実装時に判明・本 doc で修正済)**: §5.2 の `CalendarDaySheet` は `calendar-day-sheet` と `day-sheet-add` を親子で置いていたが、SwiftUI は外側の `accessibilityIdentifier` を子孫に伝播させて内側を上書きするため、**設計どおりに書くと内側が到達不能になる**構造だった (Reviewer の `testDesignIdentifiersOnDaySheetAreReachable` が検出)。`.accessibilityElement(children: .contain)` を §5.2 に追記して解消。次に identifier を階層化するときは同じ罠を踏む。
 
 **実機確認 (Touri) — build 16 の受入**: #S1〜#S3 / #C13 / #H3 / #D16〜#D25 / #M3〜#M7 / #M18 / #A6 / #A7 (§7.3 の (b)(c))。iOS 26 実機 1 台と iOS 18.2 sim の 2 経路で見る。
 
