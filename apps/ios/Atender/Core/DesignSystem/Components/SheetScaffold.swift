@@ -13,34 +13,20 @@ struct SheetScaffold<Content: View, Footer: View>: View {
                 .frame(width: 42, height: 5)
                 .padding(.top, Space.s2)
                 .padding(.bottom, Space.s3)
-            HStack {
-                Text(title)
-                    .font(.atenderLg)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-                Button {
-                    isPresented = false
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.atenderSm)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.textPrimary)
-                        .frame(width: 36, height: 36)
-                        .background(Color.textPrimary.opacity(0.08))
-                        .clipShape(Circle())
+            NavigationStack {
+                VStack(spacing: 0) {
+                    ScrollView {
+                        content()
+                            .padding(.horizontal, Space.s5)
+                            .padding(.bottom, Space.s5)
+                    }
+                    footer()
+                        .padding(Space.s5)
+                        .background(Color.bgElevated)
                 }
-            }
-            .padding(.horizontal, Space.s5)
-            .padding(.bottom, Space.s4)
-            ScrollView {
-                content()
-                    .padding(.horizontal, Space.s5)
-                    .padding(.bottom, Space.s5)
-            }
-            footer()
-                .padding(Space.s5)
                 .background(Color.bgElevated)
+                .atenderModalHeader(title: title, onClose: { isPresented = false })
+            }
         }
         .background(Color.bgElevated)
         .presentationDetents([.medium, .large])

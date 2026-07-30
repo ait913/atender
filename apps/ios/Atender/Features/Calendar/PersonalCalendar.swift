@@ -96,25 +96,14 @@ final class PersonalCalendarViewModel {
     }
 }
 
-enum PersonalCalendarSheet: Equatable {
-    case day(String)
-    /// 日付セルの長押しから、その日の予定作成を直接開く (旧「+」ボタンの置き換え)
-    case addEvent(String)
-
-    var date: String {
-        switch self {
-        case .day(let date), .addEvent(let date): return date
-        }
-    }
-}
-
 struct PersonalCalendar: View {
     @Environment(AppEnvironment.self) private var environment
     let semesterId: String?
     let available: CGFloat
     @State private var viewModel: PersonalCalendarViewModel?
     @State private var loadRevision = 0
-    @State private var activeSheet: PersonalCalendarSheet?
+    @State private var activeDate: String?
+    @State private var dayPath = NavigationPath()
 
     var body: some View {
         Group {
@@ -134,27 +123,21 @@ struct PersonalCalendar: View {
         }
     }
 
-    private var activeSheetBinding: Binding<Bool> {
-        Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
+    private var daySheetBinding: Binding<Bool> {
+        Binding(get: { activeDate != nil }, set: { if !$0 { activeDate = nil } })
     }
 
     @ViewBuilder
     private func sheetHost(_ model: PersonalCalendarViewModel) -> some View {
-        if let activeSheet {
-            let date = activeSheet.date
-            BottomSheet(title: nil, isPresented: activeSheetBinding, stackLevel: 1) {
+        if let date = activeDate {
+            BottomSheet(title: PersonalDaySheetFormat.heading(date), isPresented: daySheetBinding, navigationPath: $dayPath) {
                 PersonalDaySheet(
                     date: date,
-                    meetings: model.events(semesterId: semesterId).filter { $0.date == date ? $0.kind == .meeting : false },
+                    meetings: model.events(semesterId: semesterId).filter { $0.date == date && $0.kind == .meeting },
                     occurrences: model.occurrences(on: date),
-                    initialMode: {
-                        if case .addEvent = activeSheet {
-                            return .editor(.init(occurrence: nil, defaultDate: date))
-                        }
-                        return .list
-                    }(),
+                    path: $dayPath,
                     onChanged: { await model.load(semesterId: semesterId) },
-                    onClose: { self.activeSheet = nil }
+                    onClose: { activeDate = nil }
                 )
             }
         }
@@ -194,13 +177,14 @@ struct PersonalCalendar: View {
                         onSelectDate: { date in
                             let needsReload = PersonalCalendarLogic.monthChanged(anchor: model.anchor, date: date)
                             model.selectDate(date)
+                            dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .view, date: date))
                             if needsReload {
                                 Task {
                                     await model.load(semesterId: semesterId)
-                                    activeSheet = .day(date)
+                                    activeDate = date
                                 }
                             } else {
-                                activeSheet = .day(date)
+                                activeDate = date
                             }
                         },
                         onChangeAnchor: { next in
@@ -209,7 +193,8 @@ struct PersonalCalendar: View {
                         },
                         onLongPressDate: { date in
                             model.selectDate(date)
-                            activeSheet = .addEvent(date)
+                            dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .create, date: date))
+                            activeDate = date
                         }
                     )
                 }
@@ -318,7 +303,6 @@ struct CalendarMonth: View {
     var available: CGFloat? = nil
     let onSelectDate: (String) -> Void
     var onChangeAnchor: ((String) -> Void)? = nil
-    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
     /// 日付セルの長押し。予定の新規作成に使う (旧「+」ボタンの置き換え)
     var onLongPressDate: ((String) -> Void)? = nil
 
@@ -389,7 +373,7 @@ struct CalendarMonth: View {
     private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat) -> some View {
         let emphasis = CalendarDayStyle.emphasis(
             date: date, todayString: SchoolClock.todayString(),
-            selectedDate: selectedDate, monthFirst: monthFirst
+            monthFirst: monthFirst
         )
         let showsContent = CalendarDayStyle.showsDayContent(date: date, monthFirst: monthFirst)
         let marks = showsContent
@@ -409,11 +393,6 @@ struct CalendarMonth: View {
                     .foregroundStyle(dayNumberColor(date: date, emphasis: emphasis))
                     .frame(width: 24, height: 24)
                     .background(emphasis == .today ? Color.accent500 : Color.clear)
-                    .overlay {
-                        if emphasis == .selected {
-                            Circle().stroke(Color.accent500, lineWidth: 1.5)
-                        }
-                    }
                     .clipShape(Circle())
                 // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個。
                 // marks が空でも 6pt を常時確保して、行間で chip の y を揃える
@@ -426,28 +405,7 @@ struct CalendarMonth: View {
             }
             VStack(alignment: .leading, spacing: 3) {
                 ForEach(Array(visibleEvents.prefix(visibleCount))) { event in
-                    Text(CalendarEventDisplay.eventTitle(event))
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .lineLimit(1)
-                        .foregroundStyle(Color.textPrimary)
-                        .padding(.leading, 5)
-                        .padding(.trailing, 4)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: 14)
-                        .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
-                        .overlay(alignment: .leading) {
-                            Capsule()
-                                .fill(Color(hexString: event.color))
-                                .frame(width: 2)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-                        .contentShape(Rectangle())
-                        .simultaneousGesture(TapGesture().onEnded {
-                            if event.kind == .roomEvent {
-                                onSelectEvent?(event)
-                            }
-                        })
+                    CalendarDayEventChip(event: event)
                 }
                 if overflow {
                     Text("+\(visibleEvents.count - visibleCount)")
@@ -460,12 +418,18 @@ struct CalendarMonth: View {
             }
             .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .clipped()
+            .allowsHitTesting(false)
         }
         .padding(.horizontal, 3)
         .padding(.vertical, 2)
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .frame(height: rowHeight)
-        // ★ 背景塗りが無くなったので contentShape が唯一の当たり判定。絶対に消さない
+        .background(
+            CalendarDayStyle.isSelected(date: date, selectedDate: selectedDate)
+                ? Color.calendarSelectedDay : Color.clear,
+            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
+        )
+        // ★ 背景塗りと当たり判定を分離するため contentShape は絶対に消さない
         .contentShape(Rectangle())
         // ★ Button は使わない。Button 内部のタップ認識と onLongPressGesture が競合し
         //   「微妙に長押ししないとタップ判定にならない」実機 FB になった (build 14)。
@@ -492,7 +456,6 @@ struct CalendarMonth: View {
     private func dayNumberColor(date: String, emphasis: CalendarDayEmphasis) -> Color {
         switch emphasis {
         case .today: return Color.textOnAccent
-        case .selected: return Color.accent500
         case .outsideMonth: return weekdayColor(index: weekdayIndex(date), outsideMonth: true)
         case .normal: return weekdayColor(index: weekdayIndex(date), outsideMonth: false)
         }
@@ -515,5 +478,28 @@ struct CalendarMonth: View {
         guard let parsed = CalendarRange.parse(date) else { return 0 }
         let weekday = CalendarRange.utcCalendar.component(.weekday, from: parsed)
         return weekday == 1 ? 6 : weekday - 2
+    }
+}
+
+struct CalendarDayEventChip: View {
+    let event: CalendarEvent
+
+    var body: some View {
+        Text(CalendarEventDisplay.eventTitle(event))
+            .font(.caption2)
+            .fontWeight(.semibold)
+            .lineLimit(1)
+            .foregroundStyle(Color.textPrimary)
+            .padding(.leading, 5)
+            .padding(.trailing, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 14)
+            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
+            .overlay(alignment: .leading) {
+                Capsule()
+                    .fill(Color(hexString: event.color))
+                    .frame(width: 2)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 }

@@ -129,19 +129,14 @@ struct RoomCalendar: View {
     @State private var anchor = SchoolClock.todayString()
     @State private var selectedDate = SchoolClock.todayString()
     @State private var activeSheet: RoomCalSheet?
+    @State private var activeDayDate: String?
+    @State private var dayPath = NavigationPath()
     @State private var weeks: [RoomWeekDto] = []
     @State private var isLoading = false
     @State private var loadError = false
 
-    enum RoomCalSheet: Identifiable {
-        case event, ics, editEvent(RoomEventDto)
-        var id: String {
-            switch self {
-            case .event: return "event"
-            case .ics: return "ics"
-            case .editEvent(let event): return "edit-\(event.id)-\(event.occurrenceDate)"
-            }
-        }
+    enum RoomCalSheet {
+        case ics
     }
 
     var body: some View {
@@ -169,13 +164,18 @@ struct RoomCalendar: View {
                         onSelectDate: { date in
                             selectedDate = date
                             anchor = date
+                            dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .view, date: date))
+                            activeDayDate = date
                         },
                         onChangeAnchor: { next in
                             anchor = next
                             Task { await reload(force: true) }
                         },
-                        onSelectEvent: { event in
-                            selectRoomEvent(event)
+                        onLongPressDate: { date in
+                            selectedDate = date
+                            anchor = date
+                            dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .create, date: date))
+                            activeDayDate = date
                         }
                     )
                 }
@@ -195,7 +195,10 @@ struct RoomCalendar: View {
                         .atenderShadow(.card)
                 }
                 .accessibilityIdentifier("room-fab-ics")
-                Button { activeSheet = .event } label: {
+                Button {
+                    dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .create, date: selectedDate))
+                    activeDayDate = selectedDate
+                } label: {
                     HStack(spacing: Space.s2) {
                         Image(systemName: "plus")
                         Text("予定を追加")
@@ -214,23 +217,13 @@ struct RoomCalendar: View {
             .padding(.trailing, Space.s4)
             .padding(.bottom, Space.s6)
         }
+        .overlay { daySheetHost(events: events) }
         .task(id: anchor) {
             await reload()
         }
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .event:
-                RoomEventCreateSheet(roomId: roomId, defaultDate: selectedDate, isPresented: activeSheetBinding) {
-                    await reload(force: true)
-                }
-            case .ics:
-                IcsImportWizard(roomId: roomId, isPresented: activeSheetBinding) {
-                    await reload(force: true)
-                }
-            case .editEvent(let event):
-                RoomEventEditSheet(roomId: roomId, event: event, isPresented: activeSheetBinding) {
-                    await reload(force: true)
-                }
+        .sheet(isPresented: activeSheetBinding) {
+            IcsImportWizard(roomId: roomId, isPresented: activeSheetBinding) {
+                await reload(force: true)
             }
         }
     }
@@ -239,19 +232,31 @@ struct RoomCalendar: View {
         Binding(get: { activeSheet != nil }, set: { if !$0 { activeSheet = nil } })
     }
 
-    private func selectRoomEvent(_ event: CalendarEvent) {
-        guard let roomEvent = resolveRoomEvent(for: event) else { return }
-        activeSheet = .editEvent(roomEvent)
+    private var daySheetBinding: Binding<Bool> {
+        Binding(get: { activeDayDate != nil }, set: { if !$0 { activeDayDate = nil } })
     }
 
-    private func resolveRoomEvent(for event: CalendarEvent) -> RoomEventDto? {
-        guard event.kind == .roomEvent, event.id.hasPrefix("room:") else { return nil }
-        let parts = event.id.split(separator: ":", maxSplits: 2).map(String.init)
-        guard parts.count == 3 else { return nil }
-        let seriesId = parts[1]
-        let occurrenceDate = parts[2]
+    @ViewBuilder
+    private func daySheetHost(events: [CalendarEvent]) -> some View {
+        if let date = activeDayDate {
+            BottomSheet(title: PersonalDaySheetFormat.heading(date), isPresented: daySheetBinding, navigationPath: $dayPath) {
+                RoomDaySheet(
+                    roomId: roomId,
+                    date: date,
+                    events: events.filter { $0.date == date },
+                    resolveRoomEvent: resolveRoomEvent(rowId:),
+                    path: $dayPath,
+                    onChanged: { await reload(force: true) },
+                    onClose: { activeDayDate = nil }
+                )
+            }
+        }
+    }
+
+    private func resolveRoomEvent(rowId: String) -> RoomEventDto? {
+        guard let key = RoomCalendarLogic.parseRoomEventKey(rowId) else { return nil }
         return weeks.flatMap(\.roomEvents).first {
-            $0.seriesId == seriesId && $0.occurrenceDate == occurrenceDate
+            $0.seriesId == key.seriesId && $0.occurrenceDate == key.occurrenceDate
         }
     }
 
@@ -269,63 +274,6 @@ struct RoomCalendar: View {
             weeks = loaded.sorted { $0.weekStart < $1.weekStart }
         } catch {
             loadError = true
-        }
-    }
-}
-
-struct RoomDayEventList: View {
-    let date: String
-    let events: [CalendarEvent]
-    var onSelectEvent: ((CalendarEvent) -> Void)? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("\(CalendarRange.format(date, .monthDay)) の予定")
-                .font(.atenderXs)
-                .foregroundStyle(Color.textTertiary)
-            if events.isEmpty {
-                Text("予定なし").font(.atenderSm).foregroundStyle(Color.textTertiary)
-            } else {
-                ForEach(events) { event in
-                    eventRow(event)
-                }
-            }
-        }
-        .padding(Space.s4)
-        .background(Color.bgElevated)
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-        .atenderShadow(.card)
-    }
-
-    @ViewBuilder
-    private func eventRow(_ event: CalendarEvent) -> some View {
-        let row = HStack(spacing: Space.s2) {
-            Capsule().fill(Color(hexString: event.color)).frame(width: 4, height: 28)
-            Text(TimeFormatting.minutesToTime(event.startMinute))
-                .font(.atenderXs)
-                .foregroundStyle(Color(hexString: event.color))
-            Text(event.title)
-                .font(.atenderSm)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-            Spacer()
-            Text(event.subtitle)
-                .font(.caption2)
-                .foregroundStyle(Color.textTertiary)
-                .lineLimit(1)
-        }
-        .padding(Space.s2)
-        .background(Color(hexString: event.color).opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
-
-        if event.kind == .roomEvent, let onSelectEvent {
-            Button { onSelectEvent(event) } label: {
-                row
-            }
-            .buttonStyle(.plain)
-        } else {
-            row
         }
     }
 }

@@ -80,6 +80,7 @@ struct HomeView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     SemesterMenu(semesters: semesters, semesterId: $semesterId)
                 }
+                .atenderPlainToolbarBackground()
             }
             if context == .self && mode == .timetable {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -140,33 +141,32 @@ struct SemesterMenu: View {
     @Binding var semesterId: String?
 
     var body: some View {
-        HStack {
-            Menu {
-                ForEach(semesters) { semester in
-                    Button {
-                        semesterId = semester.id
-                    } label: {
-                        HStack {
-                            Text(semester.name)
-                            if semester.id == semesterId {
-                                Image(systemName: "checkmark")
-                            }
+        Menu {
+            ForEach(semesters) { semester in
+                Button {
+                    semesterId = semester.id
+                } label: {
+                    HStack {
+                        Text(semester.name)
+                        if semester.id == semesterId {
+                            Image(systemName: "checkmark")
                         }
                     }
                 }
-            } label: {
-                HStack(spacing: Space.s2) {
-                    Text(current?.name ?? "学期を選択")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.textSecondary)
-                    Image(systemName: "chevron.down")
-                        .font(.caption2)
-                        .foregroundStyle(Color.textTertiary)
-                }
             }
-            Spacer()
+        } label: {
+            HStack(spacing: Space.s2) {
+                Text(current?.name ?? "学期を選択")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(Color.textSecondary)
+                Image(systemName: "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(Color.textTertiary)
+            }
         }
+        .tint(Color.textSecondary)
+        .accessibilityIdentifier("home-semester-menu")
     }
 
     private var current: SemesterDto? {

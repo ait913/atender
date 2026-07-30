@@ -44,19 +44,22 @@ enum CalendarMonthLayout {
 }
 
 enum CalendarDayEmphasis: Equatable {
-    case selected
     case today
     case outsideMonth
     case normal
 }
 
 enum CalendarDayStyle {
-    /// Priority: selected > today > outsideMonth > normal.
-    static func emphasis(date: String, todayString: String, selectedDate: String, monthFirst: String) -> CalendarDayEmphasis {
-        if date == selectedDate { return .selected }
+    /// 日付数字の見せ方。Priority: today > outsideMonth > normal
+    static func emphasis(date: String, todayString: String, monthFirst: String) -> CalendarDayEmphasis {
         if date == todayString { return .today }
         if CalendarRange.monthFirst(date) != monthFirst { return .outsideMonth }
         return .normal
+    }
+
+    /// セル全高のグレー塗りを敷くか。当月内外を問わない。
+    static func isSelected(date: String, selectedDate: String) -> Bool {
+        !date.isEmpty && date == selectedDate
     }
 
     /// 当月外の日はイベント chip / ステータスドットを描かない (Web `CalendarMonth` と同一規則)
