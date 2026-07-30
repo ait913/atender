@@ -104,7 +104,7 @@ Web の 2 層ソフトシャドウを iOS の `AtenderShadow.card` (既に Web �
 | 役割 | text style (iOS) | atender エイリアス | 用途 |
 |---|---|---|---|
 | 画面タイトル | `.navigationBarTitleDisplayMode(.inline)` (~17 semibold・中央) | (system) | nav bar の inline title。large title は使わない (§3.7、2026-07-21 裁定) |
-| セクション大見出し / hero 数値 | `.title2` (22) / `.title` (28) | `atender2xl` / `atender3xl` | カード見出し、出席率 % の数値 |
+| セクション大見出し / hero 数値 | `.title2` (22) / `.title` (28) | `atender2xl` / `atender3xl` | カード見出し、出席率 % の数値、**モーダル/シートのヘッダータイトル (§3.7.4)** |
 | 強調行タイトル | `.headline` (17 semibold) | `atenderLg` | リスト行の主題、科目名 (詳細) |
 | 本文 | `.body` (17) | `atenderBase` | 標準本文 |
 | 副次情報 | `.footnote` (13) | `atenderSm` | メタ、日付、"期間 6/5〜8/28" |
@@ -161,7 +161,9 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 |---|---|
 | 外殻 | `Color.bgElevated` + `Radius.lg` (24) + `.atenderShadow(.card)` + `Space.s2` の内側 padding。祖先の `Space.pagePxMobile` (16pt) page margin の**内側**に収まる。負マージン・幅拡張・`offset` を使わない |
 | セル分離 | **罫線を引かない (hairline 全廃)。** 列間のみ `Space.s0_5` (2pt) の gap で分ける (行間 gap は 0)。列幅は `EqualColumnsLayout` が提案幅を device pixel に丸めて配分し、子の intrinsic 幅を参照しない。Web `CalendarMonth` (`grid-cols-7 gap-px`・罫線ゼロ・`min-w-0`) が正典。§7 検収表 #2「月カレンダーは枠全廃」と一致させる |
-| 日セル | 枠なし・角丸なし・**背景塗りなし** (カード面 `bgElevated` が透ける。当月外の `bgMuted` は**廃止** — gap 分離では背景色の差が唯一の分離線になり、当月外だけが灰色の塊で目立つため)。日付は左上、**その真下にステータスドット** (6pt・最大 3 個・24pt 幅に中央寄せ・marks が空でも 6pt を常時確保)。**当月外は日付数字のみ** (イベント chip / ドットを描かない。Web `CalendarMonth` と同一)。曜日色 (日=`#E5484D` / 土=`#0091FF` / 平日=`textPrimary`、当月外は 0.38 不透明度)。今日=accent 塗り丸、選択=accent アウトライン丸。高さ `CalendarMonthLayout.rowHeight` (最小 70pt) |
+| 日セル | 枠なし・角丸なし・**平常時は背景塗りなし** (カード面 `bgElevated` が透ける。当月外の `bgMuted` は**廃止** — gap 分離では背景色の差が唯一の分離線になり、当月外だけが灰色の塊で目立つため)。日付は左上、**その真下にステータスドット** (6pt・最大 3 個・24pt 幅に中央寄せ・marks が空でも 6pt を常時確保)。**当月外は日付数字のみ** (イベント chip / ドットを描かない。Web `CalendarMonth` と同一)。曜日色 (日=`#E5484D` / 土=`#0091FF` / 平日=`textPrimary`、当月外は 0.38 不透明度)。**今日=accent 塗り丸 / 選択日=セル全高を `Color.calendarSelectedDay` (= `bgMuted` = `tertiarySystemGroupedBackground`) で `Radius.sm` 塗り**。今日かつ選択の日は**両方描く** (グレーのセル + accent 丸)。高さ `CalendarMonthLayout.rowHeight` (最小 70pt) |
+
+> **★ Touri 裁定 (2026-07-30)**: 選択日は accent アウトライン丸を**廃止**し、TimeTree の月ビュー同様「セル列を薄いグレーで塗る」形にする (アウトライン丸は今日の accent 丸と競合し、今日を選ぶと今日が消えていた)。**当月外の `bgMuted` 廃止 (上表) と矛盾しない**: あちらは「当月外という受動的な状態を一括で灰色に塗る」ため分離線として誤読されたのに対し、こちらは**ユーザーの操作で 1 セルだけが動く能動的な強調**であり、役割が違う。塗りは semantic system color のみ (自前 hex を持ち込まない)。`Color.calendarSelectedDay` はカード面 `bgElevated` (= `secondarySystemGroupedBackground`) の 1 段上に載る同族色なので light/dark 双方で「カード面の一段濃い影」として成立する。強さを変えるときの単一の変更点でもある。
 | イベント | 時間割セル (§3.6.1) と同スタイル。不透明 tint 面 (`surfaceTintRatio`・base=`bgElevated`) + 2pt solid 左バー (`Radius.full`) + `textPrimary`。`.caption2` semibold、1 行 truncate、最大 2 行、超過は chip 1 個 + `+N` |
 | 高さ算出 | `CalendarMonthLayout.rowHeight(available: gridAvailable(available:))`。`gridAvailable = available - cardChromeHeight(16)` |
 
@@ -181,19 +183,34 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 > ★ **Touri 裁定 (2026-07-21、2026-07-18 の large title 裁定を反転)**: 大タイトル (デカ文字) をやめ、**5 タブ全部を inline の中央コンパクト太字タイトル + 歯車右**にする。理由は「デカ文字が上部スペースを食い、時間割/カレンダーの表が狭くなる」ため。inline なら省スペースで、かつタイトルと歯車が同じ横一行に並ぶ (2026-07-19 の「タイトルと設定ボタンを同じ LINE に」要望も同時に満たす)。旧 large title 裁定 (2026-07-18) は本裁定で撤回。
 
-#### 3.7.2 詳細画面 (ルーム詳細 / テンプレート / 科目詳細 / 日別詳細)
+#### 3.7.2 詳細画面 (ルーム詳細 / テンプレート / 科目詳細)
 
 - **タイトルは 1 つだけ。重複を禁止** (現状 `RoomDetailView` は nav タイトルと本文 header で room 名を 2 回出す — §2 の診断)。
 - **★ Touri 裁定 (2026-07-18)**: 重複は **nav bar タイトル (小) を消し、本文 header の大タイトルを残す**方向で解消する。
   - **nav bar は back button のみ** (`.navigationBarTitleDisplayMode(.inline)` + `.navigationTitle("")`、`BackHeaderButton` は revamp doc §4.3 で廃止済のシステム back)。nav にタイトル文言を出さない。
   - **本文 header の大タイトル (room 名) + 副題 (「みんなの予定共有」) + gear を、nav タイトルが消えて空いた分だけ上に詰める。** これが Touri の明示要望 (「小さい方を消して、大文字ルーム名と設定ボタンを上に押し込む」)。
-  - **逸脱の明示**: これは「詳細画面は inline nav タイトル」という一般 iOS 慣習からの逸脱。理由は (a) room 名が長く content で大きく見せる価値がある (b) Touri の名指し要望。**プロミネントな content header を持つ詳細画面 (ルーム詳細等) はこのパターン**、header を持たない詳細画面 (テンプレート/科目詳細/日別詳細で content 側に大タイトルが無いもの) は inline nav タイトルを使う。
+  - **逸脱の明示**: これは「詳細画面は inline nav タイトル」という一般 iOS 慣習からの逸脱。理由は (a) room 名が長く content で大きく見せる価値がある (b) Touri の名指し要望。**プロミネントな content header を持つ詳細画面 (ルーム詳細等) はこのパターン**、header を持たない詳細画面 (テンプレート/科目詳細で content 側に大タイトルが無いもの) は inline nav タイトルを使う。
 - switcher / segmented の配置規約はトップレベルと同一。
+- **本節は「タブの `NavigationStack` に push される画面」の規約**である。**シートとして出す詳細 (日別シート・フォーム系モーダル) は §3.7.4 のモーダルヘッダー規格に従う。**
 
 #### 3.7.3 セクション見出しと学期ピッカー
 
 - 「2026 前期」等の**学期ピッカーは見出し (title) でなく subhead 級のコントロール**として扱う (`.footnote`/`.subheadline` + chevron)。Home と 学期・科目 で同じ体裁。
+- **色は設計で確定させる (OS 依存にしない)**: 学期名 = `.subheadline` semibold + `Color.textSecondary`、chevron (`chevron.down`) = `.caption2` + `Color.textTertiary`、`Menu` に `.tint(Color.textSecondary)`。**明示しないと iOS 26 は label 色 (黒)・iOS 18 は accent (青) で描かれ、OS で色が変わる** (実機実測)。
+- **toolbar に置く場合 (Home) は「ボタンでなくテキストだけ」**: iOS 26 は toolbar item に自動で glass カプセルを付けるので、`ToolbarItem { ... }.sharedBackgroundVisibility(.hidden)` (iOS 26.0+) で外して素のテキスト + chevron にする (Touri 裁定 2026-07-30)。`.buttonStyle(.plain)` は**無効**、`.toolbarBackground` は**無関係** (どちらも実機で確認済)。iOS 25 以下はカプセルが存在しないので素の `ToolbarItem` のまま (pixel diff 0)。
 - カード内見出し (「今日までの出席率」等) は全画面 `.footnote` secondary で統一 (現状踏襲)。
+
+#### 3.7.4 モーダル / シートのヘッダー規格
+
+**全モーダル共通**。`BottomSheet` / `SheetScaffold` / `FullScreenModal` の 3 chrome が同一の modifier を使い、呼び出し側 (24 箇所) は `title` を渡すだけにする。
+
+- **`< タイトル ✕` を nav bar の 1 行に置く** (Touri 裁定 2026-07-30、スケッチ準拠)。シートの中身を `NavigationStack` で包み、そこの toolbar に 3 つの item を並べる。
+- **タイトル = `.atender2xl` bold・左寄せ** (`ToolbarItem(placement: .topBarLeading)` + `sharedBackgroundVisibility(.hidden)`)。inline nav title (~17pt semibold 中央) は**使わない** — 本文の大字と同じ段に揃えるため。長い文言は `lineLimit(1)` + `minimumScaleFactor(0.75)`。
+- **`✕` = Apple 標準部品**: `ToolbarItem(placement: .topBarTrailing) { Button(role: .close) { } }` (iOS 26.0+。toolbar 内では円形 glass の ✕ になる。`.buttonStyle(.glass)` は付けない)。iOS 25 以下は自前の丸 ✕ (36pt / `textPrimary.opacity(0.08)`)。
+- **`<` = Apple 標準部品**: シート内 `NavigationStack` に push したときの**システム back** (iOS 26 = 円形 glass chevron。`.navigationTitle` を付けなくても出る)。`ButtonRole.back` は**存在しない**。iOS 25 以下はシステム back のラベルが英語 "Back" になる (`.lproj` を持たないため) ので**隠して自前 chevron 丸**に差し替える。
+- **モーダル内の 2 階層 (一覧 → 編集) は `NavigationStack` の push で表す** (別シートを重ねない)。`✕` は push 中も同じ位置に出て、1 回でモーダル全体を閉じる。
+- 旧規格 (`.atenderLg` タイトル + 自前 `HStack` ヘッダ + 自前丸 ✕、`FullScreenModal` の中央 `.atenderBase` タイトル + 重複する `chevron.left`) は**本節で廃止**。
+- グラバー (42×5 の Capsule) は nav bar の**上**に残す (`presentationDragIndicator(.hidden)` + 自前)。`BottomSheet` の detent 実測は「自前ヘッダ高」ではなく「**シート最上端からコンテンツ上端までの距離**」を測る形に変える (グラバー + nav bar を一括で拾う)。
 
 ### 3.8 タブバー (Liquid Glass) (Touri 名指し: アイコンが大きい・ラベルが近い)
 
@@ -271,6 +288,9 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 - **時間割/カレンダーを自前で凝ったグラフィックにする**: 却下。Web の描画ロジックと確定裁定 (不透明 tint + 左バー + 上寄せ + 月カレンダーの**カード外殻 + 内側 hairline**) が既に「綺麗」の実体。これを iOS 語彙で忠実に写すのが最短。独自の見た目を発明しない。
 - **タブアイコン/ラベル間隔を本書で「こう調整する」と確定する**: 却下 (保留)。native `TabView` の制御可否が未確認。憶測で pt を書くと Developer が実装で詰まる。§10 の researcher 検証後に確定する。
 - **ヘッダー統一のため Home を含む全画面から大タイトルを排し switcher 起点に揃える**: 不採用寄り (要 Touri 判断)。iOS 慣習では large title 付与が自然。§9 で Leader に上げる。
+- **選択日を accent アウトライン丸で示す** (§3.6.3 の旧規定): 却下 (2026-07-30 Touri 裁定)。今日の accent 塗り丸と競合し、**今日を選ぶと今日が消える**。TimeTree の月ビュー同様「選択セルを薄いグレーで塗る」に変更し、今日の丸と併存させる。
+- **モーダルの `<` / `✕` を自前描画する** (§3.7.4 の旧実装): 却下。iOS 26 に標準部品が実在する (`Button(role: .close)` を toolbar item に置くと円形 glass の ✕、sheet 内 `NavigationStack` の push でシステム back)。自前描画は「標準部品を自前で再発明しない」規約 (CLAUDE.md) に反する。**ただし `ButtonRole.back` は存在しない**ので、back は必ず `NavigationStack` の push で得る。
+- **toolbar item の glass カプセルを `.buttonStyle(.plain)` で消す**: 却下。**無効**であることを実機で確認済 (素の版とスクリーンショットが md5 一致)。カプセルは Button の style ではなく toolbar 側が item を包む共有背景なので、`sharedBackgroundVisibility(.hidden)` (iOS 26.0+) だけが効く。
 
 ---
 

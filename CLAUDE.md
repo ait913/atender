@@ -77,7 +77,7 @@ xcrun simctl io <SIM_UDID> screenshot out.png
 ```
 
 - **注意**: AI がバックグラウンドで起動した API は**ターン終了で harness に kill される**。腰を据えて触るなら Touri 自身のターミナルで API を立てる。デモデータは `apps/api/prisma/dev.db` に永続化されるので API さえ立てれば再ログイン不要
-- ユニットテスト: `xcodebuild test -scheme Atender ...` (157 GREEN 基準)
+- ユニットテスト: `xcodebuild test -scheme Atender ...`。**ベースライン件数の正典は `.knowledge/known-failures.md` の iOS 節** (旧記載の「157 GREEN 基準」は二重に誤りだったので撤回。同ファイル §「旧記載…」参照)。着手時に自分で 1 回走らせて実数を台帳に記録する
 
 ### 全画面・全モーダルのスクショ収集 (デザイン検証)
 
