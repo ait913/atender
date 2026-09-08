@@ -18,6 +18,7 @@ final class CalendarMonthStore<Extra> {
         let rangeEnd: String
         let semesterId: String?
         let force: Bool
+        let generation: Int
     }
 
     typealias Loader = @MainActor (Request) async throws -> Payload
@@ -29,6 +30,9 @@ final class CalendarMonthStore<Extra> {
     private(set) var visibleMonth: String
     private(set) var semesterId: String?
 
+    @ObservationIgnored private var generation = 0
+    // 初回取得への通常の再入は、その取得が有効な状態で成功すれば充足する (#B34)。
+    @ObservationIgnored private var pendingReload: [String: (force: Bool, required: Bool)] = [:]
     @ObservationIgnored private let loader: Loader
 
     init(visibleMonth: String, semesterId: String?, loader: @escaping Loader) {
@@ -64,45 +68,88 @@ final class CalendarMonthStore<Extra> {
 
     func ensureLoaded(_ monthFirst: String, force: Bool = false) async {
         let normalized = CalendarRange.monthFirst(monthFirst)
-        if loading.contains(normalized) { return }
-        if !force, payloads[normalized] != nil, !stale.contains(normalized) { return }
+        if loading.contains(normalized) {
+            if force || stale.contains(normalized) || failed.contains(normalized) || payloads[normalized] == nil {
+                let pending = pendingReload[normalized]
+                pendingReload[normalized] = (
+                    force: force || pending?.force == true,
+                    required: force || stale.contains(normalized) || failed.contains(normalized) || pending?.required == true
+                )
+            }
+            return
+        }
+        if !force, payloads[normalized] != nil, !stale.contains(normalized), !failed.contains(normalized) { return }
 
         loading.insert(normalized)
         defer { loading.remove(normalized) }
+        var requestForce = force
+        let range = CalendarRange.monthGridRange(anchorMonthFirst: normalized)
 
-        do {
-            let range = CalendarRange.monthGridRange(anchorMonthFirst: normalized)
+        while true {
             let request = Request(
                 monthFirst: normalized,
                 rangeStart: range.start,
                 rangeEnd: range.end,
                 semesterId: semesterId,
-                force: force
+                force: requestForce,
+                generation: generation
             )
-            payloads[normalized] = try await loader(request)
-            failed.remove(normalized)
-            stale.remove(normalized)
-        } catch {
-            failed.insert(normalized)
+            do {
+                let payload = try await loader(request)
+                // 旧学期の結果は stale / failed を含めて現在の状態に反映しない。
+                if request.semesterId == semesterId {
+                    payloads[normalized] = payload
+                    if request.generation == generation {
+                        failed.remove(normalized)
+                        stale.remove(normalized)
+                    } else {
+                        // 同じ学期の古い世代は表示に使えるが、再取得が必要。
+                        stale.insert(normalized)
+                    }
+                }
+            } catch {
+                if request.semesterId == semesterId {
+                    failed.insert(normalized)
+                    if request.generation != generation {
+                        stale.insert(normalized)
+                    }
+                }
+            }
+
+            guard let pending = pendingReload.removeValue(forKey: normalized) else { return }
+            guard pending.required || stale.contains(normalized) || failed.contains(normalized) || payloads[normalized] == nil else { return }
+            // 非可視月の保留は次の ensureLoaded に任せる。
+            guard normalized == visibleMonth else {
+                stale.insert(normalized)
+                return
+            }
+            requestForce = pending.force
         }
     }
 
     func setSemester(_ id: String?) async {
         guard semesterId != id else { return }
         semesterId = id
+        generation += 1
         // #B30 / #B30a / #B30b: payloads は捨てない。全消しすると hasEverLoaded が false に落ち、
         // CalendarScreenLogic.body が .skeleton に戻ってグリッドが一瞬消える (§3.5 / 要望 3 に違反)。
-        stale = Set(payloads.keys)
+        stale.formUnion(payloads.keys)
+        stale.formUnion(loading)
         failed.removeAll()
         await ensureLoaded(visibleMonth)
     }
 
     func invalidateAll() {
-        stale = Set(payloads.keys)
+        generation += 1
+        stale.formUnion(payloads.keys)
+        stale.formUnion(loading)
+        if loading.contains(visibleMonth) {
+            pendingReload[visibleMonth] = (force: pendingReload[visibleMonth]?.force == true, required: true)
+        }
     }
 
     func refreshVisible() async {
-        stale.formUnion(payloads.keys.filter { $0 != visibleMonth })
+        invalidateAll()
         await ensureLoaded(visibleMonth, force: true)
     }
 }

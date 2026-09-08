@@ -609,6 +609,10 @@ Reviewer はここだけを根拠にテストを書く。#番号はテスト名�
 - **#B31** `setSemester` に**同じ値**を渡したときは何も起きない (loader 呼び出し 0 回、`payloads` 保持)。
 - **#B32** `invalidateAll()` は `payloads` を**残したまま** 全月を stale にする。直後の `ensureLoaded(m)` は loader を呼ぶ (`force` は false)。
 - **#B33** `refreshVisible()` は可視月を `force: true` で読み直し、他の月を stale にする。
+- **#B30c** 各 `Request` に単調増加する `generation: Int` を持たせ、`setSemester` (同値は除く) / `invalidateAll` / `refreshVisible` で世代を進める。完了時の `Request.semesterId` が現在と異なる結果は破棄し、`payloads` / `stale` / `failed` に反映しない。同学期でも旧世代の payload は格納するが stale のままにする。取得中の `setSemester` は可視月の再取得を保留し、旧取得の完了後に新学期で直ちに再取得する。旧学期の結果が非 stale のキャッシュになってはいけない。
+- **#B30d** 取得中の `ensureLoaded(m)` は `force == true` / stale / failed / payload 未取得なら再取得要求を保留し、重複要求を 1 回にまとめる。完了後も可視月なら保留 1 件につき 1 回ループで再取得し、非可視月なら stale として次の `ensureLoaded` に任せる。保留した `force` は再取得にも渡す。ただし通常の初回取得への再入は、その取得が現世代で成功すれば充足済みとする (#B34 を維持)。
+- **#B33a** `invalidateAll()` / `refreshVisible()` は取得中の月も無効化する。無効化前に開始した同学期の取得結果は完了しても stale とし、非可視月は次の `ensureLoaded` で再取得する。取得中の可視月には再取得を保留し、完了後に直ちに読み直す (`refreshVisible` は `force: true`)。
+- **#B26a** 成功後の強制更新に失敗して旧 payload が残っていても、`failed.contains(m)` なら通常の `ensureLoaded(m)` (`force == false`) で再取得する。
 - **#B34** 取得中に同じ月へ `ensureLoaded` が再入しても loader は 1 回だけ (`isLoading` によるガード)。
 
 ### 6.5 画面の殻 (`CalendarScreen`) — P2 / P3
