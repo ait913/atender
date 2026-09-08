@@ -290,6 +290,13 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 
 ## iOS (apps/ios, XCTest)
 
+### ★ 実測ベースライン (2026-09-08, main `9800bb9` = build 17 + 月ストア競合修正マージ後, Leader)
+
+- ユニット: `xcodebuild test -scheme Atender` (iPhone 16 / **iOS 26.5 runtime**、`-derivedDataPath` 隔離) → **Executed 649 tests, with 0 failures**。内訳 = 643 (build 17 レーン) + 6 (`fix/b17-store-races` の #B30c/#B30d/#B33a/#B26a 再現テスト)。**未分類 0**
+- UI (`B17CalendarUITests` 11 本): **10 pass / 1 fail**。落ちるのは `testP1PagerDoesNotPolluteAccessibilityTree` のみ (下記 build 17 レーン節と同一、既知)。★ **負荷下では B45 / B49 / P3 も落ちる** (別シムでユニットビルド並走 + 別セッションの Codex 並走の状態で 7/11。単独再実行で 3 本とも pass) → これらは**環境依存**。この Mac は 8 GB なので **xcodebuild は 1 本ずつ、シムは 1 台**で測る
+- API (`pnpm exec vitest run`): 17 failed / 487 passed / 1 skipped のうち **16 = 既知 (A1-A5, A7, A8, B1-B5, Magic Link 4)**、1 = `b17-room-week-semester [#A2c]` の**絶対日付腐敗** (C 型の再発: `createdAt: 2026-09-01` 固定が実行日 9/8 に追い越された) → 相対日付に修正済 (`22f6667`)。**未分類 0**
+- ★ シミュレータの罠 (同日): 新規作成したシム (`simctl create`) で `bootstatus -b` が 15 分以上返らない / XCUITest が `Timed out while loading Accessibility` / xcodebuild が `touch` や `swiftStdLibTool --sign -` で 0% CPU 停止、はいずれもメモリ逼迫が背景。既存の iPhone 16 シムを `simctl shutdown` → `boot` し直して単独で走らせると解消した
+
 **ベースライン: 566 GREEN / 0 RED** (main = `928be50` = build 16 の 2 レーン マージ後、2026-07-30 Leader 実測)。`Executed 566 tests, with 0 failures` / `** TEST SUCCEEDED **`。**未分類の失敗 0**。測り方: main で `-derivedDataPath <scratchpad>/dd-merged` 隔離。**マージ後の合流状態は各レーンでは誰も測っていない**ので、マージ直後に Leader が 1 回走らせるのを手順に含めた。
 
 **XCUITest は別枠: `AtenderUITests` 10 本** (`B16NavTrailingUITests` 9 + `B16Round2SheetGeometryUITests` 1) + `ScreenshotFlow` 6。**`localhost:8787` の API が稼働している前提**で緑になる (デモデータ依存)。API 停止時に落ちるのは「環境依存」であり実装の失敗ではない。
