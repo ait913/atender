@@ -76,4 +76,16 @@ final class DayRepository {
         cache.invalidate(prefixes: invalidationTargets(for: .bulkTimetableSuspension))
         return response
     }
+
+    func createClassTransfer(_ input: ClassTransferCreateInput) async throws -> ClassTransferDto {
+        let response = try await client.send(Endpoints.createClassTransfer(input), as: ClassTransferResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .classTransfer(date: input.date)))
+        return response.transfer
+    }
+
+    func deleteClassTransfer(id: String, date: String) async throws -> ClassTransferDeleteResponse {
+        let response = try await client.send(Endpoints.deleteClassTransfer(id: id), as: ClassTransferDeleteResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .classTransfer(date: date)))
+        return response
+    }
 }

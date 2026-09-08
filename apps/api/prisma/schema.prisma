@@ -268,6 +268,7 @@ model UserTimetable {
   courses              Course[]
   meetings             Meeting[]
   timetableSuspensions TimetableSuspension[]
+  classTransfers ClassTransfer[]
 
   @@unique([userId, semesterId]) // 1 user × 1 semester = 1 UserTimetable
   @@index([userId, semesterId])
@@ -396,6 +397,7 @@ model Meeting {
   room             String?
 
   occurrences MeetingOccurrence[]
+  displacements ClassTransferDisplacement[]
 
   @@index([userTimetableId, dayOfWeek])
   @@index([courseId])
@@ -416,9 +418,14 @@ model MeetingOccurrence {
 
   attendanceRecord AttendanceRecord?
 
+  transferId  String?
+  transfer    ClassTransfer? @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  periodIndex Int?           // 振替のみ非 null (写し先の絶対時限)。通常 occurrence は null = 従来どおり meeting から導出
+
   @@unique([meetingId, date, periodOffset])
   @@index([courseId, date])
   @@index([date])
+  @@index([transferId])
 }
 
 // ===== 出席記録 =====
@@ -748,4 +755,40 @@ model AttendanceRule {
   @@unique([schoolId, departmentId, userId])
   @@index([schoolId, departmentId])
   @@index([userId])
+}
+
+enum ClassTransferKind {
+  MOVE_DAY   // ある曜日の時間割を丸ごとこの日に
+  SINGLE     // 科目を 1 コマずつ
+}
+
+model ClassTransfer {
+  id              String            @id @default(cuid())
+  userTimetableId String
+  userTimetable   UserTimetable     @relation(fields: [userTimetableId], references: [id], onDelete: Cascade)
+  date            DateTime          // 振替先 (JST 00:00)
+  kind            ClassTransferKind
+  sourceDayOfWeek Int?              // MOVE_DAY のみ (0=日 … 6=土、Meeting.dayOfWeek と同じ JS 規約)
+  sourceDate      DateTime?         // MOVE_DAY で「元の日を休講にする」を ON にした日 (表示用。休講の実体は TimetableSuspension)
+  note            String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  occurrences   MeetingOccurrence[]
+  displacements ClassTransferDisplacement[]
+
+  @@index([userTimetableId, date])
+}
+
+/// 振替のせいでその日だけ開催されない通常授業。生成関数がこの (meetingId, date) をスキップする
+model ClassTransferDisplacement {
+  id         String        @id @default(cuid())
+  transferId String
+  transfer   ClassTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  meetingId  String
+  meeting    Meeting       @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  date       DateTime
+
+  @@unique([meetingId, date])
+  @@index([transferId])
 }

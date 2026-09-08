@@ -79,6 +79,9 @@ enum Endpoints {
         .init(path: "/api/attendance-rules/\(type)", method: .patch, body: body)
     }
 
+    static func createClassTransfer(_ body: ClassTransferCreateInput) -> APIEndpoint { .init(path: "/api/class-transfers", method: .post, body: body) }
+    static func deleteClassTransfer(id: String) -> APIEndpoint { .init(path: "/api/class-transfers/\(id)", method: .delete) }
+
     static func dayDetail(date: String) -> APIEndpoint { .init(path: "/api/day/\(date)", method: .get) }
     static func stats(semesterId: String?) -> APIEndpoint { .init(path: "/api/stats", method: .get, query: compactQuery(["semesterId": semesterId])) }
 

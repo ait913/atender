@@ -127,3 +127,9 @@ enum IcsMatchType: String, UnknownFallbackRawRepresentable {
     case regex = "REGEX"
     case unknown
 }
+
+enum ClassTransferKind: String, UnknownFallbackRawRepresentable {
+    case moveDay = "MOVE_DAY"
+    case single  = "SINGLE"
+    case unknown
+}

@@ -3,6 +3,7 @@ import SwiftUI
 enum DayDetailSheetKind: Equatable {
     case create
     case edit(PersonalEventOccurrenceDto)
+    case transfer
 }
 
 struct DayDetailSheet: View {
@@ -13,6 +14,8 @@ struct DayDetailSheet: View {
     @State private var model: DayDetailViewModel?
     @State private var reason = ""
     @State private var activeSheet: DayDetailSheetKind?
+    @State private var pendingDeleteTransfer: ClassTransferDto?
+    @State private var pendingDeleteRecordCount = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s4) {
@@ -21,6 +24,7 @@ struct DayDetailSheet: View {
                     ProgressView().frame(maxWidth: .infinity)
                 } else if let detail = model.detail {
                     suspensionSection(detail, model)
+                    classTransferSection(detail, model)
                     occurrencesSection(detail, model)
                     personalEventsSection(detail, model)
                 }
@@ -35,6 +39,19 @@ struct DayDetailSheet: View {
             await model?.load()
         }
         .background { sheetHost }
+        .confirmationDialog(
+            "出欠記録 \(pendingDeleteRecordCount) 件も削除されます",
+            isPresented: Binding(get: { pendingDeleteTransfer != nil }, set: { if !$0 { pendingDeleteTransfer = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("取り消す", role: .destructive) {
+                if let transfer = pendingDeleteTransfer {
+                    Task { await model?.deleteClassTransfer(id: transfer.id) }
+                }
+                pendingDeleteTransfer = nil
+            }
+            Button("キャンセル", role: .cancel) { pendingDeleteTransfer = nil }
+        }
     }
 
     private var activeSheetBinding: Binding<Bool> {
@@ -62,6 +79,16 @@ struct DayDetailSheet: View {
                     onSaved: { activeSheet = nil; await afterEventChanged() },
                     onDeleted: { activeSheet = nil; await afterEventChanged() },
                     onCancel: { activeSheet = nil }
+                )
+            }
+        case .transfer:
+            BottomSheet(title: "授業変更", isPresented: activeSheetBinding, stackLevel: 2) {
+                ClassTransferSheet(
+                    date: date,
+                    semesterId: semesterId,
+                    existingOccurrences: model?.detail?.occurrences ?? [],
+                    targetIsSuspended: model?.detail?.timetableSuspension != nil,
+                    onSaved: { activeSheet = nil; await afterEventChanged() }
                 )
             }
         case nil:
@@ -97,6 +124,36 @@ struct DayDetailSheet: View {
                     }
                 }
             }
+        }
+        .padding(Space.s3)
+        .background(Color.bgMuted.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
+    }
+
+    private func classTransferSection(_ detail: DayDetailDto, _ model: DayDetailViewModel) -> some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Text("授業変更")
+                .font(.atenderSm.weight(.bold))
+                .foregroundStyle(Color.textSecondary)
+            ForEach(detail.transfers ?? []) { transfer in
+                HStack {
+                    Text(ClassTransferLogic.summary(transfer, occurrences: detail.occurrences.filter { $0.transferId == transfer.id }))
+                        .font(.atenderSm)
+                        .foregroundStyle(Color.textPrimary)
+                    Spacer()
+                    AtenderButton(title: "取り消す", variant: .ghost, size: .sm) {
+                        let count = ClassTransferLogic.needsDeleteConfirmation(transfer: transfer, occurrences: detail.occurrences)
+                        if count > 0 {
+                            pendingDeleteRecordCount = count
+                            pendingDeleteTransfer = transfer
+                        } else {
+                            Task { await model.deleteClassTransfer(id: transfer.id) }
+                        }
+                    }
+                    .frame(width: 96)
+                }
+            }
+            AtenderButton(title: "授業変更", variant: .secondary, size: .sm) { activeSheet = .transfer }
         }
         .padding(Space.s3)
         .background(Color.bgMuted.opacity(0.5))
@@ -218,6 +275,7 @@ final class DayDetailViewModel {
     func createCourseSuspension(courseId: String) async { await mutate { _ = try await env.dayRepository.createCourseSuspension(courseId: courseId, date: date, reason: nil) } }
     func deleteCourseSuspension(courseId: String, id: String) async { await mutate { try await env.dayRepository.deleteCourseSuspension(courseId: courseId, id: id) } }
     func bulkMark(status: AttendanceStatus, mode: BulkMode) async { await mutate { _ = try await env.dayRepository.bulkMark(dates: [date], status: status, mode: mode) } }
+    func deleteClassTransfer(id: String) async { await mutate { _ = try await env.dayRepository.deleteClassTransfer(id: id, date: date) } }
 
     private func mutate(_ operation: () async throws -> Void) async {
         isMutating = true
@@ -295,6 +353,8 @@ struct DayOccurrenceRow: View {
                     badge("休講中 (時間割全体)")
                 } else if courseSuspension != nil {
                     badge("科目休講中")
+                } else if occurrence.transferId != nil {
+                    badge("振替", color: .accent500)
                 }
             }
             ScrollView(.horizontal, showsIndicators: false) {
@@ -338,13 +398,13 @@ struct DayOccurrenceRow: View {
         .opacity(disabled ? 0.45 : 1)
     }
 
-    private func badge(_ text: String) -> some View {
+    private func badge(_ text: String, color: Color = .statusCancelled) -> some View {
         Text(text)
             .font(.atenderXs.weight(.bold))
-            .foregroundStyle(Color.statusCancelled)
+            .foregroundStyle(color)
             .padding(.horizontal, Space.s2)
             .frame(height: 24)
-            .background(Color.statusCancelled.opacity(0.16))
+            .background(color.opacity(0.16))
             .clipShape(Capsule())
     }
 }

@@ -8,6 +8,7 @@ enum Mutation: Equatable {
     case bulkClearAttendance
     case courseSuspension(courseId: String)
     case timetableSuspension(date: String?)
+    case classTransfer(date: String?)
     case bulkTimetableSuspension
     case personalEvent(date: String?)
     case deleteCourse
@@ -51,6 +52,8 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return [.courseSuspensions(courseId), .semesters(), QueryKey(["stats"]), .dayPrefix()]
     case .timetableSuspension(let date):
         return compactKeys([.timetableSuspensions(), .dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"]), date.map { .dayDetail($0) }])
+    case .classTransfer(let date):
+        return compactKeys([.dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"]), .timetableSuspensions(), date.map { .dayDetail($0) }])
     case .bulkTimetableSuspension:
         return [.timetableSuspensions(), .dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"])]
     case .personalEvent(let date):

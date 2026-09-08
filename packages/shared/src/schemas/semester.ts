@@ -45,6 +45,7 @@ export const AttendanceDaySummary = z.object({
   ]),
   occurrenceCount: z.number().int(),
   counts: AttendanceDayCounts,
+  transferCount: z.number().int().optional(),
 });
 
 export const SemesterOverviewDto = z.object({

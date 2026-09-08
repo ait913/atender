@@ -117,7 +117,8 @@ enum MeetingExpansion {
         rangeEnd: String,
         semesterStart: String?,
         semesterEnd: String?,
-        statusByDate: [String: AttendanceDayStatus]
+        statusByDate: [String: AttendanceDayStatus],
+        excluding: Set<String> = []
     ) -> [CalendarEvent] {
         let courseMap = Dictionary(uniqueKeysWithValues: courses.map { ($0.id, $0) })
         let slotMap = Dictionary(uniqueKeysWithValues: daySlots.map { ($0.periodIndex, $0) })
@@ -131,6 +132,7 @@ enum MeetingExpansion {
             guard let date = CalendarRange.parse(cursor) else { continue }
             let jsDay = CalendarRange.utcCalendar.component(.weekday, from: date) - 1
             for meeting in meetings where meeting.dayOfWeek == jsDay {
+                guard !excluding.contains("\(meeting.id)|\(cursor)") else { continue }
                 guard let course = courseMap[meeting.courseId],
                       let startSlot = slotMap[meeting.startPeriodIndex]
                 else { continue }

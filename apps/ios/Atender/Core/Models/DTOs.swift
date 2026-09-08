@@ -67,6 +67,7 @@ struct AttendanceDaySummary: Codable, Equatable, Identifiable {
     let status: AttendanceDayStatus   // legacy 互換 (.designs/20260729-semester-calendar-multi-status.md §3.1)
     let occurrenceCount: Int
     let counts: AttendanceDayCounts?  // nil = counts を返さない旧 API
+    var transferCount: Int? = nil
 }
 
 struct SemesterOverviewDto: Codable, Equatable {
@@ -164,6 +165,7 @@ struct OccurrenceDto: Codable, Equatable, Identifiable {
     let startMinute: Int
     let endMinute: Int
     var status: AttendanceStatus?
+    var transferId: String? = nil
 }
 
 struct TodayResponse: Codable, Equatable {
@@ -593,6 +595,7 @@ struct OccurrenceRangeResponse: Codable, Equatable {
     let occurrences: [OccurrenceDto]
     let courseSuspensions: [CourseSuspensionDto]
     let timetableSuspensions: [TimetableSuspensionDto]
+    var transfers: [ClassTransferDto]? = nil
 }
 
 struct LegacyEkPushListResponse: Codable, Equatable {
@@ -613,6 +616,7 @@ struct DayDetailDto: Codable, Equatable {
     let courseSuspensions: [CourseSuspensionDto]
     let timetableSuspension: TimetableSuspensionDto?
     let personalEvents: [PersonalEventOccurrenceDto]
+    var transfers: [ClassTransferDto]? = nil
 }
 
 struct FriendshipUserDto: Codable, Equatable, Identifiable {
@@ -1119,4 +1123,48 @@ struct IcsTitleRuleResponse: Codable, Equatable {
 struct VersionResponse: Codable, Equatable {
     let commit: String
     let minIOSBuild: Int
+}
+
+struct ClassTransferDisplacedDto: Codable, Equatable, Identifiable {
+    var id: String { meetingId }
+    let meetingId: String
+    let courseId: String
+    let courseName: String
+    let startPeriodIndex: Int
+    let periodCount: Int
+}
+
+struct ClassTransferDto: Codable, Equatable, Identifiable {
+    let id: String
+    let userTimetableId: String
+    let date: String
+    let kind: ClassTransferKind
+    let sourceDayOfWeek: Int?
+    let sourceDate: String?
+    let note: String?
+    let occurrenceIds: [String]
+    let displaced: [ClassTransferDisplacedDto]
+    let createdAt: String
+    let updatedAt: String
+}
+
+/// 送信用。nil のキーは JSONEncoder が省略するので zod の discriminatedUnion にそのまま通る
+struct ClassTransferCreateInput: Codable, Equatable {
+    let kind: ClassTransferKind
+    let date: String
+    var semesterId: String? = nil
+    var sourceDayOfWeek: Int? = nil
+    var suspendSourceDate: Bool? = nil
+    var sourceDate: String? = nil
+    var courseId: String? = nil
+    var periodIndexes: [Int]? = nil
+    var liftTargetSuspension: Bool? = nil
+    var note: String? = nil
+}
+
+struct ClassTransferResponse: Codable, Equatable { let transfer: ClassTransferDto }
+struct ClassTransferDeleteResponse: Codable, Equatable {
+    let removedOccurrences: Int
+    let removedAttendanceRecords: Int
+    let restoredOccurrences: Int
 }

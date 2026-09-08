@@ -13,6 +13,8 @@ export function occurrenceDto(occurrence: {
   periodOffset: number;
   startMinute: number;
   endMinute: number;
+  transferId: string | null;
+  periodIndex: number | null;
   meeting: { room: string | null; startPeriodIndex: number };
   course: { name: string; teacher: string | null; color: string | null };
   attendanceRecord: { status: OccurrenceDto["status"] } | null;
@@ -26,11 +28,12 @@ export function occurrenceDto(occurrence: {
     room: occurrence.meeting.room,
     color: occurrence.course.color,
     date: toIsoDate(occurrence.date),
-    periodIndex: occurrence.meeting.startPeriodIndex + occurrence.periodOffset,
+    periodIndex: occurrence.periodIndex ?? occurrence.meeting.startPeriodIndex + occurrence.periodOffset,
     periodOffset: occurrence.periodOffset,
     startMinute: occurrence.startMinute,
     endMinute: occurrence.endMinute,
     status: occurrence.attendanceRecord?.status ?? null,
+    transferId: occurrence.transferId,
   };
 }
 
@@ -50,6 +53,7 @@ export async function listOccurrenceRange(args: {
       occurrences: [],
       courseSuspensions: [],
       timetableSuspensions: [],
+      transfers: [],
     };
   }
 
@@ -78,6 +82,20 @@ export async function listOccurrenceRange(args: {
     }),
   ]);
 
+  const transfers = await prisma.classTransfer.findMany({
+    where: {
+      userTimetableId: timetable.id,
+      date: { gte: fromDay.startOfDay, lte: toDay.endOfDay },
+    },
+    include: {
+      occurrences: { select: { id: true } },
+      displacements: {
+        include: { meeting: { include: { course: true } } },
+      },
+    },
+    orderBy: { date: "asc" },
+  });
+
   return {
     from: fromDay.isoDate,
     to: toDay.isoDate,
@@ -85,5 +103,43 @@ export async function listOccurrenceRange(args: {
     occurrences: occurrences.map(occurrenceDto),
     courseSuspensions: courseSuspensions.map(suspensionDto),
     timetableSuspensions: timetableSuspensions.map(timetableSuspensionDto),
+    transfers: transfers.map(classTransferDto),
+  };
+}
+
+export function classTransferDto(transfer: {
+  id: string;
+  userTimetableId: string;
+  date: Date;
+  kind: "MOVE_DAY" | "SINGLE";
+  sourceDayOfWeek: number | null;
+  sourceDate: Date | null;
+  note: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  occurrences: { id: string }[];
+  displacements: Array<{
+    meetingId: string;
+    meeting: { courseId: string; startPeriodIndex: number; periodCount: number; course: { name: string } };
+  }>;
+}) {
+  return {
+    id: transfer.id,
+    userTimetableId: transfer.userTimetableId,
+    date: toIsoDate(transfer.date),
+    kind: transfer.kind,
+    sourceDayOfWeek: transfer.sourceDayOfWeek,
+    sourceDate: transfer.sourceDate ? toIsoDate(transfer.sourceDate) : null,
+    note: transfer.note,
+    occurrenceIds: transfer.occurrences.map((o) => o.id),
+    displaced: transfer.displacements.map((d) => ({
+      meetingId: d.meetingId,
+      courseId: d.meeting.courseId,
+      courseName: d.meeting.course.name,
+      startPeriodIndex: d.meeting.startPeriodIndex,
+      periodCount: d.meeting.periodCount,
+    })),
+    createdAt: transfer.createdAt.toISOString(),
+    updatedAt: transfer.updatedAt.toISOString(),
   };
 }
