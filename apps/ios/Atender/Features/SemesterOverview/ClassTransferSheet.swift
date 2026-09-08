@@ -61,8 +61,10 @@ struct ClassTransferSheet: View {
                     isLoading: isPending,
                     isEnabled: canSubmit
                 ) { submit() }
+                .accessibilityIdentifier("class-transfer-submit")
             }
         }
+        .accessibilityIdentifier("class-transfer-sheet")
         .task { await load() }
     }
 
@@ -145,7 +147,9 @@ struct ClassTransferSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.bgMuted)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                .accessibilityElement(children: .combine)
             }
+            .accessibilityIdentifier("class-transfer-course-menu")
 
             label("時限")
             if let timetable {

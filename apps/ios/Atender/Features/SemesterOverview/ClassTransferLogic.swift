@@ -118,7 +118,7 @@ enum ClassTransferLogic {
         switch transfer.kind {
         case .moveDay:
             let dayLabel = transfer.sourceDayOfWeek.flatMap { weekdayFullLabels.indices.contains($0) ? weekdayFullLabels[$0] : nil } ?? ""
-            var text = "\(dayLabel) (\(occurrences.count)コマ)"
+            var text = "\(dayLabel)の時間割 (\(occurrences.count)コマ)"
             if let sourceDate = transfer.sourceDate {
                 let md = CalendarRange.format(sourceDate, .monthDay)
                 let wd = jsWeekday(of: sourceDate).map { weekdayShortLabels[$0] } ?? ""

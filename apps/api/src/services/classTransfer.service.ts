@@ -79,8 +79,11 @@ export async function createClassTransfer(userId: string, input: ClassTransferCr
       }
     }
 
+    // 日範囲で照合する (attendanceStats.ts / dayDetail.service.ts 等、読み取り側と同じ規約)。
+    // `dateDay.startOfDay` の完全一致だと、fixture が UTC 0時で seed する慣行 (attendance.test.ts 等) と
+    // 食い違い、通常 occurrence を全く見つけられなくなる
     const existing = await tx.meetingOccurrence.findMany({
-      where: { date: dateDay.startOfDay, meeting: { userTimetableId: timetable.id } },
+      where: { date: { gte: dateDay.startOfDay, lte: dateDay.endOfDay }, meeting: { userTimetableId: timetable.id } },
       include: { meeting: true, attendanceRecord: true },
     });
 
@@ -128,7 +131,7 @@ export async function createClassTransfer(userId: string, input: ClassTransferCr
         data: { transferId: transfer.id, meetingId, date: dateDay.startOfDay },
       });
       await tx.meetingOccurrence.deleteMany({
-        where: { meetingId, date: dateDay.startOfDay, transferId: null },
+        where: { meetingId, date: { gte: dateDay.startOfDay, lte: dateDay.endOfDay }, transferId: null },
       });
     }
 

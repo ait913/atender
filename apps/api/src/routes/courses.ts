@@ -8,6 +8,7 @@ import { courseDto } from "../lib/dto";
 import { sessionMiddleware } from "../middleware/session";
 import { setupGuard } from "../middleware/setupGuard";
 import { createCourseSuspension, deleteCourseSuspension, listCourseSuspensions } from "../services/courseSuspension.service";
+import { pruneEmptyClassTransfers } from "../services/meeting.service";
 
 const CourseParam = z.object({ courseId: z.string() });
 const CourseSuspensionParam = z.object({ courseId: z.string(), id: z.string() });
@@ -59,6 +60,7 @@ export function registerCourseRoutes(app: Hono) {
     });
     if (!course) throw new AppError(404, "NOT_FOUND", "Course not found");
     await prisma.course.delete({ where: { id: courseId } });
+    await pruneEmptyClassTransfers(course.userTimetableId);
     return c.json({ ok: true });
   });
 
