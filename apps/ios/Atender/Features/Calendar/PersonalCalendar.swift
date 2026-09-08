@@ -4,74 +4,62 @@ import SwiftUI
 @Observable
 final class PersonalCalendarViewModel {
     @ObservationIgnored private let environment: AppEnvironment
-    var anchor = SchoolClock.todayString()
-    var selectedDate = SchoolClock.todayString()
-    var timetables: [UserTimetableDto] = []
-    var semesters: [SemesterDto] = []
-    var overview: SemesterOverviewDto?
+    let store: CalendarMonthStore<[PersonalEventOccurrenceDto]>
     var occurrences: [PersonalEventOccurrenceDto] = []
-    var isLoading = false
-    var hasError = false
 
-    init(environment: AppEnvironment) {
+    convenience init(environment: AppEnvironment) {
+        self.init(environment: environment, semesterId: nil)
+    }
+
+    init(environment: AppEnvironment, semesterId: String?) {
         self.environment = environment
+        let originMonth = CalendarRange.monthFirst(SchoolClock.todayString())
+        store = CalendarMonthStore<[PersonalEventOccurrenceDto]>(
+            visibleMonth: originMonth,
+            semesterId: semesterId
+        ) { request in
+            async let occurrencesTask = environment.personalEventRepository
+                .personalEvents(from: request.rangeStart, to: request.rangeEnd)
+            async let timetablesTask = environment.timetableRepository.userTimetables(force: request.force)
+            async let semestersTask = environment.semesterRepository.semesters(force: request.force)
+            let occurrences = try await occurrencesTask
+            let timetables = try await timetablesTask
+            let semesters = try await semestersTask
+
+            var events: [CalendarEvent] = []
+            var summaries: [String: AttendanceDaySummary] = [:]
+            if let semesterId = request.semesterId,
+               let timetable = timetables.first(where: { $0.semesterId == semesterId }),
+               let semester = semesters.first(where: { $0.id == semesterId }) {
+                // §5.2: 出席オーバーレイの失敗は握り潰す。予定は見えるべき。
+                let overview = try? await environment.semesterRepository
+                    .semesterOverview(id: semesterId, force: request.force)
+                summaries = Dictionary((overview?.days ?? []).map { ($0.date, $0) },
+                                       uniquingKeysWith: { _, last in last })
+                events += MeetingExpansion.expandUserTimetable(
+                    meetings: timetable.meetings, courses: timetable.courses, daySlots: timetable.daySlots,
+                    rangeStart: request.rangeStart, rangeEnd: request.rangeEnd,
+                    semesterStart: semester.startDate, semesterEnd: semester.endDate,
+                    statusByDate: summaries.mapValues(\.status))
+            }
+            events += PersonalEventDisplay.calendarEvents(occurrences: occurrences)
+            return .init(events: events.sorted(by: CalendarEventOrder.byDateThenStart),
+                         daySummaries: summaries, extra: occurrences)
+        }
     }
 
-    func load(semesterId: String?) async {
-        isLoading = true
-        hasError = false
-        defer { isLoading = false }
-        let range = currentRange
-        do {
-            async let occ = environment.personalEventRepository.personalEvents(from: range.start, to: range.end)
-            async let tt = environment.timetableRepository.userTimetables()
-            async let sem = environment.semesterRepository.semesters()
-            occurrences = try await occ
-            timetables = try await tt
-            semesters = try await sem
-        } catch {
-            hasError = true
-            return
-        }
-        // 出席オーバーレイは学期があるときだけ。失敗しても hasError を立てない (予定は見えるべき)
-        if let semesterId {
-            overview = try? await environment.semesterRepository.semesterOverview(id: semesterId)
-        } else {
-            overview = nil
-        }
-    }
-
-    var currentRange: (start: String, end: String) {
-        CalendarRange.monthGridRange(anchorMonthFirst: CalendarRange.monthFirst(anchor))
-    }
-
-    func events(semesterId: String?) -> [CalendarEvent] {
-        var out: [CalendarEvent] = []
-        if let semesterId,
-           let timetable = timetables.first(where: { $0.semesterId == semesterId }),
-           let semester = semesters.first(where: { $0.id == semesterId }) {
-            let statusByDate = Dictionary(uniqueKeysWithValues: (overview?.days ?? []).map { ($0.date, $0.status) })
-            let range = currentRange
-            out += MeetingExpansion.expandUserTimetable(
-                meetings: timetable.meetings,
-                courses: timetable.courses,
-                daySlots: timetable.daySlots,
-                rangeStart: range.start,
-                rangeEnd: range.end,
-                semesterStart: semester.startDate,
-                semesterEnd: semester.endDate,
-                statusByDate: statusByDate
-            )
-        }
-        out += PersonalEventDisplay.calendarEvents(occurrences: occurrences)
-        return out.sorted {
-            if $0.date != $1.date { return $0.date < $1.date }
-            return $0.startMinute < $1.startMinute
-        }
+    /// ★ 日別シートは「可視月のグリッド 42 日」から開かれる。payload は月グリッド全体
+    ///   (前後月のはみ出し日を含む) を持つので、**date の月ではなく可視月**で引く。
+    ///   date の月で引くと、7 月グリッドの 6/30 を開いたとき未取得の 6 月 payload を
+    ///   見にいって中身が空になる。
+    func meetings(on date: String) -> [CalendarEvent] {
+        store.payload(store.visibleMonth)?.events
+            .filter { $0.date == date && $0.kind == .meeting } ?? []
     }
 
     func occurrences(on date: String) -> [PersonalEventOccurrenceDto] {
-        occurrences
+        let source = store.payload(store.visibleMonth)?.extra ?? occurrences
+        return source
             .filter { $0.days.contains { $0.date == date } }
             .sorted { lhs, rhs in
                 let l = lhs.days.first(where: { $0.date == date })?.startMinute ?? 0
@@ -80,20 +68,6 @@ final class PersonalCalendarViewModel {
                 return lhs.title < rhs.title
             }
     }
-
-    func selectDate(_ date: String) {
-        selectedDate = date
-        anchor = date
-    }
-
-    func statusByDate() -> [String: AttendanceDayStatus] {
-        Dictionary(uniqueKeysWithValues: (overview?.days ?? []).map { ($0.date, $0.status) })
-    }
-
-    /// CalendarMonth のドット用。日別の内訳をそのまま渡す (D1 §2.6)
-    func daySummaries() -> [String: AttendanceDaySummary] {
-        Dictionary((overview?.days ?? []).map { ($0.date, $0) }, uniquingKeysWith: { _, last in last })
-    }
 }
 
 struct PersonalCalendar: View {
@@ -101,405 +75,41 @@ struct PersonalCalendar: View {
     let semesterId: String?
     let available: CGFloat
     @State private var viewModel: PersonalCalendarViewModel?
-    @State private var loadRevision = 0
-    @State private var activeDate: String?
-    @State private var dayPath = NavigationPath()
 
     var body: some View {
         Group {
             if let model = viewModel {
-                content(model)
+                CalendarScreen(
+                    store: model.store,
+                    options: .personal,
+                    available: available,
+                    originMonth: CalendarRange.monthFirst(SchoolClock.todayString())
+                ) { context in
+                    PersonalDaySheet(
+                        date: context.date,
+                        meetings: model.meetings(on: context.date),
+                        occurrences: model.occurrences(on: context.date),
+                        path: context.path,
+                        onChanged: context.onChanged,
+                        onClose: context.onClose
+                    )
+                }
+                .task {
+                    await environment.calendarSyncCoordinator.sync(trigger: .calendarScreen)
+                }
+                .onChange(of: semesterId) { _, newValue in
+                    Task { await model.store.setSemester(newValue) }
+                }
             } else {
                 Color.clear
                     .frame(height: 0)
                     .accessibilityHidden(true)
             }
         }
-        .task(id: semesterId) {
-            if viewModel == nil { viewModel = PersonalCalendarViewModel(environment: environment) }
-            await viewModel?.load(semesterId: semesterId)
-            await environment.calendarSyncCoordinator.sync(trigger: .calendarScreen)
-            loadRevision += 1
-        }
-    }
-
-    private var daySheetBinding: Binding<Bool> {
-        Binding(get: { activeDate != nil }, set: { if !$0 { activeDate = nil } })
-    }
-
-    @ViewBuilder
-    private func sheetHost(_ model: PersonalCalendarViewModel) -> some View {
-        if let date = activeDate {
-            BottomSheet(title: PersonalDaySheetFormat.heading(date), isPresented: daySheetBinding, navigationPath: $dayPath) {
-                PersonalDaySheet(
-                    date: date,
-                    meetings: model.events(semesterId: semesterId).filter { $0.date == date && $0.kind == .meeting },
-                    occurrences: model.occurrences(on: date),
-                    path: $dayPath,
-                    onChanged: { await model.load(semesterId: semesterId) },
-                    onClose: { activeDate = nil }
-                )
+        .task {
+            if viewModel == nil {
+                viewModel = PersonalCalendarViewModel(environment: environment, semesterId: semesterId)
             }
         }
-    }
-
-    @ViewBuilder
-    private func content(_ model: PersonalCalendarViewModel) -> some View {
-        let events = model.events(semesterId: semesterId)
-        if model.isLoading {
-            VStack(spacing: Space.s3) {
-                Skeleton(width: nil, height: 40, radius: Radius.md)
-                Skeleton(width: nil, height: 360, radius: Radius.md)
-            }
-        } else if model.hasError {
-            Panel {
-                VStack(spacing: Space.s3) {
-                    Text("カレンダーを読み込めませんでした。").foregroundStyle(Color.textSecondary)
-                    AtenderButton(title: "再試行", variant: .secondary, size: .sm) {
-                        Task { await model.load(semesterId: semesterId) }
-                    }
-                }
-            }
-        } else {
-            ScrollView {
-                VStack(spacing: Space.s2) {
-                    CalendarSyncBanner()
-                    CalendarMonthHeader(anchor: model.anchor) { next in
-                        model.anchor = next
-                        Task { await model.load(semesterId: semesterId) }
-                    }
-                    CalendarMonth(
-                        anchor: model.anchor,
-                        selectedDate: model.selectedDate,
-                        events: events,
-                        daySummaries: model.daySummaries(),
-                        available: available,
-                        onSelectDate: { date in
-                            let needsReload = PersonalCalendarLogic.monthChanged(anchor: model.anchor, date: date)
-                            model.selectDate(date)
-                            dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .view, date: date))
-                            if needsReload {
-                                Task {
-                                    await model.load(semesterId: semesterId)
-                                    activeDate = date
-                                }
-                            } else {
-                                activeDate = date
-                            }
-                        },
-                        onChangeAnchor: { next in
-                            model.anchor = next
-                            Task { await model.load(semesterId: semesterId) }
-                        },
-                        onLongPressDate: { date in
-                            model.selectDate(date)
-                            dayPath = NavigationPath(CalendarDaySheetLogic.initialPath(intent: .create, date: date))
-                            activeDate = date
-                        }
-                    )
-                }
-            }
-            .scrollBounceBehavior(.basedOnSize)
-            // ★ scrollClipDisabled は付けない。付けるとスクロール中の中身が
-            //   ルーム選択チップや「時間割/カレンダー」ピッカーの上に描画される (実機 FB)。
-            // ★ 代わりに ScrollView を画面幅いっぱいに広げ、インセットは contentMargins で
-            //   中身側に戻す。こうしないとクリップ境界がカードの縁と一致し、
-            //   カードの影が左右だけ切れる (実機 FB / ContextChips と同じ手)。
-            .padding(.horizontal, -Space.pagePxMobile)
-            .contentMargins(.horizontal, Space.pagePxMobile, for: .scrollContent)
-            .overlay { sheetHost(model) }
-        }
-    }
-
-}
-
-/// 月の移動ヘッダー。
-///
-/// ★ 旧実装は `PeriodNav` を 44pt の行に置き、右端に 44×44 の「+」を並べていた。
-///   実機 FB「余計に縦幅を取ってカレンダー自体が小さい / ボタンが質素」を受けて:
-///   - 高さを 32pt に詰め、月名を主役 (title3 bold) にした
-///   - 「+」は廃止し、**日付セルの長押し**に移した (タップは従来どおり日別シート)
-///   - 書き出しエラーはここの警告グリフに集約 (バナーで縦幅を食わない)
-struct CalendarMonthHeader: View {
-    let anchor: String
-    let onChange: (String) -> Void
-
-    var body: some View {
-        HStack(spacing: Space.s2) {
-            Text(CalendarRange.format(CalendarRange.monthFirst(anchor), .yearMonth))
-                .font(.title3)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textPrimary)
-                .contentTransition(.numericText())
-            CalendarSyncWarningButton()
-            Spacer(minLength: Space.s2)
-            Button { onChange(CalendarRange.addMonths(anchor, -1)) } label: {
-                chevron("chevron.left")
-            }
-            .accessibilityLabel("前の月")
-            Button { onChange(CalendarRange.addMonths(anchor, 1)) } label: {
-                chevron("chevron.right")
-            }
-            .accessibilityLabel("次の月")
-        }
-        .buttonStyle(.plain)
-        .frame(height: 32)
-    }
-
-    private func chevron(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(Color.accent500)
-            .frame(width: 32, height: 32)
-            .background(Color.bgElevated, in: Circle())
-            .overlay(Circle().stroke(Color.borderSubtle, lineWidth: 1))
-            .contentShape(Circle())
-    }
-}
-
-struct PeriodNav: View {
-    let viewMode: CalendarViewMode
-    let anchor: String
-    let onChange: (String) -> Void
-
-    var body: some View {
-        HStack(spacing: Space.s2) {
-            Button { onChange(shift(-1)) } label: { Image(systemName: "chevron.left") }
-            Text(title)
-                .font(.atenderSm)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textPrimary)
-                .frame(minWidth: 138)
-            Button { onChange(shift(1)) } label: { Image(systemName: "chevron.right") }
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
-    }
-
-    private var title: String {
-        switch viewMode {
-        case .day: return CalendarRange.format(anchor, .yearMonthDay)
-        case .week:
-            let start = CalendarRange.mondayOf(anchor)
-            return "\(CalendarRange.format(start, .monthDay)) - \(CalendarRange.format(CalendarRange.addDays(start, 6), .monthDay)) (週)"
-        case .month: return CalendarRange.format(CalendarRange.monthFirst(anchor), .yearMonth)
-        }
-    }
-
-    private func shift(_ amount: Int) -> String {
-        switch viewMode {
-        case .day: return CalendarRange.addDays(anchor, amount)
-        case .week: return CalendarRange.addDays(anchor, amount * 7)
-        case .month: return CalendarRange.addMonths(anchor, amount)
-        }
-    }
-}
-
-struct CalendarMonth: View {
-    let anchor: String
-    let selectedDate: String
-    let events: [CalendarEvent]
-    let daySummaries: [String: AttendanceDaySummary]
-    var available: CGFloat? = nil
-    let onSelectDate: (String) -> Void
-    var onChangeAnchor: ((String) -> Void)? = nil
-    /// 日付セルの長押し。予定の新規作成に使う (旧「+」ボタンの置き換え)
-    var onLongPressDate: ((String) -> Void)? = nil
-
-    private let labels = ["月", "火", "水", "木", "金", "土", "日"]
-
-    var body: some View {
-        let monthFirst = CalendarRange.monthFirst(anchor)
-        let range = CalendarRange.monthGridRange(anchorMonthFirst: monthFirst)
-        let dates = (0..<42).map { CalendarRange.addDays(range.start, $0) }
-        let eventMap = MeetingExpansion.eventsByDate(events)
-        let rowHeight = available.map { CalendarMonthLayout.rowHeight(available: CalendarMonthLayout.gridAvailable(available: $0)) } ?? 86
-        monthGrid(dates: dates, eventMap: eventMap, monthFirst: monthFirst, rowHeight: rowHeight)
-            .gesture(
-                DragGesture(minimumDistance: 20)
-                    .onEnded { value in
-                        guard abs(value.translation.width) > abs(value.translation.height) else { return }
-                        if value.translation.width < -50 {
-                            onChangeAnchor?(CalendarRange.addMonths(anchor, 1))
-                        } else if value.translation.width > 50 {
-                            onChangeAnchor?(CalendarRange.addMonths(anchor, -1))
-                        }
-                    }
-            )
-            .sensoryFeedback(.selection, trigger: anchor)
-    }
-
-    /// 7 列等幅グリッドの列定義。SwiftUI 標準の `LazyVGrid` に等幅配分を任せる。
-    /// ★ `.flexible()` の `minimum` を省くと子の内容の最小幅が下限として残り等幅が崩れる。
-    ///   必ず `minimum: 0` を指定する
-    ///   (Muraki/knowledge/gotcha/swiftui-hstack-equal-columns-need-minwidth-zero)
-    private var columns: [GridItem] {
-        Array(
-            repeating: GridItem(.flexible(minimum: 0), spacing: CalendarMonthLayout.columnSpacing),
-            count: CalendarMonthLayout.columnCount
-        )
-    }
-
-    @ViewBuilder
-    private func monthGrid(dates: [String], eventMap: [String: [CalendarEvent]], monthFirst: String, rowHeight: CGFloat) -> some View {
-        let content = VStack(spacing: CalendarMonthLayout.rowSpacing) {
-            // ★ 曜日ヘッダーと日セルは同一の `columns` 定義を共有する。
-            //   これで列とラベルの x が必ず揃う (別々に幅を計算しない)
-            LazyVGrid(columns: columns, spacing: CalendarMonthLayout.rowSpacing) {
-                ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
-                    Text(label)
-                        .font(.atenderXs)
-                        .fontWeight(.bold)
-                        .lineLimit(1)
-                        .foregroundStyle(weekdayColor(index: index, outsideMonth: false))
-                        .frame(minWidth: 0, maxWidth: .infinity)
-                        .frame(height: CalendarMonthLayout.weekdayHeaderHeight)
-                }
-            }
-            LazyVGrid(columns: columns, spacing: CalendarMonthLayout.rowSpacing) {
-                ForEach(dates, id: \.self) { date in
-                    dayCell(date, events: eventMap[date] ?? [], monthFirst: monthFirst, rowHeight: rowHeight)
-                }
-            }
-        }
-
-        content
-            .padding(Space.s2)
-            .background(Color.bgElevated)
-            .clipShape(RoundedRectangle(cornerRadius: Radius.lg, style: .continuous))
-            .atenderShadow(.card)
-    }
-
-    private func dayCell(_ date: String, events: [CalendarEvent], monthFirst: String, rowHeight: CGFloat) -> some View {
-        let emphasis = CalendarDayStyle.emphasis(
-            date: date, todayString: SchoolClock.todayString(),
-            monthFirst: monthFirst
-        )
-        let showsContent = CalendarDayStyle.showsDayContent(date: date, monthFirst: monthFirst)
-        let marks = showsContent
-            ? Array(AttendanceDayVisual.dayVisual(summary: daySummaries[date], isFuture: false).marks.prefix(3))
-            : []
-        let visibleEvents = showsContent ? events : []
-        // イベント領域は最大 2 行。溢れる日 (>2) は chip を 1 個に減らし、
-        // 残り 1 行を「+N」に充てる (番号 + chip1 + +N はどの端末でも rowHeight に収まる)。
-        let overflow = visibleEvents.count > 2
-        let visibleCount = overflow ? 1 : 2
-
-        return VStack(alignment: .leading, spacing: 3) {
-            VStack(spacing: 2) {
-                Text(String(Int(date.suffix(2)) ?? 0))
-                    .font(.atenderSm)
-                    .fontWeight(emphasis == .today ? .bold : .semibold)
-                    .foregroundStyle(dayNumberColor(date: date, emphasis: emphasis))
-                    .frame(width: 24, height: 24)
-                    .background(emphasis == .today ? Color.accent500 : Color.clear)
-                    .clipShape(Circle())
-                // §2.6: ホームは「ドットのみ」。severity 順に最大 3 個。
-                // marks が空でも 6pt を常時確保して、行間で chip の y を揃える
-                HStack(spacing: 2) {
-                    ForEach(marks, id: \.kind) { mark in
-                        Circle().fill(mark.dotColor).frame(width: 6, height: 6)
-                    }
-                }
-                .frame(width: 24, height: 6)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                ForEach(Array(visibleEvents.prefix(visibleCount))) { event in
-                    CalendarDayEventChip(event: event)
-                }
-                if overflow {
-                    Text("+\(visibleEvents.count - visibleCount)")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.textTertiary)
-                        .padding(.horizontal, 3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
-            .frame(minWidth: 0, maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .clipped()
-            .allowsHitTesting(false)
-        }
-        .padding(.horizontal, 3)
-        .padding(.vertical, 2)
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-        .frame(height: rowHeight)
-        .background(
-            CalendarDayStyle.isSelected(date: date, selectedDate: selectedDate)
-                ? Color.calendarSelectedDay : Color.clear,
-            in: RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
-        )
-        // ★ 背景塗りと当たり判定を分離するため contentShape は絶対に消さない
-        .contentShape(Rectangle())
-        // ★ Button は使わない。Button 内部のタップ認識と onLongPressGesture が競合し
-        //   「微妙に長押ししないとタップ判定にならない」実機 FB になった (build 14)。
-        //   長押しを内側・タップを外側に付けると、素早く離したときは長押しが失敗して
-        //   タップが即通り、押し続けたときだけ長押しが勝つ
-        .conditional(onLongPressDate != nil) { view in
-            view.onLongPressGesture(minimumDuration: 0.4) {
-                onLongPressDate?(date)
-            }
-        }
-        .onTapGesture { onSelectDate(date) }
-        // ★ Button を外したので「ボタンである」意味論を明示的に復元する。
-        //   children: .combine は Button が内部でやっていた結合と同じラベル
-        //   (例: "6、プログラミング演習、英語") を作るので、既存の
-        //   XCUITest / 計測ハーネスの app.buttons[...] がそのまま引ける
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction { onSelectDate(date) }
-        .conditional(onLongPressDate != nil) { view in
-            view.accessibilityAction(named: "予定を追加") { onLongPressDate?(date) }
-        }
-    }
-
-    private func dayNumberColor(date: String, emphasis: CalendarDayEmphasis) -> Color {
-        switch emphasis {
-        case .today: return Color.textOnAccent
-        case .outsideMonth: return weekdayColor(index: weekdayIndex(date), outsideMonth: true)
-        case .normal: return weekdayColor(index: weekdayIndex(date), outsideMonth: false)
-        }
-    }
-
-    private func weekdayColor(index: Int, outsideMonth: Bool) -> Color {
-        let color: Color
-        switch index {
-        case 5:
-            color = Color(hexString: "#0091FF")
-        case 6:
-            color = Color(hexString: "#E5484D")
-        default:
-            color = Color.textPrimary
-        }
-        return outsideMonth ? color.opacity(0.38) : color
-    }
-
-    private func weekdayIndex(_ date: String) -> Int {
-        guard let parsed = CalendarRange.parse(date) else { return 0 }
-        let weekday = CalendarRange.utcCalendar.component(.weekday, from: parsed)
-        return weekday == 1 ? 6 : weekday - 2
-    }
-}
-
-struct CalendarDayEventChip: View {
-    let event: CalendarEvent
-
-    var body: some View {
-        Text(CalendarEventDisplay.eventTitle(event))
-            .font(.caption2)
-            .fontWeight(.semibold)
-            .lineLimit(1)
-            .foregroundStyle(Color.textPrimary)
-            .padding(.leading, 5)
-            .padding(.trailing, 4)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 14)
-            .background(Color.opaqueTint(hex: event.color, ratio: Color.surfaceTintRatio, base: .bgElevated))
-            .overlay(alignment: .leading) {
-                Capsule()
-                    .fill(Color(hexString: event.color))
-                    .frame(width: 2)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 }

@@ -67,16 +67,6 @@ final class CalendarLayoutTests: XCTestCase {
 
     // MARK: - 個人カレンダー再構築 §6.3 / §9 U7-U8 (Reviewer 生成)
 
-    func testU7GridAvailableSubtractsCardChrome() {
-        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 600), 584, accuracy: 0.001, "[#U7]")
-        XCTAssertEqual(CalendarMonthLayout.cardChromeHeight, 16, accuracy: 0.001, "[#U7] Space.s2 * 2")
-    }
-
-    func testU7GridAvailableNeverGoesNegative() {
-        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 10), 0, accuracy: 0.001, "[#U7]")
-        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 0), 0, accuracy: 0.001, "[#U7]")
-    }
-
     func testU8RowHeightFormulaUnchanged() {
         XCTAssertEqual(CalendarMonthLayout.rowHeight(available: 626), 100, accuracy: 0.001, "[#U8] (available - 26) / 6")
     }
@@ -254,8 +244,7 @@ final class CalendarLayoutTests: XCTestCase {
 
     func testG16GridConstants() {
         XCTAssertEqual(CalendarMonthLayout.rowSpacing, 0, accuracy: 1e-6, "[calendar-defects #G16]")
-        XCTAssertEqual(CalendarMonthLayout.columnSpacing, Space.s0_5, accuracy: 1e-6, "[calendar-defects #G16]")
-        XCTAssertEqual(CalendarMonthLayout.columnSpacing, 2, accuracy: 1e-6, "[calendar-defects #G16] Space.s0_5 == 2")
+        XCTAssertEqual(CalendarMonthLayout.columnSpacing, 0, accuracy: 1e-6, "[calendar-defects #G16] build 17 で 0 に変更")
         XCTAssertEqual(CalendarMonthLayout.columnCount, 7, "[calendar-defects #G16]")
     }
 
@@ -266,7 +255,6 @@ final class CalendarLayoutTests: XCTestCase {
                        26 + CalendarMonthLayout.rowHeight(available: 700) * 6,
                        accuracy: 0.001,
                        "[calendar-defects #G19]")
-        XCTAssertEqual(CalendarMonthLayout.gridAvailable(available: 600), 584, accuracy: 0.001, "[calendar-defects #G20]")
     }
 
     /// [calendar-defects #G15-b] 70pt の内訳 (縦 padding 2*2 + 数字 24 + 2 + ドット 6 + 3 + chip 14 + 3 + chip 14)

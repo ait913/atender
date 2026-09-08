@@ -53,12 +53,7 @@ struct HomeView: View {
                 )
                 .padding(.horizontal, -Space.pagePxMobile)
             }
-            Picker("表示", selection: $mode) {
-                Text("時間割").tag(HomeViewMode.timetable)
-                Text("カレンダー").tag(HomeViewMode.calendar)
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: .infinity)
+            CalendarModePicker(selection: $mode)
             GeometryReader { proxy in
                 HomeBody(
                     context: context,
@@ -76,12 +71,10 @@ struct HomeView: View {
         .navigationTitle("ホーム")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if context == .self {
-                ToolbarItem(placement: .topBarLeading) {
-                    SemesterMenu(semesters: semesters, semesterId: $semesterId)
-                }
-                .atenderPlainToolbarBackground()
+            ToolbarItem(placement: .topBarLeading) {
+                SemesterMenu(semesters: semesters, semesterId: $semesterId)
             }
+            .atenderPlainToolbarBackground()
             if context == .self && mode == .timetable {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -262,9 +255,13 @@ struct HomeBody: View {
         case (.self, .calendar):
             PersonalCalendar(semesterId: semesterId, available: available)
         case (.room(let roomId), .timetable):
-            RoomTimetable(roomId: roomId, available: available)
+            // ★ .id が無いと roomId が変わっても structural identity が同じままで
+            //   @State (week / viewModel) が持ち越され、別ルームの画面に前ルームのデータが残る。
+            RoomTimetable(roomId: roomId, semesterId: semesterId, available: available)
+                .id(roomId)
         case (.room(let roomId), .calendar):
-            RoomCalendar(roomId: roomId)
+            RoomCalendar(roomId: roomId, semesterId: semesterId, available: available)
+                .id(roomId)
         }
     }
 }

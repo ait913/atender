@@ -39,12 +39,12 @@ final class RoomRepository {
         return response.members
     }
 
-    func roomWeek(id: String, weekStart: String, force: Bool = false) async throws -> RoomWeekDto {
-        let key = QueryKey(["rooms", id, "week", weekStart])
+    func roomWeek(id: String, weekStart: String, semesterId: String? = nil, force: Bool = false) async throws -> RoomWeekDto {
+        let key = QueryKey(["rooms", id, "week", weekStart, semesterId ?? "-"])
         if !force, !cache.isStale(key), let cached: RoomWeekDto = cache.data(for: key, as: RoomWeekDto.self) {
             return cached
         }
-        let week = try await client.send(Endpoints.roomWeek(id: id, weekStart: weekStart), as: RoomWeekDto.self)
+        let week = try await client.send(Endpoints.roomWeek(id: id, weekStart: weekStart, semesterId: semesterId), as: RoomWeekDto.self)
         cache.setData(week, for: key)
         return week
     }

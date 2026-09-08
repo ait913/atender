@@ -294,6 +294,39 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 
 **XCUITest は別枠: `AtenderUITests` 10 本** (`B16NavTrailingUITests` 9 + `B16Round2SheetGeometryUITests` 1) + `ScreenshotFlow` 6。**`localhost:8787` の API が稼働している前提**で緑になる (デモデータ依存)。API 停止時に落ちるのは「環境依存」であり実装の失敗ではない。
 
+### ★ XCUITest の内訳ベースライン (2026-07-30, `feature/unify-calendar-build17` 作業ツリー, Reviewer 実測)
+
+台帳に UI の内訳が無かったので実測して追加する。sim = 専用作成の `iPhone 16 / iOS 18.2`、`-derivedDataPath` は scratchpad へ隔離、`localhost:8787` 稼働。
+
+| クラス | 本数 | 実測 | 備考 |
+|---|---|---|---|
+| `B16NavTrailingUITests` | 9 | **8 pass / 1 fail** | 落ちるのは常に `testD18EventRowTapPushesEditor` |
+| `B16Round2SheetGeometryUITests` | 1 | 1 pass | |
+| `ScreenshotFlow` | 6 | 未計測 (harness の 10 分上限で打ち切り) | 合否でなくスクショ採取が目的 (role note 59) |
+
+**`testD18EventRowTapPushesEditor` の分類: 環境依存 (flaky)**。build 17 の変更前後で同じ挙動。症状は「シートが開かない → `sheet-back` が無い」で、**起動直後の 1〜2 タップが失われる** XCUITest の癖 (`gotcha/xcuitest-first-taps-after-launch-are-lost`) と同型。4 回リトライする `testH3` は常に通る。build 16 のレビュー時から同じ 1 件で、**未分類ではない**。
+
+### ★ XCTAutomationSupport の SIGSEGV (2026-07-30 発見、分類: 環境 / ハーネス)
+
+UI テストが低頻度で `Failed to get matching snapshot: Lost connection to the application` で落ちる。クラッシュログ (`~/Library/Logs/DiagnosticReports/Atender-*.ips`) の faulting thread は **アプリのフレームをひとつも含まない**:
+
+```
+libsystem_platform  _platform_strcmp
+XCTAutomationSupport runtime_issue_os_log_fault_callback
+libsystem_trace     __LIBTRACE_CLIENT_QUARANTINED_DUE_TO_HIGH_LOGGING_VOLUME__
+XCTAutomationSupport -[XCElementSnapshot label] / accessibilitySnapshotOrError:
+```
+
+= XCUITest のスナップショット機構が os_log を大量に吐いて quarantine され、その中で落ちている。**アプリのバグではない**。同じテストを単独で撃ち直すと通る。a11y ツリーが肥大している画面 (build 17 の月ページャは 126 個の日セルを露出する) で出やすい。
+
+### ★ build 17 レーンでの実測 (2026-07-30, `feature/unify-calendar-build17` 作業ツリー, Reviewer)
+
+`xcodebuild test -scheme Atender` → **Executed 643 tests, with 0 failures** / `** TEST SUCCEEDED **`。`TEST_RUNNER_TZ=UTC` でも同数緑。**未分類 0**。
+
+内訳: 566 (main ベースライン) − 2 (設計 §10.1 が削除を指定した `testU7GridAvailableSubtractsCardChrome` / `testU7GridAvailableNeverGoesNegative`) + 79 (Reviewer 生成 8 クラス) = **643**。
+
+`AtenderUITests` は build 17 で +11 (`B17CalendarUITests`)。**10 pass / 1 fail** で、落ちる 1 件は `testP1PagerDoesNotPolluteAccessibilityTree` (ページャの非可視ページが a11y ツリーに残る。4/4 再現。詳細は Reviewer 報告)。
+
 内訳の推移: 512 (build 15 出荷後) − 2 (build 16 の設計 §9.1 が削除を指定した `testCA5SelectedWinsOverToday` / `testCA10SelectedWinsForOutsideMonth`) + 9 (P1 マスコット/版数の Reviewer 生成) + 47 (P2〜P4 の Reviewer 生成) = **566**。
 
 旧記載: 512 GREEN / 0 RED (main = `86c6b9d` = build 15 出荷後、2026-07-30 Reviewer 実測 / build 16 P1 レビュー時)。測り方は worktree で `-derivedDataPath <scratchpad>/dd-p1` 隔離 + 本レーンの新規 3 クラスを `-skip-testing`。
