@@ -33,7 +33,10 @@ const IcsImportParam = z.object({ id: z.string(), importId: z.string() });
 const MemberParam = z.object({ id: z.string(), userId: z.string() });
 const EventParam = z.object({ id: z.string(), eventId: z.string() });
 const JoinInput = z.object({ inviteCode: z.string().min(1) });
-const WeekQuery = z.object({ weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
+const WeekQuery = z.object({
+  weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  semesterId: z.string().min(1).optional(),
+});
 const EventsQuery = z.object({ from: z.string().datetime().optional(), to: z.string().datetime().optional() });
 const CreateSyncBody = z.object({
   googleCalendarId: z.string().min(1).max(500),
@@ -107,7 +110,9 @@ export function registerRoomRoutes(app: Hono) {
 
   app.get("/api/rooms/:id/week", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("query", WeekQuery), async (c) => {
     const day = dateStringToJstDay(c.req.valid("query").weekStart);
-    return c.json(await getRoomWeek(c.get("user").id, c.req.valid("param").id, day.startOfDay));
+    return c.json(await getRoomWeek(c.get("user").id, c.req.valid("param").id, day.startOfDay, {
+      semesterId: c.req.valid("query").semesterId,
+    }));
   });
 
   app.get("/api/rooms/:id/events", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("query", EventsQuery), async (c) => {

@@ -282,7 +282,12 @@ export async function deleteRoomEvent(userId: string, roomId: string, eventId: s
   });
 }
 
-export async function getRoomWeek(userId: string, roomId: string, weekStart: Date) {
+export async function getRoomWeek(
+  userId: string,
+  roomId: string,
+  weekStart: Date,
+  options: { semesterId?: string } = {},
+) {
   const { room } = await assertMember(roomId, userId);
   const weekEnd = dayjs(weekStart).add(7, "day").subtract(1, "millisecond").toDate();
   const members = await prisma.roomMembership.findMany({
@@ -311,9 +316,16 @@ export async function getRoomWeek(userId: string, roomId: string, weekStart: Dat
     orderBy: { createdAt: "desc" },
   });
   const selectedByUser = new Map<string, (typeof timetables)[number]>();
+  const lockedByUser = new Set<string>();
   for (const timetable of timetables) {
+    if (lockedByUser.has(timetable.userId)) continue;
     const current = selectedByUser.get(timetable.userId);
     const defaultSemesterId = defaultSemesterByUser.get(timetable.userId) ?? null;
+    if (timetable.userId === userId && options.semesterId && timetable.semesterId === options.semesterId) {
+      selectedByUser.set(timetable.userId, timetable);
+      lockedByUser.add(timetable.userId);
+      continue;
+    }
     if (!current) {
       selectedByUser.set(timetable.userId, timetable);
       continue;

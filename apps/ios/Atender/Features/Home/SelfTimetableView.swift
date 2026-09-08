@@ -157,8 +157,7 @@ struct SelfTimetableView: View {
                         currentPeriodIndex: TimetableGridLayout.currentPeriodIndex(daySlots: display.daySlots, nowMinute: SchoolClock.nowMinute())
                     )
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .scrollClipDisabled()
+                .atenderPageScroll()
             } else {
                 Panel { Text("先に学期を作成してください。").foregroundStyle(Color.textSecondary) }
             }

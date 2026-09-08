@@ -73,14 +73,14 @@ struct TimetableGrid: View {
             }
             ForEach(1..<rowCount, id: \.self) { row in
                 Rectangle()
-                    .fill(Color.borderSubtle)
-                    .frame(width: width - headerWidth, height: 1)
+                    .fill(AtenderGridLine.color)
+                    .frame(width: width - headerWidth, height: AtenderGridLine.width)
                     .position(x: headerWidth + (width - headerWidth) / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row))
             }
             ForEach(1..<max(1, days.count), id: \.self) { col in
                 Rectangle()
-                    .fill(Color.borderSubtle)
-                    .frame(width: 1, height: contentHeight - TimetableGridLayout.headerHeight)
+                    .fill(AtenderGridLine.color)
+                    .frame(width: AtenderGridLine.width, height: contentHeight - TimetableGridLayout.headerHeight)
                     .position(
                         x: headerWidth + colWidth * CGFloat(col),
                         y: TimetableGridLayout.headerHeight + (contentHeight - TimetableGridLayout.headerHeight) / 2

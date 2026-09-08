@@ -155,8 +155,13 @@ enum RoomTimetableLogic {
         DaySlotDto(periodIndex: 5, label: "5限", startMinute: 980, endMinute: 1070, isBreak: false),
     ]
 
-    static func resolveDaySlots(defaultSemesterId: String?, timetables: [UserTimetableDto]) -> [DaySlotDto] {
-        let timetable = timetables.first { $0.semesterId == defaultSemesterId } ?? timetables.first
+    static func resolveDaySlots(preferredSemesterId: String? = nil,
+                                defaultSemesterId: String?,
+                                timetables: [UserTimetableDto]) -> [DaySlotDto] {
+        // §4.8: ルームでも画面上の学期文脈を先に見る。無い場合は従来の既定学期へ戻す。
+        let preferred = preferredSemesterId.flatMap { id in timetables.first { $0.semesterId == id } }
+        let fallback = defaultSemesterId.flatMap { id in timetables.first { $0.semesterId == id } }
+        let timetable = preferred ?? fallback ?? timetables.first
         return timetable?.daySlots.isEmpty == false ? timetable!.daySlots : defaultSlots
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 enum ModalHeader {
     /// ★ 全モーダル共通のタイトル書体 (DESIGN.md §3.7.4)
     static var titleFont: Font { .atender2xl.weight(.bold) }
+    static let titleMinimumScaleFactor: CGFloat = 0.5
 }
 
 private struct ModalHeaderModifier: ViewModifier {
@@ -33,15 +34,14 @@ private struct ModalHeaderModifier: ViewModifier {
     @ToolbarContentBuilder
     private var titleItem: some ToolbarContent {
         if let title {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem(placement: .principal) {
                 Text(title)
                     .font(ModalHeader.titleFont)
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .minimumScaleFactor(ModalHeader.titleMinimumScaleFactor)
                     .accessibilityAddTraits(.isHeader)
             }
-            .atenderPlainToolbarBackground()
         }
     }
 }
