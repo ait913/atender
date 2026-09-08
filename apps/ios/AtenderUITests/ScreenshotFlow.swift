@@ -77,7 +77,7 @@ final class ScreenshotFlow: XCTestCase {
 
         // 各タブ (プレースホルダ確認)
         var idx = 8
-        for label in ["学期・科目", "ルーム", "友達", "設定"] {
+        for label in ["学期・科目", "友達", "設定"] {
             tapButton(label)
             sleep(2)
             snap(String(format: "%02d-tab-", idx) + label)
@@ -186,13 +186,10 @@ final class ScreenshotFlow: XCTestCase {
     func testPhaseDFlow() {
         app.launch()
         sleep(6)
-        // ルームタブ
-        tapButton("ルーム")
-        sleep(3)
-        snap("E01-rooms-list")
+        snap("E01-home-room-chip")
         dump("E00-rooms-dump")
 
-        // ルームを開く (CONTAINS でカード)
+        // ルームの chip をタップ
         let roomBtn = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "情報処理科")).firstMatch
         var roomOK = false
         if roomBtn.waitForExistence(timeout: 3) { roomBtn.tap(); roomOK = true }

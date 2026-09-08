@@ -115,7 +115,6 @@ final class B17RoomFeatureParityTests: XCTestCase {
             "Atender/Features/Rooms/RoomCalendar.swift",
             "Atender/Features/Rooms/RoomTimetable.swift",
             "Atender/Features/Rooms/AvailabilityBar.swift",
-            "Atender/Features/Rooms/RoomDetailView.swift",
         ]
         for relative in expected {
             let path = repoRoot().appendingPathComponent(relative).path
@@ -125,12 +124,6 @@ final class B17RoomFeatureParityTests: XCTestCase {
 
     /// [#F9 / §7.3] 削除対象が本当に消えている (grep でなくファイル内容で確認)
     func testF9DeletedSymbolsAreGone() throws {
-        let roomDetail = try String(contentsOf: repoRoot().appendingPathComponent("Atender/Features/Rooms/RoomDetailView.swift"),
-                                    encoding: .utf8)
-        XCTAssertFalse(roomDetail.contains("room-fab-event"), "[#F9] room-fab-event が残っている")
-        XCTAssertFalse(roomDetail.contains("room-fab-ics"), "[#F9] room-fab-ics が残っている")
-        XCTAssertFalse(roomDetail.contains("RoomDetailTab"), "[#F9] RoomDetailTab が残っている")
-
         let personal = try String(contentsOf: repoRoot().appendingPathComponent("Atender/Features/Calendar/PersonalCalendar.swift"),
                                   encoding: .utf8)
         XCTAssertFalse(personal.contains("struct PeriodNav"), "[#F9] PeriodNav が残っている")
@@ -142,7 +135,7 @@ final class B17RoomFeatureParityTests: XCTestCase {
         while let url = enumerator?.nextObject() as? URL {
             guard url.pathExtension == "swift" else { continue }
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
-            for banned in ["room-fab-event", "room-fab-ics", "cardChromeHeight", "gridAvailable(", "onChangeAnchor"] where text.contains(banned) {
+            for banned in ["room-fab-event", "room-fab-ics", "cardChromeHeight", "gridAvailable(", "onChangeAnchor", "RoomDetailTab", "RoomsRoute", "roomsPath", "isVisible(rooms:"] where text.contains(banned) {
                 offenders.append("\(url.lastPathComponent): \(banned)")
             }
         }

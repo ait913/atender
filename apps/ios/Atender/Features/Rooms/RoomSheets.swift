@@ -63,8 +63,8 @@ struct RoomSettingsSheet: View {
     let roomId: String
     @Binding var isPresented: Bool
     let onChanged: () async -> Void
+    var onRemoved: (() -> Void)? = nil
     @Environment(AppEnvironment.self) private var environment
-    @Environment(AppRouter.self) private var router
     @State private var model: RoomSettingsViewModel?
     @State private var name = ""
     @State private var description = ""
@@ -356,7 +356,7 @@ struct RoomSettingsSheet: View {
                 await onChanged()
                 skipDisappearPersist = true
                 isPresented = false
-                router.roomsPath = NavigationPath()
+                onRemoved?()
             } catch {
                 environment.toastCenter.show("退出できませんでした")
             }
@@ -366,7 +366,7 @@ struct RoomSettingsSheet: View {
                 await onChanged()
                 skipDisappearPersist = true
                 isPresented = false
-                router.roomsPath = NavigationPath()
+                onRemoved?()
             } catch {
                 environment.toastCenter.show("削除できませんでした")
             }
