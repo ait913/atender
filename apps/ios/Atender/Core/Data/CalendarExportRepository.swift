@@ -11,8 +11,8 @@ final class CalendarExportRepository {
         self.client = client
     }
 
-    func occurrenceRange(from: String, to: String) async throws -> OccurrenceRangeResponse {
-        try await client.send(Endpoints.occurrenceRange(from: from, to: to), as: OccurrenceRangeResponse.self)
+    func occurrenceRange(from: String, to: String, semesterId: String? = nil) async throws -> OccurrenceRangeResponse {
+        try await client.send(Endpoints.occurrenceRange(from: from, to: to, semesterId: semesterId), as: OccurrenceRangeResponse.self)
     }
 
     func legacyEkPushes() async throws -> [String] {

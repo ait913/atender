@@ -789,6 +789,6 @@ model ClassTransferDisplacement {
   meeting    Meeting       @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   date       DateTime
 
-  @@unique([meetingId, date])
+  @@unique([transferId, meetingId, date])
   @@index([transferId])
 }

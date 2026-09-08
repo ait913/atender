@@ -11,7 +11,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function registerOccurrenceRoutes(app: Hono) {
   app.get("/api/occurrences", sessionMiddleware, zValidator("query", OccurrenceRangeQuery), async (c) => {
     const user = c.get("user");
-    const { from, to } = c.req.valid("query");
+    const { from, to, semesterId } = c.req.valid("query");
     if (to < from) {
       throw new AppError(400, "VALIDATION_ERROR", "to must be >= from");
     }
@@ -19,7 +19,7 @@ export function registerOccurrenceRoutes(app: Hono) {
     if (spanDays > MAX_RANGE_DAYS) {
       throw new AppError(400, "RANGE_TOO_LARGE", "range must be at most 366 days");
     }
-    const range = await listOccurrenceRange({ userId: user.id, from, to });
+    const range = await listOccurrenceRange({ userId: user.id, from, to, semesterId });
     return c.json(range);
   });
 }

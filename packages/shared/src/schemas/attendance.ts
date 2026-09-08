@@ -67,6 +67,7 @@ export const BulkClearAttendanceResponse = z.object({
 
 /** 書き出し用の授業 occurrence 範囲取得 (.designs/20260729-eventkit-dedicated-calendar-export.md §4.4) */
 export const OccurrenceRangeQuery = z.object({
+  semesterId: z.string().optional(),
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   to:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });

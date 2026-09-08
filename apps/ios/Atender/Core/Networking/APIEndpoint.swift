@@ -104,8 +104,9 @@ enum Endpoints {
         .init(path: "/api/personal-events/\(id)", method: .delete,
               query: compactQuery(["scope": scope, "originalDate": originalDate]))
     }
-    static func occurrenceRange(from: String, to: String) -> APIEndpoint {
-        .init(path: "/api/occurrences", method: .get, query: ["from": from, "to": to])
+    static func occurrenceRange(from: String, to: String, semesterId: String? = nil) -> APIEndpoint {
+        .init(path: "/api/occurrences", method: .get,
+              query: compactQuery(["from": from, "to": to, "semesterId": semesterId]))
     }
     static func legacyEkPushes() -> APIEndpoint {
         .init(path: "/api/personal-events/eventkit-legacy-pushes", method: .get)
