@@ -18,6 +18,34 @@ final class B17CalendarMonthStoreTests: XCTestCase {
         struct Boom: Error {}
     }
 
+    /// 各取得の開始を通知し、テスト側から完了順を決めるローダ
+    @MainActor
+    private final class GatedLoader {
+        var requests: [CalendarMonthStore<Int>.Request] = []
+        let started = [XCTestExpectation(description: "初回取得"),
+                       XCTestExpectation(description: "再取得")]
+        private var continuations: [Int: CheckedContinuation<CalendarMonthStore<Int>.Payload, Never>] = [:]
+
+        func load(_ request: CalendarMonthStore<Int>.Request) async -> CalendarMonthStore<Int>.Payload {
+            let index = requests.count
+            requests.append(request)
+            // 余分な再取得は停止させず、呼び出し回数の検証で検出する。
+            guard index < started.count else {
+                return .init(events: [], daySummaries: [:], extra: index + 1)
+            }
+            return await withCheckedContinuation { continuation in
+                continuations[index] = continuation
+                started[index].fulfill()
+            }
+        }
+
+        func finish(_ index: Int) {
+            continuations.removeValue(forKey: index)?.resume(
+                returning: .init(events: [], daySummaries: [:], extra: index + 1)
+            )
+        }
+    }
+
     private func makeStore(visibleMonth: String = "2026-07-01",
                           semesterId: String? = "s1",
                           recorder: Recorder) -> CalendarMonthStore<Int> {
@@ -231,6 +259,137 @@ final class B17CalendarMonthStoreTests: XCTestCase {
         XCTAssertEqual(rec.requests.last?.force, true, "[#B33] force: true で読み直していない")
         XCTAssertTrue(store.stale.contains(august), "[#B33] 他の月が stale になっていない")
         XCTAssertFalse(store.stale.contains(july), "[#B33] 読み直した可視月が stale のまま")
+    }
+
+    /// [#B30c] 旧学期の完了を破棄して、新学期で可視月を再取得する
+    func testB30cSetSemesterDuringInflightFetchRefetchesWithNewSemester() async {
+        let gate = GatedLoader()
+        let store = CalendarMonthStore<Int>(visibleMonth: july, semesterId: "s1") {
+            await gate.load($0)
+        }
+        let first = Task { await store.ensureLoaded(july) }
+        await fulfillment(of: [gate.started[0]], timeout: 2)
+        await store.setSemester("s2")
+        gate.finish(0)
+        await fulfillment(of: [gate.started[1]], timeout: 2)
+
+        // 新学期の取得を止めた状態で、旧学期の結果が公開されないことを確認する。
+        XCTAssertNil(store.payload(july), "[#B30c] 旧学期の結果が格納された")
+        XCTAssertTrue(store.stale.contains(july) || store.payload(july) == nil,
+                      "[#B30c] 旧学期の結果が有効なキャッシュになった")
+        XCTAssertFalse(store.hasFailed(july), "[#B30c] 破棄で failed が変化した")
+        XCTAssertEqual(gate.requests.map(\.semesterId), ["s1", "s2"])
+        XCTAssertEqual(gate.requests.map(\.generation), [0, 1])
+        gate.finish(1)
+        await first.value
+
+        XCTAssertEqual(store.payload(july)?.extra, 2, "[#B30c] 新学期の結果でない")
+        XCTAssertFalse(store.stale.contains(july))
+        XCTAssertFalse(store.isLoading(july))
+    }
+
+    /// [#B30d] 取得中の強制再取得はまとめて一度だけ実行する
+    func testB30dEnsureLoadedDuringInflightIsNotDropped() async {
+        let gate = GatedLoader()
+        let store = CalendarMonthStore<Int>(visibleMonth: july, semesterId: "s1") {
+            await gate.load($0)
+        }
+        let first = Task { await store.ensureLoaded(july) }
+        await fulfillment(of: [gate.started[0]], timeout: 2)
+        await store.ensureLoaded(july, force: true)
+        await store.ensureLoaded(july, force: true)
+        XCTAssertEqual(gate.requests.count, 1)
+        gate.finish(0)
+        await fulfillment(of: [gate.started[1]], timeout: 2)
+        XCTAssertEqual(gate.requests.last?.force, true)
+        gate.finish(1)
+        await first.value
+        XCTAssertEqual(gate.requests.count, 2, "[#B30d] 再取得が欠落または重複した")
+        XCTAssertEqual(store.payload(july)?.extra, 2)
+    }
+
+    /// [#B33a] 非可視月の無効化前の取得結果は表示できるが stale のまま
+    func testB33aInvalidateAllDuringInflightMarksResultStale() async {
+        let gate = GatedLoader()
+        let store = CalendarMonthStore<Int>(visibleMonth: july, semesterId: "s1") {
+            await gate.load($0)
+        }
+        let first = Task { await store.ensureLoaded(august) }
+        await fulfillment(of: [gate.started[0]], timeout: 2)
+        store.invalidateAll()
+        gate.finish(0)
+        await first.value
+        XCTAssertEqual(gate.requests.count, 1)
+        XCTAssertEqual(store.payload(august)?.extra, 1)
+        XCTAssertTrue(store.stale.contains(august), "[#B33a] 無効化前の結果が有効になった")
+
+        let retry = Task { await store.ensureLoaded(august) }
+        await fulfillment(of: [gate.started[1]], timeout: 2)
+        XCTAssertEqual(gate.requests.last?.force, false)
+        XCTAssertEqual(gate.requests.map(\.generation), [0, 1])
+        gate.finish(1)
+        await retry.value
+        XCTAssertEqual(store.payload(august)?.extra, 2)
+        XCTAssertFalse(store.stale.contains(august))
+    }
+
+    /// [#B33a] 可視月の取得中の無効化は完了後に再取得する
+    func testB33aInvalidateAllDuringVisibleInflightRefetches() async {
+        let gate = GatedLoader()
+        let store = CalendarMonthStore<Int>(visibleMonth: july, semesterId: "s1") {
+            await gate.load($0)
+        }
+        let first = Task { await store.ensureLoaded(july) }
+        await fulfillment(of: [gate.started[0]], timeout: 2)
+        store.invalidateAll()
+        gate.finish(0)
+        await fulfillment(of: [gate.started[1]], timeout: 2)
+        XCTAssertEqual(store.payload(july)?.extra, 1)
+        XCTAssertTrue(store.stale.contains(july))
+        XCTAssertEqual(gate.requests.map(\.generation), [0, 1])
+        gate.finish(1)
+        await first.value
+        XCTAssertEqual(gate.requests.count, 2)
+        XCTAssertEqual(store.payload(july)?.extra, 2)
+        XCTAssertFalse(store.stale.contains(july))
+    }
+
+    /// [#B33a] 可視月の取得中の更新も force を保って再取得する
+    func testB33aRefreshVisibleDuringInflightRefetches() async {
+        let gate = GatedLoader()
+        let store = CalendarMonthStore<Int>(visibleMonth: july, semesterId: "s1") {
+            await gate.load($0)
+        }
+        let first = Task { await store.ensureLoaded(july) }
+        await fulfillment(of: [gate.started[0]], timeout: 2)
+        await store.refreshVisible()
+        gate.finish(0)
+        await fulfillment(of: [gate.started[1]], timeout: 2)
+        XCTAssertEqual(store.payload(july)?.extra, 1)
+        XCTAssertTrue(store.stale.contains(july))
+        XCTAssertEqual(gate.requests.map(\.generation), [0, 1])
+        XCTAssertEqual(gate.requests.last?.force, true)
+        gate.finish(1)
+        await first.value
+        XCTAssertEqual(gate.requests.count, 2)
+        XCTAssertFalse(store.stale.contains(july))
+    }
+
+    /// [#B26a] 古い payload が残っていても失敗後の通常取得は再試行する
+    func testB26aFailedMonthWithOldPayloadIsRefetched() async {
+        let rec = Recorder()
+        let store = makeStore(recorder: rec)
+        await store.ensureLoaded(july)
+        rec.failingMonths.insert(july)
+        await store.ensureLoaded(july, force: true)
+        XCTAssertTrue(store.hasFailed(july))
+        XCTAssertEqual(store.payload(july)?.extra, 1)
+        rec.failingMonths.removeAll()
+        await store.ensureLoaded(july)
+        XCTAssertEqual(rec.requests.count, 3, "[#B26a] 古い payload により再試行が省略された")
+        XCTAssertEqual(rec.requests.last?.force, false)
+        XCTAssertEqual(store.payload(july)?.extra, 3)
+        XCTAssertFalse(store.hasFailed(july))
     }
 
     /// [#B34] 取得中の再入で loader は 1 回だけ
