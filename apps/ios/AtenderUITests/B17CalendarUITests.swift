@@ -77,16 +77,13 @@ final class B17CalendarUITests: XCTestCase {
     }
 
     private func openRoomDetail() -> Bool {
-        guard openTab("ルーム") else { return false }
+        guard openTab("ホーム") else { return false }
+        sleep(2)
+        let chip = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "情報処理科")).firstMatch
+        guard chip.waitForExistence(timeout: 15) else { return false }
+        if chip.isHittable { chip.tap() }
         sleep(3)
-        if app.descendants(matching: .any)["room-detail-tabs"].firstMatch.waitForExistence(timeout: 3) { return true }
-        let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "room-card-"))
-        guard cards.count > 0 else { return false }
-        let first = cards.element(boundBy: 0)
-        guard first.waitForExistence(timeout: 10) else { return false }
-        if first.isHittable { first.tap() }
-        sleep(4)
-        return app.descendants(matching: .any)["room-detail-tabs"].firstMatch.waitForExistence(timeout: 15)
+        return app.descendants(matching: .any)["home-mode-picker"].firstMatch.waitForExistence(timeout: 15)
     }
 
     // MARK: - #B45 / #B46 月めくり
@@ -209,7 +206,7 @@ final class B17CalendarUITests: XCTestCase {
     func testB48RoomDetailTabsDefaultToTimetable() throws {
         app.launch()
         XCTAssertTrue(openRoomDetail(), "[#B48] ルーム詳細に入れない (環境依存)")
-        let tabs = app.descendants(matching: .any)["room-detail-tabs"].firstMatch
+        let tabs = app.descendants(matching: .any)["home-mode-picker"].firstMatch
         XCTAssertTrue(tabs.waitForExistence(timeout: 15), "[#B48] room-detail-tabs が無い")
 
         let timetable = app.buttons["時間割"].firstMatch

@@ -1,12 +1,6 @@
 import SwiftUI
 import Observation
 
-enum RoomsRoute: Hashable {
-    case detail(String)
-    case join(String)
-    case templates
-}
-
 enum FriendsRoute: Hashable {
     case addByInvite(String)
 }
@@ -17,7 +11,7 @@ final class AppRouter {
     var selectedTab: MainTab = .home
     var homePath = NavigationPath()
     var semesterPath = NavigationPath()
-    var roomsPath = NavigationPath()
+    var pendingRoomJoinCode: String?
     var friendsPath = NavigationPath()
     var settingsPath = NavigationPath()
     var pendingDeepLink: DeepLink?
@@ -40,8 +34,9 @@ final class AppRouter {
     private func apply(_ link: DeepLink) {
         switch link {
         case .roomJoin(let code):
-            selectedTab = .rooms
-            roomsPath.append(RoomsRoute.join(code))
+            selectedTab = .home
+            homePath = NavigationPath()
+            pendingRoomJoinCode = code
         case .friendAdd(let code):
             selectedTab = .friends
             friendsPath.append(FriendsRoute.addByInvite(code))

@@ -45,7 +45,6 @@ iOS の `Radius.swift` / `Shadow.swift` / `Color+Atender.swift` は Web の値�
 | **時間割セル** (`01-home-timetable`, `E03-room-timetable`) | 科目名が**セルの縦中央**に配置。tint 面が**半透明**でマス目の罫線が透ける。空きセルにも罫線が回り**表組み (table)** に見える | `EventTile` = tint `color-mix(subject 15%, bg-elevated)` = **不透明**、`align="top"` = **上寄せ**、2px 左バー `rounded-full`、radius 8px、title 12px semibold `line-clamp-2`。空きセル = `bg-bg-base` **不透明**でページ地に溶ける | 透過 vs 不透明 / 中央 vs 上寄せ / 罫線が主役 vs 面が主役 |
 | **月カレンダー** (`02-home-calendar`) | **全セルに灰色の枠**が回り、完全な**スプレッドシート**。密度が高く「10年前」 | `CalendarMonth` = カード外殻 (`Radius.lg` + shadow) の中に TimeTree 風 hairline、日付**左上**、イベント chip は不透明 tint の細バー `rounded-4px` | **濃い罫線 + 全セルの枠**が問題であって「線があること」ではない。★ **是正の方向は build 17 (2026-07-30) で確定: 罫線全廃ではなく「時間割グリッドと同じ 1pt `borderSubtle` の内側罫線 + `bgMuted` の曜日ヘッダー帯」** (§3.6.3)。中間期の「罫線全廃 + gap 分離」裁定は撤回済 |
 | **学期カレンダー** (`C01-semester-overview`) | 出席カレンダーは各日が**枠付きボックス**。カード自体は白角丸 + 影で綺麗 (ここは Web に近い) | 同上 (`CalendarMonth` 系) | カード外殻は良い。内側の日セル枠が過剰 |
-| **ヘッダー** (`01` vs `C01` vs `E02`) | **バラバラ**: Home = タイトル無し (switcher が最上部)。学期 = `largeTitle`「学期・科目」。ルーム詳細 = **カスタム丸 back + nav タイトル + さらに本文に大タイトル (重複) + 浮遊 gear** | — (iOS 規約統一が必要) | 見出しスケール・back・gear 配置が画面ごとに不統一 |
 | **セグメント** (時間割/カレンダー) | pill 型 segmented。Home とルームで位置・体裁が微妙に違う | Web は `CalendarSegmented` で統一 | 体裁は近いが配置規約が未固定 |
 | **タブバー** (全スクショ下部) | 浮遊ピル。アイコンがやや大きく、ラベルとアイコンの間隔が近い | — | Touri 名指し。§3.8 + §10 検証 |
 
@@ -161,7 +160,7 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 #### 3.6.3 月カレンダー (personal / room 共通)
 
-**2026-07-29 Touri 裁定により、月カレンダーは「タイル (カード) の中」に収める** (2026-07-23 の full-bleed 裁定は**撤回**)。要望の逐語は「タイルの中に入れて欲しい。今は横幅いっぱいになってると思うから。中の UI はそのままでいい」。personal (Home) と room (ルーム詳細) の両方に適用し、`CalendarMonth` は**単一スタイル**とする (`CalendarMonthChrome` enum は廃止)。
+**2026-07-29 Touri 裁定により、月カレンダーは「タイル (カード) の中」に収める** (2026-07-23 の full-bleed 裁定は**撤回**)。要望の逐語は「タイルの中に入れて欲しい。今は横幅いっぱいになってると思うから。中の UI はそのままでいい」。personal (ホームの自分) と room (ホームのルーム) の両方に適用し、`CalendarMonth` は**単一スタイル**とする (`CalendarMonthChrome` enum は廃止)。
 
 > **★ Touri 裁定 (2026-07-30 / build 17)**: 「時間割と完全に揃える」。**曜日ヘッダーに `bgMuted` の帯を敷き、日セルに罫線を引く**。2026-07-2x の「罫線全廃 + gap 分離」裁定は**撤回**。旧裁定は §4 / §8 の「内側は hairline」という記述と**既に矛盾していた**ので、本裁定で罫線側に一本化して矛盾ごと解消する。
 
@@ -181,6 +180,8 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 **月カレンダーの画面 (殻) は personal / room で 1 個** (`CalendarScreen`)。データ源と文脈オプション (同期バナー / 同期警告グリフ / ヘッダー accessory / 日別シート) を注入して使い分ける。ルーム専用の別コンポーネントを作らない (2026-07-30 Touri 裁定)。
 
+振替の chip はタイトル先頭に「振替 」を付ける (chip は 14pt でバッジを置く余地が無い)
+
 #### 3.6.4 学期の出席カレンダー (`AttendanceCalendar`) — 罫線化の対象外
 
 学期・科目タブの出席カレンダーは **円形バッジの格子**であり、§3.6.3 の「表」とは別の部品である。**罫線を引かない**し `CalendarScreen` にも載せない。理由:
@@ -191,27 +192,27 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 寸法規定は `SemesterCalendarMetrics` (card 横 padding `Space.s2` / grid spacing 3 / 44pt 下限) が正典で、§3.2 の例外規定はこの部品に対してのみ生きている。
 
+振替バッジ: `transferCount > 0` の日は topLeading に 16pt の accent 丸 + 「振」8pt bold
+
 ### 3.7 ヘッダー規格の統一 (Touri 不満: 「ヘッダーの規格を統一して」)
 
 全画面で nav bar・タイトル・switcher・gear の配置を一貫させる。
 
-#### 3.7.1 トップレベル 5 タブ (ホーム / 学期・科目 / ルーム / 友達 / 設定)
+#### 3.7.1 トップレベル 4 タブ (ホーム / 学期・科目 / 友達 / 設定)
 
 - **標準 nav bar + `.navigationBarTitleDisplayMode(.inline)`**。inline title = 中央・コンパクト・太字 (~17pt semibold)。**large title は使わない** (上部の縦スペースを食うため)。
-- タイトル = そのタブの日本語名 (「ホーム」「学期・科目」「ルーム」「友達」「設定」)。**アプリ名をタイトルにしない** (汎用層 §4)。
+- タイトル = そのタブの日本語名 (「ホーム」「学期・科目」「友達」「設定」)。**アプリ名をタイトルにしない** (汎用層 §4)。
 - **本文に大タイトルを重複させない** (nav bar の inline title が唯一のタイトル)。
 - switcher ピル (自分/クラス) と segmented (時間割/カレンダー) は **nav bar の下・スクロールコンテンツの先頭**に、全画面同じ順序で置く。
 - 画面固有アクション (gear = 時間割設定 等) は **toolbar trailing** に置く。inline title と同じ行の右側に並ぶ。本文中に浮遊させない。
 
-> ★ **Touri 裁定 (2026-07-21、2026-07-18 の large title 裁定を反転)**: 大タイトル (デカ文字) をやめ、**5 タブ全部を inline の中央コンパクト太字タイトル + 歯車右**にする。理由は「デカ文字が上部スペースを食い、時間割/カレンダーの表が狭くなる」ため。inline なら省スペースで、かつタイトルと歯車が同じ横一行に並ぶ (2026-07-19 の「タイトルと設定ボタンを同じ LINE に」要望も同時に満たす)。旧 large title 裁定 (2026-07-18) は本裁定で撤回。
+> ★ **Touri 裁定 (2026-07-21、2026-07-18 の large title 裁定を反転)**: 大タイトル (デカ文字) をやめ、**全タブを inline の中央コンパクト太字タイトル + 歯車右**にする。理由は「デカ文字が上部スペースを食い、時間割/カレンダーの表が狭くなる」ため。inline なら省スペースで、かつタイトルと歯車が同じ横一行に並ぶ (2026-07-19 の「タイトルと設定ボタンを同じ LINE に」要望も同時に満たす)。旧 large title 裁定 (2026-07-18) は本裁定で撤回。
 
-#### 3.7.2 詳細画面 (ルーム詳細 / テンプレート / 科目詳細)
+#### 3.7.2 詳細画面 (プロミネントな content header を持つ画面 / 科目詳細)
 
-- **タイトルは 1 つだけ。重複を禁止** (現状 `RoomDetailView` は nav タイトルと本文 header で room 名を 2 回出す — §2 の診断)。
-- **★ Touri 裁定 (2026-07-18)**: 重複は **nav bar タイトル (小) を消し、本文 header の大タイトルを残す**方向で解消する。
-  - **nav bar は back button のみ** (`.navigationBarTitleDisplayMode(.inline)` + `.navigationTitle("")`、`BackHeaderButton` は revamp doc §4.3 で廃止済のシステム back)。nav にタイトル文言を出さない。
-  - **本文 header の大タイトル (room 名) + 副題 (「みんなの予定共有」) + gear を、nav タイトルが消えて空いた分だけ上に詰める。** これが Touri の明示要望 (「小さい方を消して、大文字ルーム名と設定ボタンを上に押し込む」)。
-  - **逸脱の明示**: これは「詳細画面は inline nav タイトル」という一般 iOS 慣習からの逸脱。理由は (a) room 名が長く content で大きく見せる価値がある (b) Touri の名指し要望。**プロミネントな content header を持つ詳細画面 (ルーム詳細等) はこのパターン**、header を持たない詳細画面 (テンプレート/科目詳細で content 側に大タイトルが無いもの) は inline nav タイトルを使う。
+- **タイトルは 1 つだけ。重複を禁止**。
+- **プロミネントな content header を持つ詳細画面**は本文 header の大タイトルを残し、nav bar はシステム back button のみ (`.navigationBarTitleDisplayMode(.inline)` + `.navigationTitle("")`) とする。
+- content header を持たない詳細画面は inline nav タイトルを使う。
 - switcher / segmented の配置規約はトップレベルと同一。
 - **本節は「タブの `NavigationStack` に push される画面」の規約**である。**シートとして出す詳細 (日別シート・フォーム系モーダル) は §3.7.4 のモーダルヘッダー規格に従う。**
 
@@ -240,7 +241,7 @@ Web `EventTile` (density=compact, align=top) の性格を iOS で再現:
 
 ### 3.8 タブバー (Liquid Glass) (Touri 名指し: アイコンが大きい・ラベルが近い)
 
-- ターゲットは native `TabView` + `.tabItem`(`Label`) の Liquid Glass タブバー (revamp doc §4.1)。**アイコンは outline のまま** (5 個中一部だけ fill にすると混在。revamp doc F6 で確定、`calendar.fill` は SF Symbols に不在)。
+- ターゲットは native `TabView` + `.tabItem`(`Label`) の Liquid Glass タブバー (revamp doc §4.1)。**アイコンは outline のまま** (一部だけ fill にすると混在。revamp doc F6 で確定、`calendar.fill` は SF Symbols に不在)。
 - **★ 確定 (2026-07-18、researcher 調査 + Leader 実機プローブ + Touri 裁定)**: iOS 26 Liquid Glass タブバーは**アイコンの point size もラベル間隔もシステム所有**で、`UITabBarAppearance` の override は**丸ごと無視される** (実機で `iconColor=.systemRed`/ラベル 12pt 下げが無視されるのをピクセル実測で確認。詳細 `Muraki/knowledge/library/swiftui-liquid-glass-ios26.md`)。
 - Touri の「アイコン大きい・ラベル近い」(#6/#7) は **iOS 26 のシステムメトリクスでバグではない**。制御するには Liquid Glass を捨てる (自前タブバー) しかなく、**Touri は Liquid Glass を優先する裁定 (2026-07-18)**。→ **タブアイコン/間隔は native のシステム値を受容する。P3/P4 で調整しない。**
 
@@ -313,7 +314,7 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 - **新しい radius/shadow/color トークンを追加定義する**: 却下。iOS の既存トークンは既に Web と同値 (§1.1)。問題は値でなく適用。新設は正典を二重化する。
 - **時間割/カレンダーを自前で凝ったグラフィックにする**: 却下。確定裁定 (不透明 tint + 上寄せ + 時間割セルの 2pt 左バー + 月カレンダーの**カード外殻 + 内側 1pt 罫線 + `bgMuted` ヘッダー帯**) が既に「綺麗」の実体。これを iOS 語彙で忠実に写すのが最短。独自の見た目を発明しない。
 - **タブアイコン/ラベル間隔を本書で「こう調整する」と確定する**: 却下 (保留)。native `TabView` の制御可否が未確認。憶測で pt を書くと Developer が実装で詰まる。§10 の researcher 検証後に確定する。
-- **トップレベル 5 タブに large title を使う**: 却下 (2026-07-21 Touri 裁定)。デカ文字が上部の縦スペースを食い、時間割/カレンダーの表が狭くなる。`.inline` の中央コンパクト太字 + 歯車右に統一する (§3.7.1)。
+- **トップレベルの全タブに large title を使う**: 却下 (2026-07-21 Touri 裁定)。デカ文字が上部の縦スペースを食い、時間割/カレンダーの表が狭くなる。`.inline` の中央コンパクト太字 + 歯車右に統一する (§3.7.1)。
 - **選択日を accent アウトライン丸で示す** (§3.6.3 の旧規定): 却下 (2026-07-30 Touri 裁定)。今日の accent 塗り丸と競合し、**今日を選ぶと今日が消える**。TimeTree の月ビュー同様「選択セルを薄いグレーで塗る」に変更し、今日の丸と併存させる。
 - **モーダルの `<` / `✕` を自前描画する** (§3.7.4 の旧実装): 却下。iOS 26 に標準部品が実在する (`Button(role: .close)` を toolbar item に置くと円形 glass の ✕、sheet 内 `NavigationStack` の push でシステム back)。自前描画は「標準部品を自前で再発明しない」規約 (CLAUDE.md) に反する。**ただし `ButtonRole.back` は存在しない**ので、back は必ず `NavigationStack` の push で得る。
 - **toolbar item の glass カプセルを `.buttonStyle(.plain)` で消す**: 却下。**無効**であることを実機で確認済 (素の版とスクリーンショットが md5 一致)。カプセルは Button の style ではなく toolbar 側が item を包む共有背景なので、`sharedBackgroundVisibility(.hidden)` (iOS 26.0+) だけが効く。
@@ -327,9 +328,9 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 
 本書執筆中に検出した、revamp doc の現行記述と本書の視覚原則が食い違う点。**3 件とも Touri 裁定済 (2026-07-18)。P3 設計doc 更新時に revamp doc へ反映すること。**
 
-1. **ルーム詳細のタイトル重複** — ✅ **裁定済**: **nav タイトルを付けず、本文 header の大タイトルを残して上に詰める** (§3.7.2)。revamp doc §4.3 が `RoomDetailView` に足そうとしている `.navigationTitle(room名)` は**入れない** (nav は back のみ)。revamp doc §4.3 の該当記述を P3 で書き換える。
+1. **ルーム詳細のタイトル重複** — build 18 でルーム詳細画面を廃止し、ホームの context chip に集約。詳細画面の一般規定は §3.7.2 に従う。
 
-2. **Home のタイトル** — ✅ **裁定済 (2026-07-21 に反転、本項を置換)**: **large title は使わず、5 タブ全部を `.inline` の中央コンパクト太字タイトル + 歯車右**にする (§3.7.1)。revamp doc §5.1 の Home toolbar にタイトル「ホーム」を `.navigationBarTitleDisplayMode(.inline)` で確定。2026-07-18 の「large title で統一」裁定は撤回済。
+2. **Home のタイトル** — ✅ **裁定済 (2026-07-21 に反転、本項を置換)**: **large title は使わず、全タブを `.inline` の中央コンパクト太字タイトル + 歯車右**にする (§3.7.1)。revamp doc §5.1 の Home toolbar にタイトル「ホーム」を `.navigationBarTitleDisplayMode(.inline)` で確定。2026-07-18 の「large title で統一」裁定は撤回済。
 
 3. **時間割/カレンダーの視覚原則が revamp doc P3 (§5.3) に不在**: revamp doc §5.3 は `TimetableGridPhaseB` の**フォントトークン置換**しか扱っておらず、セル背景の透過/罫線/テキスト配置 (Touri の核心不満) に**言及がない**。矛盾ではないが**欠落**。→ **P3 の §5.3 実装は本書 §3.6 を適用規則として併せ持つ**必要がある。Leader は P3 設計doc更新時に §3.6 を必須参照に含めること。
 

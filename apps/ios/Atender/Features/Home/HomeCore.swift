@@ -26,11 +26,23 @@ enum HomeChips {
     static func items(rooms: [RoomSummaryDto]) -> [ContextChipItem] {
         [.selfChip(label: "自分")] + rooms.map { .room(roomId: $0.id, roomName: $0.name) }
     }
+}
 
-    static func isVisible(rooms: [RoomSummaryDto]) -> Bool {
-        !rooms.isEmpty
+enum HomeSheet: Identifiable, Equatable {
+    case roomCreate
+    case roomJoin(initialCode: String?)
+    case roomSettings(roomId: String)
+
+    var id: String {
+        switch self {
+        case .roomCreate: return "create"
+        case .roomJoin: return "join"
+        case .roomSettings(let roomId): return "settings:\(roomId)"
+        }
     }
 }
+
+enum RoomAddAction: Equatable { case create, join, scanQR }
 
 struct HomeView: View {
     @Environment(AppEnvironment.self) private var environment
@@ -41,18 +53,18 @@ struct HomeView: View {
     @State private var rooms: [RoomSummaryDto] = []
     @State private var semesters: [SemesterDto] = []
     @State private var showTimetableSettings = false
+    @State private var sheet: HomeSheet?
+    @State private var scannerPresented = false
 
     var body: some View {
         VStack(spacing: Space.s3) {
-            if HomeChips.isVisible(rooms: rooms) {
-                ContextChips(
-                    items: HomeChips.items(rooms: rooms),
-                    selected: context,
-                    onChange: { context = $0 },
-                    onAddRoom: { environment.appRouter.selectedTab = .rooms }
-                )
-                .padding(.horizontal, -Space.pagePxMobile)
-            }
+            ContextChips(
+                items: HomeChips.items(rooms: rooms),
+                selected: context,
+                onChange: { context = $0 },
+                onAddRoom: handleAddRoom
+            )
+            .padding(.horizontal, -Space.pagePxMobile)
             CalendarModePicker(selection: $mode)
             GeometryReader { proxy in
                 HomeBody(
@@ -85,6 +97,17 @@ struct HomeView: View {
                     .accessibilityLabel("時間割の設定")
                 }
             }
+            if case .room(let roomId) = context {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        sheet = .roomSettings(roomId: roomId)
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel("ルームの設定")
+                    .accessibilityIdentifier("home-room-settings")
+                }
+            }
         }
         .safeAreaInset(edge: .bottom) {
             if context == .self { Color.clear.frame(height: 64) }
@@ -92,6 +115,20 @@ struct HomeView: View {
         .overlay(alignment: .bottom) {
             if context == .self { HomeAttendanceOverlay() }
         }
+        .sheet(item: $sheet) { activeSheet in
+            homeSheetContent(activeSheet)
+        }
+        .fullScreenCover(isPresented: $scannerPresented) {
+            QRScannerScreen(
+                onResult: { url in
+                    scannerPresented = false
+                    environment.appRouter.handleDeepLink(url)
+                },
+                onCancel: { scannerPresented = false }
+            )
+        }
+        .task { consumePendingRoomJoin() }
+        .onChange(of: environment.appRouter.pendingRoomJoinCode) { _, _ in consumePendingRoomJoin() }
         .task {
             rooms = (try? await environment.roomRepository.rooms()) ?? []
             await loadSemesters()
@@ -105,6 +142,49 @@ struct HomeView: View {
             }
             applyFallbackSemester()
         }
+    }
+
+    private func handleAddRoom(_ action: RoomAddAction) {
+        switch action {
+        case .create: sheet = .roomCreate
+        case .join: sheet = .roomJoin(initialCode: nil)
+        case .scanQR: scannerPresented = true
+        }
+    }
+
+    @ViewBuilder
+    private func homeSheetContent(_ activeSheet: HomeSheet) -> some View {
+        switch activeSheet {
+        case .roomCreate:
+            RoomCreateSheet(isPresented: sheetPresentedBinding, onCreated: { created in
+                rooms = (try? await environment.roomRepository.rooms(force: true)) ?? rooms
+                context = .room(roomId: created.id)
+            })
+        case .roomJoin(let initialCode):
+            JoinByCodeSheet(isPresented: sheetPresentedBinding, initialCode: initialCode, onJoined: { id in
+                Task {
+                    rooms = (try? await environment.roomRepository.rooms(force: true)) ?? rooms
+                    context = .room(roomId: id)
+                }
+            })
+        case .roomSettings(let roomId):
+            RoomSettingsSheet(roomId: roomId, isPresented: sheetPresentedBinding, onChanged: {
+                rooms = (try? await environment.roomRepository.rooms(force: true)) ?? rooms
+            }, onRemoved: {
+                context = .self
+                Task { rooms = (try? await environment.roomRepository.rooms(force: true)) ?? rooms }
+            })
+        }
+    }
+
+    private var sheetPresentedBinding: Binding<Bool> {
+        Binding(get: { sheet != nil }, set: { if !$0 { sheet = nil } })
+    }
+
+    private func consumePendingRoomJoin() {
+        guard let code = environment.appRouter.pendingRoomJoinCode else { return }
+        environment.appRouter.pendingRoomJoinCode = nil
+        sheet = .roomJoin(initialCode: code)
     }
 
     private func applyDefaultSemester(_ me: MeResponse) {
@@ -171,7 +251,7 @@ struct ContextChips: View {
     let items: [ContextChipItem]
     let selected: HomeContext
     let onChange: (HomeContext) -> Void
-    let onAddRoom: () -> Void
+    let onAddRoom: (RoomAddAction) -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -199,7 +279,11 @@ struct ContextChips: View {
                     .buttonStyle(.plain)
                     .conditional(isActive(item)) { $0.atenderShadow(.glowSoft) }
                 }
-                Button(action: onAddRoom) {
+                Menu {
+                    Button { onAddRoom(.create) } label: { Label("ルームを作成", systemImage: "plus.circle") }
+                    Button { onAddRoom(.join) } label: { Label("リンクで参加", systemImage: "link") }
+                    Button { onAddRoom(.scanQR) } label: { Label("QR で参加", systemImage: "qrcode.viewfinder") }
+                } label: {
                     Image(systemName: "plus")
                         .font(.atenderSm)
                         .fontWeight(.bold)
@@ -210,6 +294,7 @@ struct ContextChips: View {
                         .overlay(Circle().stroke(Color.borderSubtle, lineWidth: 1))
                 }
                 .accessibilityLabel("ルームを追加")
+                .accessibilityIdentifier("rooms-add")
             }
         }
         .scrollClipDisabled()

@@ -129,13 +129,14 @@ final class B16NavTrailingUITests: XCTestCase {
 
     func testN4N5N6N7RoomsTrailingMenu() {
         app.launch()
-        XCTAssertTrue(openTab("ルーム"), "ルームタブに到達できない (ハーネスの問題)")
+        let chips = app.descendants(matching: .any)["context-chips"].firstMatch
+        XCTAssertTrue(chips.waitForExistence(timeout: 15), "[build16 #N5] context-chips が存在しない")
 
         let add = app.buttons["rooms-add"]
         XCTAssertTrue(add.waitForExistence(timeout: 15), "[build16 #N5] rooms-add が存在しない")
         // ★ Menu のラベルは isHittable == false と報告される (XCUITest の癖)。
         //   位置と「押したら開く」で担保する。
-        XCTAssertLessThan(add.frame.minY, 160, "[build16 #N5] rooms-add が nav bar の位置に無い")
+        XCTAssertTrue(chips.buttons["rooms-add"].waitForExistence(timeout: 10), "[build16 #N5] rooms-add が chip 行の中に無い")
         XCTAssertGreaterThan(add.frame.width, 20, "[build16 #N5] rooms-add に描画サイズが無い")
         XCTAssertEqual(app.buttons.matching(identifier: "rooms-add").count, 1,
                        "[build16 #N5] rooms-add が 1 個ではない")
@@ -145,14 +146,14 @@ final class B16NavTrailingUITests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "みんなの時間割")).count, 0,
                        "[build16 #N6] 「みんなの時間割」導線が残っている")
 
-        assertNoBodyHeading("ルーム", tag: "[build16 #N4]")
-
-        // #N7: メニューに 2 項目、それぞれシートが開く
+        // #N7: メニューに 3 項目、作成からシートが開く
         add.tap()
         let create = app.buttons["ルームを作成"].firstMatch
         let join = app.buttons["リンクで参加"].firstMatch
+        let scanQR = app.buttons["QR で参加"].firstMatch
         XCTAssertTrue(create.waitForExistence(timeout: 10), "[build16 #N7] 「ルームを作成」が無い")
         XCTAssertTrue(join.exists, "[build16 #N7] 「リンクで参加」が無い")
+        XCTAssertTrue(scanQR.exists, "[build16 #N7] 「QR で参加」が無い")
         create.tap()
         XCTAssertTrue(app.buttons["sheet-close"].waitForExistence(timeout: 10),
                       "[build16 #N7] 「ルームを作成」でシートが開かない")
@@ -235,14 +236,13 @@ final class B16NavTrailingUITests: XCTestCase {
     /// #D21 room の日セル tap で日別シートが開く
     func testD21RoomDayCellOpensDaySheet() {
         app.launch()
-        XCTAssertTrue(openTab("ルーム"), "ルームタブに到達できない (ハーネスの問題)")
 
-        let card = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "情報処理科")).firstMatch
-        guard card.waitForExistence(timeout: 15) else {
-            XCTFail("[build16 #D21] ルームカードを掴めない (ハーネス/データの問題)")
+        let chip = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "情報処理科")).firstMatch
+        guard chip.waitForExistence(timeout: 15) else {
+            XCTFail("[build16 #D21] ルームの chipを掴めない (ハーネス/データの問題)")
             return
         }
-        card.tap()
+        chip.tap()
         sleep(3)
 
         let calendarSegment = app.buttons["カレンダー"].firstMatch

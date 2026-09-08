@@ -5,17 +5,14 @@ import XCTest
 @MainActor
 final class NavigationTests: XCTestCase {
 
-    func testMainTabMetadataMatchesWebNavigation() {
-        XCTAssertEqual(MainTab.allCases.count, 5)
+    func testMainTabMetadataMatchesDesignedTabs() {
+        XCTAssertEqual(MainTab.allCases.count, 4)
 
         XCTAssertEqual(MainTab.home.label, "ホーム")
         XCTAssertEqual(MainTab.home.symbol, "calendar")
 
         XCTAssertEqual(MainTab.semester.label, "学期・科目")
         XCTAssertEqual(MainTab.semester.symbol, "graduationcap")
-
-        XCTAssertEqual(MainTab.rooms.label, "ルーム")
-        XCTAssertEqual(MainTab.rooms.symbol, "person.2")
 
         XCTAssertEqual(MainTab.friends.label, "友達")
         XCTAssertEqual(MainTab.friends.symbol, "person.crop.circle")
@@ -28,8 +25,8 @@ final class NavigationTests: XCTestCase {
         let router = AppRouter()
 
         XCTAssertEqual(router.selectedTab, .home)
-        router.selectedTab = .rooms
-        XCTAssertEqual(router.selectedTab, .rooms)
+        router.selectedTab = .friends
+        XCTAssertEqual(router.selectedTab, .friends)
         router.selectedTab = .settings
         XCTAssertEqual(router.selectedTab, .settings)
     }

@@ -3,7 +3,6 @@ import SwiftUI
 enum MainTab: Int, Hashable, CaseIterable {
     case home
     case semester
-    case rooms
     case friends
     case settings
 
@@ -11,7 +10,6 @@ enum MainTab: Int, Hashable, CaseIterable {
         switch self {
         case .home: return "ホーム"
         case .semester: return "学期・科目"
-        case .rooms: return "ルーム"
         case .friends: return "友達"
         case .settings: return "設定"
         }
@@ -21,7 +19,6 @@ enum MainTab: Int, Hashable, CaseIterable {
         switch self {
         case .home: return "calendar"
         case .semester: return "graduationcap"
-        case .rooms: return "person.2"
         case .friends: return "person.crop.circle"
         case .settings: return "gearshape"
         }
@@ -45,22 +42,6 @@ struct MainTabView: View {
             }
             .tabItem { Label(MainTab.semester.label, systemImage: MainTab.semester.symbol) }
             .tag(MainTab.semester)
-
-            NavigationStack(path: $bindableRouter.roomsPath) {
-                RoomsView()
-                    .navigationDestination(for: RoomsRoute.self) { route in
-                        switch route {
-                        case .detail(let id):
-                            RoomDetailView(roomId: id)
-                        case .join(let code):
-                            JoinRoomView(inviteCode: code)
-                        case .templates:
-                            TemplatesView()
-                        }
-                    }
-            }
-            .tabItem { Label(MainTab.rooms.label, systemImage: MainTab.rooms.symbol) }
-            .tag(MainTab.rooms)
 
             NavigationStack(path: $bindableRouter.friendsPath) {
                 FriendsView()

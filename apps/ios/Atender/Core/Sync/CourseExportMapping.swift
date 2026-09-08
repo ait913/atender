@@ -2,6 +2,9 @@ import Foundation
 
 /// 授業 occurrence → ExportItem (§5.2、純関数)
 enum CourseExportMapping {
+    /// 端末カレンダーに出さない出欠ステータス。休講 (CANCELLED) は従来から、公欠 (EXCUSED) は build 18 で追加
+    static let excludedStatuses: Set<AttendanceStatus> = [.cancelled, .excused]
+
     static func items(
         occurrences: [OccurrenceDto],
         courseSuspensions: [CourseSuspensionDto],
@@ -13,7 +16,7 @@ enum CourseExportMapping {
         let kept = occurrences.filter { occurrence in
             if suspendedDates.contains(occurrence.date) { return false }
             if suspendedCourseDays.contains("\(occurrence.courseId)|\(occurrence.date)") { return false }
-            if occurrence.status == .cancelled { return false }
+            if let status = occurrence.status, excludedStatuses.contains(status) { return false }
             if occurrence.endMinute <= occurrence.startMinute { return false }
             return true
         }
