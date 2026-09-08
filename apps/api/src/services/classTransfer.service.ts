@@ -102,6 +102,20 @@ export async function createClassTransfer(userId: string, input: ClassTransferCr
       }
     }
 
+    // 既に押し出された Meeting も共有し、最後の振替が取り消されるまで復元しない。
+    const existingDisplacements = await tx.classTransferDisplacement.findMany({
+      where: { date: { gte: dateDay.startOfDay, lte: dateDay.endOfDay }, meeting: { userTimetableId: timetable.id } },
+      include: { meeting: true },
+    });
+    for (const { meeting } of existingDisplacements) {
+      for (let offset = 0; offset < meeting.periodCount; offset += 1) {
+        if (placed.has(meeting.startPeriodIndex + offset)) {
+          displacedMeetingIds.add(meeting.id);
+          break;
+        }
+      }
+    }
+
     if (displacedMeetingIds.size > 0) {
       const courseById = new Map(timetable.courses.map((course) => [course.id, course]));
       for (const occurrence of existing) {

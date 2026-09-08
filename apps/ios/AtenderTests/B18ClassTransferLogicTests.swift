@@ -309,4 +309,18 @@ final class B18ClassTransferLogicTests: XCTestCase {
         XCTAssertEqual(delete.path, "/api/class-transfers/t1", "[#U14] deleteClassTransfer の path")
         XCTAssertEqual(delete.method, .delete, "[#U14] deleteClassTransfer の method")
     }
+
+    /// [#T27] 表示中の学期を渡し、省略時は既定学期の書き出しとの互換性を保つ。
+    func testT27OccurrenceRangeSemesterQuery() {
+        let selected = Endpoints.occurrenceRange(from: "2026-09-14", to: "2026-09-20", semesterId: "s2")
+        XCTAssertEqual(selected.path, "/api/occurrences")
+        XCTAssertEqual(selected.method, .get)
+        XCTAssertEqual(selected.query, ["from": "2026-09-14", "to": "2026-09-20", "semesterId": "s2"])
+
+        let withoutSemester = Endpoints.occurrenceRange(from: "2026-09-14", to: "2026-09-20", semesterId: nil)
+        let omitted = Endpoints.occurrenceRange(from: "2026-09-14", to: "2026-09-20")
+        XCTAssertEqual(withoutSemester.query, ["from": "2026-09-14", "to": "2026-09-20"])
+        XCTAssertEqual(omitted.query, withoutSemester.query)
+    }
+
 }

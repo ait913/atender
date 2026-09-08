@@ -384,6 +384,7 @@ transferCount: z.number().int().optional(),
 5. その日の既存 occurrence を読む (`where: { date, meeting: { userTimetableId } }, include: { meeting, attendanceRecord }`)
    - `transferId != null` の行で `periodIndex ∈ placed` → 409 `PERIOD_CONFLICT { conflictPeriod }` (振替同士は重ねない)
    - `transferId == null` の行で `meeting.startPeriodIndex + periodOffset ∈ placed` → その `meetingId` を **置き換え対象**に入れる (Meeting 単位。連続 2 コマの片方だけ重なっても Meeting 丸ごと)
+   - 同じ日・時間割で既に押し出されている Meeting も、時限範囲が placed と重なるなら新しい振替の displacement に含め、最後の振替を取り消すまで復元しない。
    - 置き換え対象の meeting のその日の occurrence のどれかに `attendanceRecord` がある → 409 `DISPLACED_HAS_RECORD { meetingId, courseName }`
 6. `ClassTransfer` を作る。置き換え対象ごとに `ClassTransferDisplacement` を作り、その meeting の通常 occurrence (`transferId: null`, その日) を `deleteMany`
 7. placed の各時限に occurrence を作る: `{ meetingId, courseId: meeting.courseId, date, periodOffset: 1000 + p, periodIndex: p, startMinute: slot.startMinute, endMinute: slot.endMinute, transferId }`
@@ -744,6 +745,8 @@ XCUITest (`AtenderUITests`、API `localhost:8787` + seed 前提):
 - **#T24** `DELETE /api/courses/:courseId` (M_F1 の科目) でも #T23 と同じ掃除が走る
 - **#T25** (additive の互換) `GET /api/day/:date` / `GET /api/occurrences` / overview の既存フィールドは全て従来どおりの型で返り、振替が 0 件の日は `transfers == []`、`transferCount == 0`。既存 `tests/day-detail.test.ts` `occurrence-range.test.ts` `semester-day-counts.review.test.ts` は無変更で緑 (ベースライン集合が変わらない)
 - **#T26** 未知の `kind` → 400 `VALIDATION_ERROR` (zod の discriminatedUnion)。`periodIndexes: []` → 400
+- **#T27** `GET /api/occurrences?from&to&semesterId=<非既定学期>` はその学期の時間割の transfers / displaced を返す。`semesterId` 省略時は従来どおり既定学期 (EventKit 書き出しも既定学期)。個人カレンダーは表示中の学期を渡す
+- **#T28** 9/14 の同じ Meeting (1–2限) を 2 つの振替 (1限 / 2限) が押し出しているとき、片方の取り消しでは `restoredOccurrences: 0`、その日の行に当該 Meeting は無い。両方取り消すと通常授業 2 コマが復元される
 
 ### 8.4 F3 — iOS (#U)
 

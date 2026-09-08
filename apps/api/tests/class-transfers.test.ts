@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// build 18 設計 §4 / §8.3 (#T1-#T26) — POST /api/class-transfers, DELETE /api/class-transfers/:id
+// build 18 設計 §4 / §8.3 (#T1-#T28) — POST /api/class-transfers, DELETE /api/class-transfers/:id
 // Reviewer 生成 (設計docのみを根拠、実装は未読)。
 // 標本 (§8.3): 学期 2026-04-06〜2026-09-30 (setupCompleteUser の既定学期 2026-04-01〜09-30 で代用。
 //   全テスト日付がこの範囲に収まるので挙動は等価)。
@@ -14,6 +14,7 @@ import {
   createSemester,
   createSessionCookie,
   createTestUser,
+  createUserTimetable,
   setupCompleteUser,
 } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
@@ -695,4 +696,96 @@ describe("[build18 §4/§8.3] POST/DELETE /api/class-transfers", () => {
     });
     expect(emptyPeriods.res.status).toBe(400);
   });
+
+  it("[#T27] GET /api/occurrences?from&to&semesterId=<非既定学期> はその学期の時間割の transfers/displaced を返す (省略時は従来どおり既定学期)", async () => {
+    const db = prisma();
+    const fx = await seedTransferFixture(db);
+    const second = await createSemester(db, fx.complete.user.id, { name: "非既定学期" });
+    const { userTimetable: secondTt } = await createUserTimetable(db, fx.complete.user.id, second.id);
+    // 最新の時間割と既定学期を区別する。実行日を追い越す絶対日時にはしない。
+    await db.userTimetable.update({
+      where: { id: secondTt.id },
+      data: { createdAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+    });
+    const source = await makeMeetingCourse(db, secondTt.id, "別学期の金曜科目", 5, 1);
+    const displaced = await makeMeetingCourse(db, secondTt.id, "別学期の月曜科目", 1, 1);
+    await createOccurrence(db, {
+      meetingId: displaced.meeting.id, courseId: displaced.course.id, date: D("2026-09-14"),
+      periodOffset: 0, startMinute: DAY_SLOT_MINUTES[1][0], endMinute: DAY_SLOT_MINUTES[1][1],
+    });
+    const firstTransfer = await createTransfer(fx.complete.cookie, {
+      kind: "SINGLE", date: "2026-09-14", courseId: fx.F1.course.id, periodIndexes: [1],
+    });
+    const secondTransfer = await createTransfer(fx.complete.cookie, {
+      kind: "SINGLE", date: "2026-09-14", courseId: source.course.id, periodIndexes: [1], semesterId: second.id,
+    });
+    expect(firstTransfer.res.status).toBe(201);
+    expect(secondTransfer.res.status).toBe(201);
+
+    const fetchRange = async (semesterId?: string) => {
+      const res = await app.request(
+        `/api/occurrences?from=2026-09-14&to=2026-09-14${semesterId ? `&semesterId=${semesterId}` : ""}`,
+        { headers: cookieHeader(fx.complete.cookie) },
+      );
+      expect(res.status).toBe(200);
+      return (await json(res)) as any;
+    };
+    const selected = await fetchRange(second.id);
+    expect(selected.transfers.map((t: any) => t.id)).toEqual([secondTransfer.body.transfer.id]);
+    expect(selected.transfers[0].displaced.map((d: any) => d.meetingId)).toEqual([displaced.meeting.id]);
+    expect(selected.occurrences.map((o: any) => o.meetingId)).toEqual([source.meeting.id]);
+
+    const omitted = await fetchRange();
+    expect(omitted.transfers.map((t: any) => t.id)).toEqual([firstTransfer.body.transfer.id]);
+    expect(omitted.transfers[0].displaced.map((d: any) => d.meetingId)).toEqual([fx.M1.meeting.id]);
+    expect(omitted.occurrences.map((o: any) => o.meetingId).sort()).toEqual([fx.F1.meeting.id, fx.M2.meeting.id].sort());
+    expect(await fetchRange(fx.complete.semester.id)).toEqual(omitted);
+  });
+
+  it("[#T28] 同じ Meeting を 2 つの振替が押し出しているとき、片方の取り消しでは通常授業を復元しない。両方取り消すと復元される", async () => {
+    const db = prisma();
+    const fx = await seedTransferFixture(db);
+    // 単発の M1 を連続 2 コマの月曜 Meeting に差し替える。
+    await db.meeting.delete({ where: { id: fx.M1.meeting.id } });
+    const M = await makeMeetingCourse(db, fx.timetableId, "月曜連続科目", 1, 1, 2);
+    for (const periodOffset of [0, 1]) {
+      const [startMinute, endMinute] = DAY_SLOT_MINUTES[1 + periodOffset];
+      await createOccurrence(db, {
+        meetingId: M.meeting.id, courseId: M.course.id, date: D("2026-09-14"),
+        periodOffset, startMinute, endMinute,
+      });
+    }
+    const a = await createTransfer(fx.complete.cookie, {
+      kind: "SINGLE", date: "2026-09-14", courseId: fx.F1.course.id, periodIndexes: [1],
+    });
+    const b = await createTransfer(fx.complete.cookie, {
+      kind: "SINGLE", date: "2026-09-14", courseId: fx.F2.course.id, periodIndexes: [2],
+    });
+    expect(a.res.status).toBe(201);
+    expect(b.res.status).toBe(201);
+    expect(a.body.transfer.displaced.map((d: any) => d.meetingId)).toEqual([M.meeting.id]);
+    expect(b.body.transfer.displaced.map((d: any) => d.meetingId)).toEqual([M.meeting.id]);
+    await expect(db.classTransferDisplacement.count({
+      where: { meetingId: M.meeting.id, date: jstDayRange("2026-09-14") },
+    })).resolves.toBe(2);
+
+    const deletedA = await deleteTransfer(fx.complete.cookie, a.body.transfer.id);
+    expect(deletedA.res.status).toBe(200);
+    expect(deletedA.body.restoredOccurrences).toBe(0);
+    const afterA = await dayDetail(fx.complete.cookie, "2026-09-14");
+    expect(afterA.res.status).toBe(200);
+    expect(afterA.body.occurrences.some((o: any) => o.meetingId === M.meeting.id)).toBe(false);
+    expect(afterA.body.occurrences.some((o: any) => o.transferId === b.body.transfer.id && o.periodIndex === 2)).toBe(true);
+
+    const deletedB = await deleteTransfer(fx.complete.cookie, b.body.transfer.id);
+    expect(deletedB.res.status).toBe(200);
+    expect(deletedB.body.restoredOccurrences).toBe(2);
+    const afterB = await dayDetail(fx.complete.cookie, "2026-09-14");
+    expect(afterB.res.status).toBe(200);
+    const restored = afterB.body.occurrences.filter((o: any) => o.meetingId === M.meeting.id);
+    expect(restored.map((o: any) => o.periodIndex).sort()).toEqual([1, 2]);
+    expect(restored.every((o: any) => o.transferId == null)).toBe(true);
+    expect(afterB.body.transfers).toEqual([]);
+  });
+
 });

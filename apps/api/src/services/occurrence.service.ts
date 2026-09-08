@@ -39,12 +39,13 @@ export function occurrenceDto(occurrence: {
 
 export async function listOccurrenceRange(args: {
   userId: string;
+  semesterId?: string;
   from: string;
   to: string;
 }): Promise<OccurrenceRangeDto> {
   const fromDay = dateStringToJstDay(args.from);
   const toDay = dateStringToJstDay(args.to);
-  const timetable = await findActiveUserTimetable(args.userId);
+  const timetable = await findActiveUserTimetable(args.userId, args.semesterId);
   if (!timetable) {
     return {
       from: fromDay.isoDate,
