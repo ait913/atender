@@ -88,7 +88,9 @@ async function viewerWithTwoSemesters(db: AnyDb) {
     startPeriodIndex: 3,
     periodCount: 1,
     color: "#123456",
-    createdAt: new Date("2026-09-01T00:00:00.000Z"), // ★ createdAt desc の先頭になる (規則 3 と区別するため)
+    // ★ createdAt desc の先頭になる (規則 3 と区別するため)。絶対日付だと実行日が追い越して腐る
+    //   (2026-09-01 固定で書かれ、2026-09-08 に #A2c が赤化した) ので「今 + 1 日」の相対にする
+    createdAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
   });
   return { owner, second, secondTt };
 }
