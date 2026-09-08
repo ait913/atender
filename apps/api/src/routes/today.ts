@@ -39,11 +39,12 @@ export function registerTodayRoutes(app: Hono) {
         room: occurrence.meeting.room,
         color: occurrence.course.color,
         date: toIsoDate(occurrence.date),
-        periodIndex: occurrence.meeting.startPeriodIndex + occurrence.periodOffset,
+        periodIndex: occurrence.periodIndex ?? occurrence.meeting.startPeriodIndex + occurrence.periodOffset,
         periodOffset: occurrence.periodOffset,
         startMinute: occurrence.startMinute,
         endMinute: occurrence.endMinute,
         status: occurrence.attendanceRecord?.status ?? null,
+        transferId: occurrence.transferId,
       })),
     });
   });

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ATTENDANCE_STATUS } from "../enums.js";
+import { ClassTransferDto } from "./classTransfer.js";
 import { CourseSuspensionDto } from "./course.js";
 import { TimetableSuspensionDto } from "./timetableSuspension.js";
 
@@ -17,6 +18,7 @@ export const OccurrenceDto = z.object({
   startMinute: z.number().int(),
   endMinute: z.number().int(),
   status: z.enum(ATTENDANCE_STATUS).nullable(),
+  transferId: z.string().nullable().optional(),
 });
 
 export const TodayResponse = z.object({
@@ -76,6 +78,7 @@ export const OccurrenceRangeDto = z.object({
   occurrences: z.array(OccurrenceDto),
   courseSuspensions: z.array(CourseSuspensionDto),
   timetableSuspensions: z.array(TimetableSuspensionDto),
+  transfers: z.array(ClassTransferDto).optional(),
 });
 
 export type OccurrenceDto = z.infer<typeof OccurrenceDto>;

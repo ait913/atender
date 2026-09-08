@@ -8,7 +8,7 @@ export async function findActiveUserTimetable(userId: string, semesterId?: strin
       semesterId: semesterId ?? user?.defaultSemesterId ?? undefined,
     },
     orderBy: { createdAt: "desc" },
-    include: { daySlots: true, courses: true, meetings: true },
+    include: { daySlots: true, courses: true, meetings: true, semester: true },
   });
 }
 

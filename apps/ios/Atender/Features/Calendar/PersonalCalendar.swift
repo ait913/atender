@@ -36,11 +36,16 @@ final class PersonalCalendarViewModel {
                     .semesterOverview(id: semesterId, force: request.force)
                 summaries = Dictionary((overview?.days ?? []).map { ($0.date, $0) },
                                        uniquingKeysWith: { _, last in last })
+                // 振替 (occurrenceRange) の失敗も握り潰す。授業の週パターン表示は生き残る
+                let range = try? await environment.calendarExportRepository
+                    .occurrenceRange(from: request.rangeStart, to: request.rangeEnd)
+                let excluding = TransferDisplay.displacedKeys(range?.transfers ?? [])
                 events += MeetingExpansion.expandUserTimetable(
                     meetings: timetable.meetings, courses: timetable.courses, daySlots: timetable.daySlots,
                     rangeStart: request.rangeStart, rangeEnd: request.rangeEnd,
                     semesterStart: semester.startDate, semesterEnd: semester.endDate,
-                    statusByDate: summaries.mapValues(\.status))
+                    statusByDate: summaries.mapValues(\.status), excluding: excluding)
+                events += TransferDisplay.calendarEvents(occurrences: range?.occurrences ?? [], courses: timetable.courses)
             }
             events += PersonalEventDisplay.calendarEvents(occurrences: occurrences)
             return .init(events: events.sorted(by: CalendarEventOrder.byDateThenStart),

@@ -215,6 +215,17 @@ struct AttendanceCalendar: View {
                             .stroke(Color.accent500, lineWidth: 2)
                     }
                 }
+                .overlay(alignment: .topLeading) {
+                    if (daysByDate[iso]?.transferCount ?? 0) > 0 {
+                        Text("振")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Color.textOnAccent)
+                            .frame(width: 16, height: 16)
+                            .background(Color.accent500)
+                            .clipShape(Circle())
+                            .offset(x: 4, y: 4)
+                    }
+                }
                 .opacity(inMonth ? 1 : 0.4)
             }
             .buttonStyle(.plain)
@@ -273,6 +284,15 @@ struct AttendanceCalendar: View {
                 legendItem(.excused, .statusExcused, "公欠")
                 legendItem(.clock, .statusTardy, "遅刻・早退")
                 legendItem(.ban, .statusSuspended, "休講")
+                HStack(spacing: 2) {
+                    Text("振")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.textOnAccent)
+                        .frame(width: 14, height: 14)
+                        .background(Color.accent500)
+                        .clipShape(Circle())
+                    Text("授業変更")
+                }
             }
             .lineLimit(1)
             .minimumScaleFactor(0.75)

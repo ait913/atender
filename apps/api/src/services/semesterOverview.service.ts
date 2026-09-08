@@ -73,6 +73,7 @@ async function buildDaySummaries(args: {
     where: { userId_semesterId: { userId: args.userId, semesterId: args.semesterId } },
     include: {
       timetableSuspensions: true,
+      classTransfers: { include: { occurrences: { select: { date: true } } } },
       courses: {
         include: {
           occurrences: { include: { attendanceRecord: true } },
@@ -104,6 +105,16 @@ async function buildDaySummaries(args: {
     }
   }
 
+  const transferCountByDate = new Map<string, number>();
+  if (timetable) {
+    for (const transfer of timetable.classTransfers) {
+      for (const occ of transfer.occurrences) {
+        const iso = toIsoDate(occ.date);
+        transferCountByDate.set(iso, (transferCountByDate.get(iso) ?? 0) + 1);
+      }
+    }
+  }
+
   const days: AttendanceDaySummary[] = [];
   const start = new Date(`${toIsoDate(args.startDate)}T00:00:00Z`);
   const end = new Date(`${toIsoDate(args.endDate)}T00:00:00Z`);
@@ -115,6 +126,7 @@ async function buildDaySummaries(args: {
       status: classifyDay(items),   // legacy 互換 (.designs/20260729-semester-calendar-multi-status.md §3.1)
       occurrenceCount: items.length,
       counts: countDay(items),
+      transferCount: transferCountByDate.get(iso) ?? 0,
     });
   }
   return days;

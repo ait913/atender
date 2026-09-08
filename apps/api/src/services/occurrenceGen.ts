@@ -12,7 +12,7 @@ dayjs.extend(timezone);
 
 type OccurrenceClient = typeof prisma | Prisma.TransactionClient;
 
-async function generateOccurrencesForMeetings(
+export async function generateOccurrencesForMeetings(
   client: OccurrenceClient,
   args: {
     userTimetableId: string;
@@ -30,6 +30,13 @@ async function generateOccurrencesForMeetings(
   }
 
   const slotMap = new Map(timetable.daySlots.map((slot) => [slot.periodIndex, slot]));
+  const displacements = await client.classTransferDisplacement.findMany({
+    where: { meeting: { userTimetableId: args.userTimetableId } },
+    select: { meetingId: true, date: true },
+  });
+  const displacedKeys = new Set(
+    displacements.map((d) => `${d.meetingId}|${dayjs(d.date).tz(APP_TZ).format("YYYY-MM-DD")}`),
+  );
   const start = dayjs(args.fromDate ?? timetable.semester.startDate).tz(APP_TZ).startOf("day");
   const end = dayjs(args.toDate ?? timetable.semester.endDate).tz(APP_TZ).startOf("day");
   let created = 0;
@@ -45,6 +52,8 @@ async function generateOccurrencesForMeetings(
 
     for (let cursor = start; cursor.isBefore(end) || cursor.isSame(end); cursor = cursor.add(1, "day")) {
       if (cursor.day() !== meeting.dayOfWeek) continue;
+      const cursorKey = `${meeting.id}|${cursor.format("YYYY-MM-DD")}`;
+      if (displacedKeys.has(cursorKey)) continue;
       for (let offset = 0; offset < meeting.periodCount; offset += 1) {
         const slot = slotMap.get(meeting.startPeriodIndex + offset);
         if (!slot) {
@@ -121,6 +130,7 @@ export async function reconcileOccurrencesForSemesterDateChange(args: {
     const outOfRange = await tx.meetingOccurrence.findMany({
       where: {
         meeting: { userTimetableId: timetable.id },
+        transferId: null,
         OR: [{ date: { lt: args.newStart } }, { date: { gt: args.newEnd } }],
       },
       select: { id: true, attendanceRecord: { select: { id: true } } },
@@ -136,3 +146,7 @@ export async function reconcileOccurrencesForSemesterDateChange(args: {
     return { created, deletedEmpty, preservedWithRecord };
   });
 }
+
+// 振替 occurrence の periodOffset = TRANSFER_PERIOD_OFFSET_BASE + periodIndex。
+// 通常行の offset (0..11) と衝突しない領域分離
+export const TRANSFER_PERIOD_OFFSET_BASE = 1000;

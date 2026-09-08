@@ -3,7 +3,7 @@ import { prisma } from "../db";
 import { dateStringToJstDay } from "../lib/tz";
 import { findActiveUserTimetable } from "./activeTimetable";
 import { suspensionDto } from "./courseSuspension.service";
-import { occurrenceDto } from "./occurrence.service";
+import { classTransferDto, occurrenceDto } from "./occurrence.service";
 import { personalEventOccurrenceDto } from "./personalEvent.service";
 import { expandPersonalEvents } from "./personalRecurrence.service";
 import { timetableSuspensionDto } from "./timetableSuspension.service";
@@ -22,10 +22,11 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
       courseSuspensions: [],
       timetableSuspension: null,
       personalEvents: personalEvents,
+      transfers: [],
     };
   }
 
-  const [occurrences, courseSuspensions, timetableSuspension] = await Promise.all([
+  const [occurrences, courseSuspensions, timetableSuspension, transfers] = await Promise.all([
     prisma.meetingOccurrence.findMany({
       where: {
         date: { gte: day.startOfDay, lte: day.endOfDay },
@@ -48,6 +49,14 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
     prisma.timetableSuspension.findUnique({
       where: { userTimetableId_date: { userTimetableId: timetable.id, date: day.startOfDay } },
     }),
+    prisma.classTransfer.findMany({
+      where: { userTimetableId: timetable.id, date: { gte: day.startOfDay, lte: day.endOfDay } },
+      include: {
+        occurrences: { select: { id: true } },
+        displacements: { include: { meeting: { include: { course: true } } } },
+      },
+      orderBy: { date: "asc" },
+    }),
   ]);
 
   return {
@@ -56,5 +65,6 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
     courseSuspensions: courseSuspensions.map(suspensionDto),
     timetableSuspension: timetableSuspension ? timetableSuspensionDto(timetableSuspension) : null,
     personalEvents: personalEvents,
+    transfers: transfers.map(classTransferDto),
   };
 }

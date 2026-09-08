@@ -111,7 +111,7 @@ export async function updateMeeting(userId: string, meetingId: string, input: Me
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    await tx.meetingOccurrence.deleteMany({ where: { meetingId } });
+    await tx.meetingOccurrence.deleteMany({ where: { meetingId, transferId: null } });
     const meeting = await tx.meeting.update({ where: { id: meetingId }, data });
     await generateOccurrencesForMeeting(tx, meeting);
     return meeting;
@@ -125,4 +125,11 @@ export async function deleteMeeting(userId: string, meetingId: string) {
   });
   if (!meeting) throw new AppError(404, "NOT_FOUND", "Meeting not found");
   await prisma.meeting.delete({ where: { id: meetingId } });
+  await pruneEmptyClassTransfers(meeting.userTimetableId);
+}
+
+export async function pruneEmptyClassTransfers(userTimetableId: string) {
+  await prisma.classTransfer.deleteMany({
+    where: { userTimetableId, occurrences: { none: {} }, displacements: { none: {} } },
+  });
 }

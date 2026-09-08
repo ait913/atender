@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { OccurrenceDto } from "./attendance.js";
+import { ClassTransferDto } from "./classTransfer.js";
 import { CourseSuspensionDto } from "./course.js";
 import { TimetableSuspensionDto } from "./timetableSuspension.js";
 import { PersonalEventOccurrenceDto } from "./personalEvent.js";
@@ -10,6 +11,7 @@ export const DayDetailDto = z.object({
   courseSuspensions: z.array(CourseSuspensionDto),
   timetableSuspension: TimetableSuspensionDto.nullable(),
   personalEvents: z.array(PersonalEventOccurrenceDto),
+  transfers: z.array(ClassTransferDto).optional(),
 });
 
 export type DayDetailDto = z.infer<typeof DayDetailDto>;
