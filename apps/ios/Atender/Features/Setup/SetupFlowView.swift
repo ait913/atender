@@ -115,8 +115,8 @@ struct SetupFlowView: View {
         @Bindable var model = model
         return VStack(alignment: .leading, spacing: Space.s4) {
             LabeledInput(label: "名前", text: $model.semester.name)
-            setupDateField(label: "開始日", date: $model.semester.startDate)
-            setupDateField(label: "終了日", date: $model.semester.endDate)
+            DateStringField(label: "開始日", date: $model.semester.startDate)
+            DateStringField(label: "終了日", date: $model.semester.endDate)
             HStack(spacing: Space.s3) {
                 AtenderButton(title: "戻る", variant: .ghost) { model.step = 2 }
                 AtenderButton(title: "完了して時間割を作る", variant: .primary, isLoading: model.busy, isEnabled: !model.busy) {
@@ -141,21 +141,6 @@ struct SetupFlowView: View {
                 }
         }
         .buttonStyle(.plain)
-    }
-
-    private func setupDateField(label: String, date: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text(label)
-                .font(.atenderXs)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textSecondary)
-            DatePicker("", selection: Binding(
-                get: { CalendarRange.parse(date.wrappedValue) ?? CalendarRange.parse(SchoolClock.todayString()) ?? Date() },
-                set: { date.wrappedValue = CalendarRange.yyyyMMdd($0) }
-            ), displayedComponents: .date)
-            .labelsHidden()
-            .datePickerStyle(.compact)
-        }
     }
 }
 

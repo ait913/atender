@@ -31,8 +31,8 @@ struct SemesterListSheet: View {
                     .padding(.top, Space.s3)
                 VStack(alignment: .leading, spacing: Space.s4) {
                     LabeledInput(label: "学期名", text: $newForm.name)
-                    dateField(label: "開始日", date: $newForm.startDate)
-                    dateField(label: "終了日", date: $newForm.endDate)
+                    DateStringField(label: "開始日", date: $newForm.startDate)
+                    DateStringField(label: "終了日", date: $newForm.endDate)
                     AtenderButton(title: "学期を追加", variant: .primary, isLoading: isPending, isEnabled: SemesterListLogic.createEnabled(newForm) && !isPending) {
                         Task { await createSemester() }
                     }
@@ -54,8 +54,8 @@ struct SemesterListSheet: View {
         VStack(alignment: .leading, spacing: Space.s3) {
             if editingId == semester.id {
                 LabeledInput(label: "学期名", text: $editForm.name)
-                dateField(label: "開始日", date: $editForm.startDate)
-                dateField(label: "終了日", date: $editForm.endDate)
+                DateStringField(label: "開始日", date: $editForm.startDate)
+                DateStringField(label: "終了日", date: $editForm.endDate)
                 HStack {
                     Spacer()
                     AtenderButton(title: "保存", variant: .primary, size: .sm, isLoading: isPending, isEnabled: !SemesterListLogic.saveDisabled(editForm) && !isPending) {
@@ -103,22 +103,6 @@ struct SemesterListSheet: View {
         .overlay {
             RoundedRectangle(cornerRadius: Radius.sm, style: .continuous)
                 .stroke(Color.borderSubtle, lineWidth: 1)
-        }
-    }
-
-    private func dateField(label: String, date: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text(label)
-                .font(.atenderXs)
-                .fontWeight(.bold)
-                .foregroundStyle(Color.textSecondary)
-            DatePicker("", selection: Binding(
-                get: { CalendarRange.parse(date.wrappedValue) ?? CalendarRange.parse(SchoolClock.todayString()) ?? Date() },
-                set: { date.wrappedValue = CalendarRange.yyyyMMdd($0) }
-            ), displayedComponents: .date)
-            .labelsHidden()
-            .datePickerStyle(.compact)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

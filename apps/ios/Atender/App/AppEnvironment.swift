@@ -30,6 +30,7 @@ final class AppEnvironment {
 
     init() {
         #if DEBUG
+        if ProcessInfo.processInfo.environment["ATENDER_UI_TEST_RESET_ROLLOVER"] == "1" { SemesterRolloverStore().dismissedSemesterId = nil }
         if let t = ProcessInfo.processInfo.environment["ATENDER_UI_TEST_BEARER_TOKEN"], !t.isEmpty {
             try? KeychainStore().save(token: t)
         }
