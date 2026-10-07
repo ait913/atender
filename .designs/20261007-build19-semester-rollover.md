@@ -523,6 +523,11 @@ seed (§10.3) の前提: デモユーザー (`demo-bearer-token-ios-resync-0001`
 - **`stackLevel` を削除する**: 却下 (今回は)。読まれていない引数で挙動に無関係。9 箇所の機械的削除は別 chore
 - **F3 を `SelfTimetableView.activeSheetView` に `.course` case を足して解く (2 枚目も親で管理)**: 却下。`MeetingEditModal` が 1 枚目を閉じないまま 2 枚目を要求する関係は `MeetingEditModal` の内部事情で、親に漏らすと `CourseDetailModal` など他の呼び出し元と形が揃わなくなる
 - **今後 (本 doc 外)**: Web `SelfTimetableView.tsx:14-20, 40-55` の 5 コマ固定も同じ欠陥。`useUserTimetables` の全件から同じ規則 (§3.1) で引き継ぐ Web 版は別設計。Web に学期終了の提案は無い (iOS 先行)。`TimetableSettingsSheet` が時間割未作成時に「先に学期を作成してください」と出す文言は実態 (学期はある、時間割が無い) と違うが本 doc では触らない
+- **リリース前ゲート (2026-10-08、Codex 突合) で据え置いた指摘** (発生条件が極端 or main 由来の既存挙動。再発時はここから拾う):
+  - 子シート (`SelfTimetableView.isSheetPresented` の授業追加 / 時間割設定) を開いたまま日付境界をまたいでフォアグラウンド復帰すると、`evaluateRolloverPrompt` の条件 4 が Home の `sheet` しか見ていないため alert の提示が競合し得る。次の契機 (タブ復帰) で再評価されるので実害は提示 1 回の取りこぼし
+  - `DateStringField` は `CalendarRange.parse` の UTC 0 時を `DatePicker` に渡すので、UTC より西の TZ では前日表示になる (送信値は正しい)。`SemesterListSheet` / `SetupFlowView` の元コードから引き継いだ既存挙動。対象ユーザーは JST
+  - `seed-demo-user.ts` の終了ユーザーは `dayjs()` のローカル TZ で「昨日」を作るため、UTC ホストでは JST 換算で今日になり #S2 の alert が出ない。開発 Mac (JST) では問題なし
+- 同ゲートで**修正した** 3 件 (`b23b0f2` / `e10eaac`): `ensureTimetable` が POST 前に `refreshSemestersIfUnknown` を await (F2 直後のセルタップで 5 コマ永続化を防ぐ) / `createdTimetable(for:)` ヘルパーで `.settings` `.create` も学期一致を要求 / `SemesterCreateSheet` は保存中のキャンセル・スワイプ・✕ を無効化
 
 ---
 
