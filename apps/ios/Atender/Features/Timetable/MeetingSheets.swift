@@ -24,96 +24,95 @@ struct MeetingEditModal: View {
     private let dayLabels = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"]
 
     var body: some View {
-        ZStack {
-            BottomSheet(title: mode == .create ? "授業を追加" : "授業を編集", isPresented: $isPresented) {
-                VStack(alignment: .leading, spacing: Space.s4) {
-                    Text("科目").sheetLabel()
-                    if mode == .create {
-                        Menu {
-                            ForEach(allCourses) { course in
-                                Button(course.name) { courseId = course.id }
-                            }
-                        } label: {
-                            HStack {
-                                Text(selectedCourseName)
-                                    .font(.atenderBase)
-                                    .foregroundStyle(courseId.isEmpty ? Color.textSecondary : Color.textPrimary)
-                                Spacer()
-                                Image(systemName: "chevron.up.chevron.down")
-                                    .font(.atenderSm)
-                                    .foregroundStyle(Color.textSecondary)
-                            }
-                            .padding(Space.s3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.bgMuted)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+        BottomSheet(title: mode == .create ? "授業を追加" : "授業を編集", isPresented: $isPresented) {
+            VStack(alignment: .leading, spacing: Space.s4) {
+                Text("科目").sheetLabel()
+                if mode == .create {
+                    Menu {
+                        ForEach(allCourses) { course in
+                            Button(course.name) { courseId = course.id }
                         }
-                        Button("＋ 科目を追加") { courseModalOpen = true }
-                            .font(.atenderSm)
-                            .fontWeight(.bold)
-                    } else {
+                    } label: {
                         HStack {
                             Text(selectedCourseName)
                                 .font(.atenderBase)
                                 .foregroundStyle(courseId.isEmpty ? Color.textSecondary : Color.textPrimary)
                             Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.atenderSm)
+                                .foregroundStyle(Color.textSecondary)
                         }
                         .padding(Space.s3)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color.bgMuted)
                         .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
                     }
-
-                    Text("曜日").sheetLabel()
-                    if mode == .create {
-                        Text(dayLabels[max(0, min(6, dayOfWeekJs))])
+                    Button("＋ 科目を追加") { courseModalOpen = true }
+                        .font(.atenderSm)
+                        .fontWeight(.bold)
+                } else {
+                    HStack {
+                        Text(selectedCourseName)
                             .font(.atenderBase)
-                            .foregroundStyle(Color.textPrimary)
-                            .padding(Space.s3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.bgMuted)
-                            .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                    } else {
-                        Picker("曜日", selection: $dayOfWeekJs) {
-                            ForEach(0..<7, id: \.self) { Text(dayLabels[$0]).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
+                            .foregroundStyle(courseId.isEmpty ? Color.textSecondary : Color.textPrimary)
+                        Spacer()
                     }
+                    .padding(Space.s3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.bgMuted)
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                }
 
-                    Text("時限 (複数選択で連続コマ)").sheetLabel()
-                    PeriodChips(value: $periods, periodCount: timetable.daySlots.count)
-                    PeriodChipsPreview(periods: periods)
-
-                    Text("教室").sheetLabel()
-                    TextField("教室", text: $room)
-                        .textFieldStyle(.atender)
-
-                    if let errorText {
-                        Text(errorText)
-                            .font(.atenderSm)
-                            .foregroundStyle(Color.statusAbsent)
+                Text("曜日").sheetLabel()
+                if mode == .create {
+                    Text(dayLabels[max(0, min(6, dayOfWeekJs))])
+                        .font(.atenderBase)
+                        .foregroundStyle(Color.textPrimary)
+                        .padding(Space.s3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.bgMuted)
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
+                } else {
+                    Picker("曜日", selection: $dayOfWeekJs) {
+                        ForEach(0..<7, id: \.self) { Text(dayLabels[$0]).tag($0) }
                     }
+                    .pickerStyle(.segmented)
                 }
-                .onAppear { initialize() }
-                .onChange(of: isPresented) { _, open in
-                    if open { initialize() }
-                }
-                .onChange(of: periods) { oldValue, newValue in
-                    enforcePeriodRule(previous: oldValue, next: newValue)
-                }
-            } footer: {
-                HStack(spacing: Space.s3) {
-                    AtenderButton(title: "キャンセル", variant: .ghost) { isPresented = false }
-                    AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: canSave) {
-                        Task { await save() }
-                    }
+
+                Text("時限 (複数選択で連続コマ)").sheetLabel()
+                PeriodChips(value: $periods, periodCount: timetable.daySlots.count)
+                PeriodChipsPreview(periods: periods)
+
+                Text("教室").sheetLabel()
+                TextField("教室", text: $room)
+                    .textFieldStyle(.atender)
+
+                if let errorText {
+                    Text(errorText)
+                        .font(.atenderSm)
+                        .foregroundStyle(Color.statusAbsent)
                 }
             }
-
-            CourseEditModal(isPresented: $courseModalOpen, timetableId: timetable.id, stackLevel: 2) { course in
-                createdCourses.removeAll { $0.id == course.id }
-                createdCourses.append(course)
-                courseId = course.id
+            .onAppear { initialize() }
+            .onChange(of: isPresented) { _, open in
+                if open { initialize() }
+            }
+            .onChange(of: periods) { oldValue, newValue in
+                enforcePeriodRule(previous: oldValue, next: newValue)
+            }
+            .background {
+                CourseEditModal(isPresented: $courseModalOpen, timetableId: timetable.id, stackLevel: 2) { course in
+                    createdCourses.removeAll { $0.id == course.id }
+                    createdCourses.append(course)
+                    courseId = course.id
+                }
+            }
+        } footer: {
+            HStack(spacing: Space.s3) {
+                AtenderButton(title: "キャンセル", variant: .ghost) { isPresented = false }
+                AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: canSave) {
+                    Task { await save() }
+                }
             }
         }
     }

@@ -32,12 +32,14 @@ enum HomeSheet: Identifiable, Equatable {
     case roomCreate
     case roomJoin(initialCode: String?)
     case roomSettings(roomId: String)
+    case semesterCreate(SemesterProposal)
 
     var id: String {
         switch self {
         case .roomCreate: return "create"
         case .roomJoin: return "join"
         case .roomSettings(let roomId): return "settings:\(roomId)"
+        case .semesterCreate: return "semester-create"
         }
     }
 }
@@ -46,6 +48,7 @@ enum RoomAddAction: Equatable { case create, join, scanQR }
 
 struct HomeView: View {
     @Environment(AppEnvironment.self) private var environment
+    @Environment(\.scenePhase) private var scenePhase
     @State private var context: HomeContext = .self
     @State private var mode: HomeViewMode = .timetable
     @State private var semesterId: String?
@@ -55,6 +58,8 @@ struct HomeView: View {
     @State private var showTimetableSettings = false
     @State private var sheet: HomeSheet?
     @State private var scannerPresented = false
+    @State private var rolloverPrompt: SemesterDto?
+    private let rolloverStore = SemesterRolloverStore()
 
     var body: some View {
         VStack(spacing: Space.s3) {
@@ -129,19 +134,52 @@ struct HomeView: View {
         }
         .task { consumePendingRoomJoin() }
         .onChange(of: environment.appRouter.pendingRoomJoinCode) { _, _ in consumePendingRoomJoin() }
-        .task {
-            rooms = (try? await environment.roomRepository.rooms()) ?? []
-            await loadSemesters()
-            if let cached: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) {
-                applyDefaultSemester(cached)
-                applyFallbackSemester()
-                return
+        .alert("前回の学期が終了しました", isPresented: rolloverAlertBinding, presenting: rolloverPrompt) { previous in
+            Button("作成する") {
+                sheet = .semesterCreate(SemesterRollover.proposal(after: previous, today: SchoolClock.todayString()))
             }
-            if let me = try? await environment.meRepository.me() {
-                applyDefaultSemester(me)
-            }
-            applyFallbackSemester()
+            .keyboardShortcut(.defaultAction)
+            Button("あとで", role: .cancel) { rolloverStore.dismissedSemesterId = previous.id }
+        } message: { previous in
+            Text(SemesterRollover.alertMessage(previous: previous))
         }
+        .onChange(of: scenePhase) { _, new in
+            if new == .active { evaluateRolloverPrompt() }
+        }
+        .onChange(of: environment.appRouter.selectedTab) { _, new in
+            if new == .home { evaluateRolloverPrompt() }
+        }
+        .task { await bootstrap() }
+    }
+
+    private func bootstrap() async {
+        rooms = (try? await environment.roomRepository.rooms()) ?? []
+        await loadSemesters()
+        if let cached: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) {
+            applyDefaultSemester(cached)
+            applyFallbackSemester()
+            evaluateRolloverPrompt()
+            return
+        }
+        if let me = try? await environment.meRepository.me() {
+            applyDefaultSemester(me)
+        }
+        applyFallbackSemester()
+        evaluateRolloverPrompt()
+    }
+
+    private func evaluateRolloverPrompt() {
+        guard environment.appRouter.selectedTab == .home,
+              sheet == nil, !scannerPresented, rolloverPrompt == nil else { return }
+        rolloverPrompt = SemesterRollover.promptTarget(
+            semesters: semesters,
+            today: SchoolClock.todayString(),
+            dismissedSemesterId: rolloverStore.dismissedSemesterId
+        )
+    }
+
+    private var rolloverAlertBinding: Binding<Bool> {
+        Binding(get: { rolloverPrompt != nil }, set: { if !$0 { rolloverPrompt = nil } })
     }
 
     private func handleAddRoom(_ action: RoomAddAction) {
@@ -155,6 +193,12 @@ struct HomeView: View {
     @ViewBuilder
     private func homeSheetContent(_ activeSheet: HomeSheet) -> some View {
         switch activeSheet {
+        case .semesterCreate(let proposal):
+            SemesterCreateSheet(isPresented: sheetPresentedBinding, proposal: proposal, onCreated: { created in
+                semesters = (try? await environment.semesterRepository.semesters(force: true)) ?? semesters
+                semesterId = created.id
+                didApplyDefaultSemester = true
+            })
         case .roomCreate:
             RoomCreateSheet(isPresented: sheetPresentedBinding, onCreated: { created in
                 rooms = (try? await environment.roomRepository.rooms(force: true)) ?? rooms

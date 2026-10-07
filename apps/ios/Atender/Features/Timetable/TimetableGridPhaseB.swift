@@ -59,6 +59,7 @@ struct TimetableGrid: View {
             }
             ForEach(Array(periodIndexes.enumerated()), id: \.element) { row, period in
                 PeriodLabelCell(slot: slot(period), isCurrent: period == currentPeriodIndex)
+                    .accessibilityIdentifier("timetable-period-\(period)")
                     .frame(width: headerWidth, height: rowHeight)
                     .position(x: headerWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
                 ForEach(Array(days.enumerated()), id: \.element) { col, day in
@@ -66,6 +67,7 @@ struct TimetableGrid: View {
                     EmptyCell {
                         onEmptyCellTap?(day, period)
                     }
+                    .accessibilityIdentifier("timetable-cell-\(day)-\(period)")
                     .opacity(occupied.contains(key) ? 0 : 1)
                     .frame(width: colWidth, height: rowHeight)
                     .position(x: headerWidth + colWidth * CGFloat(col) + colWidth / 2, y: TimetableGridLayout.headerHeight + rowHeight * CGFloat(row) + rowHeight / 2)
