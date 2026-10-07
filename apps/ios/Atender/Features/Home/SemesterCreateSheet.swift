@@ -32,12 +32,13 @@ struct SemesterCreateSheet: View {
             .accessibilityIdentifier("semester-create-sheet")
         } footer: {
             HStack(spacing: Space.s3) {
-                AtenderButton(title: "キャンセル", variant: .ghost) { isPresented = false }
+                AtenderButton(title: "キャンセル", variant: .ghost, isEnabled: !isPending) { isPresented = false }
                 AtenderButton(title: "学期を作成", variant: .primary, isLoading: isPending, isEnabled: canCreate && !isPending) {
                     Task { await createSemester() }
                 }
             }
         }
+        .interactiveDismissDisabled(isPending)
     }
 
     private var canCreate: Bool {

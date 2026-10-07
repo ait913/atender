@@ -74,6 +74,12 @@ final class SelfTimetableViewModel {
         )
     }
 
+    func createdTimetable(for semesterId: String?) -> UserTimetableDto? {
+        let resolved = resolvedSemesterId(semesterId)
+        guard let createdTimetable, createdTimetable.semesterId == resolved else { return nil }
+        return createdTimetable
+    }
+
     func display(semesterId: String?) -> UserTimetableDto? {
         let resolved = resolvedSemesterId(semesterId)
         return selected(semesterId: resolved)
@@ -84,7 +90,8 @@ final class SelfTimetableViewModel {
     func ensureTimetable(semesterId: String?) async -> UserTimetableDto? {
         let resolved = resolvedSemesterId(semesterId)
         if let selected = selected(semesterId: resolved) { return selected }
-        if let createdTimetable, createdTimetable.semesterId == resolved { return createdTimetable }
+        if let created = createdTimetable(for: resolved) { return created }
+        await refreshSemestersIfUnknown(semesterId: resolved)
         guard let empty = emptyTimetable(semesterId: resolved) else { return nil }
         let input = UserTimetableCreateInput(
             semesterId: empty.semesterId,
@@ -199,7 +206,7 @@ struct SelfTimetableView: View {
     private func activeSheetView(display: UserTimetableDto?, model: SelfTimetableViewModel?) -> some View {
         switch activeSheet {
         case .create(let dayOfWeekJs, let period):
-            if let timetable = model?.selected(semesterId: semesterId) ?? model?.createdTimetable {
+            if let timetable = model?.selected(semesterId: semesterId) ?? model?.createdTimetable(for: semesterId) {
                 MeetingEditModal(
                     isPresented: sheetBinding,
                     timetable: timetable,
@@ -246,7 +253,7 @@ struct SelfTimetableView: View {
         case .settings:
             TimetableSettingsSheet(
                 isPresented: sheetBinding,
-                timetable: model?.selected(semesterId: semesterId) ?? model?.createdTimetable,
+                timetable: model?.selected(semesterId: semesterId) ?? model?.createdTimetable(for: semesterId),
                 onSaved: { Task { await model?.reloadTimetables() } }
             )
         case nil:

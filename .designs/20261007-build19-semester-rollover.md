@@ -403,7 +403,7 @@ Reviewer はここだけを根拠にテストを書く。#番号をテスト名�
 
 標本学期: A `{"A", "2026-04-01", "2026-09-30", name:"2026 前期"}`、B `{"B", "2026-10-01", "2027-03-31", "2026 後期"}`。
 
-- **#P1** `latest([A,B])` → B。`latest([B,A])` → B (順序非依存)。`latest([])` → nil。同 startDate で endDate が長い方、それも同じなら id 昇順 (A と `{"A0", 同 start, 同 end}` → "A0")
+- **#P1** `latest([A,B])` → B。`latest([B,A])` → B (順序非依存)。`latest([])` → nil。同 startDate で endDate が長い方、それも同じなら id 昇順 (`"A"` と `{"A0", 同 start, 同 end}` → `"A"`。`"A" < "A0"`)
 - **#P2** `allEnded([A], today: "2026-10-01")` → true。`today: "2026-09-30"` (endDate 当日) → **false**。`allEnded([A,B], "2026-10-01")` → false (B が生きている)。`allEnded([], ...)` → false
 - **#P3** `promptTarget(semesters: [A], today: "2026-10-01", dismissedSemesterId: nil)` → A。`dismissedSemesterId: "A"` → nil。`dismissedSemesterId: "zzz"` → A。`semesters: [A,B], today: "2026-10-01"` → nil。`semesters: []` → nil。`semesters: [A,B], today: "2027-04-01", dismissed: "A"` → **B** (却下は学期 id 単位。A を却下しても B が終われば出る)
 - **#P4** (★ 標本時刻。`SchoolClock.todayString(now)` と組み合わせる) `now = 2026-09-30T14:59:00Z` (= JST 23:59) → `todayString == "2026-09-30"` → `promptTarget([A], …)` は nil。`now = 2026-09-30T15:00:00Z` (= JST 10/1 00:00) → `"2026-10-01"` → A。`TEST_RUNNER_TZ=UTC` でも同じ結果 (JST 固定)
