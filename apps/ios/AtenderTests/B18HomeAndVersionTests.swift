@@ -109,15 +109,15 @@ final class B18HomeAndVersionTests: XCTestCase {
         return url
     }
 
-    /// [#V1] project.yml が CFBundleVersion: "18" を含み "17" を含まない。ShortVersion は不変
-    func testV1ProjectYmlBundleVersionIs18() throws {
+    /// [#V1] project.yml が CFBundleVersion: "19" を含み "18" を含まない。ShortVersion は不変
+    func testV1ProjectYmlBundleVersionIs19() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("apps/ios/project.yml"), encoding: .utf8)
-        XCTAssertTrue(yml.contains(#"CFBundleVersion: "18""#), "[#V1] CFBundleVersion: \"18\" が無い")
-        XCTAssertFalse(yml.contains(#"CFBundleVersion: "17""#), "[#V1] 旧 build 17 の記述が残っている")
+        XCTAssertTrue(yml.contains(#"CFBundleVersion: "19""#), "[#V1] CFBundleVersion: \"19\" が無い")
+        XCTAssertFalse(yml.contains(#"CFBundleVersion: "18""#), "[#V1] 旧 build 18 の記述が残っている")
         XCTAssertTrue(yml.contains(#"CFBundleShortVersionString: "1.0""#), "[#V1] ShortVersion が 1.0 でない")
     }
 
-    /// [#V2] MIN_IOS_BUILD (12 のまま) <= CFBundleVersion (18)
+    /// [#V2] MIN_IOS_BUILD (12 のまま) <= CFBundleVersion (19)
     func testV2MinIOSBuildDoesNotExceedBundleVersion() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("apps/ios/project.yml"), encoding: .utf8)
         let clientVersion = try String(contentsOf: repoRoot().appendingPathComponent("apps/api/src/lib/clientVersion.ts"), encoding: .utf8)
@@ -135,12 +135,12 @@ final class B18HomeAndVersionTests: XCTestCase {
         XCTAssertLessThanOrEqual(minIOSBuild, bundleVersion, "[#V2] MIN_IOS_BUILD (\(minIOSBuild)) が CFBundleVersion (\(bundleVersion)) を超えている")
     }
 
-    /// [#V3] Info.plist は xcodegen 生成物であり CFBundleVersion == "18" (project.yml との手編集ズレが無い)
+    /// [#V3] Info.plist は xcodegen 生成物であり CFBundleVersion == "19" (project.yml との手編集ズレが無い)
     func testV3InfoPlistMatchesProjectYmlVersion() throws {
         let plistURL = repoRoot().appendingPathComponent("apps/ios/Atender/Info.plist")
         let data = try Data(contentsOf: plistURL)
         let parsed = try PropertyListSerialization.propertyList(from: data, format: nil)
         let plist = try XCTUnwrap(parsed as? [String: Any], "[#V3] Info.plist が dict でない")
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "18", "[#V3] Info.plist の CFBundleVersion が 18 でない")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "19", "[#V3] Info.plist の CFBundleVersion が 19 でない")
     }
 }

@@ -10,12 +10,12 @@ final class BuildVersionTests: XCTestCase {
             .deletingLastPathComponent()
     }
 
-    func testV1BundleVersionIs18() throws {
+    func testV1BundleVersionIs19() throws {
         let projectYAML = try readText("apps/ios/project.yml")
 
         XCTAssertTrue(
-            projectYAML.contains(#"CFBundleVersion: "18""#),
-            "apps/ios/project.yml must contain CFBundleVersion: \"18\""
+            projectYAML.contains(#"CFBundleVersion: "19""#),
+            "apps/ios/project.yml must contain CFBundleVersion: \"19\""
         )
         XCTAssertTrue(
             projectYAML.contains(#"CFBundleShortVersionString: "1.0""#),
