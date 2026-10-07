@@ -20,7 +20,7 @@ struct SemesterCreateSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(title: "新しい学期", isPresented: $isPresented) {
+        SheetScaffold(title: "新しい学期", isPresented: guardedPresented) {
             VStack(alignment: .leading, spacing: Space.s4) {
                 LabeledInput(label: "学期名", text: $name)
                 DateStringField(label: "開始日", date: $startDate)
@@ -39,6 +39,11 @@ struct SemesterCreateSheet: View {
             }
         }
         .interactiveDismissDisabled(isPending)
+    }
+
+    // ヘッダの閉じるボタンは SheetScaffold 内で isPresented = false を直接書くため、保存中は書き込みを捨てる Binding を渡す。
+    private var guardedPresented: Binding<Bool> {
+        Binding(get: { isPresented }, set: { if !isPending { isPresented = $0 } })
     }
 
     private var canCreate: Bool {
