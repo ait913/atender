@@ -12,10 +12,12 @@ import { generateOccurrencesForUserTimetable } from "../src/services/occurrenceG
 const DEMO_USER_ID = "demo-user-ios";
 const DEMO_EMAIL = "demo@atender.local";
 const DEMO_TOKEN = "demo-bearer-token-ios-resync-0001";
+const DEMO_ENDED_USER_ID = "demo-user-ios-ended";
+const DEMO_ENDED_TOKEN = "demo-bearer-token-ios-ended-0002";
 
 async function main() {
   // 既存デモを掃除 (冪等)
-  await prisma.user.deleteMany({ where: { id: DEMO_USER_ID } });
+  await prisma.user.deleteMany({ where: { id: { in: [DEMO_USER_ID, DEMO_ENDED_USER_ID] } } });
 
   // school + department (seed 済の先頭を使う。無ければ作る)
   let school = await prisma.school.findFirst({ orderBy: { name: "asc" } });
@@ -47,6 +49,16 @@ async function main() {
     data: { userId: user.id, name: "2026 前期", startDate: start, endDate: end },
   });
   await prisma.user.update({ where: { id: user.id }, data: { defaultSemesterId: semester.id } });
+
+  // 引継ぎ表示を確認するため、次学期は時間割未作成のままにする。
+  const nextSemester = await prisma.semester.create({
+    data: {
+      userId: user.id,
+      name: "次学期",
+      startDate: dayjs().add(43, "day").startOf("day").toDate(),
+      endDate: dayjs().add(227, "day").endOf("day").toDate(),
+    },
+  });
 
   const timetable = await prisma.userTimetable.create({
     data: { userId: user.id, semesterId: semester.id, title: "2026 前期 時間割", daysOfWeek: "1,2,3,4,5" },
@@ -163,10 +175,62 @@ async function main() {
     },
   });
 
+  // 学期終了と、8コマ・月〜土の引継ぎを確認するユーザー。
+  const endedUser = await prisma.user.create({
+    data: {
+      id: DEMO_ENDED_USER_ID,
+      email: "demo-ended@atender.local",
+      emailVerified: true,
+      name: "デモ花子",
+      schoolId: school.id,
+      departmentId: department.id,
+      requiredAttendanceRate: 80,
+    },
+  });
+  const endedSemester = await prisma.semester.create({
+    data: {
+      userId: endedUser.id,
+      name: "2026 前期",
+      startDate: dayjs().subtract(182, "day").startOf("day").toDate(),
+      endDate: dayjs().subtract(1, "day").endOf("day").toDate(),
+    },
+  });
+  await prisma.user.update({ where: { id: endedUser.id }, data: { defaultSemesterId: endedSemester.id } });
+  const endedTimetable = await prisma.userTimetable.create({
+    data: { userId: endedUser.id, semesterId: endedSemester.id, title: "2026 前期 時間割", daysOfWeek: "1,2,3,4,5,6" },
+  });
+  await prisma.daySlot.createMany({
+    data: [540, 640, 780, 880, 980, 1080, 1180, 1280].map((startMinute, index) => ({
+      userTimetableId: endedTimetable.id,
+      periodIndex: index + 1,
+      label: `${index + 1}限`,
+      startMinute,
+      endMinute: startMinute + 90,
+      isBreak: false,
+    })),
+  });
+  const endedCourse = await prisma.course.create({
+    data: { userTimetableId: endedTimetable.id, name: "英語", color: "#EF4444" },
+  });
+  await prisma.meeting.create({
+    data: { userTimetableId: endedTimetable.id, courseId: endedCourse.id, dayOfWeek: 1, startPeriodIndex: 1, periodCount: 1 },
+  });
+  await generateOccurrencesForUserTimetable({ userTimetableId: endedTimetable.id });
+  await prisma.session.create({
+    data: {
+      id: "demo-session-ios-ended",
+      userId: endedUser.id,
+      token: DEMO_ENDED_TOKEN,
+      expiresAt: dayjs().add(365, "day").toDate(),
+    },
+  });
+
   console.log(JSON.stringify({
     userId: user.id, email: DEMO_EMAIL, semesterId: semester.id,
     occurrencesCreated: gen.created, pastOccurrences: past.length, attendanceRecorded: recorded,
     bearerToken: DEMO_TOKEN,
+    endedUserBearerToken: DEMO_ENDED_TOKEN,
+    nextSemesterId: nextSemester.id,
   }, null, 2));
 }
 

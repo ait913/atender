@@ -25,13 +25,17 @@ async function getOwnedTimetable(id: string, userId: string) {
   return timetable;
 }
 
+function daysOfWeekCsv(days: number[]): string {
+  return [...new Set(days)].sort((a, b) => a - b).join(",");
+}
+
 async function createTimetableFromInput(userId: string, input: z.infer<typeof UserTimetableCreateInput>) {
   const semester = await prisma.semester.findUnique({ where: { id: input.semesterId } });
   if (!semester) throw new AppError(404, "NOT_FOUND", "Semester not found");
   if (semester.userId !== userId) throw new AppError(403, "FORBIDDEN", "Forbidden");
   try {
     return await prisma.$transaction(async (tx) => {
-      const timetable = await tx.userTimetable.create({ data: { userId, semesterId: input.semesterId, title: input.title } });
+      const timetable = await tx.userTimetable.create({ data: { userId, semesterId: input.semesterId, title: input.title, ...(input.daysOfWeek ? { daysOfWeek: daysOfWeekCsv(input.daysOfWeek) } : {}) } });
       await tx.daySlot.createMany({ data: input.daySlots.map((slot) => ({ ...slot, userTimetableId: timetable.id })) });
       const courseMap = new Map<string, string>();
       for (const course of input.courses) {
@@ -83,7 +87,7 @@ export function registerUserTimetableRoutes(app: Hono) {
     const timetable = await prisma.$transaction(async (tx) => {
       if (input.title) await tx.userTimetable.update({ where: { id }, data: { title: input.title } });
       if (input.daysOfWeek) {
-        const csv = [...new Set(input.daysOfWeek)].sort((a, b) => a - b).join(",");
+        const csv = daysOfWeekCsv(input.daysOfWeek);
         await tx.userTimetable.update({ where: { id }, data: { daysOfWeek: csv } });
       }
       if (input.daySlots) {

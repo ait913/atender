@@ -42,17 +42,31 @@ final class SelfTimetableViewModel {
         timetables.first { $0.semesterId == semesterId }
     }
 
+    func refreshSemestersIfUnknown(semesterId: String?) async {
+        guard let semesterId, !semesters.contains(where: { $0.id == semesterId }) else { return }
+        semesters = (try? await environment.semesterRepository.semesters(force: true)) ?? semesters
+    }
+
+    private func resolvedSemesterId(_ semesterId: String?) -> String? {
+        semesterId ?? me?.user.defaultSemesterId ?? semesters.first?.id
+    }
+
+    private func carryOverSource(for semesterId: String) -> UserTimetableDto? {
+        guard let target = semesters.first(where: { $0.id == semesterId }) else { return nil }
+        return TimetableCarryOver.previousTimetable(target: target, semesters: semesters, timetables: timetables)
+    }
+
     func emptyTimetable(semesterId: String?) -> UserTimetableDto? {
-        let fallback = semesterId ?? me?.user.defaultSemesterId ?? semesters.first?.id
-        guard let fallback else { return nil }
+        guard let fallback = resolvedSemesterId(semesterId) else { return nil }
+        let previous = carryOverSource(for: fallback)
         return UserTimetableDto(
             id: "",
             userId: me?.user.id ?? "",
             semesterId: fallback,
             title: "自分の時間割",
             sourceTemplateId: nil,
-            daysOfWeek: [1, 2, 3, 4, 5],
-            daySlots: defaultSlots,
+            daysOfWeek: TimetableCarryOver.inheritedDaysOfWeek(from: previous),
+            daySlots: TimetableCarryOver.inheritedSlots(from: previous, fallback: defaultSlots),
             courses: [],
             meetings: [],
             createdAt: "",
@@ -61,22 +75,27 @@ final class SelfTimetableViewModel {
     }
 
     func display(semesterId: String?) -> UserTimetableDto? {
-        selected(semesterId: semesterId) ?? createdTimetable ?? emptyTimetable(semesterId: semesterId)
+        let resolved = resolvedSemesterId(semesterId)
+        return selected(semesterId: resolved)
+            ?? (createdTimetable?.semesterId == resolved ? createdTimetable : nil)
+            ?? emptyTimetable(semesterId: resolved)
     }
 
     func ensureTimetable(semesterId: String?) async -> UserTimetableDto? {
-        if let selected = selected(semesterId: semesterId) { return selected }
-        if let createdTimetable { return createdTimetable }
-        guard let empty = emptyTimetable(semesterId: semesterId) else { return nil }
+        let resolved = resolvedSemesterId(semesterId)
+        if let selected = selected(semesterId: resolved) { return selected }
+        if let createdTimetable, createdTimetable.semesterId == resolved { return createdTimetable }
+        guard let empty = emptyTimetable(semesterId: resolved) else { return nil }
         let input = UserTimetableCreateInput(
             semesterId: empty.semesterId,
             title: "自分の時間割",
             description: nil,
             year: nil,
             term: nil,
-            daySlots: defaultSlots.map { .init(periodIndex: $0.periodIndex, label: $0.label, startMinute: $0.startMinute, endMinute: $0.endMinute, isBreak: $0.isBreak) },
+            daySlots: empty.daySlots.map { .init(periodIndex: $0.periodIndex, label: $0.label, startMinute: $0.startMinute, endMinute: $0.endMinute, isBreak: $0.isBreak) },
             courses: [],
-            meetings: []
+            meetings: [],
+            daysOfWeek: empty.daysOfWeek
         )
         if let created = try? await environment.timetableRepository.createUserTimetable(input) {
             createdTimetable = created
@@ -166,6 +185,7 @@ struct SelfTimetableView: View {
             if viewModel == nil { viewModel = SelfTimetableViewModel(environment: environment) }
             await viewModel?.load()
         }
+        .task(id: semesterId) { await viewModel?.refreshSemestersIfUnknown(semesterId: semesterId) }
         .onChange(of: showSettings) { _, newValue in
             if newValue {
                 activeSheet = .settings

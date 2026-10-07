@@ -391,6 +391,7 @@ struct UserTimetableCreateInput: Codable, Equatable {
     var daySlots: [TemplateCreateInput.DaySlotCreateInput]
     var courses: [TemplateCreateInput.CourseTemplateInput]
     var meetings: [TemplateCreateInput.MeetingTemplateInput]
+    var daysOfWeek: [Int]? = nil
 }
 
 struct UserTimetablePatchInput: Codable, Equatable {

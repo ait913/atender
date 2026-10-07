@@ -26,6 +26,7 @@ export const UserTimetableCreateInput = TemplateCreateInput.omit({
   isPublic: true,
 }).extend({
   semesterId: z.string(),
+  daysOfWeek: DaysOfWeek.optional(),
 });
 
 export const UserTimetablePatchInput = z.object({
