@@ -109,15 +109,15 @@ final class B18HomeAndVersionTests: XCTestCase {
         return url
     }
 
-    /// [#V1] project.yml が CFBundleVersion: "19" を含み "18" を含まない。ShortVersion は不変
-    func testV1ProjectYmlBundleVersionIs19() throws {
+    /// [#V1] project.yml が CFBundleVersion: "20" を含み "19" を含まない。ShortVersion は不変
+    func testV1ProjectYmlBundleVersionIs20() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("apps/ios/project.yml"), encoding: .utf8)
-        XCTAssertTrue(yml.contains(#"CFBundleVersion: "19""#), "[#V1] CFBundleVersion: \"19\" が無い")
-        XCTAssertFalse(yml.contains(#"CFBundleVersion: "18""#), "[#V1] 旧 build 18 の記述が残っている")
+        XCTAssertTrue(yml.contains(#"CFBundleVersion: "20""#), "[#V1] CFBundleVersion: \"20\" が無い")
+        XCTAssertFalse(yml.contains(#"CFBundleVersion: "19""#), "[#V1] 旧 build 19 の記述が残っている")
         XCTAssertTrue(yml.contains(#"CFBundleShortVersionString: "1.0""#), "[#V1] ShortVersion が 1.0 でない")
     }
 
-    /// [#V2] MIN_IOS_BUILD (12 のまま) <= CFBundleVersion (19)
+    /// [#V2] MIN_IOS_BUILD (12 のまま) <= CFBundleVersion (20)
     func testV2MinIOSBuildDoesNotExceedBundleVersion() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("apps/ios/project.yml"), encoding: .utf8)
         let clientVersion = try String(contentsOf: repoRoot().appendingPathComponent("apps/api/src/lib/clientVersion.ts"), encoding: .utf8)
@@ -141,6 +141,6 @@ final class B18HomeAndVersionTests: XCTestCase {
         let data = try Data(contentsOf: plistURL)
         let parsed = try PropertyListSerialization.propertyList(from: data, format: nil)
         let plist = try XCTUnwrap(parsed as? [String: Any], "[#V3] Info.plist が dict でない")
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "19", "[#V3] Info.plist の CFBundleVersion が 19 でない")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "20", "[#V3] Info.plist の CFBundleVersion が 20 でない")
     }
 }

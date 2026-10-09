@@ -6,7 +6,11 @@ struct SettingsView: View {
     @AppStorage("atender.theme") private var themePreference = ThemePreference.light.rawValue
     @State private var user: UserDto?
     @State private var activeSheet: SettingsSheet?
+    @Environment(\.openURL) private var openURL
     @State private var isSigningOut = false
+    @State private var isConfirmingAccountDeletion = false
+    @State private var isDeletingAccount = false
+    @State private var accountDeletionFailed = false
 
     enum SettingsSheet: String, Identifiable {
         case profile, school, rules, semesters, google, requiredRate, calendar
@@ -33,17 +37,41 @@ struct SettingsView: View {
                     SettingsRowSpec(id: "settings-row-calendar", label: "iPhone のカレンダー") { activeSheet = .calendar },
                 ])
                 SettingsSection(title: "その他", rows: [
+                    SettingsRowSpec(id: "settings-row-privacy", label: "プライバシーポリシー") { openURL(LegalLinks.privacy) },
+                    SettingsRowSpec(id: "settings-row-terms", label: "利用規約") { openURL(LegalLinks.terms) },
+                    SettingsRowSpec(id: "settings-row-support", label: "サポート") { openURL(LegalLinks.support) },
                     SettingsRowSpec(id: "settings-row-signout", label: "ログアウト", danger: true) {
                         Task { await signOut() }
+                    },
+                    SettingsRowSpec(id: "settings-row-delete-account", label: "アカウントを削除", danger: true) {
+                        if !isDeletingAccount { isConfirmingAccountDeletion = true }
                     },
                 ])
             }
             .padding(Space.pagePxMobile)
         }
+        .disabled(isDeletingAccount)
+        .overlay {
+            if isDeletingAccount {
+                ProgressView(SettingsLogic.deletingAccountLabel)
+                    .padding(Space.s4)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
+                    .accessibilityIdentifier("settings-deleting-account")
+            }
+        }
         .background(Color.bgBase)
         .navigationTitle("設定")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("settings-view")
+        .confirmationDialog(SettingsLogic.deleteAccountTitle, isPresented: $isConfirmingAccountDeletion, titleVisibility: .visible) {
+            Button("削除する", role: .destructive) { Task { await deleteAccount() } }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            Text(SettingsLogic.deleteAccountMessage)
+        }
+        .alert(SettingsLogic.deleteAccountFailedTitle, isPresented: $accountDeletionFailed) {
+            Button("OK", role: .cancel) {}
+        } message: { Text(SettingsLogic.deleteAccountFailedMessage) }
         .task { await reloadUser() }
         .onChange(of: activeSheet) { _, value in
             if value == nil {
@@ -145,6 +173,25 @@ struct SettingsView: View {
         router.settingsPath = NavigationPath()
         isSigningOut = false
     }
+
+    private func deleteAccount() async {
+        guard !isDeletingAccount, !isSigningOut else { return }
+        isDeletingAccount = true
+        defer { isDeletingAccount = false }
+        do {
+            try await environment.meRepository.deleteAccount()
+        } catch APIError.unauthorized {
+            return // APIClient が handleUnauthorized() 済み (= ログイン画面)
+        } catch {
+            accountDeletionFailed = true
+            return // 何も消さない (カレンダーの書き出しも残す)
+        }
+        // サーバーで削除できた後だけ、signOut() と同じ後始末
+        await environment.calendarSyncCoordinator.wipeExport()
+        environment.authStore.completeAccountDeletion()
+        environment.queryClient.removeAll()
+        router.settingsPath = NavigationPath()
+    }
 }
 
 enum SettingsLogic {
@@ -152,6 +199,12 @@ enum SettingsLogic {
         let source = user?.name ?? user?.email ?? "A"
         return String(source.prefix(1)).uppercased()
     }
+
+    static let deleteAccountTitle = "アカウントを削除しますか?"
+    static let deleteAccountMessage = "時間割・出欠・予定・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。ルームに追加した予定と公開した時間割テンプレートは、作成者を伏せて残ります。"
+    static let deletingAccountLabel = "アカウントを削除しています"
+    static let deleteAccountFailedTitle = "アカウントを削除できませんでした"
+    static let deleteAccountFailedMessage = "通信状況を確認して、もう一度お試しください。"
 }
 
 private struct ThemeRow: View {

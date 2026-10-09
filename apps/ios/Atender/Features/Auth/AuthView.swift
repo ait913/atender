@@ -24,9 +24,9 @@ private struct AuthViewContent: View {
                 try await authStore.startMagicLink(email: email)
             },
             signInApple: {
-                let token: String
+                let credential: AppleSignInCredential
                 do {
-                    token = try await appleSignIn.signIn()
+                    credential = try await appleSignIn.signIn()
                 } catch {
                     if let authorizationError = error as? ASAuthorizationError,
                        authorizationError.code == .canceled {
@@ -34,7 +34,7 @@ private struct AuthViewContent: View {
                     }
                     throw error
                 }
-                try await authStore.signInWithApple(idToken: token)
+                try await authStore.signInWithApple(idToken: credential.identityToken, authorizationCode: credential.authorizationCode)
             },
             signInGoogle: {
                 let idToken: String

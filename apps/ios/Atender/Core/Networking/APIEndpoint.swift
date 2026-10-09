@@ -17,6 +17,7 @@ enum HTTPMethod: String {
 
 enum Endpoints {
     static func me() -> APIEndpoint { .init(path: "/api/me", method: .get) }
+    static func deleteMe() -> APIEndpoint { .init(path: "/api/me", method: .delete) }
     static func updateMe(_ body: MeUpdateInput) -> APIEndpoint { .init(path: "/api/me", method: .patch, body: body) }
 
     static func schools(_ query: SchoolSearchQuery) -> APIEndpoint { .init(path: "/api/schools", method: .get, query: query.asQuery) }

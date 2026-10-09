@@ -18,6 +18,9 @@ final class MeRepository {
         return response
     }
 
+    /// キャッシュは触らない (呼び出し側が removeAll)
+    func deleteAccount() async throws { try await client.send(Endpoints.deleteMe()) }
+
     func updateMe(_ input: MeUpdateInput) async throws -> MeResponse {
         let response = try await client.send(Endpoints.updateMe(input), as: MeResponse.self)
         cache.setData(response, for: .me())

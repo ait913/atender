@@ -13,14 +13,14 @@ final class B17BuildVersionTests: XCTestCase {
         return url
     }
 
-    /// [#B61] project.yml の CFBundleVersion が "19"、ShortVersion は "1.0" のまま
-    func testB61ProjectYmlBundleVersionIs19() throws {
+    /// [#B61] project.yml の CFBundleVersion が "20"、ShortVersion は "1.0" のまま
+    func testB61ProjectYmlBundleVersionIs20() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("project.yml"), encoding: .utf8)
-        XCTAssertTrue(yml.contains("CFBundleVersion: \"19\""),
-                      "[#B61] project.yml に CFBundleVersion: \"19\" が無い")
+        XCTAssertTrue(yml.contains("CFBundleVersion: \"20\""),
+                      "[#B61] project.yml に CFBundleVersion: \"20\" が無い")
         XCTAssertTrue(yml.contains("CFBundleShortVersionString: \"1.0\""),
                       "[#B61] CFBundleShortVersionString が \"1.0\" でない")
-        XCTAssertFalse(yml.contains("CFBundleVersion: \"18\""), "[#B61] 旧 build 18 の記述が残っている")
+        XCTAssertFalse(yml.contains("CFBundleVersion: \"19\""), "[#B61] 旧 build 19 の記述が残っている")
     }
 
     /// [#B61] 生成物 Info.plist と生成元 project.yml が一致する (片側編集の検出)
@@ -29,7 +29,7 @@ final class B17BuildVersionTests: XCTestCase {
         let data = try Data(contentsOf: plistURL)
         let parsed = try PropertyListSerialization.propertyList(from: data, format: nil)
         let plist = try XCTUnwrap(parsed as? [String: Any], "[#B61] Info.plist が dict でない")
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "19", "[#B61] Info.plist の CFBundleVersion が 19 でない")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "20", "[#B61] Info.plist の CFBundleVersion が 20 でない")
         XCTAssertEqual(plist["CFBundleShortVersionString"] as? String, "1.0", "[#B61] ShortVersion が 1.0 でない")
     }
 

@@ -54,7 +54,7 @@ final class AuthStore {
         }
     }
 
-    func signInWithApple(idToken: String) async throws {
+    func signInWithApple(idToken: String, authorizationCode: String? = nil) async throws {
         let body = SocialIDTokenSignInBody(provider: "apple", idToken: IDTokenBody(token: idToken))
         let response = try await authRequest(path: "/api/auth/sign-in/social", body: body)
         guard let token = response.value(forHTTPHeaderField: "set-auth-token"), !token.isEmpty else {
@@ -63,7 +63,32 @@ final class AuthStore {
         try keychain.save(token: token)
         storedToken = token
         me = try await fetchMe(token: token)
+        if let authorizationCode, !authorizationCode.isEmpty {
+            await exchangeAppleAuthorizationCode(authorizationCode)
+        }
         state = .signedIn
+    }
+
+    /// サーバー側の削除が成功した後のローカル後始末。サーバーには何も送らない (signOut と違い /api/auth/sign-out を呼ばない)
+    func completeAccountDeletion() {
+        try? keychain.delete()
+        storedToken = nil
+        me = nil
+        state = .signedOut
+    }
+
+    /// Apple の認可コードをサーバーへ送り refresh token に交換して保存させる。失敗はサインインに影響させない。
+    /// APIClient でなく authRequestWithData を使うのは、APIClient が 401 で handleUnauthorized() を呼びサインイン途中のトークンを消すため。
+    private func exchangeAppleAuthorizationCode(_ code: String) async {
+        do {
+            _ = try await authRequestWithData(
+                path: "/api/auth-apple/exchange",
+                body: AppleAuthorizationCodeBody(authorizationCode: code),
+                requiresAuth: true
+            )
+        } catch {
+            // 交換の失敗は握り潰す (応答の status・body も見ない)
+        }
     }
 
     func signInWithGoogle(idToken: String) async throws {
@@ -232,6 +257,10 @@ private struct MagicLinkBody: Encodable {
 }
 
 private struct EmptyBody: Encodable {}
+
+private struct AppleAuthorizationCodeBody: Encodable {
+    let authorizationCode: String
+}
 
 private struct AuthAnyEncodable: Encodable {
     private let encodeValue: (Encoder) throws -> Void
