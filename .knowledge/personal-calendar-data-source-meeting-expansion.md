@@ -8,6 +8,7 @@ sources:
   - .designs/20260602-ui-improvements.md (項目3)
   - apps/web/src/lib/meetingExpansion.ts (expandUserTimetable)
   - apps/web/src/components/home/PersonalCalendar.tsx
+model-era: opus-4.8
 ---
 
 ## Context

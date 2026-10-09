@@ -21,6 +21,7 @@ sources:
   - https://medium.com/@tharunbalaji110/understanding-mobile-viewport-units-a-complete-guide-to-svh-lvh-and-dvh-0c905d96e21a  (svh/lvh/dvh)
   - [[pattern/modal-sheet-base-component-3way-close]]
   - [[pattern/form-modal-readability-bp]]
+model-era: opus-4.8
 ---
 
 ## Context

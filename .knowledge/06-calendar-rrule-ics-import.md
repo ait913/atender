@@ -25,6 +25,7 @@ sources:
 related_knowledge:
   - knowledge/pattern/calendar-week-pattern-meeting-expansion.md  # 週パターン展開 (Meeting / MeetingOccurrence) — RoomEvent recurrence にも転用する
   - projects/atender/.knowledge/03-v3-rooms-friends-research.md   # Room / RoomEvent の v3 設計
+model-era: opus-4.8
 ---
 
 ## Context

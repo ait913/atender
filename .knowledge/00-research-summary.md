@@ -23,6 +23,7 @@ sources:
   - [[pattern/portable-realtime-rescue-stack]]
   - [[gotcha/prisma-coolify-dockerfile]]
   - [[gotcha/coolify-https-redirect-loop]]
+model-era: opus-4.8
 ---
 
 # Atender — Pre-design Research Summary

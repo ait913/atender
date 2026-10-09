@@ -21,6 +21,7 @@ sources:
   - https://www.nngroup.com/articles/bottom-sheet/
   - https://www.nngroup.com/articles/form-design-white-space/
   - https://www.refactoringui.com/
+model-era: opus-4.8
 ---
 
 # Atender 入力 UX / 視認性 BP リサーチ

@@ -39,6 +39,7 @@ sources:
   - https://type-scale.com/
   - https://rsms.me/inter/
   - https://fonts.google.com/noto/specimen/Noto+Sans+JP
+model-era: opus-4.8
 ---
 
 # Atender v5 Pre-design Research

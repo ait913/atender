@@ -25,6 +25,7 @@ sources:
   - https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
   - https://vaul.emilkowal.ski/
   - https://tanstack.com/query/v5/docs/framework/react/guides/invalidations-from-mutations
+model-era: opus-4.8
 ---
 
 # Atender Phase 4 Pre-design Research

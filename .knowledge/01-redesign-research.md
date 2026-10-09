@@ -35,6 +35,7 @@ sources:
   - https://www.mext.go.jp/b_menu/toukei/mext_01087.html
   - https://prtimes.jp/main/html/rd/p/000000034.000047440.html
   - https://recruit-productdesign.jp/
+model-era: opus-4.8
 ---
 
 # Atender Redesign UI/UX Research

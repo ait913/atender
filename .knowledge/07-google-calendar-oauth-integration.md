@@ -24,6 +24,7 @@ related_knowledge:
   - knowledge/library/better-auth-2026.md
   - knowledge/pattern/rrule-string-onfly-expand-with-overrides.md
   - knowledge/pattern/ics-import-hash-dedup-preview-commit.md
+model-era: opus-4.8
 ---
 
 ## Context

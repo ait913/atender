@@ -9,6 +9,7 @@ sources:
   - Muraki/knowledge/library/swiftui-liquid-glass-ios26.md
   - Muraki/knowledge/library/ios-glanceable-surfaces-availability.md
   - Muraki/knowledge/gotcha/xcodegen-info-plist-regenerated-every-run.md
+model-era: opus-4.8
 ---
 
 ## Context
