@@ -8,6 +8,7 @@ import { AttendanceRuleSheet } from "@/components/sheet/AttendanceRuleSheet";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
 import { SemesterListSheet } from "@/components/sheet/SemesterListSheet";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useTheme, type Theme } from "@/lib/useTheme";
 import { ProfileEditSheet } from "./ProfileEditSheet";
 import { RequiredRateSheet } from "./RequiredRateSheet";
@@ -23,6 +24,9 @@ export function Settings() {
   const user = me.data?.user;
 
   const [signOutError, setSignOutError] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(false);
 
   async function signOut() {
     setSignOutError(false);
@@ -36,6 +40,23 @@ export function Settings() {
       // 消せないため、サーバ側セッションが生きたまま「ログアウトできた」ように
       // 見えてしまう (この握り潰しが実際にバグを長期間隠していた)。
       setSignOutError(true);
+      return;
+    }
+    queryClient.clear();
+    await navigate({ to: "/signin" });
+  }
+
+  async function deleteAccount() {
+    if (deleting) return;
+    setConfirmDeleteOpen(false);
+    setDeleteError(false);
+    setDeleting(true);
+    try {
+      await api("/api/me", { method: "DELETE" }); // body なし (DELETE /api/me は body を読まない)
+    } catch {
+      // サインアウトと同じく失敗を握り潰して遷移しない
+      setDeleting(false);
+      setDeleteError(true);
       return;
     }
     queryClient.clear();
@@ -93,7 +114,26 @@ export function Settings() {
         {signOutError ? (
           <p className="px-3 pb-2 text-sm text-status-absent">ログアウトできませんでした。通信状況を確認してもう一度お試しください</p>
         ) : null}
+        <SettingsRow
+          label={deleting ? "アカウントを削除しています" : "アカウントを削除"}
+          danger
+          onClick={() => {
+            if (!deleting) setConfirmDeleteOpen(true);
+          }}
+        />
+        {deleteError ? (
+          <p className="px-3 pb-2 text-sm text-status-absent">アカウントを削除できませんでした。通信状況を確認して、もう一度お試しください。</p>
+        ) : null}
       </SettingsSection>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title="アカウントを削除しますか?"
+        body="時間割・出欠・予定・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。ルームに追加した予定と公開した時間割テンプレートは、作成者を伏せて残ります。"
+        confirmLabel="削除する"
+        onConfirm={() => void deleteAccount()}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
 
       <ProfileEditSheet open={sheet === "profile"} onClose={() => setSheet(null)} />
       <SchoolDeptEditSheet open={sheet === "school"} onClose={() => setSheet(null)} />

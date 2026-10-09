@@ -54,7 +54,7 @@ export function Templates() {
           <Panel key={template.id} className="space-y-3">
             <div>
               <h2 className="text-xl font-semibold">{template.title}</h2>
-              <p className="mt-1 text-sm text-fg-secondary">by @{authorHandle(template)}</p>
+              <p className="mt-1 text-sm text-fg-secondary">{authorHandle(template) === "" ? "by 退会したユーザー" : `by @${authorHandle(template)}`}</p>
               <p className="mt-1 text-sm text-fg-tertiary">copy x {template.copyCount} / 更新: {template.updatedAt.slice(0, 10)}</p>
             </div>
             <Button type="button" variant="primary" disabled={!semesterId && !me.data?.user.defaultSemesterId} onClick={() => copy.mutate({ templateId: template.id, input: { semesterId: semesterId || me.data!.user.defaultSemesterId! } })}>コピー</Button>
