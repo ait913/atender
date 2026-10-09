@@ -4,6 +4,7 @@ import type { CreateRoomEventInput, CreateRoomInput, UpdateRoomEventInput, Updat
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { cuidToHsl } from "../lib/cuidToHsl";
+import { DELETED_AUTHOR_ID } from "../lib/dto";
 import { toIcsDate, validateRRule } from "../lib/rruleExpand";
 import { toIsoDate } from "../lib/tz";
 import { applyEditScope, expandRoomEvents, type ExpandedOccurrence } from "./recurrence.service";
@@ -16,7 +17,7 @@ const roomInclude = {
 function eventDto(event: {
   id: string;
   roomId: string;
-  authorId: string;
+  authorId: string | null;
   title: string;
   description: string | null;
   start: Date;
@@ -38,7 +39,7 @@ function eventDto(event: {
     id: event.id,
     seriesId: event.id,
     roomId: event.roomId,
-    authorId: event.authorId,
+    authorId: event.authorId ?? DELETED_AUTHOR_ID,
     title: event.title,
     rawTitle: event.rawTitle ?? null,
     description: event.description,

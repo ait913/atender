@@ -14,6 +14,7 @@ import {
   runAllSyncsForUser,
   unlinkGoogle,
 } from "../services/googleCalendarSync.service";
+import { deleteAccount } from "../services/accountDeletion.service";
 import { createRule, deleteRule, listRules, patchRule } from "../services/icsTitleRule.service";
 
 type MeUser = {
@@ -78,6 +79,12 @@ export function registerMeRoutes(app: Hono) {
     const sessionUser = c.get("user");
     const user = await prisma.user.findUniqueOrThrow({ where: { id: sessionUser.id } });
     return c.json(await getMeResponse(user));
+  });
+
+  // 認可は sessionMiddleware のみ (setupGuard なし: セットアップ未完了のユーザーも消せる)
+  app.delete("/api/me", sessionMiddleware, async (c) => {
+    await deleteAccount(c.get("user").id);
+    return c.body(null, 204);
   });
 
   app.patch("/api/me", sessionMiddleware, async (c) => {

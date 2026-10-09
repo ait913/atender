@@ -14,10 +14,12 @@ const DEMO_EMAIL = "demo@atender.local";
 const DEMO_TOKEN = "demo-bearer-token-ios-resync-0001";
 const DEMO_ENDED_USER_ID = "demo-user-ios-ended";
 const DEMO_ENDED_TOKEN = "demo-bearer-token-ios-ended-0002";
+const DEMO_DELETE_USER_ID = "demo-user-ios-delete";
+const DEMO_DELETE_TOKEN = "demo-bearer-token-ios-delete-0003";
 
 async function main() {
   // 既存デモを掃除 (冪等)
-  await prisma.user.deleteMany({ where: { id: { in: [DEMO_USER_ID, DEMO_ENDED_USER_ID] } } });
+  await prisma.user.deleteMany({ where: { id: { in: [DEMO_USER_ID, DEMO_ENDED_USER_ID, DEMO_DELETE_USER_ID] } } });
 
   // school + department (seed 済の先頭を使う。無ければ作る)
   let school = await prisma.school.findFirst({ orderBy: { name: "asc" } });
@@ -225,11 +227,43 @@ async function main() {
     },
   });
 
+  // 退会 (アカウント削除) の UI テスト専用ユーザー。setup 完了のみで、時間割・ルーム・友達は作らない
+  // (他のデモユーザーの UI テストに影響させない)。UI テスト #S2 が消すので、実行のたびに seed し直す。
+  const deleteUser = await prisma.user.create({
+    data: {
+      id: DEMO_DELETE_USER_ID,
+      email: "demo-delete@atender.local",
+      emailVerified: true,
+      name: "デモ削除",
+      schoolId: school.id,
+      departmentId: department.id,
+      requiredAttendanceRate: 80,
+    },
+  });
+  const deleteSemester = await prisma.semester.create({
+    data: {
+      userId: deleteUser.id,
+      name: "2026 前期",
+      startDate: dayjs().subtract(30, "day").startOf("day").toDate(),
+      endDate: dayjs().add(150, "day").endOf("day").toDate(),
+    },
+  });
+  await prisma.user.update({ where: { id: deleteUser.id }, data: { defaultSemesterId: deleteSemester.id } });
+  await prisma.session.create({
+    data: {
+      id: "demo-session-ios-delete",
+      userId: deleteUser.id,
+      token: DEMO_DELETE_TOKEN,
+      expiresAt: dayjs().add(365, "day").toDate(),
+    },
+  });
+
   console.log(JSON.stringify({
     userId: user.id, email: DEMO_EMAIL, semesterId: semester.id,
     occurrencesCreated: gen.created, pastOccurrences: past.length, attendanceRecorded: recorded,
     bearerToken: DEMO_TOKEN,
     endedUserBearerToken: DEMO_ENDED_TOKEN,
+    deleteUserBearerToken: DEMO_DELETE_TOKEN,
     nextSemesterId: nextSemester.id,
   }, null, 2));
 }

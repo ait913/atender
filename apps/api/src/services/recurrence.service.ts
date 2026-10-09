@@ -1,6 +1,7 @@
 import type { RoomEvent, RoomEventOverride } from "@prisma/client";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
+import { DELETED_AUTHOR_ID } from "../lib/dto";
 import { appendOrReplaceUntil, datesToCsv, expandBetweenJst, parseCsvDates, stripUntil, toIcsDate } from "../lib/rruleExpand";
 
 export type ExpandedOccurrence = {
@@ -83,7 +84,7 @@ function toOccurrence(
     isAllDay: event.isAllDay,
     source: event.source,
     visibilityMode: event.visibilityMode,
-    authorId: event.authorId,
+    authorId: event.authorId ?? DELETED_AUTHOR_ID,
     isRecurringOccurrence: recurring,
     recurrenceRule: event.recurrenceRule,
     overrideId: override?.id ?? null,

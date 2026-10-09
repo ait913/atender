@@ -1,6 +1,10 @@
 import type { Course, DaySlot, Department, Meeting, School, Semester, TimetableTemplate, UserTimetable } from "@prisma/client";
 import { toIsoDate } from "./tz";
 
+/** 退会したユーザーが作者だった行の authorId / authorUserId。DB は NULL、API は空文字で返す。
+ *  iOS build ≤ 19 の Codable は非 Optional String なので null を返すと decode が落ちる */
+export const DELETED_AUTHOR_ID = "";
+
 export function schoolDto(school: School) {
   return {
     id: school.id,
@@ -72,7 +76,7 @@ export type TemplateWithParts = TimetableTemplate & {
 export function templateDto(template: TemplateWithParts) {
   return {
     id: template.id,
-    authorUserId: template.authorUserId,
+    authorUserId: template.authorUserId ?? DELETED_AUTHOR_ID,
     schoolId: template.schoolId,
     departmentId: template.departmentId,
     title: template.title,
