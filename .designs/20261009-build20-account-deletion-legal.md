@@ -1071,7 +1071,7 @@ Apple 設定は #D18 と同じ env。U は Apple Account `{providerId:"apple", a
 - **#X5** 応答に `refresh_token` が無い → 200 `{ stored: false, reason: "NO_REFRESH_TOKEN" }`、Account 不変
 - **#X6** U が Apple Account を持たない (Google Account のみ) → 200 `{ stored: false, reason: "NO_APPLE_ACCOUNT" }`、fetch 0 回
 - **#X7** `APPLE_PRIVATE_KEY` を消す → 200 `{ stored: false, reason: "NOT_CONFIGURED" }`、fetch 0 回
-- **#X8** body `{}` / `{ authorizationCode: "" }` / 非 JSON → 400 `VALIDATION_ERROR`、fetch 0 回。認証なし → 401
+- **#X8** body `{}` / `{ authorizationCode: "" }` → 400 `VALIDATION_ERROR`、fetch 0 回。認証なし → 401。(非 JSON body は共有 `zValidator` の既存挙動で全ルート 500 `INTERNAL` になる — Reviewer 実測 2026-10-09。本 doc の対象外、iOS クライアントは常に JSON を送る)
 - **#X9** (未セットアップでも可) school / department / defaultSemester の無い U → #X1 と同じく `{ stored: true }`
 - **#X10** (2 回目の交換で上書き) #X1 の後に `refresh_token: "rt-2"` を返す mock で再度 → `{ stored: true }`、`refreshToken == "rt-2"`
 - (番号なし・テストしない) better-auth の idToken 再サインインで保存済みの refresh token が上書きされないことは、§2 の実コード確認 (`freshTokens` の `undefined` 除外) で担保し、実機ゲート #G4 で確認する

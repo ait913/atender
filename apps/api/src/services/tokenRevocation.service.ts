@@ -68,25 +68,26 @@ async function revokeApple(
   const clientIds = [config.bundleId, config.servicesId].filter(
     (id, index, all): id is string => id != null && all.indexOf(id) === index,
   );
-  const outcomes: RevokeOutcome[] = [];
-  for (const clientId of clientIds) {
-    let result: { ok: boolean; status: number | null };
-    try {
-      result = await postForm(
-        "https://appleid.apple.com/auth/revoke",
-        new URLSearchParams({
-          client_id: clientId,
-          client_secret: appleClientSecretFor(config, clientId, now),
-          token: token.token,
-          token_type_hint: token.tokenTypeHint,
-        }),
-      );
-    } catch {
-      result = { ok: false, status: null };
-    }
-    outcomes.push({ provider: "apple", clientId, ok: result.ok, status: result.status });
-  }
-  return outcomes;
+  // client_id ごとに並行 (§6)。直列だと Apple 障害時に REVOKE_TIMEOUT_MS × 2 だけ削除応答が遅れる (Codex ゲート指摘)
+  return Promise.all(
+    clientIds.map(async (clientId): Promise<RevokeOutcome> => {
+      let result: { ok: boolean; status: number | null };
+      try {
+        result = await postForm(
+          "https://appleid.apple.com/auth/revoke",
+          new URLSearchParams({
+            client_id: clientId,
+            client_secret: appleClientSecretFor(config, clientId, now),
+            token: token.token,
+            token_type_hint: token.tokenTypeHint,
+          }),
+        );
+      } catch {
+        result = { ok: false, status: null };
+      }
+      return { provider: "apple", clientId, ok: result.ok, status: result.status };
+    }),
+  );
 }
 
 /** 全部 Promise.allSettled で並行。throw しない */

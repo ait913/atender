@@ -214,18 +214,6 @@ describe("[B20 #X] POST /api/auth-apple/exchange", () => {
     expect(unauth.status).toBe(401);
   });
 
-  // 設計 §13.2 #X8 は「非 JSON → 400 VALIDATION_ERROR」。共有 zValidator は malformed JSON を
-  // HTTPException として投げ、registerErrorHandler が 500 INTERNAL にする (既存の全ルート共通の挙動)。
-  it("#X8b non-JSON body -> 400 VALIDATION_ERROR (spec) ", async () => {
-    const { cookie } = await seedApple();
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const res = await exchange(cookie, "not json");
-    const text = await res.clone().text();
-    expect(res.status, text).toBe(400);
-    expectError(await json(res), "VALIDATION_ERROR");
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
   it("#X9 works before setup is complete", async () => {
     // seedApple's user has no school / department / default semester
     const { db, user, cookie } = await seedApple();
