@@ -24,8 +24,11 @@ RUN prisma generate
 WORKDIR /app
 
 RUN chmod +x apps/api/entrypoint.sh
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data; chown node:node /app/data
 VOLUME ["/app/data"]
+
+# 実行時の書き込み先は /app/data (volume) と /tmp のみ。/app 配下は root 所有。
+USER node
 
 EXPOSE 3000
 ENTRYPOINT ["/sbin/tini", "--"]
