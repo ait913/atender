@@ -46,6 +46,7 @@ export const TemplateDto = z.object({
   updatedAt: z.string(),
   schoolName: z.string(),
   departmentName: z.string(),
+  daysOfWeek: z.array(z.number().int().min(1).max(7)).nullable().optional(),
 });
 
 export const TemplateSearchQuery = z.object({
@@ -82,6 +83,7 @@ export const TemplateCreateInput = z.object({
 });
 
 export const TemplateCopyInput = z.object({
+  replaceExisting: z.boolean().optional(),
   semesterId: z.string(),
   title: z.string().min(1).max(100).optional(),
 });

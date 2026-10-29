@@ -112,7 +112,7 @@ export function registerTemplateRoutes(app: Hono) {
     const semester = await prisma.semester.findUnique({ where: { id: input.semesterId } });
     if (!semester) throw new AppError(404, "NOT_FOUND", "Semester not found");
     if (semester.userId !== user.id) throw new AppError(403, "FORBIDDEN", "Forbidden");
-    const copied = await copyTemplateToUser({ templateId: c.req.valid("param").id, userId: user.id, semesterId: input.semesterId, title: input.title });
+    const copied = await copyTemplateToUser({ templateId: c.req.valid("param").id, userId: user.id, semesterId: input.semesterId, title: input.title, replaceExisting: input.replaceExisting });
     await generateOccurrencesForUserTimetable({ userTimetableId: copied.id });
     const full = await prisma.userTimetable.findUniqueOrThrow({ where: { id: copied.id }, include: { daySlots: true, courses: true, meetings: true } });
     return c.json({ userTimetable: userTimetableDto(full) }, 201);

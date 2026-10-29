@@ -197,6 +197,9 @@ model TimetableTemplate {
   meetings TemplateMeeting[]
   copies   UserTimetable[]
 
+  sourceUserTimetableId String? @unique
+  daysOfWeek String?
+
   @@index([schoolId, departmentId, updatedAt(sort: Desc)])
   @@index([authorUserId])
 }

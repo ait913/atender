@@ -18,8 +18,8 @@ const PublishInput = z.object({
   term: z.string().max(20).optional(),
 });
 
-async function getOwnedTimetable(id: string, userId: string) {
-  const timetable = await prisma.userTimetable.findUnique({ where: { id }, include: { daySlots: true, courses: true, meetings: true } });
+async function getOwnedTimetable(id: string, userId: string, db: Prisma.TransactionClient = prisma) {
+  const timetable = await db.userTimetable.findUnique({ where: { id }, include: { daySlots: true, courses: true, meetings: true } });
   if (!timetable) throw new AppError(404, "NOT_FOUND", "UserTimetable not found");
   if (timetable.userId !== userId) throw new AppError(403, "FORBIDDEN", "Forbidden");
   return timetable;
@@ -62,7 +62,14 @@ export function registerUserTimetableRoutes(app: Hono) {
   app.get("/api/user-timetables", sessionMiddleware, async (c) => {
     const user = c.get("user");
     const rows = await prisma.userTimetable.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, include: { daySlots: true, courses: true, meetings: true } });
-    return c.json({ userTimetables: rows.map(userTimetableDto) });
+    const templates = await prisma.timetableTemplate.findMany({
+      where: { sourceUserTimetableId: { in: rows.map((row) => row.id) }, authorUserId: user.id },
+      select: { sourceUserTimetableId: true, id: true, title: true, isPublic: true, updatedAt: true },
+    });
+    const publishedTemplates = new Map(templates.map((template) => [template.sourceUserTimetableId, {
+      id: template.id, title: template.title, isPublic: template.isPublic, updatedAt: template.updatedAt.toISOString(),
+    }]));
+    return c.json({ userTimetables: rows.map((row) => ({ ...userTimetableDto(row), publishedTemplate: publishedTemplates.get(row.id) ?? null })) });
   });
 
   app.get("/api/user-timetables/:id", sessionMiddleware, setupGuard, zValidator("param", IdParam), async (c) => {
@@ -126,18 +133,36 @@ export function registerUserTimetableRoutes(app: Hono) {
   app.post("/api/user-timetables/:id/publish-as-template", sessionMiddleware, setupGuard, zValidator("param", IdParam), zValidator("json", PublishInput), async (c) => {
     const user = c.get("user");
     const input = c.req.valid("json");
-    const timetable = await getOwnedTimetable(c.req.valid("param").id, user.id);
-    const currentUser = await prisma.user.findUniqueOrThrow({
-      where: { id: user.id },
-      select: { schoolId: true, departmentId: true },
-    });
-    if (currentUser.schoolId == null || currentUser.departmentId == null) {
-      throw new AppError(403, "SCHOOL_OR_DEPT_NOT_SET", "School or department is not set");
-    }
-    const schoolId = currentUser.schoolId;
-    const departmentId = currentUser.departmentId;
-    const template = await prisma.$transaction(async (tx) => {
-      const created = await tx.timetableTemplate.create({ data: { authorUserId: user.id, schoolId, departmentId, title: input.title, description: input.description ?? undefined, year: input.year ?? undefined, term: input.term ?? undefined, isPublic: true, copyCount: 0 } });
+    const id = c.req.valid("param").id;
+    let creating = false;
+    const publish = (retryError?: Prisma.PrismaClientKnownRequestError) => prisma.$transaction(async (tx) => {
+      const timetable = await getOwnedTimetable(id, user.id, tx);
+      const currentUser = await tx.user.findUniqueOrThrow({
+        where: { id: user.id },
+        select: { schoolId: true, departmentId: true },
+      });
+      if (currentUser.schoolId == null || currentUser.departmentId == null) {
+        throw new AppError(403, "SCHOOL_OR_DEPT_NOT_SET", "School or department is not set");
+      }
+      const schoolId = currentUser.schoolId;
+      const departmentId = currentUser.departmentId;
+      const existing = await tx.timetableTemplate.findFirst({ where: { sourceUserTimetableId: id } });
+      const isUpdate = existing != null && existing.authorUserId === user.id;
+      // 競合後は更新だけを一度試し、再作成はしない。
+      if (retryError && !isUpdate) throw retryError;
+      if (existing && !isUpdate) {
+        await tx.timetableTemplate.update({ where: { id: existing.id }, data: { sourceUserTimetableId: null } });
+      }
+      const data = { schoolId, departmentId, title: input.title, description: input.description ?? undefined, year: input.year ?? undefined, term: input.term ?? undefined, isPublic: true, daysOfWeek: timetable.daysOfWeek };
+      creating = !isUpdate;
+      const created = isUpdate
+        ? await tx.timetableTemplate.update({ where: { id: existing.id }, data })
+        : await tx.timetableTemplate.create({ data: { ...data, authorUserId: user.id, sourceUserTimetableId: id, copyCount: 0 } });
+      if (isUpdate) {
+        await tx.templateMeeting.deleteMany({ where: { templateId: created.id } });
+        await tx.templateCourse.deleteMany({ where: { templateId: created.id } });
+        await tx.templateDaySlot.deleteMany({ where: { templateId: created.id } });
+      }
       await tx.templateDaySlot.createMany({ data: timetable.daySlots.map((slot) => ({ templateId: created.id, periodIndex: slot.periodIndex, label: slot.label, startMinute: slot.startMinute, endMinute: slot.endMinute, isBreak: slot.isBreak })) });
       const courseMap = new Map<string, string>();
       for (const course of timetable.courses) {
@@ -149,8 +174,16 @@ export function registerUserTimetableRoutes(app: Hono) {
         if (!courseId) throw new AppError(400, "VALIDATION_ERROR", "Meeting references missing course");
         await tx.templateMeeting.create({ data: { templateId: created.id, courseId, dayOfWeek: meeting.dayOfWeek, startPeriodIndex: meeting.startPeriodIndex, periodCount: meeting.periodCount, room: meeting.room ?? undefined } });
       }
-      return tx.timetableTemplate.findUniqueOrThrow({ where: { id: created.id }, include: { daySlots: true, courses: true, meetings: true } });
+      const template = await tx.timetableTemplate.findUniqueOrThrow({ where: { id: created.id }, include: { daySlots: true, courses: true, meetings: true } });
+      return { template, status: isUpdate ? 200 as const : 201 as const };
     });
-    return c.json({ template: templateDto(template) }, 201);
+    let result;
+    try {
+      result = await publish();
+    } catch (error) {
+      if (!creating || !(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+      result = await publish(error);
+    }
+    return c.json({ template: templateDto(result.template) }, result.status);
   });
 }

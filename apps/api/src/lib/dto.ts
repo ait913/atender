@@ -90,6 +90,7 @@ export function templateDto(template: TemplateWithParts) {
     term: template.term,
     isPublic: template.isPublic,
     copyCount: template.copyCount,
+    daysOfWeek: template.daysOfWeek == null ? null : parseDaysOfWeek(template.daysOfWeek),
     daySlots: template.daySlots.map(daySlotDto),
     courses: template.courses.map(courseDto),
     meetings: template.meetings.map(meetingDto),
