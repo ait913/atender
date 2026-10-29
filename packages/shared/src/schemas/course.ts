@@ -1,11 +1,18 @@
 import { z } from "zod";
 
+const CourseRuleFields = {
+  requiredAttendanceRate: z.number().int().min(1).max(100).nullable().optional(),
+  maxAbsences: z.number().int().min(0).max(99).nullable().optional(),
+  tardiesPerAbsence: z.number().int().min(1).max(10).nullable().optional(),
+};
+
 export const CourseCreateInput = z.object({
   userTimetableId: z.string(),
   name: z.string().min(1).max(100),
   teacher: z.string().max(50).optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   note: z.string().max(500).optional(),
+  ...CourseRuleFields,
 });
 
 export const CourseUpdateInput = z.object({
@@ -13,6 +20,7 @@ export const CourseUpdateInput = z.object({
   teacher: z.string().max(50).nullable().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
   note: z.string().max(500).nullable().optional(),
+  ...CourseRuleFields,
 });
 
 export const CourseSuspensionDto = z.object({

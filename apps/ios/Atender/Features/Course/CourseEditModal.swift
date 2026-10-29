@@ -12,6 +12,13 @@ struct CourseEditModal: View {
     @State private var teacher = ""
     @State private var color = "#10b981"
     @State private var note = ""
+    @State private var rateOn = false
+    @State private var rate = 70
+    @State private var maxOn = false
+    @State private var maxAbsences = 5
+    @State private var tardyOn = false
+    @State private var tardies = 3
+    @State private var userRate = 70
     @State private var isPending = false
     @State private var error: String?
     private let colors = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"]
@@ -39,10 +46,18 @@ struct CourseEditModal: View {
                         .lineLimit(3...6)
                         .textFieldStyle(.atender)
                 }
+                field("出席の基準") { ruleCard }
+                Text("回数は授業の回数です。同じ日のコマはまとめて 1 回と数えます。")
+                    .font(.atenderXs).foregroundStyle(Color.textTertiary)
+                    .padding(.top, -Space.s2)
+                Text(CourseRuleLogic.footnote(rateOn: rateOn, maxOn: maxOn, userRate: userRate, rate: rate))
+                    .font(.atenderXs).foregroundStyle(Color.textTertiary)
+                    .padding(.top, -Space.s3)
                 if let error {
                     Text(error).font(.atenderSm).foregroundStyle(Color.statusAbsent)
                 }
             }
+            .task { userRate = (try? await environment.meRepository.me())?.user.requiredAttendanceRate ?? 70 }
             .onAppear { initialize() }
             .onChange(of: isPresented) { _, open in if open { initialize() } }
         } footer: {
@@ -64,7 +79,48 @@ struct CourseEditModal: View {
         teacher = course?.teacher ?? ""
         color = course?.color ?? colors[0]
         note = course?.note ?? ""
+        rateOn = course?.requiredAttendanceRate != nil
+        rate = course?.requiredAttendanceRate ?? userRate
+        maxOn = course?.maxAbsences != nil
+        maxAbsences = course?.maxAbsences ?? 5
+        tardyOn = course?.tardiesPerAbsence != nil
+        tardies = course?.tardiesPerAbsence ?? 3
         error = nil
+    }
+
+    private var ruleCard: some View {
+        VStack(alignment: .leading, spacing: Space.s3) {
+            Toggle("この科目の必要出席率を変える", isOn: $rateOn.animation())
+                .accessibilityIdentifier("course-rule-rate-toggle")
+                .onChange(of: rateOn) { _, on in if on && course?.requiredAttendanceRate == nil { rate = userRate } }
+            if rateOn {
+                HStack {
+                    NumberStepper(value: $rate, min: 1, max: 100, label: "必要出席率")
+                    Text("%").font(.atenderBase).foregroundStyle(Color.textSecondary)
+                }
+            }
+            Divider()
+            Toggle("欠席できる回数の上限を決める", isOn: $maxOn.animation())
+                .accessibilityIdentifier("course-rule-max-absences-toggle")
+            if maxOn {
+                HStack {
+                    NumberStepper(value: $maxAbsences, min: 0, max: 30, label: "欠席上限")
+                    Text("回まで").font(.atenderBase).foregroundStyle(Color.textSecondary)
+                }
+            }
+            Divider()
+            Toggle("遅刻・早退を欠席に換算する", isOn: $tardyOn.animation())
+                .accessibilityIdentifier("course-rule-tardy-toggle")
+            if tardyOn {
+                HStack {
+                    NumberStepper(value: $tardies, min: 1, max: 10, label: "遅刻・早退の換算")
+                    Text("回で欠席 1 回").font(.atenderBase).foregroundStyle(Color.textSecondary)
+                }
+            }
+        }
+        .padding(Space.s3)
+        .background(Color.bgMuted)
+        .clipShape(RoundedRectangle(cornerRadius: Radius.md, style: .continuous))
     }
 
     private func save() async {
@@ -81,7 +137,12 @@ struct CourseEditModal: View {
                     name: trimmedName,
                     teacher: trimmedTeacher.isEmpty ? nil : trimmedTeacher,
                     color: color,
-                    note: trimmedNote.isEmpty ? nil : trimmedNote
+                    note: trimmedNote.isEmpty ? nil : trimmedNote,
+                    rule: CourseRuleValues(
+                        requiredAttendanceRate: rateOn ? rate : nil,
+                        maxAbsences: maxOn ? maxAbsences : nil,
+                        tardiesPerAbsence: tardyOn ? tardies : nil
+                    )
                 ))
             } else {
                 saved = try await environment.timetableRepository.createCourse(.init(
@@ -89,7 +150,10 @@ struct CourseEditModal: View {
                     name: trimmedName,
                     teacher: trimmedTeacher.isEmpty ? nil : trimmedTeacher,
                     color: color,
-                    note: trimmedNote.isEmpty ? nil : trimmedNote
+                    note: trimmedNote.isEmpty ? nil : trimmedNote,
+                    requiredAttendanceRate: rateOn ? rate : nil,
+                    maxAbsences: maxOn ? maxAbsences : nil,
+                    tardiesPerAbsence: tardyOn ? tardies : nil
                 ))
             }
             onSaved(saved)

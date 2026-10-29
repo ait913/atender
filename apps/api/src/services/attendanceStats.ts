@@ -20,6 +20,33 @@ function strategyWeight(strategy: RuleStrategy): { num: number; den: number; sep
   }
 }
 
+// 回数の側 (course.maxAbsences) の欠席重み a と分母 d。d が 0 なら数えない。
+function lessonWeight(
+  status: AttendanceStatus,
+  rule: EffectiveRule["effective"],
+  tardiesPerAbsence: number | null,
+): { a: number; d: number } {
+  const byStrategy = (strategy: RuleStrategy) => {
+    switch (strategy) {
+      case "COUNT_AS_PRESENT":
+        return { a: 0, d: 1 };
+      case "COUNT_AS_ABSENT":
+        return { a: 1, d: 1 };
+      case "HALF_PRESENT":
+        return { a: 0.5, d: 1 };
+      case "REDUCE_DENOMINATOR":
+      case "SEPARATE_COUNT":
+        return { a: 0, d: 0 };
+    }
+  };
+  if (status === "PRESENT") return { a: 0, d: 1 };
+  if (status === "ABSENT") return { a: 1, d: 1 };
+  if (status === "CANCELLED") return { a: 0, d: 0 };
+  if (status === "EXCUSED") return byStrategy(rule.excusedStrategy);
+  if (tardiesPerAbsence != null) return { a: 0, d: 1 };
+  return byStrategy(status === "TARDY" ? rule.tardyStrategy : rule.earlyLeaveStrategy);
+}
+
 function statusWeight(status: AttendanceStatus, rule: EffectiveRule["effective"]) {
   if (status === "PRESENT") return strategyWeight("COUNT_AS_PRESENT");
   if (status === "ABSENT") return strategyWeight("COUNT_AS_ABSENT");
@@ -79,13 +106,24 @@ export async function computeCourseStatsWithProjection(args: {
   const todayIso = toIsoDate(args.now ?? new Date());
   const timetableSuspendedDates = new Set(timetable.timetableSuspensions.map((suspension) => toIsoDate(suspension.date)));
 
-  const requiredRate = args.requiredAttendanceRate / 100;
   let overallProjectionNum = 0;
   let overallProjectionDen = 0;
   let overallAllowanceSum = 0;
   let overallHasDenominator = false;
 
   const courses = timetable.courses.map((course) => {
+    const courseRule = {
+      requiredAttendanceRate: course.requiredAttendanceRate ?? null,
+      maxAbsences: course.maxAbsences ?? null,
+      tardiesPerAbsence: course.tardiesPerAbsence ?? null,
+    };
+    const tardiesPerAbsence = courseRule.tardiesPerAbsence;
+    const usedRate = courseRule.requiredAttendanceRate ?? args.requiredAttendanceRate;
+    const requiredRate = usedRate / 100;
+    let tardyAll = 0;
+    let tardyToDate = 0;
+    const lessons = new Map<string, { a: number; d: number; tardy: boolean }>();
+    const futureUnrecordedDates = new Set<string>();
     const perDay = new Map<number, number>();
     for (const meeting of course.meetings) {
       perDay.set(meeting.dayOfWeek, (perDay.get(meeting.dayOfWeek) ?? 0) + meeting.periodCount);
@@ -116,14 +154,27 @@ export async function computeCourseStatsWithProjection(args: {
         continue;
       }
       const record = occurrence.attendanceRecord;
+      const lesson = lessons.get(occurrenceDate) ?? { a: 0, d: 0, tardy: false };
+      lessons.set(occurrenceDate, lesson);
       if (!record) {
+        lesson.d += 1;
         if (occurrenceDate <= todayIso) {
           counts.unrecorded += 1;
           floatingPast += 1;
         } else {
           floatingFuture += 1;
+          futureUnrecordedDates.add(occurrenceDate);
         }
         continue;
+      }
+      const lw = lessonWeight(record.status, effective, tardiesPerAbsence);
+      lesson.a += lw.a;
+      lesson.d += lw.d;
+      const isTardyLike = record.status === "TARDY" || record.status === "EARLY_LEAVE";
+      if (tardiesPerAbsence != null && isTardyLike) {
+        lesson.tardy = true;
+        tardyAll += 1;
+        if (occurrenceDate <= todayIso) tardyToDate += 1;
       }
       if (record.status === "PRESENT") counts.present += 1;
       if (record.status === "ABSENT") counts.absent += 1;
@@ -132,7 +183,10 @@ export async function computeCourseStatsWithProjection(args: {
       if (record.status === "EARLY_LEAVE") counts.earlyLeave += 1;
       if (record.status === "CANCELLED") counts.cancelled += 1;
 
-      const weight = statusWeight(record.status, effective);
+      const weight =
+        tardiesPerAbsence != null && isTardyLike
+          ? { num: 1, den: 1, separate: false }
+          : statusWeight(record.status, effective);
       if (weight.separate) {
         separateCounts[record.status] = (separateCounts[record.status] ?? 0) + 1;
         denominatorReduction += 1;
@@ -148,6 +202,13 @@ export async function computeCourseStatsWithProjection(args: {
       }
     }
 
+    if (tardiesPerAbsence != null) {
+      const penaltyAll = Math.floor(tardyAll / tardiesPerAbsence);
+      const penaltyToDate = Math.floor(tardyToDate / tardiesPerAbsence);
+      numerator -= penaltyAll;
+      fixedNumAll -= penaltyAll;
+      toDateNum -= penaltyToDate;
+    }
     const denominator = Math.max(0, course.occurrences.length - denominatorReduction);
     const projectedNum = fixedNumAll + floatingFuture;
     const projectedDen = fixedDenAll + floatingPast + floatingFuture;
@@ -163,6 +224,25 @@ export async function computeCourseStatsWithProjection(args: {
           : allowedAbsences < 0
             ? null
             : Math.floor(allowedAbsences / maxDayPeriods);
+    let absenceLessons: number | null = null;
+    let allowedAbsenceLessons: number | null = null;
+    let limitedBy: "rate" | "count" | null = null;
+    if (courseRule.maxAbsences != null) {
+      let sum = 0;
+      let tardyLessons = 0;
+      for (const lesson of lessons.values()) {
+        if (lesson.d > 0) sum += lesson.a / lesson.d;
+        if (lesson.tardy) tardyLessons += 1;
+      }
+      absenceLessons = sum + (tardiesPerAbsence != null ? Math.floor(tardyLessons / tardiesPerAbsence) : 0);
+      const countAllowed = Math.floor(courseRule.maxAbsences - absenceLessons + 1e-9);
+      const rateLessons =
+        courseRule.requiredAttendanceRate != null && allowedAbsences != null && maxDayPeriods > 0
+          ? Math.floor(allowedAbsences / maxDayPeriods)
+          : null;
+      allowedAbsenceLessons = rateLessons == null ? countAllowed : Math.min(countAllowed, rateLessons);
+      limitedBy = rateLessons != null && rateLessons < countAllowed ? "rate" : "count";
+    }
     overallProjectionNum += projectedNum;
     overallProjectionDen += projectedDen;
     if (denominator > 0) {
@@ -188,6 +268,12 @@ export async function computeCourseStatsWithProjection(args: {
       allowedAbsences,
       maxDayPeriods,
       allowedAbsenceDays,
+      requiredAttendanceRate: usedRate,
+      rule: courseRule,
+      remainingLessons: futureUnrecordedDates.size,
+      absenceLessons,
+      allowedAbsenceLessons,
+      limitedBy,
     };
   });
 

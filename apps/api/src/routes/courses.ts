@@ -27,6 +27,9 @@ export function registerCourseRoutes(app: Hono) {
         teacher: input.teacher ?? null,
         color: input.color ?? null,
         note: input.note ?? null,
+        requiredAttendanceRate: input.requiredAttendanceRate ?? null,
+        maxAbsences: input.maxAbsences ?? null,
+        tardiesPerAbsence: input.tardiesPerAbsence ?? null,
       },
     });
     return c.json({ course: courseDto(course) }, 201);
@@ -47,6 +50,9 @@ export function registerCourseRoutes(app: Hono) {
         ...(input.teacher !== undefined ? { teacher: input.teacher } : {}),
         ...(input.color !== undefined ? { color: input.color } : {}),
         ...(input.note !== undefined ? { note: input.note } : {}),
+        ...(input.requiredAttendanceRate !== undefined ? { requiredAttendanceRate: input.requiredAttendanceRate } : {}),
+        ...(input.maxAbsences !== undefined ? { maxAbsences: input.maxAbsences } : {}),
+        ...(input.tardiesPerAbsence !== undefined ? { tardiesPerAbsence: input.tardiesPerAbsence } : {}),
       },
     });
     return c.json({ course: courseDto(updated) });
