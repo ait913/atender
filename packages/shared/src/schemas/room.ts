@@ -10,11 +10,6 @@ export const RoomSummaryDto = z.object({
   showMemberTimetables: z.boolean(),
   memberCount: z.number().int(),
   myRole: RoomRoleEnum,
-  upcomingEvent: z.object({
-    id: z.string(),
-    title: z.string(),
-    start: z.string(),
-  }).nullable(),
   createdAt: z.string(),
 });
 
@@ -32,30 +27,6 @@ export const RoomMemberDto = z.object({
   joinedAt: z.string(),
 });
 
-export const RoomEventDto = z.object({
-  id: z.string(),
-  seriesId: z.string(),
-  roomId: z.string(),
-  authorId: z.string(),
-  title: z.string(),
-  rawTitle: z.string().nullable(),
-  description: z.string().nullable(),
-  start: z.string(),
-  end: z.string(),
-  isAllDay: z.boolean(),
-  color: z.string().nullable(),
-  source: z.enum(["MANUAL", "ICS_FILE", "ICS_URL", "GOOGLE_OAUTH", "PERSONAL"]),
-  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]),
-  isRecurringOccurrence: z.boolean(),
-  recurrenceRule: z.string().nullable(),
-  occurrenceDate: z.string(),
-  overrideId: z.string().nullable(),
-  googleSyncId: z.string().nullable().optional(),
-  googleEventId: z.string().nullable().optional(),
-  googleRecurringEventId: z.string().nullable().optional(),
-  createdAt: z.string(),
-});
-
 export const CreateRoomInput = z.object({
   name: z.string().min(1).max(60),
   description: z.string().max(500).optional(),
@@ -67,37 +38,6 @@ export const UpdateRoomInput = z.object({
   description: z.string().max(500).nullable().optional(),
   showMemberTimetables: z.boolean().optional(),
 });
-
-const RoomEventInputBase = z.object({
-  title: z.string().min(1).max(120),
-  description: z.string().max(500).nullable().optional(),
-  start: z.string().datetime(),
-  end: z.string().datetime(),
-  isAllDay: z.boolean().default(false),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
-  recurrence: z.object({
-    rrule: z.string().min(1).max(720),
-    exDates: z.array(z.string().datetime()).default([]),
-    rDates: z.array(z.string().datetime()).default([]),
-  }).optional(),
-  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).default("NORMAL"),
-});
-
-export const CreateRoomEventInput = RoomEventInputBase.refine(
-  (value) => new Date(value.end) > new Date(value.start),
-  { message: "end must be after start" },
-);
-
-export const UpdateRoomEventInput = RoomEventInputBase.partial().extend({
-  editScope: z.enum(["single", "future", "all"]).default("all"),
-  originalDate: z.string().datetime().optional(),
-}).refine(
-  (value) => value.editScope === "all" || value.originalDate != null,
-  { message: "originalDate required for scope=single|future" },
-).refine(
-  (value) => value.start == null || value.end == null || new Date(value.end) > new Date(value.start),
-  { message: "end must be after start" },
-);
 
 export const RoomWeekDto = z.object({
   weekStart: z.string(),
@@ -129,26 +69,11 @@ export const RoomWeekDto = z.object({
     startPeriodIndex: z.number(),
     periodCount: z.number(),
   })),
-  roomEvents: z.array(RoomEventDto),
-});
-
-export const PersonalCalendarShareDto = z.object({
-  id: z.string(),
-  roomId: z.string(),
-  userId: z.string(),
-  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]),
-  enabled: z.boolean(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
 });
 
 export type RoomSummaryDto = z.infer<typeof RoomSummaryDto>;
 export type RoomDto = z.infer<typeof RoomDto>;
 export type RoomMemberDto = z.infer<typeof RoomMemberDto>;
-export type RoomEventDto = z.infer<typeof RoomEventDto>;
 export type CreateRoomInput = z.input<typeof CreateRoomInput>;
 export type UpdateRoomInput = z.infer<typeof UpdateRoomInput>;
-export type CreateRoomEventInput = z.infer<typeof CreateRoomEventInput>;
-export type UpdateRoomEventInput = z.infer<typeof UpdateRoomEventInput>;
 export type RoomWeekDto = z.infer<typeof RoomWeekDto>;
-export type PersonalCalendarShareDto = z.infer<typeof PersonalCalendarShareDto>;
