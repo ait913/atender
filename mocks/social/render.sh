@@ -6,6 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 test -d ../store/node_modules/puppeteer-core || (cd ../store ; npm i --no-audit --no-fund)
 test -f ../../apps/lp/site/fonts/zenmaru.css || { echo "apps/lp/site/fonts が無い (vendor-fonts.py --out で作る)" >&2 ; exit 1 ; }
 test -f ../../apps/lp/site/img/hero-phones.webp || python3 -I extract-phones.py
+test -f ../../apps/lp/site/img/mascot-hello.png || python3 -I clean-mascot.py
 node render.mjs
 sips -g pixelWidth -g pixelHeight out/*.png | grep -E "png|pixel" | paste - - -
 mkdir -p ../../assets/social/1.0.1

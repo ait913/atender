@@ -6,7 +6,6 @@ from PIL import Image, ImageChops, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / 'assets/store/1.0.1'
-MASCOT = ROOT / 'apps/ios/Atender/Assets.xcassets/mascot-hello.imageset/mascot-hello-1024.png'
 OUT = ROOT / 'apps/lp/site/img'
 W, H = 1320, 2868
 RING = 5
@@ -70,10 +69,6 @@ def straight(n, donor=None):
     save(im.crop(m.getbbox()), f'phone-{n}', 720)
 
 
-def mascot():
-    save(Image.open(MASCOT).convert('RGBA'), 'mascot-hello', 400)
-
-
 if __name__ == '__main__':
     OUT.mkdir(parents=True, exist_ok=True)
     hero()
@@ -82,4 +77,3 @@ if __name__ == '__main__':
     straight(3, s5)
     straight(4, s5)
     straight(5)
-    mascot()
