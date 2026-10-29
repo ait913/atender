@@ -3,7 +3,7 @@ import { app, prisma } from "./helpers/app";
 import { createSessionCookie, createTestUser, setupCompleteUser } from "./helpers/auth";
 import { createOccurrence } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
-import { addRoomMember, createRoom, createRoomEvent } from "./helpers/seedRoom";
+import { addRoomMember, createRoom } from "./helpers/seedRoom";
 
 function cookieHeader(cookie: string) {
   return { Cookie: cookie };
@@ -61,28 +61,6 @@ describe("room week endpoint", () => {
       startMinute: 780,
       endMinute: 870,
     });
-    const inside = await createRoomEvent(db, {
-      roomId: room.id,
-      authorId: owner.user.id,
-      title: "Inside",
-      start: new Date("2026-05-27T04:00:00.000Z"),
-      end: new Date("2026-05-27T05:00:00.000Z"),
-    });
-    const spanning = await createRoomEvent(db, {
-      roomId: room.id,
-      authorId: owner.user.id,
-      title: "Spanning",
-      start: new Date("2026-05-24T15:00:00.000Z"),
-      end: new Date("2026-05-25T01:00:00.000Z"),
-    });
-    await createRoomEvent(db, {
-      roomId: room.id,
-      authorId: owner.user.id,
-      title: "Outside",
-      start: new Date("2026-06-03T04:00:00.000Z"),
-      end: new Date("2026-06-03T05:00:00.000Z"),
-    });
-
     const firstRes = await requestJson(app, `/api/rooms/${room.id}/week?weekStart=2026-05-25`, {
       headers: cookieHeader(owner.cookie),
     });
@@ -105,10 +83,7 @@ describe("room week endpoint", () => {
     expect(meetingIds).toContain(firstOccurrence.id);
     expect(body.meetings.find((meeting: any) => meeting.occurrenceId === ownerOccurrence.id).userId).toBe(owner.user.id);
 
-    const eventIds = body.roomEvents.map((event: any) => event.id);
-    expect(eventIds).toContain(inside.id);
-    expect(eventIds).toContain(spanning.id);
-    expect(eventIds).not.toContain(expect.stringMatching(/Outside/));
+    expect(body).not.toHaveProperty("roomEvents");
   });
 
   it("requires auth and setup completion", async () => {

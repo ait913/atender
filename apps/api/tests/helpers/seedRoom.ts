@@ -50,26 +50,3 @@ export async function addRoomMember(
     },
   });
 }
-
-export async function createRoomEvent(
-  prisma: PrismaClient,
-  args: {
-    roomId: string;
-    authorId: string;
-    title?: string;
-    start?: Date;
-    end?: Date;
-    color?: string | null;
-  },
-) {
-  return prisma.roomEvent.create({
-    data: {
-      roomId: args.roomId,
-      authorId: args.authorId,
-      title: args.title ?? "Room Event",
-      start: args.start ?? new Date("2026-05-27T04:00:00.000Z"),
-      end: args.end ?? new Date("2026-05-27T05:00:00.000Z"),
-      color: args.color,
-    },
-  });
-}

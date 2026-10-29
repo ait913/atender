@@ -5,14 +5,16 @@
  * 値の上げ方は CLAUDE.md の TestFlight 手順を参照。
  *
  * 1 → 12 (2026-07-29, カレンダー3レーン / build 12):
- * - PersonalEvent を date+startMinute/endMinute から start/end の instant に作り替え、
+ * - 個人予定テーブルを date+startMinute/endMinute から start/end の instant に作り替え、
  *   semesterId 列を削除した (破壊的 migration、Touri 承認済)
  * - build 11 以下は消えたフィールドを前提に個人予定 API を叩くため、
  *   デプロイ後は正常動作しない。426 でアップデートを促す方が安全
  * - 必ず MIN_IOS_BUILD <= これから配る CFBundleVersion を確認すること
  *   (逆にすると配った直後に全員が 426 で自滅する)
+ *
+ * 12 -> 21 (A2): カレンダー API とテーブルを削除。build 12〜20 は削除した endpoint を叩くので 426 で更新を促す
  */
-export const MIN_IOS_BUILD = 12;
+export const MIN_IOS_BUILD = 21;
 
 export type ClientInfo = { platform: "ios"; build: number };
 

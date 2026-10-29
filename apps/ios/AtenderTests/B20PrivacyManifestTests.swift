@@ -77,12 +77,12 @@ final class B20PrivacyManifestTests: XCTestCase {
         XCTAssertTrue(yml.contains(#"CFBundleShortVersionString: "1.0.1""#))
     }
 
-    func testV2MinIOSBuildStays12AndNotAboveBundleVersion() throws {
+    func testV2MinIOSBuildIs21AndNotAboveBundleVersion() throws {
         let ts = try readText("apps/api/src/lib/clientVersion.ts")
         let regex = try NSRegularExpression(pattern: #"MIN_IOS_BUILD\s*=\s*(\d+)"#)
         let m = try XCTUnwrap(regex.firstMatch(in: ts, range: NSRange(ts.startIndex..., in: ts)))
         let value = Int(String(ts[try XCTUnwrap(Range(m.range(at: 1), in: ts))]))
-        XCTAssertEqual(value, 12, "設計 §12: MIN_IOS_BUILD は 12 据え置き")
+        XCTAssertEqual(value, 21, "設計 §3.12 (A2): MIN_IOS_BUILD は 21")
         XCTAssertLessThanOrEqual(try XCTUnwrap(value), 23)
     }
 

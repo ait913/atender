@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { app, prisma } from "./helpers/app";
 import { createSessionCookie, createTestUser, setupCompleteUser } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
-import { addRoomMember, createRoom, createRoomEvent } from "./helpers/seedRoom";
+import { addRoomMember, createRoom } from "./helpers/seedRoom";
 
 function cookieHeader(cookie: string) {
   return { Cookie: cookie };
@@ -57,7 +57,6 @@ describe("room endpoints", () => {
     const outsider = await setupCompleteUser(db);
     const room = await createRoom(db, { ownerId: owner.user.id });
     await addRoomMember(db, { roomId: room.id, userId: member.user.id });
-    await createRoomEvent(db, { roomId: room.id, authorId: owner.user.id });
 
     const getNonMember = await requestJson(app, `/api/rooms/${room.id}`, {
       headers: cookieHeader(outsider.cookie),
@@ -87,7 +86,6 @@ describe("room endpoints", () => {
     expect(deleted.status).toBe(200);
     expect(await db.room.findUnique({ where: { id: room.id } })).toBeNull();
     expect(await db.roomMembership.count({ where: { roomId: room.id } })).toBe(0);
-    expect(await db.roomEvent.count({ where: { roomId: room.id } })).toBe(0);
   });
 
   it("handles leave and member removal rules", async () => {

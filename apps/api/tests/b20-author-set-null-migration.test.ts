@@ -14,20 +14,15 @@ type PragmaCol = { name: string; notnull: number };
 type PragmaFk = { table: string; from: string; on_delete: string };
 
 describe("[B20 #M] author SET NULL migration", () => {
-  it("#M1 TimetableTemplate.authorUserId and RoomEvent.authorId are nullable", async () => {
+  it("#M1 TimetableTemplate.authorUserId is nullable", async () => {
     const t = (await prisma().$queryRawUnsafe(`PRAGMA table_info("TimetableTemplate")`)) as PragmaCol[];
-    const r = (await prisma().$queryRawUnsafe(`PRAGMA table_info("RoomEvent")`)) as PragmaCol[];
     expect(Number(t.find((c) => c.name === "authorUserId")!.notnull)).toBe(0);
-    expect(Number(r.find((c) => c.name === "authorId")!.notnull)).toBe(0);
   });
 
   it("#M2 FK actions: author -> SET NULL, others unchanged (CASCADE)", async () => {
     const tf = (await prisma().$queryRawUnsafe(`PRAGMA foreign_key_list("TimetableTemplate")`)) as PragmaFk[];
-    const rf = (await prisma().$queryRawUnsafe(`PRAGMA foreign_key_list("RoomEvent")`)) as PragmaFk[];
     const act = (list: PragmaFk[], from: string) => list.find((f) => f.from === from)!.on_delete;
     expect(act(tf, "authorUserId")).toBe("SET NULL");
-    expect(act(rf, "authorId")).toBe("SET NULL");
-    expect(act(rf, "roomId")).toBe("CASCADE");
     expect(act(tf, "schoolId")).toBe("CASCADE");
     expect(act(tf, "departmentId")).toBe("CASCADE");
   });
