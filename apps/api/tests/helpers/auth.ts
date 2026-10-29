@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import type { PrismaClient, SchoolKind } from "@prisma/client";
 import type { Hono } from "hono";
+import { lastAisMailCall } from "./mail";
 
 export async function createTestUser(
   prisma: PrismaClient,
@@ -201,8 +202,7 @@ export async function signInViaMagicLink(app: Hono, email = `real_${randomUUID()
     body: JSON.stringify({ email, callbackURL: "https://atender.appily.run/verify" }),
   });
 
-  const calls = globalThis.__resendSendMock.mock.calls;
-  const html = calls[calls.length - 1]?.[0]?.html as string | undefined;
+  const html = lastAisMailCall()?.body.html as string | undefined;
   const href = html ? /href="([^"]*magic-link\/verify[^"]*)"/.exec(html)?.[1] : undefined;
   if (!href) throw new Error("magic link verify URL not found in the sent email");
 

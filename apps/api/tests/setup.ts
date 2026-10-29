@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
-import { afterEach, beforeAll, beforeEach, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, vi, type Mock } from "vitest";
 import { createTestDb, disposeTestDb, enableForeignKeys, ensureTemplateDb, installTestPrisma } from "./helpers/db";
+import { aisMailOk } from "./helpers/mail";
 
 declare global {
   // eslint-disable-next-line no-var
-  var __resendSendMock: ReturnType<typeof vi.fn>;
+  var __aisMailFetchMock: Mock<(url: string, init: RequestInit) => Promise<Response>>;
 }
 
 const envTestPath = path.resolve(process.cwd(), ".env.test");
@@ -27,27 +28,20 @@ process.env.BETTER_AUTH_URL ??= "http://localhost:3000";
 process.env.BETTER_AUTH_TRUSTED_ORIGINS ??= "http://localhost:5173,https://atender.appily.run,atender://auth";
 process.env.BETTER_AUTH_COOKIE_DOMAIN ??= ".appily.run";
 process.env.PUBLIC_WEB_URL ??= "http://localhost:5173";
-process.env.RESEND_API_KEY ??= "re_test";
-process.env.RESEND_FROM ??= "Atender <noreply@atender.appily.run>";
+process.env.AIS_MAIL_TOKEN ??= "aism_svc_test000000.abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQ";
+process.env.AIS_MAIL_URL ??= "https://mail.ais-test.invalid";
 process.env.GOOGLE_CLIENT_ID ??= "test-google-client-id";
 process.env.GOOGLE_CLIENT_SECRET ??= "test-google-client-secret";
 process.env.PORT ??= "3000";
 
 installTestPrisma();
 
-globalThis.__resendSendMock = vi.fn().mockResolvedValue({
-  data: { id: "test-email-id" },
-  error: null,
-});
-
-vi.mock("resend", () => {
-  class Resend {
-    emails = {
-      send: globalThis.__resendSendMock,
-    };
-  }
-
-  return { Resend };
+const realFetch = globalThis.fetch;
+globalThis.__aisMailFetchMock = vi.fn(async () => aisMailOk());
+vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  if (url.startsWith(process.env.AIS_MAIL_URL!)) return globalThis.__aisMailFetchMock(url, init ?? {});
+  return realFetch(input, init);
 });
 
 beforeAll(() => {
@@ -55,7 +49,8 @@ beforeAll(() => {
 });
 
 beforeEach(async () => {
-  globalThis.__resendSendMock.mockClear();
+  globalThis.__aisMailFetchMock.mockReset();
+  globalThis.__aisMailFetchMock.mockImplementation(async () => aisMailOk());
   const db = await createTestDb();
   await enableForeignKeys(db.prisma);
 });

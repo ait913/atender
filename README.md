@@ -8,7 +8,7 @@
 
 ## スタック (MVP)
 
-- **Backend**: Hono (Node) + better-auth 1.6.x + Prisma 6.x + SQLite + Resend
+- **Backend**: Hono (Node) + better-auth 1.6.x + Prisma 6.x + SQLite + AIS Mail (メール送信)
 - **Frontend**: Vite + React 19 + TypeScript + TanStack Router/Query
 - **Monorepo**: pnpm workspace (`apps/api`, `apps/web`, `packages/shared`)
 - **Auth**: Magic Link + Google OAuth (Apple Sign-In は Phase 2 で iPhone 版に追加)

@@ -59,7 +59,7 @@ describe("[B20 #L] legal pages (static content)", () => {
       "Atender 運営者",
       "提供を終了しました",
       "IPアドレス",
-      "Resend",
+      "ログイン用メール（メールアドレスでのログイン）の送信",
       "Cloudflare",
       "Google Fonts",
       "日本国内",

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { app, prisma } from "./helpers/app";
 import { createSessionCookie, createTestUser, signInViaMagicLink } from "./helpers/auth";
+import { aisMailCalls, aisMailResponse } from "./helpers/mail";
+import { MAGIC_LINK_SEND_FAILED_MESSAGE } from "../src/auth";
 import { expectError, json, requestJson } from "./helpers/http";
 
 describe("auth API", () => {
@@ -171,22 +173,25 @@ describe("auth API", () => {
     expect(res.headers.get("Set-Cookie") ?? "").toMatch(/Max-Age=0|expires=/i);
   });
 
-  it("[§8 #75] sendMagicLink callback sends Resend email using RESEND_FROM and the better-auth url as-is", async () => {
+  it("[§8 #75] sendMagicLink sends one AIS Mail request with the better-auth url as-is and no from field", async () => {
     await requestJson(app, "/api/auth/sign-in/magic-link", {
       method: "POST",
       body: { email: "mail@example.test", callbackURL: "https://atender.appily.run/verify" },
     });
 
-    expect(globalThis.__resendSendMock).toHaveBeenCalledTimes(1);
-    const payload = globalThis.__resendSendMock.mock.calls[0][0];
-    expect(payload.from).toBe(process.env.RESEND_FROM);
-    expect(payload.to).toBe("mail@example.test");
-    expect(payload.html).toContain("href=");
-    expect(payload.html).toContain("token");
+    const calls = aisMailCalls();
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toBe(`${process.env.AIS_MAIL_URL}/api/v1/send`);
+    expect(calls[0].body.to).toBe("mail@example.test");
+    expect(calls[0].body).not.toHaveProperty("from");
+    expect(calls[0].body.html).toContain("href=");
+    expect(calls[0].body.html).toContain("token");
   });
 
-  it("[§8 #76] Resend failure makes Magic Link request return 500 INTERNAL", async () => {
-    globalThis.__resendSendMock.mockResolvedValueOnce({ data: null, error: { message: "resend failed" } });
+  it("[§8 #76] AIS Mail failure makes Magic Link request return 500 MAIL_SEND_FAILED", async () => {
+    globalThis.__aisMailFetchMock.mockResolvedValueOnce(
+      aisMailResponse(500, { error: { code: "internal", message: "x" } }),
+    );
 
     const res = await requestJson(app, "/api/auth/sign-in/magic-link", {
       method: "POST",
@@ -195,6 +200,7 @@ describe("auth API", () => {
     const body = await json(res);
 
     expect(res.status).toBe(500);
-    expectError(body, "INTERNAL");
+    expectError(body, "MAIL_SEND_FAILED");
+    expect((body as { error: { message: string } }).error.message).toBe(MAGIC_LINK_SEND_FAILED_MESSAGE);
   });
 });
