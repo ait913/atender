@@ -11,7 +11,7 @@ import {
   setupCompleteUser,
 } from "./helpers/auth";
 import { expectError, json, requestJson } from "./helpers/http";
-import { addRoomMember, createRoom, createRoomEvent } from "./helpers/seedRoom";
+import { addRoomMember, createRoom } from "./helpers/seedRoom";
 
 // ---------------------------------------------------------------------------
 // harness
@@ -118,15 +118,6 @@ describe("[B20 #D] DELETE /api/me", () => {
     const tt = await createUserTimetable(db, u.user.id, u.semester.id);
     const occ = await createOccurrence(db, { meetingId: tt.meeting.id, courseId: tt.course.id });
     await db.attendanceRecord.create({ data: { occurrenceId: occ.id, userId: u.user.id, status: "PRESENT" } });
-    await db.personalEvent.create({
-      data: {
-        userId: u.user.id,
-        title: "p",
-        start: new Date("2026-06-01T00:00:00Z"),
-        end: new Date("2026-06-01T01:00:00Z"),
-      },
-    });
-    await db.icsTitleRule.create({ data: { userId: u.user.id, matchType: "EQUALS", pattern: "x" } });
     await db.friendship.create({ data: { senderId: u.user.id, receiverId: a.user.id, status: "ACCEPTED" } });
     await db.friendship.create({ data: { senderId: b.user.id, receiverId: u.user.id, status: "PENDING" } });
     await db.account.create({
@@ -144,8 +135,6 @@ describe("[B20 #D] DELETE /api/me", () => {
     expect(await db.semester.count({ where: { userId: U } })).toBe(0);
     expect(await db.userTimetable.count({ where: { userId: U } })).toBe(0);
     expect(await db.attendanceRecord.count({ where: { userId: U } })).toBe(0);
-    expect(await db.personalEvent.count({ where: { userId: U } })).toBe(0);
-    expect(await db.icsTitleRule.count({ where: { userId: U } })).toBe(0);
     expect(await db.friendship.count({ where: { OR: [{ senderId: U }, { receiverId: U }] } })).toBe(0);
     expect(await db.user.count({ where: { id: { in: [a.user.id, b.user.id] } } })).toBe(2);
     expect(await db.semester.count({ where: { userId: a.user.id } })).toBe(1);
@@ -202,7 +191,6 @@ describe("[B20 #D] DELETE /api/me", () => {
     const room = await createRoom(db, { ownerId: u.user.id });
     await addRoomMember(db, { roomId: room.id, userId: a.user.id, joinedAt: new Date("2026-05-02T00:00:00Z") });
     await addRoomMember(db, { roomId: room.id, userId: b.user.id, joinedAt: new Date("2026-05-03T00:00:00Z") });
-    const ev = await createRoomEvent(db, { roomId: room.id, authorId: a.user.id });
 
     expect((await del(u.cookie)).status).toBe(204);
 
@@ -213,8 +201,6 @@ describe("[B20 #D] DELETE /api/me", () => {
     expect(ms).toHaveLength(2);
     expect(ms.find((m) => m.userId === a.user.id)!.role).toBe("OWNER");
     expect(ms.find((m) => m.userId === b.user.id)!.role).toBe("MEMBER");
-    const e = await db.roomEvent.findUniqueOrThrow({ where: { id: ev.id } });
-    expect(e.authorId).toBe(a.user.id);
   });
 
   it.each([
@@ -243,127 +229,10 @@ describe("[B20 #D] DELETE /api/me", () => {
     const db = prisma();
     const u = await setupUser();
     const room = await createRoom(db, { ownerId: u.user.id });
-    const imp = await db.icsImport.create({
-      data: { userId: u.user.id, roomId: room.id, source: "ICS_FILE", contentHash: "h", rawText: "BEGIN:VCALENDAR" },
-    });
-    const e1 = await db.roomEvent.create({
-      data: {
-        roomId: room.id,
-        authorId: u.user.id,
-        title: "m",
-        start: new Date("2026-05-27T04:00:00Z"),
-        end: new Date("2026-05-27T05:00:00Z"),
-        source: "MANUAL",
-      },
-    });
-    await db.roomEvent.create({
-      data: {
-        roomId: room.id,
-        authorId: u.user.id,
-        title: "i",
-        start: new Date("2026-05-28T04:00:00Z"),
-        end: new Date("2026-05-28T05:00:00Z"),
-        source: "ICS_FILE",
-        importId: imp.id,
-      },
-    });
-    await db.roomEventOverride.create({
-      data: { seriesId: e1.id, originalDate: new Date("2026-05-27T04:00:00Z"), isCancelled: true },
-    });
-
     expect((await del(u.cookie)).status).toBe(204);
 
     expect(await db.room.count({ where: { id: room.id } })).toBe(0);
-    expect(await db.roomEvent.count({ where: { roomId: room.id } })).toBe(0);
-    expect(await db.roomEventOverride.count({ where: { seriesId: e1.id } })).toBe(0);
     expect(await db.roomMembership.count({ where: { roomId: room.id } })).toBe(0);
-  });
-
-  async function seedRoomWithContributions() {
-    const db = prisma();
-    const u = await setupUser();
-    const a = await setupCompleteUser(db);
-    const ra = await createRoom(db, { ownerId: a.user.id, name: "RA" });
-    await addRoomMember(db, { roomId: ra.id, userId: u.user.id });
-    const imp = await db.icsImport.create({
-      data: { userId: u.user.id, roomId: ra.id, source: "ICS_FILE", contentHash: "h", rawText: "BEGIN:VCALENDAR" },
-    });
-    const mk = (title: string, source: any, extra: Record<string, unknown> = {}) =>
-      db.roomEvent.create({
-        data: {
-          roomId: ra.id,
-          authorId: u.user.id,
-          title,
-          start: new Date("2026-05-27T04:00:00Z"),
-          end: new Date("2026-05-27T05:00:00Z"),
-          source,
-          ...extra,
-        },
-      });
-    const e1 = await mk("E1", "MANUAL");
-    const e2 = await mk("E2", "ICS_FILE", { importId: imp.id });
-    return { db, u, a, ra, e1, e2, mk };
-  }
-
-  it("#D9 contributions to someone else's room survive with authorId NULL", async () => {
-    const { db, u, a, ra, e1, e2 } = await seedRoomWithContributions();
-    expect((await del(u.cookie)).status).toBe(204);
-
-    expect(await db.roomMembership.count({ where: { roomId: ra.id, userId: u.user.id } })).toBe(0);
-    const room = await db.room.findUniqueOrThrow({ where: { id: ra.id } });
-    expect(room.createdByUserId).toBe(a.user.id);
-    const r1 = await db.roomEvent.findUniqueOrThrow({ where: { id: e1.id } });
-    const r2 = await db.roomEvent.findUniqueOrThrow({ where: { id: e2.id } });
-    expect(r1.authorId).toBeNull();
-    expect(r2.authorId).toBeNull();
-    expect(r2.importId).toBeNull();
-  });
-
-  it("#D10 DTOs return authorId sentinel \"\" (not null) for anonymised events", async () => {
-    const { u, a, ra, e1, e2 } = await seedRoomWithContributions();
-    expect((await del(u.cookie)).status).toBe(204);
-
-    const list = await requestJson(app, `/api/rooms/${ra.id}/events?from=2026-05-01T00:00:00.000Z&to=2026-06-30T00:00:00.000Z`, {
-      headers: { Cookie: a.cookie },
-    });
-    expect(list.status).toBe(200);
-    const events = ((await json(list)) as any).events as any[];
-    const g1 = events.find((e) => e.id === e1.id);
-    const g2 = events.find((e) => e.id === e2.id);
-    expect(g1).toBeDefined();
-    expect(g2).toBeDefined();
-    expect(g1.authorId).toBe("");
-    expect(g2.authorId).toBe("");
-
-    const week = await requestJson(app, `/api/rooms/${ra.id}/week?weekStart=2026-05-25`, { headers: { Cookie: a.cookie } });
-    expect(week.status).toBe(200);
-    const wevents = ((await json(week)) as any).roomEvents as any[];
-    const w1 = wevents.find((e) => e.id === e1.id);
-    expect(w1).toBeDefined();
-    expect(w1.authorId).toBe("");
-  });
-
-  it("#D11 projections (PERSONAL / GOOGLE_OAUTH) are deleted, MANUAL / ICS_FILE remain", async () => {
-    const { db, u, ra, e1, e2, mk } = await seedRoomWithContributions();
-    const e3 = await mk("E3", "PERSONAL", { externalUid: "pe:x" });
-    const e4 = await mk("E4", "GOOGLE_OAUTH");
-    expect((await del(u.cookie)).status).toBe(204);
-
-    expect(await db.roomEvent.count({ where: { id: { in: [e3.id, e4.id] } } })).toBe(0);
-    const remaining = await db.roomEvent.findMany({ where: { roomId: ra.id } });
-    expect(remaining.map((e) => e.id).sort()).toEqual([e1.id, e2.id].sort());
-  });
-
-  it("#D12 anonymised event cannot be edited by room owner (403 NOT_AUTHOR)", async () => {
-    const { u, a, ra, e1 } = await seedRoomWithContributions();
-    expect((await del(u.cookie)).status).toBe(204);
-    const res = await requestJson(app, `/api/rooms/${ra.id}/events/${e1.id}`, {
-      method: "PATCH",
-      headers: { Cookie: a.cookie },
-      body: { title: "changed" },
-    });
-    expect(res.status).toBe(403);
-    expectError(await json(res), "NOT_AUTHOR");
   });
 
   async function seedPublicTemplate(authorId: string, schoolId: string, departmentId: string, isPublic: boolean, copyCount = 0) {

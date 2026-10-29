@@ -219,7 +219,7 @@ describe("[build17 §5.4] room week semesterId (additive)", () => {
     }
   });
 
-  it("[#A-回帰] weekStart のバリデーションと members/roomEvents は不変", async () => {
+  it("[#A-回帰] weekStart のバリデーションと members は不変、roomEvents は無い", async () => {
     const db = prisma();
     const { owner, second } = await viewerWithTwoSemesters(db);
     const room = await createRoom(db, { ownerId: owner.user.id });
@@ -227,7 +227,7 @@ describe("[build17 §5.4] room week semesterId (additive)", () => {
     const body = (await fetchWeek(owner.cookie, room.id, `${"&"}semesterId=${second.id}`)).body;
     expect(Array.isArray(body.members)).toBe(true);
     expect(body.members.length).toBeGreaterThan(0);
-    expect(Array.isArray(body.roomEvents)).toBe(true);
+    expect(body).not.toHaveProperty("roomEvents");
     expect(Array.isArray(body.meetings)).toBe(true);
     expect(body.weekStart).toBeTruthy();
   });

@@ -27,11 +27,11 @@ CLAUDE.md「ベースライン失敗の台帳」に基づく。分類: テスト
 |---|---|---|---|
 | A1 | `room > enforces membership...` | 非メンバーの `GET /api/rooms/:id` が **403** | **#383**「メンバーでない user が叩くと `404 NOT_MEMBER` (存在を露呈しない、**403 ではない**)」→ **room の存在露呈。セキュリティ寄り** |
 | A2 | `room > orders members...` | OWNER が**末尾** | **#435**「`members` は **OWNER 先頭**、それ以外は joinedAt 昇順」 |
-| A3 | `roomEvent > allows any room member...` | member の PATCH が **403** | **#413**「PATCH は **room member なら誰でも編集可** (author 限定でない、TimeTree 方式)」。#414 (DELETE) も同様 |
+| ~~A3~~ | `roomEvent > allows any room member...` | member の PATCH が **403** | **#413**「PATCH は **room member なら誰でも編集可** (author 限定でない、TimeTree 方式)」。#414 (DELETE) も同様 | **(A2: `roomEvent.test.ts` ごと削除 — カレンダー API 撤去で対象が消えた)**
 | A4 | `roomWeek > rejects non-members and invalid weekStart` | 不正 weekStart が **200** | **#431**「weekStart は月曜限定。それ以外は `400 INVALID_WEEK_START`」= **バリデーション不在** |
 | A5 | `friendship > handles create idempotency...` | 既存 PENDING への再申請が **201** | **#342**「再申請は**冪等** (新規行を作らず既存行を返す、**200**)」。service は冪等なのに `routes/friendships.ts:31` が **201 ベタ書き**で created/existing を区別できない |
 | ~~A6~~ | ~~`semesters [§8 #22]`~~ | **2026-07-30 解消 → 緑** (`fix/eventkit-sync-400` で zValidator の封筒を統一) | 期待は `{error:{code:"VALIDATION_ERROR"}}`。旧: zValidator が raw ZodError を素通ししていた |
-| A7 | `roomEvent > validates ranges...` | **2026-07-30 実測更新**: `expected 'VALIDATION_ERROR' to be 'INVALID_RANGE'` (旧: `code` が undefined) | **#411**「start >= end は `400 { code: "INVALID_RANGE" }`」。**封筒統一だけでは緑にならない** — refine に `params:{code:"INVALID_RANGE"}` を付け、ラッパーが `issue.params.code` を優先する等のコード付与機構が要る (request スキーマへの追加変更)。**Leader 裁定でスコープ外に据え置き** |
+| ~~A7~~ | `roomEvent > validates ranges...` | **2026-07-30 実測更新**: `expected 'VALIDATION_ERROR' to be 'INVALID_RANGE'` (旧: `code` が undefined) | **#411**「start >= end は `400 { code: "INVALID_RANGE" }`」。**封筒統一だけでは緑にならない** — refine に `params:{code:"INVALID_RANGE"}` を付け、ラッパーが `issue.params.code` を優先する等のコード付与機構が要る (request スキーマへの追加変更)。**Leader 裁定でスコープ外に据え置き** | **(A2: `roomEvent.test.ts` ごと削除 — カレンダー API 撤去で対象が消えた)**
 | A8 | `room > regenerates invites...` | 再発行コードが 32 hex | 設計 §23「招待は `Room.inviteCode` 直書き (**cuid**)」+ schema `@default(cuid())`。`room.service.ts:190` の `randomUUID().replaceAll("-","")` のみ逸脱。**機能影響なし・軽微** — cuid に寄せるかテストを緩めるかは裁定事項 |
 
 → **A6 は 2026-07-30 に解消** (`fix/eventkit-sync-400`)。zValidator の error envelope を `{error:{code:"VALIDATION_ERROR",message,details}}` に統一する `apps/api/src/lib/validator.ts` を新設し、17 route の import を差し替えた。

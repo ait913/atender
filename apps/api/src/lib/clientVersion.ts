@@ -5,7 +5,7 @@
  * 値の上げ方は CLAUDE.md の TestFlight 手順を参照。
  *
  * 1 → 12 (2026-07-29, カレンダー3レーン / build 12):
- * - PersonalEvent を date+startMinute/endMinute から start/end の instant に作り替え、
+ * - 個人予定テーブルを date+startMinute/endMinute から start/end の instant に作り替え、
  *   semesterId 列を削除した (破壊的 migration、Touri 承認済)
  * - build 11 以下は消えたフィールドを前提に個人予定 API を叩くため、
  *   デプロイ後は正常動作しない。426 でアップデートを促す方が安全
