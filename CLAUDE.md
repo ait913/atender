@@ -4,7 +4,7 @@
 
 ## プロジェクト要約
 
-時間割登録 + ワンタッチ出欠 + 出席率追跡のアプリ。学校 + 学科で時間割テンプレを public 共有し、再入力コストを下げる。Touri 自身を含む学生 (専門学校・大学) 向け。Web 版 (`apps/web`) が機能の正典。iOS ネイティブ版 (`apps/ios`) は **機能を Web と共有しつつ、入口・見た目と操作は iOS ネイティブ** (Apple HIG / 標準部品 / Liquid Glass)。
+時間割登録 + ワンタッチ出欠 + 出席率追跡のアプリ。学校 + 学科で時間割テンプレを public 共有し、再入力コストを下げる。Touri 自身を含む学生 (専門学校・大学) 向け。Web 版 (`apps/web`) が機能の正典。カレンダー機能 (個人予定・ルーム予定・ICS・Google Calendar 連携・EventKit 読み込み) は build 21 で全面撤去。残るのは iOS の時間割の iPhone カレンダー書き出し (`GET /api/occurrences`) だけ。iOS ネイティブ版 (`apps/ios`) は **機能を Web と共有しつつ、入口・見た目と操作は iOS ネイティブ** (Apple HIG / 標準部品 / Liquid Glass)。
 
 ## 主要ドキュメント
 
@@ -25,7 +25,7 @@
 - Frontend (`apps/web`): Vite 6 + React 19 + TypeScript 5.6 + TanStack Router + TanStack Query + Tailwind (web 召集時に確定)
 - Shared (`packages/shared`): Zod schemas + TypeScript 型 (型共有のみ)
 - DB: SQLite (Prisma `provider = "sqlite"`、Coolify Volume mount で `/app/data/prod.db`)
-- 認証: Magic Link + Google OAuth (better-auth + Resend 送信、cookie session 30 日、SameSite=Lax)
+- 認証: Magic Link + Google OAuth (better-auth + Resend 送信、cookie session 30 日、SameSite=Lax。Google はサインインのみ。Google Calendar 連携は build 21 で撤去)
 - ホスティング: Appily (Coolify + Nginx) 2 service 構成 (`atender-api` / `atender-web`)
 - iOS (`apps/ios`): SwiftUI ネイティブ。API は Web と共通 (Bearer token)。xcodegen + xcodebuild、iOS 17+
 
@@ -39,7 +39,7 @@
   - 標準部品を自前で再発明しない (`TabView` / `Picker` / `Menu` / `ContentUnavailableView` / `List` / `SignInWithAppleButton` / `.sheet`)。自前背景は Liquid Glass と干渉する
   - 詳細: `.designs/20260717-ios-ui-revamp.md`
 - 時間割テンプレ共有は「学校 + 学科」で public 検索。opt-in 制にはしない (MVP)
-- 出欠ルール (公欠等の扱い) は学校・学科でデフォ共有 + ユーザー個別上書き可
+- 出欠ルール (公欠等の扱い) は学校・学科でデフォ共有 + ユーザー個別上書き可。**科目ごとの基準 (必要出席率 / 欠席上限回数 / 遅刻換算) は `Course` に持つ (build 21)**
 - キャラクター画像は Codex (gpt-image-1) 生成。アニメ調禁止、Claude/ChatGPT 系の親しみあるキャラ
 - 自前 FW は組まない (2026-03末〜の AI 駆動・スピード重視フェーズ)。既製 OSS スタック採用
 
@@ -140,9 +140,9 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
   --apiKey 973AZ487M3 --apiIssuer a3955ee4-936a-4c78-b9d1-9d1c559885af
 ```
 
-- **バージョン更新: 版数の正典は `project.yml` の `info.properties` 一択** (現在 `CFBundleVersion: "20"` / `CFBundleShortVersionString: "1.0"`。**build 20 = 2026-10-09 配布済** (Delivery UUID `de70688d-2d13-4bf6-85bf-d76208914938`。App Store 初回審査提出用: アカウント削除 `DELETE /api/me` (ルーム OWNER 移譲 / 公開テンプレ・他人ルームの予定は author NULL 化、API は番兵 `""`) + Apple/Google トークン失効 (best-effort) + SIWA 認可コード交換 `POST /api/auth-apple/exchange` / iOS 設定に削除行 + 法務リンク / `PrivacyInfo.xcprivacy` / Web に削除行 + 法務ページ `/privacy` `/terms` `/support` (静的 HTML、nginx `try_files $uri $uri.html`)。migration `20261009120000_b20_author_set_null` (table 作り直し、`entrypoint.sh` が migrate 前に `prod.db.bak-<ts>` を 5 世代残し `db-stats` を前後でログ出力)。`MIN_IOS_BUILD` 12 据え置き。設計 = `.designs/20261009-build20-account-deletion-legal.md`)。**build 19 = 2026-10-08 配布済** (Delivery UUID `8bcac845-e419-40e4-b7f1-babdca7f860c`。新学期移行 3 件: 新学期のコマ設定・表示曜日を「時間割を持つ直前学期」から引継ぎ / 全学期終了後のホームで「前回の学期が終了しました」alert → 軽量な学期作成シート → 既定学期切替 / 「＋ 科目を追加」が開かないバグ修正 (2 枚目 sheet を 1 枚目の content 内側へ)。API は `POST /api/user-timetables` の `daysOfWeek` optional のみ additive、`MIN_IOS_BUILD` 12 据え置き。設計 = `.designs/20261007-build19-semester-rollover.md`)。**build 18 = 2026-09-08 配布済** (Delivery UUID `61a74ace-d694-4b83-85fb-6dbe25ca63f6`)。内容 = build 17 レーン (個人/ルームのカレンダー画面を `CalendarScreen` に統一 / 罫線復活 / 月スライド / モーダルタイトル `.principal` / chip 左帯削除 / ルーム週の学期文脈 + 月ストアの競合修正) + build 18 (**ルームタブ廃止 → 4 タブ**、ホーム「+」Menu で作成/リンク参加/QR 参加、ルーム選択中の右上歯車 / 公欠 EXCUSED を EventKit 書き出しから除外 / **授業変更 (振替)**: `ClassTransfer` + additive migration 2 本、`POST|DELETE /api/class-transfers`、学期カレンダー日別シートの「授業変更」カード)。設計 = `.designs/20260730-ios-unify-calendar-build17.md` + `.designs/20260908-build18-rooms-reschedule-export.md`。**build 17 は TestFlight に上げていない** (17 の内容は 18 に同梱)。build 16 = 2026-07-30 に実機 FB 6 件 (学期セレクトの glass カプセル除去 / カレンダー選択日をセル全高のグレー塗りに / 予定 chip の非タッチ化と日別シートの共通部品化 / 全モーダルのヘッダーを `< タイトル ✕` の 1 行規格に / 友達・ルームの重複見出し削除と nav bar trailing 化 / マスコットの alpha 破損を原画から再切り出し) を入れて配布済**、ASC 上の最新。build 15 = 「タップが長押し気味でないと反応しない」の修正 (日セルの `Button` + `.onLongPressGesture` の競合を解消し、素の view に `.onTapGesture` + `.onLongPressGesture` を併記。自作 `EqualColumnsLayout` を廃止して標準の `LazyVGrid` に置換)。build 14 = カレンダーUI不具合5点 (罫線ズレ / 押せないセル / 青点削除 / タップ領域 / カード影の左右切れ)。build 13 = カレンダー5点 (エラー表示 / レイヤー / タップ範囲 / ヘッダー)。build 12 = 個人予定を instant 化 (破壊的 migration)。build 11 = カレンダーUI詰め5点。build 10 = EventKit双方向同期 + ルーム共有マスキング、build 9 = ホーム折りたたみ刷新 + 3バグ修正。**backend 依存を含むビルドは出荷時に atender-api を Coolify デプロイすること**)。次ビルドは `"21"` にインクリメントする。ASC の最新 build 番号は `~/.appstoreconnect` の鍵で `GET /v1/builds?filter[app]=6790604371&sort=-version` で確認できる
+- **バージョン更新: 版数の正典は `project.yml` の `info.properties` 一択** (現在 `CFBundleVersion: "21"` / `CFBundleShortVersionString: "1.0.1"`。公開済みの App Store version と同じ ShortVersion の build は上げられない (§2)。**build 21 = 配布時に記入** (Delivery UUID `（配布時に記入）`)。内容: カレンダー撤去 (iOS/Web、API は A2 で後追い) / 科目別出席基準 (`Course` に必要出席率・欠席上限・遅刻換算) / 公開時間割の提案と取り込み。migration `b21_course_attendance_rules` + `b21_template_source_link`。設計 = `.designs/20261029-build21-calendar-removal-course-rules-template-import.md`。**build 20 = 2026-10-09 配布済** (アカウント削除 + 法務ページ + SIWA 認可コード交換。詳細は git)。build 19 以前の記録は git 履歴を参照。**次ビルドは `"22"` にインクリメントする。** **backend 依存を含むビルドは出荷時に atender-api を Coolify デプロイすること**。ASC の最新 build 番号は `~/.appstoreconnect` の鍵で `GET /v1/builds?filter[app]=6790604371&sort=-version` で確認できる
   - **`Atender/Info.plist` を手編集してはいけない。** XcodeGen は `info:` 指定があると Info.plist を**毎回生成し直す** ("Plists are created on disk on every generation of the project") ので、必須手順の `xcodegen generate` が手編集を**黙って巻き戻す**。Info.plist は git 管理下にあるため、xcodegen を走らせるまでは手編集が効いているように見えるのが厄介。詳細: `Muraki/knowledge/gotcha/xcodegen-info-plist-regenerated-every-run.md`
-- 互換を壊す変更を含む場合は、`project.yml` の `CFBundleVersion` を N に上げたうえで `apps/api/src/lib/clientVersion.ts` の `MIN_IOS_BUILD` を N に上げる。`MIN_IOS_BUILD > 今から配る CFBundleVersion` にすると、配った直後に全員が 426 で自滅するため、必ず `MIN_IOS_BUILD <= これから配る CFBundleVersion` を確認する
+- 互換を壊す変更を含む場合は、`project.yml` の `CFBundleVersion` を N に上げたうえで `apps/api/src/lib/clientVersion.ts` の `MIN_IOS_BUILD` を N に上げる。`MIN_IOS_BUILD > 今から配る CFBundleVersion` にすると、配った直後に全員が 426 で自滅するため、必ず `MIN_IOS_BUILD <= これから配る CFBundleVersion` を確認する。App Store 公開中の build が叩く API を消すときは、新 build が `READY_FOR_SALE` になってから消す 2 段デプロイにする (実例: build 21 の A2 = カレンダー API の削除)。
 - 暗号化コンプライアンス: `ITSAppUsesNonExemptEncryption: false` を `project.yml` の `info.properties` で宣言済 (→ 生成される Info.plist に入る) → TestFlight の輸出質問はスキップ
 - アップロード後 Apple 側処理 15〜30分 → ASC の TestFlight タブにビルド出現 → 内部テスター追加 (Beta App Review 不要)。外部テスターは Beta App Review + Test Information 記入が要る
 - Xcode GUI サインインは不要 (API キーが署名・アップロード両方を担う)
