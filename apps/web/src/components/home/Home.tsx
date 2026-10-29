@@ -1,5 +1,10 @@
+import type { SemesterDto } from "@atender/shared";
+import { ConfirmDialog } from "@/components/ui";
+import * as SemesterRollover from "@/lib/SemesterRollover";
+import * as SchoolClock from "@/lib/SchoolClock";
+import { SemesterCreateSheet } from "./SemesterCreateSheet";
 import { Settings } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMe, useRooms, useSemesters, useUserTimetables } from "@/api/hooks";
 import { RoomCreateSheet } from "@/components/rooms/RoomCreateSheet";
 import { JoinByCodeSheet } from "@/components/rooms/JoinByCodeSheet";
@@ -22,7 +27,32 @@ export function Home() {
   const [context, setContext] = useState<HomeContext>({ kind: "self" });
   const [semesterId, setSemesterId] = useState<string | null>(null);
 
+  const [rolloverTarget, setRolloverTarget] = useState<SemesterDto | null>(null);
+  const [proposal, setProposal] = useState<SemesterRollover.SemesterProposal | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const evaluated = useRef(false);
+
+  const evaluateRollover = useCallback(() => {
+    if (!mounted || !semesters.isSuccess || createOpen || joinSheet || settingsOpen || proposal || rolloverTarget) return;
+    setRolloverTarget(SemesterRollover.promptTarget(semesters.data.semesters, SchoolClock.todayString(), SemesterRollover.readDismissed()));
+  }, [mounted, semesters.isSuccess, semesters.data, createOpen, joinSheet, settingsOpen, proposal, rolloverTarget]);
+
   useEffect(() => {
+    if (!mounted || !semesters.isSuccess || evaluated.current) return;
+    evaluated.current = true;
+    evaluateRollover();
+  }, [mounted, semesters.isSuccess, createOpen, joinSheet, settingsOpen, proposal, rolloverTarget, evaluateRollover]);
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") evaluateRollover();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [evaluateRollover]);
+
+  useEffect(() => {
+    setMounted(true);
     const code = pendingRoomJoin.take();
     if (code !== null) setJoinSheet({ initialCode: code });
   }, []);
@@ -63,6 +93,23 @@ export function Home() {
         }
       />
       <HomeBody context={context} semesterId={semesterId} />
+      <ConfirmDialog
+        open={rolloverTarget !== null}
+        title="前回の学期が終了しました"
+        body={rolloverTarget ? SemesterRollover.alertMessage(rolloverTarget) : undefined}
+        confirmLabel="作成する"
+        confirmVariant="primary"
+        cancelLabel="あとで"
+        onConfirm={() => {
+          if (rolloverTarget) setProposal(SemesterRollover.proposal(rolloverTarget, SchoolClock.todayString()));
+          setRolloverTarget(null);
+        }}
+        onCancel={() => {
+          if (rolloverTarget) SemesterRollover.writeDismissed(rolloverTarget.id);
+          setRolloverTarget(null);
+        }}
+      />
+      {proposal ? <SemesterCreateSheet open proposal={proposal} onClose={() => setProposal(null)} onCreated={(created) => { setSemesterId(created.id); void semesters.refetch(); }} /> : null}
       {createOpen ? <RoomCreateSheet open onClose={() => setCreateOpen(false)} onCreated={(room) => void selectRoom(room.id)} /> : null}
       {joinSheet ? <JoinByCodeSheet open initialCode={joinSheet.initialCode} onClose={() => setJoinSheet(null)} onJoined={(id) => void selectRoom(id)} /> : null}
       {context.kind === "self" ? (

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ApiError } from "@/api/client";
+import { showToast } from "@/lib/toast";
 import { useCreateSemester, useDeleteSemester, useMe, usePatchMe, useSemesters, useUpdateSemester } from "@/api/hooks";
 import type { SemesterDto, SemesterUpdateInput } from "@/api/hooks/types";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
@@ -25,7 +27,7 @@ export function SemesterListSheet({ open, onClose }: { open: boolean; onClose: (
     if (editForm.name !== semester.name && editForm.name.trim()) body.name = editForm.name;
     if (editForm.startDate !== semester.startDate) body.startDate = editForm.startDate;
     if (editForm.endDate !== semester.endDate) body.endDate = editForm.endDate;
-    update.mutate({ id: semester.id, body }, { onSuccess: () => setEditingId(null) });
+    update.mutate({ id: semester.id, body }, { onSuccess: () => setEditingId(null), onError: () => showToast("保存できませんでした") });
   }
 
   return (
@@ -56,7 +58,7 @@ export function SemesterListSheet({ open, onClose }: { open: boolean; onClose: (
                   </button>
                   <div className="flex shrink-0 items-center gap-2">
                     <Button type="button" variant="ghost" size="sm" onClick={() => startEditing(semester)}>編集</Button>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => remove.mutate(semester.id)}>削除</Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => remove.mutate(semester.id, { onError: (error) => showToast(error instanceof ApiError && error.status === 409 ? "時間割があるため削除できません。先に時間割を削除してください" : "削除できませんでした") })}>削除</Button>
                   </div>
                 </div>
               )}
@@ -70,7 +72,7 @@ export function SemesterListSheet({ open, onClose }: { open: boolean; onClose: (
           <Field label="開始日"><Input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.currentTarget.value })} /></Field>
           <Field label="終了日"><Input type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.currentTarget.value })} /></Field>
         </div>
-        <Button type="button" variant="primary" disabled={!form.name || !form.startDate || !form.endDate} onClick={() => create.mutate(form, { onSuccess: () => setForm({ name: "", startDate: "", endDate: "" }) })}>学期を追加</Button>
+        <Button type="button" variant="primary" disabled={!form.name || !form.startDate || !form.endDate} onClick={() => create.mutate(form, { onSuccess: () => setForm({ name: "", startDate: "", endDate: "" }), onError: () => showToast("保存できませんでした") })}>学期を追加</Button>
       </div>
     </BottomSheet>
   );

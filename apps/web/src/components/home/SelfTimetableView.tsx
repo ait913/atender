@@ -3,20 +3,14 @@ import type { MeetingDto, UserTimetableDto } from "@atender/shared";
 import { useCreateUserTimetable, useDeleteMeeting, useMe, useSemesters, useUserTimetables } from "@/api/hooks";
 import { displayDowToJs, jsDowToDisplay, resolveDisplayDays } from "@/components/timetable/dayConvention";
 import * as SchoolClock from "@/lib/SchoolClock";
+import { DEFAULT_SLOTS } from "@/lib/RoomTimetableLogic";
+import * as TimetableCarryOver from "@/lib/TimetableCarryOver";
 import * as TimetableGridLayout from "@/lib/TimetableGridLayout";
 import { useNow } from "@/lib/useNow";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { MeetingEditModal } from "@/components/timetable/MeetingEditModal";
 import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
 import { Panel, TimetableGridSkeleton } from "@/components/ui";
-
-const defaultSlots = [
-  { periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false },
-  { periodIndex: 2, label: "2限", startMinute: 640, endMinute: 730, isBreak: false },
-  { periodIndex: 3, label: "3限", startMinute: 780, endMinute: 870, isBreak: false },
-  { periodIndex: 4, label: "4限", startMinute: 880, endMinute: 970, isBreak: false },
-  { periodIndex: 5, label: "5限", startMinute: 980, endMinute: 1070, isBreak: false },
-];
 
 function activeTimetable(timetables: UserTimetableDto[] | undefined, semesterId?: string | null) {
   return timetables?.find((item) => item.semesterId === semesterId) ?? null;
@@ -26,7 +20,8 @@ export function SelfTimetableView({ semesterId }: { semesterId: string | null })
   const me = useMe();
   const semesters = useSemesters();
   const timetables = useUserTimetables();
-  const selected = activeTimetable(timetables.data?.userTimetables, semesterId);
+  const targetSemesterId = semesterId ?? me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id;
+  const selected = activeTimetable(timetables.data?.userTimetables, targetSemesterId);
   const createTimetable = useCreateUserTimetable();
   const deleteMeeting = useDeleteMeeting();
   const [sheet, setSheet] = useState<{ dayOfWeek: number; period: number } | null>(null);
@@ -36,18 +31,22 @@ export function SelfTimetableView({ semesterId }: { semesterId: string | null })
   const now = useNow(60_000);
   const today = displayDowToJs(SchoolClock.displayDay(now));
   const emptyTimetable = useMemo<UserTimetableDto | null>(() => {
-    const fallbackSemesterId = semesterId ?? me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id;
+    const fallbackSemesterId = targetSemesterId;
     if (!fallbackSemesterId) return null;
-    return { id: "", userId: me.data?.user.id ?? "", semesterId: fallbackSemesterId, title: "自分の時間割", sourceTemplateId: null, daysOfWeek: [1, 2, 3, 4, 5], daySlots: defaultSlots, courses: [], meetings: [], createdAt: "", updatedAt: "" };
-  }, [me.data?.user.defaultSemesterId, me.data?.user.id, semesterId, semesters.data?.semesters]);
-  const display = selected ?? createdTimetable ?? emptyTimetable;
+    const target = semesters.data?.semesters.find((semester) => semester.id === fallbackSemesterId);
+    const previous = target ? TimetableCarryOver.previousTimetable(target, semesters.data?.semesters ?? [], timetables.data?.userTimetables ?? []) : null;
+    return { id: "", userId: me.data?.user.id ?? "", semesterId: fallbackSemesterId, title: "自分の時間割", sourceTemplateId: null, daysOfWeek: TimetableCarryOver.inheritedDaysOfWeek(previous), daySlots: TimetableCarryOver.inheritedSlots(previous, DEFAULT_SLOTS), courses: [], meetings: [], createdAt: "", updatedAt: "" };
+  }, [me.data?.user.id, targetSemesterId, semesters.data?.semesters, timetables.data?.userTimetables]);
+  const currentCreatedTimetable = createdTimetable?.semesterId === targetSemesterId ? createdTimetable : null;
+  const display = selected ?? currentCreatedTimetable ?? emptyTimetable;
 
   async function ensureTimetable() {
-    if (selected || createdTimetable || !emptyTimetable) return selected ?? createdTimetable;
+    if (selected || currentCreatedTimetable || !emptyTimetable) return selected ?? currentCreatedTimetable;
     const created = await createTimetable.mutateAsync({
       semesterId: emptyTimetable.semesterId,
       title: "自分の時間割",
-      daySlots: defaultSlots,
+      daySlots: emptyTimetable.daySlots,
+      daysOfWeek: emptyTimetable.daysOfWeek,
       courses: [],
       meetings: [],
     });
@@ -102,11 +101,11 @@ export function SelfTimetableView({ semesterId }: { semesterId: string | null })
         }}
         onEmptyCellClick={handleEmptyCellClick}
       />
-      {(selected ?? createdTimetable) ? (
+      {(selected ?? currentCreatedTimetable) ? (
         <MeetingEditModal
           open={sheet != null}
           onClose={() => setSheet(null)}
-          timetable={(selected ?? createdTimetable)!}
+          timetable={(selected ?? currentCreatedTimetable)!}
           mode="create"
           initialDayOfWeek={sheet?.dayOfWeek ?? today}
           initialPeriod={sheet?.period ?? 1}
