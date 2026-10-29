@@ -89,7 +89,7 @@ describe("[A2 review] kept routes still alive (ios/21)", () => {
     const u = await setupCompleteUser(prisma());
     const me = await app.request("/api/me", { headers: H(u.cookie) });
     expect(me.status).toBe(200);
-    expect(((await json(me)) as any).email).toBe(u.user.email);
+    expect(((await json(me)) as any).user.email).toBe(u.user.email);
     const t = await app.request("/api/timetable-templates?q=x", { headers: H(u.cookie) });
     expect(t.status).toBe(200);
   });

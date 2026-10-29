@@ -434,3 +434,10 @@ repository が `as:` に渡す型を一度も実行していなかったため (
 ### 未分類の失敗
 
 - **なし** (0 件)。
+
+## ★ A2 実測 (2026-10-29, chore/drop-calendar-api, Reviewer)
+
+- API: 14 failed (既知のみ) / 603 passed + 新規 `a2-review.test.ts` 38 本 (全緑) → 合計 633 件中 14 failed。失敗名は A1/A2/A4/A5/A8/B5 等の既知 14 と一致 (未分類 0)。
+- Web: 26 failed / 343 passed (既知と同数)。
+- iOS XCTest: 600 件 0 failures (`testV2MinIOSBuildIs21AndNotAboveBundleVersion` 緑)。
+- 負のコントロール: `minIOSBuild` 期待を 12 にすると `[AD11]` が赤、21 に戻して緑。
