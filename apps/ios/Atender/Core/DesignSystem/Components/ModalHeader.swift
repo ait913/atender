@@ -52,3 +52,10 @@ extension View {
         modifier(ModalHeaderModifier(title: title, showsBack: false, onBack: nil, onClose: onClose))
     }
 }
+
+extension View {
+    /// モーダル内の詳細画面 (システムの戻る + タイトル + 閉じる)
+    func atenderModalDetailHeader(title: String?, onBack: @escaping () -> Void, onClose: @escaping () -> Void) -> some View {
+        modifier(ModalHeaderModifier(title: title, showsBack: true, onBack: onBack, onClose: onClose))
+    }
+}
