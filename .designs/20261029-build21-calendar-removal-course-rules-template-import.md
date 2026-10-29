@@ -409,7 +409,7 @@ Web の Google **ログイン** (`components/ui/AuthProviderButton.tsx`・`route
 | `src/services/dayDetail.service.ts` | 修正 | `expandPersonalEvents`・`personalEventOccurrenceDto` を削除し、戻り値から `personalEvents` を削除 (2 箇所 `:24,67`) |
 | `src/services/accountDeletion.service.ts` | 修正 | `tx.roomEvent.deleteMany(... PERSONAL / GOOGLE_OAUTH)` (`:40`) と RoomEvent / IcsImport / Sync / Share に触れる行・コメントを削除。テンプレ・ルーム移譲・Apple/Google revoke は不変 |
 | `src/lib/dto.ts` | 修正 | 削除した route だけが使う DTO 関数を削除 (孤児の規則) |
-| `scripts/sync-google-calendars.ts` | 削除 | Coolify の atender-api に scheduled task が登録されていれば **A2 のデプロイ前に削除** (`GET $COOLIFY_API_BASE/applications/tq2lgr4eh6t80r3tkqjbpu7o/scheduled-tasks` で実物を確認。登録が無ければ何もしない) |
+| `scripts/sync-google-calendars.ts` | 削除 | Coolify の atender-api に scheduled task が登録されていれば **A2 のデプロイ前に削除** (`GET $COOLIFY_API_BASE/applications/vrdxzvmakcxieyhfhayz5r8r/scheduled-tasks` で実物を確認。登録が無ければ何もしない) |
 | `src/lib/clientVersion.ts` | 修正 | `MIN_IOS_BUILD = 21`。冒頭コメントに「12 → 21 (A2): カレンダー API とテーブルを削除。build 12〜20 は削除した endpoint を叩くので 426 で更新を促す」を足す (置換でなく履歴の追記。既存コメントの形式に合わせる) |
 | `scripts/seed-demo-user.ts` | 修正 | 個人予定・ルーム予定を作る行があれば削除 |
 | `package.json` | 修正 | `node-ical`・`rrule`・`iconv-lite`・`jschardet` を、`grep -rn "<pkg>" src scripts` が 0 件になったものだけ `dependencies` から外し、`pnpm install` で lockfile を更新 |
@@ -1456,8 +1456,8 @@ enum TimetablePublishLogic {
 1. B → C の順で main にマージ (additive migration 2 本)。A・A-Web は任意の時点でマージ
 2. R: 版数 `CFBundleVersion "21"` / `CFBundleShortVersionString "1.0.1"`・版数テスト 4 本・DESIGN.md / CLAUDE.md 置換 (§10)・`fix/ics-esm-import` の廃棄 (§0.2) を main に
 3. リリース前ゲート (Codex 2LLM 突合 + 負のコントロール)。負のコントロールの例: C12 で copy の削除を tx の外に出すと C12 が赤になる。C12c で occurrence 生成を tx の外 (commit 後) に戻すと C12c が赤になる (旧 UT が消え `copyCount` が増える)
-4. **atender-api をデプロイ** (`POST $COOLIFY_API_BASE/deploy?uuid=tq2lgr4eh6t80r3tkqjbpu7o`)。`entrypoint.sh` が migrate 前に `prod.db.bak-<ts>` を残す。確認: `GET /healthz`、`GET /api/me` (Leader の手元 token) に `schoolName` キー、`GET /api/version` の `minIOSBuild == 12`
-5. **atender-web をデプロイ** (`POST $COOLIFY_API_BASE/deploy?uuid=y1acaktqgsx66sj81qsxn5m3`)。確認: `/` にカレンダー切替が無い、`/settings/calendar` が `/settings` に飛ぶ、`/privacy` が §10.3.1 の文言
+4. **atender-api をデプロイ** (`POST $COOLIFY_API_BASE/deploy?uuid=vrdxzvmakcxieyhfhayz5r8r`)。`entrypoint.sh` が migrate 前に `prod.db.bak-<ts>` を残す。確認: `GET /healthz`、`GET /api/me` (Leader の手元 token) に `schoolName` キー、`GET /api/version` の `minIOSBuild == 12`
+5. **atender-web をデプロイ** (`POST $COOLIFY_API_BASE/deploy?uuid=xxg31wshj6rhjmnffju1bg5r`)。確認: `/` にカレンダー切替が無い、`/settings/calendar` が `/settings` に飛ぶ、`/privacy` が §10.3.1 の文言
 6. iOS build 21 (1.0.1) を archive → export → TestFlight upload。upload が version train の理由で拒否されたら `CFBundleShortVersionString` を確認 (§2)
 7. 内部テスターで実機確認 (§12-L5)
 

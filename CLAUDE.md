@@ -152,8 +152,8 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
 - Web URL: https://atender.appily.run
 - API URL: https://atender-api.appily.run (health: `GET /healthz`)
 - Coolify app uuid:
-  - atender-api: `tq2lgr4eh6t80r3tkqjbpu7o`
-  - atender-web: `y1acaktqgsx66sj81qsxn5m3`
+  - atender-api: `vrdxzvmakcxieyhfhayz5r8r`
+  - atender-web: `xxg31wshj6rhjmnffju1bg5r`
 - Coolify deploy トリガー: `curl -X POST "$COOLIFY_API_BASE/deploy?uuid=<uuid>" -H "Authorization: Bearer $COOLIFY_API_TOKEN"` (**2026-10-08 から POST 必須**。GET は `This endpoint has changed to a POST request.` を返す)。進捗は `GET $COOLIFY_API_BASE/deployments/<deployment_uuid>` の `status`
 - 関連 SKILL: `appily`
 - Resend: API key は `.tmp/atender/secrets.env` (gitignore 済) 参照
