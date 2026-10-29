@@ -5,11 +5,10 @@ import * as SchoolClock from "@/lib/SchoolClock";
 import { SemesterCreateSheet } from "./SemesterCreateSheet";
 import { Settings } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMe, useRooms, useSemesters, useUserTimetables } from "@/api/hooks";
+import { useMe, useRooms, useSemesters } from "@/api/hooks";
 import { RoomCreateSheet } from "@/components/rooms/RoomCreateSheet";
 import { JoinByCodeSheet } from "@/components/rooms/JoinByCodeSheet";
 import { RoomSettingsSheet } from "@/components/sheet/RoomSettingsSheet";
-import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
 import * as pendingRoomJoin from "@/lib/pendingRoomJoin";
 import { ContextChips, type ContextChipItem, type HomeContext } from "./ContextChips";
 import { HomeBody } from "./HomeBody";
@@ -20,7 +19,6 @@ export function Home() {
   const me = useMe();
   const rooms = useRooms();
   const semesters = useSemesters();
-  const timetables = useUserTimetables();
   const [createOpen, setCreateOpen] = useState(false);
   const [joinSheet, setJoinSheet] = useState<{ initialCode?: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -92,7 +90,7 @@ export function Home() {
           </button>
         }
       />
-      <HomeBody context={context} semesterId={semesterId} />
+      <HomeBody context={context} semesterId={semesterId} settingsOpen={settingsOpen} onCloseSettings={() => setSettingsOpen(false)} />
       <ConfirmDialog
         open={rolloverTarget !== null}
         title="前回の学期が終了しました"
@@ -112,9 +110,7 @@ export function Home() {
       {proposal ? <SemesterCreateSheet open proposal={proposal} onClose={() => setProposal(null)} onCreated={(created) => { setSemesterId(created.id); void semesters.refetch(); }} /> : null}
       {createOpen ? <RoomCreateSheet open onClose={() => setCreateOpen(false)} onCreated={(room) => void selectRoom(room.id)} /> : null}
       {joinSheet ? <JoinByCodeSheet open initialCode={joinSheet.initialCode} onClose={() => setJoinSheet(null)} onJoined={(id) => void selectRoom(id)} /> : null}
-      {context.kind === "self" ? (
-        <TimetableSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} timetable={timetables.data?.userTimetables.find((item) => item.semesterId === semesterId) ?? null} />
-      ) : (
+      {context.kind === "room" ? (
         <RoomSettingsSheet
           key={context.roomId}
           roomId={context.roomId}
@@ -123,7 +119,7 @@ export function Home() {
           onChanged={() => { void rooms.refetch(); }}
           onRemoved={() => { setContext({ kind: "self" }); void rooms.refetch(); }}
         />
-      )}
+      ) : null}
       {context.kind === "self" ? <SelfTodayCTA /> : null}
     </div>
   );

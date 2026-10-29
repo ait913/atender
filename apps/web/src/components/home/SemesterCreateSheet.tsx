@@ -31,6 +31,7 @@ export function SemesterCreateSheet({ open, proposal, onCreated, onClose }: Prop
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
   const user = useRef(me.data?.user);
+  user.current = me.data?.user;
 
   useEffect(() => {
     if (!open) return;
@@ -38,7 +39,7 @@ export function SemesterCreateSheet({ open, proposal, onCreated, onClose }: Prop
     setSelected(null);
     setSuggestions([]);
     setBrowserOpen(false);
-    const current = user.current as (NonNullable<typeof user.current> & { schoolName?: string | null; departmentName?: string | null }) | undefined;
+    const current = user.current;
     if (!current?.schoolId || !current.departmentId) { setScope(null); return; }
     const initialScope = { schoolId: current.schoolId, departmentId: current.departmentId, schoolName: current.schoolName ?? "", departmentName: current.departmentName ?? "" };
     setScope(initialScope);
@@ -50,7 +51,7 @@ export function SemesterCreateSheet({ open, proposal, onCreated, onClose }: Prop
   }, [open, proposal]);
 
   function close() {
-    if (!submitting.current) onClose();
+    if (!submitting.current) { setBrowserOpen(false); onClose(); }
   }
 
   async function submit() {
@@ -109,7 +110,7 @@ export function SemesterCreateSheet({ open, proposal, onCreated, onClose }: Prop
           ) : null}
         </div>
       </BottomSheet>
-      {browserOpen && scope ? <TemplateBrowserSheet open purpose={{ kind: "select" }} showsFoundBanner initialScope={scope} onSelected={(template) => { setSelected(template); setBrowserOpen(false); }} onBack={() => setBrowserOpen(false)} onClose={close} /> : null}
+      {open && browserOpen && scope ? <TemplateBrowserSheet open purpose={{ kind: "select" }} showsFoundBanner initialScope={scope} onSelected={(template) => { setSelected(template); setBrowserOpen(false); }} onBack={() => setBrowserOpen(false)} onClose={close} /> : null}
     </>
   );
 }

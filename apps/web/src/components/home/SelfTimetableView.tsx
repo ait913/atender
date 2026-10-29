@@ -11,12 +11,13 @@ import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { MeetingEditModal } from "@/components/timetable/MeetingEditModal";
 import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
 import { Panel, TimetableGridSkeleton } from "@/components/ui";
+import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
 
 function activeTimetable(timetables: UserTimetableDto[] | undefined, semesterId?: string | null) {
   return timetables?.find((item) => item.semesterId === semesterId) ?? null;
 }
 
-export function SelfTimetableView({ semesterId }: { semesterId: string | null }) {
+export function SelfTimetableView({ semesterId, settingsOpen = false, onCloseSettings = () => {} }: { semesterId: string | null; settingsOpen?: boolean; onCloseSettings?: () => void }) {
   const me = useMe();
   const semesters = useSemesters();
   const timetables = useUserTimetables();
@@ -73,10 +74,12 @@ export function SelfTimetableView({ semesterId }: { semesterId: string | null })
       </div>
     );
   }
-  if (!display) return <Panel>先に学期を作成してください。</Panel>;
+  const settings = <TimetableSettingsSheet open={settingsOpen} onClose={onCloseSettings} timetable={selected ?? currentCreatedTimetable} semesterId={(selected ?? currentCreatedTimetable)?.semesterId ?? targetSemesterId ?? null} onSaved={() => setCreatedTimetable(null)} />;
+  if (!display) return <><Panel>先に学期を作成してください。</Panel>{settings}</>;
 
   return (
     <div className="space-y-3">
+      {settings}
       <TimetableView
         todayDisplayDay={SchoolClock.displayDay(now)}
         currentPeriodIndex={TimetableGridLayout.currentPeriodIndex(display.daySlots, SchoolClock.nowMinute(now))}

@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UserTimetableDto } from "@atender/shared";
-import { useCopyTemplate, useMe, usePatchUserTimetable, usePublishTimetable, useSemesters, useTemplates } from "@/api/hooks";
+import { useDeleteUserTimetable, useMe, usePatchUserTimetable, usePublishTimetable, useUnpublishTemplate } from "@/api/hooks";
 import { DayChips } from "@/components/timetable/DayChips";
-import { Button, Field, Input, Toggle } from "@/components/ui";
+import { Button, ConfirmDialog, Field, Input, Toggle } from "@/components/ui";
 import { BottomSheet } from "./BottomSheet";
+import { TemplateBrowserSheet } from "@/components/templates/TemplateBrowserSheet";
+import * as TimetablePublishLogic from "@/lib/TimetablePublishLogic";
+import { showToast } from "@/lib/toast";
 
 type SlotInput = { periodIndex: number; label: string; startMinute: number; endMinute: number; isBreak: boolean };
 
@@ -19,41 +22,44 @@ export function TimetableSettingsSheet({
   open,
   onClose,
   timetable,
+  semesterId,
+  onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   timetable: UserTimetableDto | null;
+  semesterId: string | null;
+  onSaved?: () => void;
 }) {
   const patch = usePatchUserTimetable(timetable?.id);
   const publish = usePublishTimetable(timetable?.id);
-  const semesters = useSemesters();
   const me = useMe();
-  const copy = useCopyTemplate();
-  const semester = useMemo(() => semesters.data?.semesters.find((s) => s.id === timetable?.semesterId) ?? null, [semesters.data, timetable?.semesterId]);
+  const unpublish = useUnpublishTemplate();
+  const remove = useDeleteUserTimetable();
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const submitting = useRef(false);
+  const currentTimetable = useRef(timetable);
+  currentTimetable.current = timetable;
   const [name, setName] = useState("");
   const [publishEnabled, setPublishEnabled] = useState(true);
   const [publishTitle, setPublishTitle] = useState("");
   const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1, 2, 3, 4, 5]);
   const [slots, setSlots] = useState<SlotInput[]>([]);
   const [message, setMessage] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const templates = useTemplates({
-    schoolId: searchOpen ? me.data?.user.schoolId ?? undefined : undefined,
-    departmentId: searchOpen ? me.data?.user.departmentId ?? undefined : undefined,
-    q: searchQuery || undefined,
-    limit: 20,
-  });
-
   useEffect(() => {
     if (!open) return;
+    const timetable = currentTimetable.current;
     setName(timetable?.title ?? "");
-    setPublishEnabled(true);
-    setPublishTitle(semester?.name ?? timetable?.title ?? "");
+    setPublishEnabled(TimetablePublishLogic.initialToggle(timetable));
+    setPublishTitle(timetable?.publishedTemplate?.title ?? timetable?.title ?? "");
     setDaysOfWeek(timetable?.daysOfWeek ?? [1, 2, 3, 4, 5]);
     setSlots(timetable?.daySlots.map((s) => ({ ...s })) ?? []);
     setMessage(null);
-  }, [open, timetable?.title, timetable?.daysOfWeek, timetable?.daySlots, semester?.name]);
+    setBrowserOpen(false);
+    setDeleteOpen(false);
+  }, [open]);
 
   function addSlot() {
     setSlots((cur) => {
@@ -75,7 +81,7 @@ export function TimetableSettingsSheet({
   }
 
   async function handleSave() {
-    if (!timetable) return;
+    if (!timetable || submitting.current) return;
     const trimmedName = name.trim();
     const trimmedPublishTitle = publishTitle.trim();
 
@@ -84,7 +90,7 @@ export function TimetableSettingsSheet({
       return;
     }
 
-    // validate slots: end > start, no overlap
+    // 終了時刻が開始時刻より後か確認する
     for (let i = 0; i < slots.length; i++) {
       const s = slots[i];
       if (!s) continue;
@@ -94,186 +100,159 @@ export function TimetableSettingsSheet({
       }
     }
 
-    const patches: Promise<unknown>[] = [];
-    if (trimmedName.length > 0 && trimmedName !== timetable.title) {
-      patches.push(patch.mutateAsync({ title: trimmedName }));
-    }
-    if (JSON.stringify([...daysOfWeek].sort((a, b) => a - b)) !== JSON.stringify([...timetable.daysOfWeek].sort((a, b) => a - b))) {
-      patches.push(patch.mutateAsync({ daysOfWeek }));
-    }
-    const slotsChanged = JSON.stringify(slots) !== JSON.stringify(timetable.daySlots);
-    if (slotsChanged) {
-      patches.push(patch.mutateAsync({ daySlots: slots }));
-    }
-    await Promise.all(patches);
-
-    if (publishEnabled) {
-      if (trimmedPublishTitle.length === 0) {
-        setMessage("公開タイトルを入力してください");
+    submitting.current = true;
+    setSaving(true);
+    setMessage(null);
+    try {
+      try {
+        if (trimmedName.length > 0 && trimmedName !== timetable.title) await patch.mutateAsync({ title: trimmedName });
+        if (JSON.stringify([...daysOfWeek].sort((a, b) => a - b)) !== JSON.stringify([...timetable.daysOfWeek].sort((a, b) => a - b))) await patch.mutateAsync({ daysOfWeek });
+        if (JSON.stringify(slots) !== JSON.stringify(timetable.daySlots)) await patch.mutateAsync({ daySlots: slots });
+      } catch {
+        setMessage("保存できませんでした");
         return;
       }
-      await publish.mutateAsync({ title: trimmedPublishTitle });
+      const action = TimetablePublishLogic.action(publishEnabled, trimmedPublishTitle, timetable);
+      try {
+        if (action.kind === "publish") {
+          if (!action.title) {
+            setMessage("公開タイトルを入力してください");
+            return;
+          }
+          await publish.mutateAsync({ title: action.title });
+        } else if (action.kind === "unpublish") {
+          await unpublish.mutateAsync(action.templateId);
+        }
+      } catch {
+        setMessage("公開設定を保存できませんでした");
+        return;
+      }
+      onSaved?.();
+      onClose();
+    } finally {
+      submitting.current = false;
+      setSaving(false);
     }
-    onClose();
   }
 
   function handleCancel() {
-    setName(timetable?.title ?? "");
-    setPublishEnabled(true);
-    setPublishTitle(semester?.name ?? timetable?.title ?? "");
-    setDaysOfWeek(timetable?.daysOfWeek ?? [1, 2, 3, 4, 5]);
-    setSlots(timetable?.daySlots.map((s) => ({ ...s })) ?? []);
-    setMessage(null);
-    onClose();
+    if (!submitting.current) {
+      setBrowserOpen(false);
+      onClose();
+    }
   }
 
-  const disabled = !timetable || patch.isPending || publish.isPending;
+  const disabled = !timetable || saving;
+  const user = me.data?.user;
 
   return (
-    <BottomSheet
-      open={open}
-      onClose={handleCancel}
-      title="時間割の設定"
-      footer={
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="ghost" onClick={handleCancel}>キャンセル</Button>
-          <Button type="button" variant="primary" disabled={disabled} onClick={() => void handleSave()}>保存</Button>
-        </div>
-      }
-    >
-      {!timetable ? (
-        <p className="rounded-2xl bg-fg-primary/6 p-4 text-sm text-fg-secondary">先に学期を作成してください。</p>
-      ) : null}
-      <Field label="名前">
-        <Input value={name} disabled={!timetable} onChange={(event) => setName(event.currentTarget.value)} />
-      </Field>
-
-      <div className="space-y-3 border-t border-fg-primary/8 pt-5">
-        <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">表示する曜日</span>
-        <DayChips value={daysOfWeek} onChange={setDaysOfWeek} disabled={!timetable} />
-      </div>
-
-      <div className="space-y-3 border-t border-fg-primary/8 pt-5">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">時限 ({slots.length} 限)</span>
-          <button
-            type="button"
-            onClick={addSlot}
-            disabled={!timetable}
-            className="rounded-full bg-fg-primary/8 px-3 py-1.5 text-xs font-bold text-fg-primary transition active:scale-95 hover:bg-fg-primary/14 disabled:opacity-40"
-          >
-            + コマを追加
-          </button>
-        </div>
-        {slots.length === 0 ? (
-          <p className="rounded-2xl bg-fg-primary/4 px-4 py-3 text-xs text-fg-tertiary">コマを追加してください</p>
-        ) : (
-          <ul className="space-y-2">
-            {slots.map((slot, i) => (
-              <li key={i} className="flex items-center gap-2 rounded-2xl bg-fg-primary/4 p-3">
-                <input
-                  type="text"
-                  value={slot.label}
-                  onChange={(e) => updateSlot(i, { label: e.currentTarget.value })}
-                  className="w-14 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm font-bold text-fg-primary outline-none focus:bg-fg-primary/10"
-                  aria-label={`${slot.periodIndex}限ラベル`}
-                />
-                <input
-                  type="time"
-                  value={minutesToHHMM(slot.startMinute)}
-                  onChange={(e) => updateSlot(i, { startMinute: hhmmToMinutes(e.currentTarget.value) })}
-                  className="flex-1 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-fg-primary/10"
-                  aria-label="開始時刻"
-                />
-                <span className="text-fg-tertiary">–</span>
-                <input
-                  type="time"
-                  value={minutesToHHMM(slot.endMinute)}
-                  onChange={(e) => updateSlot(i, { endMinute: hhmmToMinutes(e.currentTarget.value) })}
-                  className="flex-1 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-fg-primary/10"
-                  aria-label="終了時刻"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeSlot(i)}
-                  className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-fg-primary/6 text-fg-secondary transition active:scale-95 hover:bg-status-absent/20 hover:text-status-absent"
-                  aria-label={`${slot.periodIndex}限を削除`}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="border-t border-fg-primary/8 pt-5">
-        <Toggle checked={publishEnabled} disabled={!timetable} onChange={setPublishEnabled} label="みんなの時間割で公開" />
-        {publishEnabled ? (
-          <div className="mt-5">
-            <Field label="公開タイトル">
-              <Input value={publishTitle} disabled={!timetable} onChange={(event) => setPublishTitle(event.currentTarget.value)} />
-            </Field>
+    <>
+      <BottomSheet
+        open={open}
+        onClose={handleCancel}
+        title="時間割の設定"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={handleCancel}>キャンセル</Button>
+            <Button type="button" variant="primary" disabled={disabled} onClick={() => void handleSave()}>保存</Button>
           </div>
+        }
+      >
+        {!timetable ? (
+          <p className="rounded-2xl bg-fg-primary/6 p-4 text-sm text-fg-secondary">先に学期を作成してください。</p>
         ) : null}
-      </div>
+        <Field label="名前">
+          <Input value={name} disabled={!timetable} onChange={(event) => setName(event.currentTarget.value)} />
+        </Field>
 
-      <div className="border-t border-fg-primary/8 pt-5">
-        <button
-          type="button"
-          onClick={() => setSearchOpen((v) => !v)}
-          className="flex w-full items-center justify-between rounded-2xl bg-fg-primary/4 px-4 py-3 text-left text-sm font-bold text-fg-primary transition hover:bg-fg-primary/8 active:scale-[0.99]"
-        >
-          <span>同じ学校の公開時間割から持ってくる</span>
-          <span className="text-fg-tertiary">{searchOpen ? "▴" : "▾"}</span>
-        </button>
-        {searchOpen ? (
-          <div className="mt-3 space-y-3">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
-              placeholder="タイトル / 学年 / 学期で検索"
-            />
-            {!me.data?.user.schoolId || !me.data?.user.departmentId ? (
-              <p className="rounded-2xl bg-status-tardy/15 px-4 py-3 text-sm text-status-tardy">
-                先にプロフィールで学校・学科を設定してください
-              </p>
-            ) : templates.isLoading ? (
-              <p className="text-xs text-fg-tertiary">検索中…</p>
-            ) : (templates.data?.templates ?? []).length === 0 ? (
-              <p className="text-xs text-fg-tertiary">公開時間割が見つかりません</p>
-            ) : (
-              <ul className="space-y-2">
-                {(templates.data?.templates ?? []).map((t) => (
-                  <li key={t.id} className="flex items-center gap-3 rounded-2xl bg-fg-primary/4 p-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-fg-primary">{t.title}</p>
-                      <p className="truncate text-xs text-fg-tertiary">
-                        {[t.year ? `${t.year}年` : null, t.term].filter(Boolean).join(" · ")}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={!timetable || copy.isPending}
-                      onClick={() => {
-                        if (!timetable) return;
-                        copy.mutate(
-                          { templateId: t.id, input: { semesterId: timetable.semesterId } },
-                          { onSuccess: () => { setMessage(`「${t.title}」を取り込みました`); setSearchOpen(false); } },
-                        );
-                      }}
-                    >
-                      取り込む
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
+        <div className="space-y-3 border-t border-fg-primary/8 pt-5">
+          <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">表示する曜日</span>
+          <DayChips value={daysOfWeek} onChange={setDaysOfWeek} disabled={!timetable} />
+        </div>
+
+        <div className="space-y-3 border-t border-fg-primary/8 pt-5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">時限 ({slots.length} 限)</span>
+            <button
+              type="button"
+              onClick={addSlot}
+              disabled={!timetable}
+              className="rounded-full bg-fg-primary/8 px-3 py-1.5 text-xs font-bold text-fg-primary transition active:scale-95 hover:bg-fg-primary/14 disabled:opacity-40"
+            >
+              + コマを追加
+            </button>
           </div>
-        ) : null}
-      </div>
-      {message ? <p className="rounded-2xl bg-status-tardy/15 px-4 py-3 text-sm font-bold text-status-tardy">{message}</p> : null}
-    </BottomSheet>
+          {slots.length === 0 ? (
+            <p className="rounded-2xl bg-fg-primary/4 px-4 py-3 text-xs text-fg-tertiary">コマを追加してください</p>
+          ) : (
+            <ul className="space-y-2">
+              {slots.map((slot, i) => (
+                <li key={i} className="flex items-center gap-2 rounded-2xl bg-fg-primary/4 p-3">
+                  <input
+                    type="text"
+                    value={slot.label}
+                    onChange={(e) => updateSlot(i, { label: e.currentTarget.value })}
+                    className="w-14 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm font-bold text-fg-primary outline-none focus:bg-fg-primary/10"
+                    aria-label={`${slot.periodIndex}限ラベル`}
+                  />
+                  <input
+                    type="time"
+                    value={minutesToHHMM(slot.startMinute)}
+                    onChange={(e) => updateSlot(i, { startMinute: hhmmToMinutes(e.currentTarget.value) })}
+                    className="flex-1 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-fg-primary/10"
+                    aria-label="開始時刻"
+                  />
+                  <span className="text-fg-tertiary">–</span>
+                  <input
+                    type="time"
+                    value={minutesToHHMM(slot.endMinute)}
+                    onChange={(e) => updateSlot(i, { endMinute: hhmmToMinutes(e.currentTarget.value) })}
+                    className="flex-1 rounded-xl bg-fg-primary/6 px-2 py-2 text-sm text-fg-primary outline-none focus:bg-fg-primary/10"
+                    aria-label="終了時刻"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeSlot(i)}
+                    className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-fg-primary/6 text-fg-secondary transition active:scale-95 hover:bg-status-absent/20 hover:text-status-absent"
+                    aria-label={`${slot.periodIndex}限を削除`}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="border-t border-fg-primary/8 pt-5">
+          <Toggle checked={publishEnabled} disabled={!timetable} onChange={setPublishEnabled} label="みんなの時間割で公開" />
+          {timetable && timetable.meetings.length === 0 ? <p className="text-sm text-fg-secondary">授業を 1 つ以上登録すると公開されます</p> : null}
+          {publishEnabled ? (
+            <div className="mt-5">
+              <Field label="公開タイトル">
+                <Input value={publishTitle} disabled={!timetable} onChange={(event) => setPublishTitle(event.currentTarget.value)} />
+              </Field>
+            </div>
+          ) : null}
+        </div>
+
+        <Button type="button" variant="secondary" data-testid="timetable-settings-import-template" onClick={() => {
+          if (!user?.schoolId || !user.departmentId) setMessage("先に学校・学科を設定してください");
+          else setBrowserOpen(true);
+        }}>公開時間割から取り込む</Button>
+        {message ? <p className={message.includes("できません") || message.includes("してください") ? "text-status-absent" : "text-fg-secondary"}>{message}</p> : null}
+        {timetable ? <div className="space-y-3 border-t border-border-subtle pt-5">
+          <h3 className="font-bold text-status-absent">この時間割を削除</h3>
+          <p>授業・出席記録も全て削除されます。元に戻せません。</p>
+          <Button type="button" variant="ghost" disabled={saving || remove.isPending} onClick={() => setDeleteOpen(true)}>削除する</Button>
+        </div> : null}
+      </BottomSheet>
+      <ConfirmDialog open={open && deleteOpen} title="時間割を削除" confirmLabel="削除する" stackLevel={2} onCancel={() => setDeleteOpen(false)} onConfirm={() => {
+        if (!timetable || remove.isPending) return;
+        setDeleteOpen(false);
+        remove.mutate(timetable.id, { onSuccess: () => { onSaved?.(); onClose(); }, onError: () => showToast("削除できませんでした") });
+      }} />
+      {open && browserOpen && user?.schoolId && user.departmentId ? <TemplateBrowserSheet open purpose={{ kind: "importInto", initialSemesterId: semesterId, lockSemester: true }} showsFoundBanner={false} initialScope={{ schoolId: user.schoolId, departmentId: user.departmentId, schoolName: user.schoolName ?? "未設定", departmentName: user.departmentName ?? "未設定" }} onImported={() => { setBrowserOpen(false); onClose(); }} onBack={() => setBrowserOpen(false)} onClose={handleCancel} /> : null}
+    </>
   );
 }

@@ -44,7 +44,7 @@ import type {
   TimetableSuspensionCreateInput,
   TimetableSuspensionDto,
   UpdateRoomInput,
-  UserDto,
+  MeResponseDto,
   UserSearchDto,
   UserTimetableCreateInput,
   UserTimetableDto,
@@ -59,7 +59,7 @@ export type SetupStatus = {
   isComplete: boolean;
 };
 
-export type MeResponse = { user: UserDto; setupStatus: SetupStatus };
+export type MeResponse = MeResponseDto;
 export type SchoolsResponse = { schools: SchoolDto[] };
 export type DepartmentsResponse = { departments: DepartmentDto[] };
 export type SemestersResponse = { semesters: SemesterDto[] };
