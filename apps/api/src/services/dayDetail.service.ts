@@ -1,19 +1,12 @@
-import type { DayDetailDto } from "@atender/shared";
 import { prisma } from "../db";
 import { dateStringToJstDay } from "../lib/tz";
 import { findActiveUserTimetable } from "./activeTimetable";
 import { suspensionDto } from "./courseSuspension.service";
 import { classTransferDto, occurrenceDto } from "./occurrence.service";
-import { personalEventOccurrenceDto } from "./personalEvent.service";
-import { expandPersonalEvents } from "./personalRecurrence.service";
 import { timetableSuspensionDto } from "./timetableSuspension.service";
 
-export async function getDayDetail(args: { userId: string; date: string }): Promise<DayDetailDto> {
+export async function getDayDetail(args: { userId: string; date: string }) {
   const day = dateStringToJstDay(args.date);
-  const personalOccurrences = await expandPersonalEvents(args.userId, day.startOfDay, day.endOfDay);
-  const personalEvents = personalOccurrences
-    .map((occurrence) => personalEventOccurrenceDto(occurrence, day.isoDate, day.isoDate))
-    .filter((dto) => dto.days.length > 0);
   const timetable = await findActiveUserTimetable(args.userId);
   if (!timetable) {
     return {
@@ -21,7 +14,6 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
       occurrences: [],
       courseSuspensions: [],
       timetableSuspension: null,
-      personalEvents: personalEvents,
       transfers: [],
     };
   }
@@ -64,7 +56,6 @@ export async function getDayDetail(args: { userId: string; date: string }): Prom
     occurrences: occurrences.map(occurrenceDto),
     courseSuspensions: courseSuspensions.map(suspensionDto),
     timetableSuspension: timetableSuspension ? timetableSuspensionDto(timetableSuspension) : null,
-    personalEvents: personalEvents,
     transfers: transfers.map(classTransferDto),
   };
 }

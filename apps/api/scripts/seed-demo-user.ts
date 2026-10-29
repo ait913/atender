@@ -137,16 +137,6 @@ async function main() {
     data: { userTimetableId: timetable.id, date: dayjs().subtract(14, "day").startOf("day").toDate(), reason: "創立記念日" },
   });
 
-  // 個人予定 (PersonalCalendar 検証用)
-  const evtBase = dayjs().startOf("day");
-  await prisma.personalEvent.createMany({
-    data: [
-      { userId: user.id, start: evtBase.add(18, "hour").toDate(), end: evtBase.add(22, "hour").toDate(), title: "バイト", isAllDay: false, color: "#8B5CF6" },
-      { userId: user.id, start: evtBase.add(1, "day").toDate(), end: evtBase.add(2, "day").toDate(), title: "健康診断", isAllDay: true, color: "#10B981" },
-      { userId: user.id, start: evtBase.add(3, "day").toDate(), end: evtBase.add(4, "day").toDate(), title: "課題提出締切", isAllDay: true, color: "#EF4444" },
-    ],
-  });
-
   // 友達 (Phase D: Friends 検証用) — 2人 (承認済 + 受信中pending)
   await prisma.user.deleteMany({ where: { id: { in: ["demo-friend-1", "demo-friend-2"] } } });
   const friend1 = await prisma.user.create({
@@ -158,15 +148,12 @@ async function main() {
   await prisma.friendship.create({ data: { senderId: user.id, receiverId: friend1.id, status: "ACCEPTED", acceptedAt: dayjs().toDate() } });
   await prisma.friendship.create({ data: { senderId: friend2.id, receiverId: user.id, status: "PENDING" } });
 
-  // ルーム (Phase D: Rooms/RoomDetail 検証用) — demo + friend1 が所属、RoomEvent 1件
+  // ルーム (Phase D: Rooms/RoomDetail 検証用) — demo + friend1 が所属
   const room = await prisma.room.create({
     data: { name: "情報処理科 2年A組", description: "みんなの予定共有", createdByUserId: user.id },
   });
   await prisma.roomMembership.create({ data: { roomId: room.id, userId: user.id, role: "OWNER" } });
   await prisma.roomMembership.create({ data: { roomId: room.id, userId: friend1.id, role: "MEMBER" } });
-  await prisma.roomEvent.create({
-    data: { roomId: room.id, authorId: user.id, title: "合同勉強会", start: dayjs().add(2, "day").hour(15).minute(0).toDate(), end: dayjs().add(2, "day").hour(17).minute(0).toDate(), color: "#C685FF" },
-  });
 
   // 公開テンプレ (Phase D: Templates 検証用) — 最小 (daySlot/course/meeting 1件ずつ)
   const template = await prisma.timetableTemplate.create({

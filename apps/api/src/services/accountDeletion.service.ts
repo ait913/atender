@@ -26,7 +26,7 @@ export async function deleteUserData(userId: string): Promise<Omit<AccountDeleti
         orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
       });
       if (!successor) {
-        await tx.room.delete({ where: { id: room.id } }); // Cascade で Membership / RoomEvent / IcsImport / Sync / Share も消える
+        await tx.room.delete({ where: { id: room.id } });
         deletedRoomIds.push(room.id);
         continue;
       }
@@ -36,11 +36,9 @@ export async function deleteUserData(userId: string): Promise<Omit<AccountDeleti
       await tx.room.update({ where: { id: room.id }, data: { createdByUserId: successor.userId } });
       transferredRoomIds.push(room.id);
     }
-    // (b) 写しを明示削除
-    await tx.roomEvent.deleteMany({ where: { authorId: userId, source: { in: ["PERSONAL", "GOOGLE_OAUTH"] } } });
-    // (c) 非公開テンプレを明示削除
+    // (b) 非公開テンプレを明示削除
     await tx.timetableTemplate.deleteMany({ where: { authorUserId: userId, isPublic: false } });
-    // (d) 本体。残りは FK の Cascade / SetNull に任せる
+    // (c) 本体。残りは FK の Cascade / SetNull に任せる
     const { count } = await tx.user.deleteMany({ where: { id: userId } });
     deleted = count === 1;
   });

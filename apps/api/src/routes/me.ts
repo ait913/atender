@@ -1,21 +1,10 @@
 import type { Hono } from "hono";
-import { zValidator } from "../lib/validator";
-import { z } from "zod";
 import { MeResponseDto, MeUpdateInput } from "@atender/shared";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
 import { isSetupComplete } from "../lib/setupStatus";
 import { sessionMiddleware } from "../middleware/session";
-import { setupGuard } from "../middleware/setupGuard";
-import {
-  completeGoogleLink,
-  getConnection,
-  listAvailableCalendars,
-  runAllSyncsForUser,
-  unlinkGoogle,
-} from "../services/googleCalendarSync.service";
 import { deleteAccount } from "../services/accountDeletion.service";
-import { createRule, deleteRule, listRules, patchRule } from "../services/icsTitleRule.service";
 
 type MeUser = {
   id: string;
@@ -67,18 +56,6 @@ async function getMeResponse(user: MeUser) {
 function departmentSchoolMismatch() {
   return new AppError(400, "VALIDATION_ERROR", "Department does not belong to school", { reason: "DEPARTMENT_SCHOOL_MISMATCH" });
 }
-
-const RuleId = z.object({ ruleId: z.string() });
-const CreateRuleInput = z.object({
-  matchType: z.enum(["EQUALS", "CONTAINS", "REGEX"]),
-  pattern: z.string().min(1).max(500),
-  replaceWith: z.string().max(120).nullable().optional(),
-  visibilityMode: z.enum(["NORMAL", "TITLE_MAPPED", "BUSY_ONLY"]).optional(),
-  priority: z.number().int().min(0).max(9998).optional(),
-});
-const PatchRuleInput = CreateRuleInput.partial();
-const LinkCompleteBody = z.object({}).strict();
-const UnlinkQuery = z.object({ deleteEvents: z.enum(["true", "false"]).default("true") });
 
 export function registerMeRoutes(app: Hono) {
   app.get("/api/me", sessionMiddleware, async (c) => {
@@ -149,86 +126,4 @@ export function registerMeRoutes(app: Hono) {
     });
     return c.json(await getMeResponse(user));
   });
-
-  app.get("/api/me/ics-title-rules", sessionMiddleware, setupGuard, async (c) => {
-    return c.json({ rules: await listRules(c.get("user").id) });
-  });
-
-  app.post("/api/me/ics-title-rules", sessionMiddleware, setupGuard, zValidator("json", CreateRuleInput), async (c) => {
-    return c.json({ rule: await createRule(c.get("user").id, c.req.valid("json")) }, 201);
-  });
-
-  app.patch("/api/me/ics-title-rules/:ruleId", sessionMiddleware, setupGuard, zValidator("param", RuleId), zValidator("json", PatchRuleInput), async (c) => {
-    return c.json({ rule: await patchRule(c.get("user").id, c.req.valid("param").ruleId, c.req.valid("json")) });
-  });
-
-  app.delete("/api/me/ics-title-rules/:ruleId", sessionMiddleware, setupGuard, zValidator("param", RuleId), async (c) => {
-    await deleteRule(c.get("user").id, c.req.valid("param").ruleId);
-    return c.json({ ok: true });
-  });
-
-  app.get("/api/me/google-calendar/connection", sessionMiddleware, setupGuard, async (c) => {
-    const connection = await getConnection(c.get("user").id);
-    return c.json({ connection: connection ? dtoConnection(connection) : null });
-  });
-
-  app.post("/api/me/google-calendar/link/complete", sessionMiddleware, setupGuard, zValidator("json", LinkCompleteBody), async (c) => {
-    const connection = await completeGoogleLink({ userId: c.get("user").id, headers: c.req.raw.headers });
-    return c.json({ connection: dtoConnection(connection) }, 201);
-  });
-
-  app.delete("/api/me/google-calendar/connection", sessionMiddleware, setupGuard, zValidator("query", UnlinkQuery), async (c) => {
-    const result = await unlinkGoogle({
-      userId: c.get("user").id,
-      deleteEvents: c.req.valid("query").deleteEvents === "true",
-    });
-    return c.json(result);
-  });
-
-  app.get("/api/me/google-calendar/calendars", sessionMiddleware, setupGuard, async (c) => {
-    const calendars = await listAvailableCalendars({ userId: c.get("user").id, headers: c.req.raw.headers });
-    return c.json({ calendars: calendars.map(dtoListedCalendar) });
-  });
-
-  app.post("/api/me/google-calendar/sync-all", sessionMiddleware, setupGuard, async (c) => {
-    return c.json(await runAllSyncsForUser(c.get("user").id));
-  });
-}
-
-function dtoConnection(conn: {
-  id: string;
-  googleEmail: string;
-  scope: string;
-  status: string;
-  lastError: string | null;
-  lastSyncedAt: Date | null;
-  createdAt: Date;
-}) {
-  return {
-    id: conn.id,
-    googleEmail: conn.googleEmail,
-    scope: conn.scope,
-    status: conn.status,
-    lastError: conn.lastError,
-    lastSyncedAt: conn.lastSyncedAt?.toISOString() ?? null,
-    createdAt: conn.createdAt.toISOString(),
-  };
-}
-
-function dtoListedCalendar(calendar: {
-  id: string;
-  summary: string;
-  timeZone: string;
-  accessRole: string;
-  primary?: boolean;
-  backgroundColor?: string;
-}) {
-  return {
-    id: calendar.id,
-    summary: calendar.summary,
-    timeZone: calendar.timeZone,
-    accessRole: calendar.accessRole,
-    primary: calendar.primary ?? false,
-    backgroundColor: calendar.backgroundColor ?? null,
-  };
 }
