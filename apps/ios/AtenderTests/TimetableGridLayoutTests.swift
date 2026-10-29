@@ -10,9 +10,10 @@ final class TimetableGridLayoutTests: XCTestCase {
     }
 
     func testG1RowHeightUsesAvailableHeightWhenItFits() {
-        let expected = (CGFloat(500) - TimetableGridLayout.headerHeight) / CGFloat(5)
+        let expected = (CGFloat(500) - TimetableGridLayout.headerHeight) / TimetableGridLayout.visibleRowCount
 
         XCTAssertEqual(TimetableGridLayout.rowHeight(available: 500, rowCount: 5), expected, accuracy: 0.001, "[ui-revamp #G1]")
+        XCTAssertEqual(TimetableGridLayout.rowHeight(available: 500, rowCount: 8), expected, accuracy: 0.001, "[b22 row height independent of row count]")
     }
 
     func testG2RowHeightClampsToMinimumWhenTooSmall() {
@@ -30,11 +31,10 @@ final class TimetableGridLayoutTests: XCTestCase {
     }
 
     func testG4ContentHeightMatchesAvailableWhenItFits() {
-        let rowHeight = (CGFloat(500) - TimetableGridLayout.headerHeight) / CGFloat(5)
+        let rowHeight = (CGFloat(500) - TimetableGridLayout.headerHeight) / TimetableGridLayout.visibleRowCount
         let expected = TimetableGridLayout.headerHeight + rowHeight * CGFloat(5)
 
         XCTAssertEqual(TimetableGridLayout.contentHeight(available: 500, rowCount: 5), expected, accuracy: 0.001, "[ui-revamp #G4]")
-        XCTAssertEqual(TimetableGridLayout.contentHeight(available: 500, rowCount: 5), 500, accuracy: 0.001, "[ui-revamp #G4]")
     }
 
     func testG5ContentHeightCanExceedAvailableWhenRowsNeedMinimumTapTarget() {
