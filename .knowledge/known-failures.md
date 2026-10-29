@@ -227,9 +227,18 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 
 ## Web (apps/web, Vitest + RTL + MSW)
 
-### ★ 最新実測 (2026-10-29, `feature/b21-calendar-web` `3663804` + Reviewer テスト 40 本)
+### ★ 最新実測 (2026-10-30, `feature/web-parity` `16ec43b`, Reviewer)
 
-`pnpm exec vitest run` → **7 failed files / 26 failed | 343 passed (369)**。失敗 26 件は着手前 (26 failed / 303 passed) と**名前集合が完全一致**、新規 fail 0、未分類 0 (全て下記 2026-07-29 の分類のまま: `Home` 9 / `Settings` 4 / `SignIn` 5 / `Stats` 3 / `Templates` 2 / `Verify` 2 / `Setup` 1)。以下の 2026-07-29 の数字は履歴。
+`cd apps/web ; pnpm exec vitest run` → **Test Files 3 failed | 50 passed (53) / Tests 9 failed | 587 passed (596)**、Unhandled Errors 0 (Node v25.9.0 / vitest 2.1.9)。web-parity 前 (26 failed) から、対象ごと削除した 16 件 (Home 9 / Templates 2 / Setup 1 / Settings 4) が消え、`Stats > renders the empty state…` 1 件は §8.2 の MSW 既定ハンドラ (`GET /api/semesters/:id/overview`) 追加で偶然緑になった。**新規 fail 0、未分類 0**。残る 9 件はすべて下記の分類済 (web-parity の対象外。設計 doc §8.3 のとおり変更しない):
+
+| # | テスト | 分類 | 根拠 (実測) |
+|---|---|---|---|
+| W5 | `SignIn.test.tsx` 5 件 (resend / Google link / magic-link POST / email 入力欄 / 成功メッセージ) | テスト陳腐化 (二重) | `/login`→`/signin` 統合 + ログイン画面は Apple/Google/メールの選択式で、メール入力欄は初期表示に無い。`/api/me` が常に 200 のため `redirectIfSignedIn` で `/` に弾かれる (2026-07-29 の決定的プローブのまま)。resend の 1 件は 5 秒 timeout |
+| W3 | `Stats.test.tsx` 2 件 (`renders course progress numbers including rate` / `renders dash percent when attendanceRate is null`) | テスト陳腐化 | `/stats` は `/semester` への redirect で、画面は `/api/stats` でなく `/api/semesters/:id/overview` を叩く。テストは旧 `/api/stats` の科目 (`数学I` / `未記録科目`) を期待するが overview 既定は courses 空 |
+| W8 | `Verify.test.tsx > navigates to home when verify succeeds and setup is complete` | テスト陳腐化 | 旧ホームの挨拶 `こんにちは、田中 さん` (v9 で消滅済) を期待。挨拶の待ちで落ちるため後続の `path()` が `/` になるアサートまで到達しない (遷移自体は Verify の他テスト・Guard で間接的に見られる程度) |
+| W8 | `Verify.test.tsx > navigates to setup when verify succeeds and setup is incomplete` | テストのバグ (クエリが緩い) | `findByText(/学校選択\|学校/)` が Setup 画面の複数要素 (`Step 1/3: 学校を選ぶ` 等) に多重ヒット (`Found multiple elements`)。`path()` が `/setup` になるアサートは緑 |
+
+→ 内訳: 陳腐化 8 (SignIn 5 / Stats 2 / Verify 1) + テストのバグ 1 (Verify 1)。**実装の欠陥に帰属する失敗は 0**。以下の 2026-07-29 / 2026-10-29 の数字・表は履歴 (W1 / W4 / W5 の Settings / W6 / W7 Templates は web-parity で対象テストごと削除済)。
 
 ### ★ 実測ベースライン (2026-07-29, commit `fcfdc4d`, Researcher / カレンダー3レーン着手時)
 
@@ -266,32 +275,15 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 - **W5 (sign-out)**: sign-out 成功後に `/api/me` を 401 に切り替えるプローブ → **`signedOut=true path=/signin`**。実装 (`components/settings/Settings.tsx:42`) は完全に正しい。既存テストは「セッションが終わること」をモデル化していないだけ。
 - **W2**: `/` の実ナビ href は `/|ホーム ;; /semester|学期・科目 ;; /rooms|ルーム ;; /friends|友達 ;; /settings|設定`。CLAUDE.md の「ボトムタブ = 5項目」と完全一致。
 
-#### W7. Web `/templates` — ★ 409 コピー衝突が UI に一切出ない (本番実害)
+#### W7. Web `/templates` — `/templates` 撤去で対象消滅 (2026-10-30, web-parity)
 
-**分類: 実装ギャップ。ただし `20260721-public-timetable-search.md:22` が「Web UI (`apps/web`) は今回いじらない (「Web いったん放置」方針)」と明記しており、意図的な据え置き。**
-
-`apps/web/src/routes/Templates.tsx` は MVP 相当の dev グレードのまま (`学校 ID` / `学科 ID` を生入力、placeholder 無し、詳細ビュー無し、`useCopyTemplate` に `onError` 無し、エラー表示 JSX ゼロ)。`20260515-redesign.md` §4.3 が指示した `components/templates/{TemplateCard,TemplateCopySheet,TemplatePublishSheet}.tsx` は**ディレクトリごと存在しない**。
-
-| # | テスト | 期待 → 実測 | 仕様の根拠 |
-|---|---|---|---|
-| W7-1 | `renders school, department, and q filters` | placeholder `/検索\|q/i` → **placeholder 属性が無い** | `20260515-redesign.md` §4.3 |
-| W7-2 | `shows template cards with ... actions` | `button /詳細を見る/` → **存在しない** | `20260513-mvp.md:1368` |
-| ~~W7-3~~ | ~~`shows the 409 copy conflict message`~~ | **2026-07-29 修正済 → 緑** | `20260515-redesign.md:1047` 仕様 #125 |
-
-**W7-3 は本番で壊れていた挙動 — 2026-07-29 に修正済 (`fix/templates-copy-409`)**:
-- 画面: https://atender.appily.run `/templates` (「みんなの時間割」)
-- 症状: 既に UserTimetable がある学期を選んだ状態でテンプレの `コピー` を押すと、API は 409 を返しているのに **UI が完全に無反応**。決定的プローブで click → `409_HITS: 1` (リクエストは飛んでいる) → 1.5 秒後の `document.body.textContent` が click 前と **byte 一致** (`DOM_CHANGED: false`) を確認していた。ユーザーからは「コピーを押しても何も起きない」
-- 原因: 表示側の JSX が無かっただけ。TanStack Query v5 は `onError` の有無に関わらず `mutation.error` を保持するので hook 側は元から正しい
-- 修正: `Templates.tsx` に inline エラーを追加 (409 は仕様 #125 の逐語文言、それ以外は汎用)。17 行・1 ファイル
-- **★ 教訓**: この 1 件は「Web の 27 件はどうせベースライン失敗」という扱いのまま**約 2 ヶ月間、本番でボタンが無反応のまま放置されていた**。台帳の存在理由 (「ベースラインの山に本物のバグが隠れる」) が Web でも再現した実例
-
-> **★ 同型の未修正バグ**: 同じ画面の `自分の時間割を公開` (`usePublishTimetable`) も**エラー表示が皆無**で、失敗すると同様に無反応になる。今回のスコープ外として手を付けていない。次に `/templates` を触るときに合わせて直すこと。
+`/templates` は `/` への redirect になり (`.designs/20261030-web-parity-with-ios.md` §3)、`Templates.test.tsx` ごと削除。409 コピー衝突が無反応だった問題 (W7-3) は公開時間割ブラウザの取込 (§5.4.4 の `取り込めませんでした…` toast / 409 再判定) に置き換わり、`usePublishTimetable` のエラー表示皆無も §5.5 の `公開設定を保存できませんでした` で解消。回帰は `tests/routes/parity-review.templates.test.tsx` (T1-T16) と `parity-review.timetable-settings.test.tsx` (TS*) が担保。
 
 ### 環境依存 / ハーネスの癖 (現時点で失敗数には出ていないが、次に触る人が踏む)
 
-1. **Node v25.9.0 + jsdom 29 では `window.localStorage.getItem is not a function`。** `src/lib/useTheme.ts:10` を通る画面 (= `/settings`) を素で render すると ErrorBoundary に落ちる。`tests/routes/Settings.test.tsx` は `beforeAll` で自前 polyfill を入れて回避済。**新規に `/settings` 系を render するテストを書くなら同じ polyfill が要る。**
-2. **MSW ハンドラ集合が 2026-06-11 で凍結。** `tests/setup.ts:6` が `onUnhandledRequest: "error"` なので、以降に増えた `GET /api/rooms` / `GET /api/user-timetables` / `GET /api/semesters/:id/overview` などは全て落ちる。**W1/W3 は設計の前提を直しただけでは通らず、ハンドラ追加が必須。**
-3. **`tests/setup.ts:50` が `console.error` を throw に変えている。** React 19 の `act(...)` 警告を踏むと、テストの合否とは別枠の "Unhandled Errors" としてラン全体に出る。
+1. **Node v25.9.0 + jsdom 29 では `window.localStorage.getItem is not a function`。** web-parity で `tests/setup.ts` に Map ベースの polyfill を入れた (全テスト共通。`afterEach` で clear)。個別ファイルでの polyfill は不要。
+2. **MSW ハンドラ集合 (web-parity で §8.2 の既定ハンドラを追加済。新しい endpoint を叩く画面を増やしたら同様に足す)。** `tests/setup.ts:6` が `onUnhandledRequest: "error"` なので、以降に増えた `GET /api/rooms` / `GET /api/user-timetables` / `GET /api/semesters/:id/overview` などは全て落ちる。**W1/W3 は設計の前提を直しただけでは通らず、ハンドラ追加が必須。**
+3. **`tests/setup.ts` が `console.error` を throw に変えている。** React 19 の `act(...)` 警告を踏むと、テストの合否とは別枠の "Unhandled Errors" としてラン全体に出る。タイマー起因の更新を待つ固定 sleep は `act` 内で (`tests/utils/parity-fixtures.ts` の `settle`)。`vi.restoreAllMocks()` は `setup.ts` の `matchMedia` / console モックの実装を消すので使わない。`lib/toast.ts` は module 共有ストアで 2.6 秒残るため、toast の「不在」を assert するテストは toast を出すテストより前に置く。
 4. **`git log` / `git blame` の pathspec は、本体リポジトリ (`projects/atender`) では正常に動く。** 台帳の API 節にある「pathspec でハングする」は **worktree (`Muraki/worktrees/*`) 固有**。
 
 ### 未分類の失敗
