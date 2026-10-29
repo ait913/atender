@@ -16,10 +16,13 @@ const DEMO_ENDED_USER_ID = "demo-user-ios-ended";
 const DEMO_ENDED_TOKEN = "demo-bearer-token-ios-ended-0002";
 const DEMO_DELETE_USER_ID = "demo-user-ios-delete";
 const DEMO_DELETE_TOKEN = "demo-bearer-token-ios-delete-0003";
+const DEMO_CLASSMATE_USER_ID = "demo-user-ios-classmate";
 
 async function main() {
   // 既存デモを掃除 (冪等)
-  await prisma.user.deleteMany({ where: { id: { in: [DEMO_USER_ID, DEMO_ENDED_USER_ID, DEMO_DELETE_USER_ID] } } });
+  // 同級生の公開テンプレ (退会時に author が NULL になって残るので、先に消して重複させない)
+  await prisma.timetableTemplate.deleteMany({ where: { authorUserId: DEMO_CLASSMATE_USER_ID } });
+  await prisma.user.deleteMany({ where: { id: { in: [DEMO_USER_ID, DEMO_ENDED_USER_ID, DEMO_DELETE_USER_ID, DEMO_CLASSMATE_USER_ID] } } });
 
   // school + department (seed 済の先頭を使う。無ければ作る)
   let school = await prisma.school.findFirst({ orderBy: { name: "asc" } });
@@ -172,6 +175,29 @@ async function main() {
   const tSlot = await prisma.templateDaySlot.create({ data: { templateId: template.id, periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630 } });
   const tCourse = await prisma.templateCourse.create({ data: { templateId: template.id, name: "情報数学", teacher: "高橋先生", color: "#3B82F6" } });
   await prisma.templateMeeting.create({ data: { templateId: template.id, courseId: tCourse.id, dayOfWeek: 1, startPeriodIndex: tSlot.periodIndex, periodCount: 1 } });
+
+  // 同級生 + 公開テンプレ (レーン C: 学期管理・時間割の設定から取り込む対象。土曜と 2 コマ連続を含む)
+  const classmate = await prisma.user.create({
+    data: { id: DEMO_CLASSMATE_USER_ID, email: "classmate@atender.local", emailVerified: true, name: "高橋次郎", handle: "jiro", schoolId: school.id, departmentId: department.id },
+  });
+  const classmateTemplate = await prisma.timetableTemplate.create({
+    data: { authorUserId: classmate.id, schoolId: school.id, departmentId: department.id, title: "情報処理科 2年 後期", description: "後期の標準時間割", year: 2, term: "後期", isPublic: true, copyCount: 3, daysOfWeek: "1,2,3,4,5,6" },
+  });
+  await prisma.templateDaySlot.createMany({
+    data: [540, 640, 780, 880].map((startMinute, index) => ({ templateId: classmateTemplate.id, periodIndex: index + 1, label: `${index + 1}限`, startMinute, endMinute: startMinute + 90, isBreak: false })),
+  });
+  const classmateCourses = [] as { id: string }[];
+  for (const [name, teacher, color] of [["プログラミング演習", "山田先生", "#3B82F6"], ["データベース", "佐々木先生", "#10B981"], ["ネットワーク基礎", "中村先生", "#F59E0B"]] as const) {
+    classmateCourses.push(await prisma.templateCourse.create({ data: { templateId: classmateTemplate.id, name, teacher, color } }));
+  }
+  await prisma.templateMeeting.createMany({
+    data: [
+      { templateId: classmateTemplate.id, courseId: classmateCourses[0].id, dayOfWeek: 1, startPeriodIndex: 1, periodCount: 1, room: "301" },
+      { templateId: classmateTemplate.id, courseId: classmateCourses[1].id, dayOfWeek: 3, startPeriodIndex: 3, periodCount: 2, room: "305" },
+      { templateId: classmateTemplate.id, courseId: classmateCourses[2].id, dayOfWeek: 5, startPeriodIndex: 2, periodCount: 1, room: "PC2" },
+      { templateId: classmateTemplate.id, courseId: classmateCourses[0].id, dayOfWeek: 6, startPeriodIndex: 1, periodCount: 1, room: "301" },
+    ],
+  });
 
   // bearer 用 session 直挿し
   await prisma.session.deleteMany({ where: { userId: user.id } });
