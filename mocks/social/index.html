@@ -22,12 +22,13 @@ body { color: var(--ink); font-family: var(--font); font-weight: 500; -webkit-fo
 .canvas { width: 1920px; height: 1080px; position: relative; overflow: hidden; isolation: isolate;
   background: radial-gradient(ellipse at 72% 82%, var(--glow) 0, var(--glow-mid) 35%, var(--bg) 67%); }
 .wordmark { position: absolute; left: 120px; top: 96px; width: 300px; height: 67px; object-fit: contain; }
-.heading { position: absolute; left: 120px; top: 300px; width: 820px; z-index: 3; }
+.heading { position: absolute; left: 120px; top: 300px; width: 1000px; z-index: 3; }
 .small { margin: 0 0 22px; font-size: 50px; line-height: 1.4; font-weight: 700; letter-spacing: .04em; color: var(--accent-600); }
 h1 { margin: 0; font-size: 116px; line-height: 1.2; font-weight: 900; letter-spacing: .035em; color: var(--ink); white-space: pre-line; }
 em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-mix(in srgb, var(--hl) 45%, transparent) 60%); padding: 0 .04em; }
 .store-badge { position: absolute; left: 120px; top: 760px; height: 96px; width: auto; }
 .phones { position: absolute; right: 80px; bottom: 0; width: 860px; height: auto; z-index: 2; filter: drop-shadow(11px 27px 42px var(--phone-shadow)); }
+.mascot { position: absolute; z-index: 3; height: auto; }
 .shape { position: absolute; z-index: 0; width: var(--size); height: var(--size); border-radius: 28%; background: var(--shape-color); opacity: calc(var(--alpha) * var(--shape-alpha-k)); }
 </style>
 </head>
@@ -39,14 +40,45 @@ em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-m
     <h1 id="title"></h1>
   </div>
   <img class="store-badge" src="../../apps/lp/site/img/app-store-badge-ja.svg" alt="App Store からダウンロード">
-  <img class="phones" src="../../apps/lp/site/img/hero-phones.webp" alt="">
+  <img class="phones" id="phones" alt="">
+  <img class="mascot" id="mascot" alt="">
 </div>
 <script>
-const SMALL = '出席率、把握してる？';
-const LARGE = 'もう[出席率]で\n焦らない';
+// ?variant=hero (既定) | friends。コピーはストア画像 A 案 (.designs/20261029-store-screenshots.md §3-1) の 1 枚目 / 5 枚目。
+// マスコットは「端末の肩 (右上) に乗せる」。OG (y 36〜1044 を切り出し) の安全域 y 86〜994 の内側に可視部が収まる位置。
+const VARIANTS = {
+  hero: {
+    small: '出席率、把握してる？',
+    large: 'もう[出席率]で\n焦らない',
+    hl: '#56D8C3',
+    phones: { src: '../../apps/lp/site/img/hero-phones.webp', css: 'right:80px; width:860px' },
+    mascot: { src: '../../apps/lp/site/img/mascot-hello.webp', left: 1620, top: 370, width: 260 },
+    shapes: [[1010, 120, 64, .18], [1180, 210, 40, .24], [1700, 130, 96, .12], [1800, 250, 52, .18],
+      [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1500, 60, 44, .20]]
+  },
+  friends: {
+    small: '次の空きコマ、誰いる？',
+    large: '友達の[時間割]を\n重ねて見る',
+    hl: '#FD728E',
+    phones: { src: '../../apps/lp/site/img/phone-5.webp', css: 'right:210px; width:460px' },
+    mascot: { src: '../../apps/web/public/character/mascot-chat.png', left: 1482, top: 55, width: 300 },
+    shapes: [[1010, 120, 64, .18], [1180, 300, 40, .24], [1760, 560, 96, .12], [1840, 300, 52, .18],
+      [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1000, 640, 44, .20]]
+  }
+};
+const variant = new URLSearchParams(location.search).get('variant') === 'friends' ? 'friends' : 'hero';
+const V = VARIANTS[variant];
+const { small: SMALL, large: LARGE, shapes: SHAPES } = V;
 const COLORS = ['#56D8C3', '#568CFC', '#8F7EFC', '#A978FA', '#FC6ABF', '#FD728E'];
-const SHAPES = [[1010, 120, 64, .18], [1180, 210, 40, .24], [1700, 130, 96, .12], [1840, 360, 52, .18],
-  [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1500, 60, 44, .20]];
+document.documentElement.style.setProperty('--hl', V.hl);
+const phonesImg = document.getElementById('phones');
+phonesImg.src = V.phones.src;
+phonesImg.style.cssText = V.phones.css;
+const mascotImg = document.getElementById('mascot');
+mascotImg.src = V.mascot.src;
+mascotImg.style.left = V.mascot.left + 'px';
+mascotImg.style.top = V.mascot.top + 'px';
+mascotImg.style.width = V.mascot.width + 'px';
 const canvas = document.getElementById('canvas');
 document.getElementById('small').textContent = SMALL;
 const title = document.getElementById('title');
