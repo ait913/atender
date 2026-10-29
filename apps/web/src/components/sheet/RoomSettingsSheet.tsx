@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { APP_URL } from "@/api/client";
-import { IcsImportWizard } from "@/components/ics-import/IcsImportWizard";
-import { RoomGoogleSyncSection } from "@/components/rooms/RoomGoogleSyncSection";
 import { useMe, useRegenerateRoomInvite, useRemoveRoomMember, useRoom, useRoomAction, useRoomMembers, useUpdateRoom } from "@/api/hooks";
 import { memberColor } from "@/lib/memberColor";
 import { Button, ConfirmDialog, Field, Input, Textarea, Toggle } from "@/components/ui";
@@ -25,7 +23,6 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
   const [pendingLeave, setPendingLeave] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(false);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
-  const [importOpen, setImportOpen] = useState(false);
 
   const myMembership = useMemo(
     () => members.data?.members.find((member) => member.userId === me.data?.user.id),
@@ -98,7 +95,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
         />
       </Field>
       <div className="space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">メンバーの時間割をカレンダーに反映</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">メンバーの時間割を表示</p>
         <Toggle
           checked={showMemberTimetables}
           disabled={!isOwner}
@@ -109,11 +106,6 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           label="反映する"
         />
       </div>
-      <section className="border-t border-fg-primary/8 pt-5">
-        <Button type="button" variant="secondary" className="w-full" onClick={() => void navigate({ to: "/settings/calendar" })}>
-          カレンダー取り込み設定
-        </Button>
-      </section>
       <section className="border-t border-fg-primary/8 pt-5">
         <h3 className="mb-3 text-sm font-black text-fg-primary">メンバー ({members.data?.members.length ?? 0})</h3>
         <ul className="space-y-2">
@@ -144,15 +136,6 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           ))}
         </ul>
       </section>
-      <section className="space-y-3 border-t border-fg-primary/8 pt-5">
-        <h3 className="text-sm font-black text-fg-primary">外部カレンダーから取り込み</h3>
-        <p className="text-xs text-fg-secondary">スマホ等の .ics ファイルを取り込んでルームの予定に反映できます。</p>
-        <Button type="button" onClick={() => setImportOpen(true)}>
-          取り込み画面を開く
-        </Button>
-      </section>
-      <RoomGoogleSyncSection roomId={roomId} />
-      <IcsImportWizard roomId={roomId} open={importOpen} onClose={() => setImportOpen(false)} />
       {isOwner ? (
         <section className="space-y-3 border-t border-fg-primary/8 pt-5">
           <h3 className="text-sm font-black text-fg-primary">招待リンク</h3>

@@ -3,8 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useMe, useRooms } from "@/api/hooks";
 import { ContextChips, type ContextChipItem, type HomeContext } from "./ContextChips";
 import { HomeBody } from "./HomeBody";
-import { HomeSemesterPicker } from "./HomeSemesterPicker";
-import { HomeViewModeTabs, type HomeViewMode } from "./HomeViewModeTabs";
 import { SelfTodayCTA } from "./SelfTodayCTA";
 
 export function Home() {
@@ -12,7 +10,6 @@ export function Home() {
   const rooms = useRooms();
   const navigate = useNavigate();
   const [context, setContext] = useState<HomeContext>({ kind: "self" });
-  const [mode, setMode] = useState<HomeViewMode>("timetable");
   const [semesterId, setSemesterId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,10 +25,8 @@ export function Home() {
   return (
     <div className="space-y-3 pb-32 md:pb-24">
       <ContextChips items={chips} selected={context} onChange={setContext} onAddRoom={() => void navigate({ to: "/rooms" })} />
-      <HomeViewModeTabs mode={mode} onChange={setMode} />
-      {context.kind === "self" && mode !== "timetable" ? <HomeSemesterPicker semesterId={semesterId} onChange={setSemesterId} /> : null}
-      <HomeBody context={context} mode={mode} semesterId={semesterId} onSemesterChange={setSemesterId} />
-      {context.kind === "self" && mode === "timetable" ? <SelfTodayCTA /> : null}
+      <HomeBody context={context} semesterId={semesterId} onSemesterChange={setSemesterId} />
+      {context.kind === "self" ? <SelfTodayCTA /> : null}
     </div>
   );
 }

@@ -11,7 +11,6 @@ import { RootLayout } from "@/routes/_root";
 import { Home } from "@/routes/Home";
 import { Setup } from "@/routes/Setup";
 import { Settings } from "@/routes/Settings";
-import { SettingsCalendar } from "@/routes/SettingsCalendar";
 import { SignIn } from "@/routes/SignIn";
 import { SemesterOverview } from "@/routes/SemesterOverview";
 import { Templates } from "@/routes/Templates";
@@ -60,8 +59,8 @@ const verifyRoute = createRoute({ getParentRoute: () => rootRoute, path: "/verif
 const setupRoute = createRoute({ getParentRoute: () => rootRoute, path: "/setup", beforeLoad: ({ context }) => requireAuth(context.queryClient), component: Setup });
 const meRoute = createRoute({ getParentRoute: () => rootRoute, path: "/me", beforeLoad: () => { throw redirect({ to: "/settings" }); } });
 const settingsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Settings });
-const settingsCalendarRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/calendar", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: SettingsCalendar });
-const settingsGoogleIntegrationRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/integrations/google", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: SettingsCalendar });
+const settingsCalendarRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/calendar", beforeLoad: () => { throw redirect({ to: "/settings" }); } });
+const settingsGoogleIntegrationRoute = createRoute({ getParentRoute: () => rootRoute, path: "/settings/integrations/google", beforeLoad: () => { throw redirect({ to: "/settings" }); } });
 
 const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Home });
 const timetableRedirect = createRoute({ getParentRoute: () => rootRoute, path: "/timetable", beforeLoad: () => { throw redirect({ to: "/" }); } });

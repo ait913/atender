@@ -3,12 +3,10 @@ import { Settings } from "lucide-react";
 import { useState } from "react";
 import { useRoom } from "@/api/hooks";
 import { RoomSettingsSheet } from "@/components/sheet/RoomSettingsSheet";
-import { RoomCalendar } from "./RoomCalendar";
 import { RoomTimetable } from "./RoomTimetable";
 
 export function RoomDetail() {
   const { id } = useParams({ from: "/rooms/$id" });
-  const [tab, setTab] = useState<"calendar" | "timetable">("calendar");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const room = useRoom(id);
   return (
@@ -27,21 +25,7 @@ export function RoomDetail() {
           <Settings className="h-5 w-5" strokeWidth={2.25} />
         </button>
       </div>
-      <div className="flex rounded-full bg-bg-muted p-1">
-        {(["calendar", "timetable"] as const).map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={`flex-1 rounded-full px-4 py-2 text-sm font-bold transition ${
-              tab === item ? "bg-accent-500 text-fg-on-accent shadow-glow-soft" : "text-fg-secondary hover:bg-fg-primary/6"
-            }`}
-            onClick={() => setTab(item)}
-          >
-            {item === "calendar" ? "カレンダー" : "時間割"}
-          </button>
-        ))}
-      </div>
-      {tab === "calendar" ? <RoomCalendar roomId={id} /> : <RoomTimetable roomId={id} />}
+      <RoomTimetable roomId={id} />
       <RoomSettingsSheet roomId={id} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
