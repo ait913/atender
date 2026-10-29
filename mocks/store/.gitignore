@@ -1,0 +1,5 @@
+fonts/
+out/
+node_modules/
+shots/
+.chrome-profile.*
