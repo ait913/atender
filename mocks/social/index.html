@@ -28,6 +28,8 @@ h1 { margin: 0; font-size: 116px; line-height: 1.2; font-weight: 900; letter-spa
 em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-mix(in srgb, var(--hl) 45%, transparent) 60%); padding: 0 .04em; }
 .store-badge { position: absolute; left: 120px; top: 760px; height: 96px; width: auto; }
 .phones { position: absolute; right: 80px; bottom: 0; width: 860px; height: auto; z-index: 2; filter: drop-shadow(11px 27px 42px var(--phone-shadow)); }
+.phonepair { position: absolute; inset: 0; z-index: 2; filter: drop-shadow(11px 27px 42px var(--phone-shadow)); }
+.phonepair img { position: absolute; height: auto; }
 .mascot { position: absolute; z-index: 4; height: auto; }
 .mascot-shadow { position: absolute; z-index: 3; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(48, 65, 91, 0.16), rgba(48, 65, 91, 0) 70%); }
 .shape { position: absolute; z-index: 0; width: var(--size); height: var(--size); border-radius: 28%; background: var(--shape-color); opacity: calc(var(--alpha) * var(--shape-alpha-k)); }
@@ -58,14 +60,21 @@ const VARIANTS = {
     shapes: [[1010, 120, 64, .18], [1180, 210, 40, .24], [1700, 130, 96, .12], [1800, 250, 52, .18],
       [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1500, 60, 44, .20]]
   },
+  // friends: hero と同じ斜め配置。大端末 = phone-5 (ルーム) を rotate(-8deg)、小端末 = phone-2 (自分のホーム)。
+  // 座標は hero-1920x1080.png の実測値 (ストア .phone.shared / .phone.floating を hero-phones の縮尺 860/2096 = 0.4103 で写した値):
+  //   大端末の本体 (ベゼルの黒縁の内側) = 左上 (966.5, 317.7)・幅 629.8・回転 -8°・原点 = 上辺中央。画像 phone-5 は本体の外に ring 5px ぶん (原寸 8px) 広いので、
+  //   幅 639.4、left 961.7 / top 312.9、原点 (319.7px, 4.8px)。小端末 phone-2 = 左上 (1627.9, 588.1)・幅 212.1 (右下に直立、全体が写る)
   friends: {
     small: '次の空きコマ、誰いる？',
     large: '友達の[時間割]を\n重ねて見る',
     hl: '#FD728E',
-    phones: { src: '../../apps/lp/site/img/phone-5.webp', css: 'right:210px; width:460px' },
-    mascot: { src: '../../apps/lp/site/img/mascot-chat.png', left: 1482, top: 61, width: 300, foot: 0.811 },
-    shapes: [[1010, 120, 64, .18], [1180, 300, 40, .24], [1760, 560, 96, .12], [1840, 300, 52, .18],
-      [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1000, 640, 44, .20]]
+    phonePair: [
+      { src: '../../apps/lp/site/img/phone-5.webp', css: 'left:961.7px; top:312.9px; width:639.4px; transform:rotate(-8deg); transform-origin:319.7px 4.8px' },
+      { src: '../../apps/lp/site/img/phone-2.webp', css: 'left:1627.9px; top:588.1px; width:212.1px' }
+    ],
+    mascot: { src: '../../apps/lp/site/img/mascot-chat.png', left: 1610, top: 354, width: 300, foot: 0.811 },
+    shapes: [[1010, 120, 64, .18], [1180, 210, 40, .24], [1700, 130, 96, .12], [1800, 250, 52, .18],
+      [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1500, 60, 44, .20]]
   }
 };
 const variant = new URLSearchParams(location.search).get('variant') === 'friends' ? 'friends' : 'hero';
@@ -74,8 +83,22 @@ const { small: SMALL, large: LARGE, shapes: SHAPES } = V;
 const COLORS = ['#56D8C3', '#568CFC', '#8F7EFC', '#A978FA', '#FC6ABF', '#FD728E'];
 document.documentElement.style.setProperty('--hl', V.hl);
 const phonesImg = document.getElementById('phones');
-phonesImg.src = V.phones.src;
-phonesImg.style.cssText = V.phones.css;
+if (V.phones) {
+  phonesImg.src = V.phones.src;
+  phonesImg.style.cssText = V.phones.css;
+} else {
+  phonesImg.remove();
+  const pair = document.createElement('div');
+  pair.className = 'phonepair';
+  V.phonePair.forEach(({ src, css }) => {
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    img.style.cssText = css;
+    pair.append(img);
+  });
+  document.getElementById('canvas').append(pair);
+}
 const mascotImg = document.getElementById('mascot');
 mascotImg.src = V.mascot.src;
 mascotImg.style.left = V.mascot.left + 'px';
