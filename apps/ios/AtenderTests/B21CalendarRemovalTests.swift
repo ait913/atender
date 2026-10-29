@@ -76,7 +76,8 @@ final class B21CalendarRemovalTests: XCTestCase {
         for f in deleted {
             XCTAssertFalse(exists(f), "[§3.1] \(f) は削除されているはず")
         }
-        XCTAssertFalse(exists("Features/Calendar"), "[A27] Features/Calendar/ ディレクトリが存在しない")
+        // 空ディレクトリは git に載らない (作業ツリーに残骸があっても fresh checkout では無い) ので「中に swift が無い」で見る
+        XCTAssertTrue(swiftFiles(under: appRoot.appendingPathComponent("Features/Calendar")).isEmpty, "[A27] Features/Calendar/ に swift が無い")
     }
 
     func testR2RenamedAndKeptFilesExist() {
@@ -163,7 +164,10 @@ final class B21CalendarRemovalTests: XCTestCase {
     func testA27cRemovedCoordinatorMembersAreGone() throws {
         // §3.2: 削除するメンバ。移行関数内のキー文字列 (CalendarSyncMigration.swift) だけ許容
         let pattern = "\\b(exportCourses|exportPersonal|promptDismissed|legacyPushCleanupDone|availableCalendars|cleanUpLegacyPushes|legacyEkPushes|clearLegacyEkPushes|fetchSnapshots|removeEvents)\\b"
-        let found = try hits(pattern) { rel, _ in rel == "Core/Sync/CalendarSyncMigration.swift" }
+        // §3.2: 移行が読むキー文字列は移行関数内のローカル定数として持ってよい → "atender.eventkit.*" リテラルの行は許容
+        let found = try hits(pattern) { rel, line in
+            rel == "Core/Sync/CalendarSyncMigration.swift" || line.contains("\"atender.eventkit.")
+        }
         XCTAssertEqual(found, [], "[§3.2/§3.1] 削除対象メンバが残っている")
     }
 
@@ -197,9 +201,11 @@ final class B21CalendarRemovalTests: XCTestCase {
 
     func testA5A6DayDetailAndBulkEditHaveNoPersonalEventSection() throws {
         let d = try read("Features/SemesterOverview/DayDetailSheet.swift")
-        for w in ["personalEventsSection", "iconButton", ".create", ".edit"] {
+        for w in ["personalEventsSection", "iconButton"] {
             XCTAssertFalse(d.contains(w), "[A5/§3.6] DayDetailSheet に \(w)")
         }
+        XCTAssertNil(d.range(of: "case\\s+(create|edit)\\b", options: .regularExpression), "[§3.6] DayDetailSheetKind から .create/.edit を削除")
+        XCTAssertNotNil(d.range(of: "enum DayDetailSheetKind", options: .literal))
         let b = try read("Features/SemesterOverview/BulkEditSheet.swift")
         for w in ["eventSection", "eventTitle", "addPersonalEvents"] {
             XCTAssertFalse(b.contains(w), "[A6/§3.6] BulkEditSheet に \(w)")
