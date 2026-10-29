@@ -46,7 +46,7 @@ targets:
         NSCameraUsageDescription: 招待QRコードを読み取るためにカメラを使用します。
         NSCalendarsFullAccessUsageDescription: "時間割の授業を「Atender」カレンダーに書き出し、休講や振替に合わせて書き出した予定を更新・削除するために、カレンダーへのアクセスを使用します。"
         CFBundleShortVersionString: "1.0.1"
-        CFBundleVersion: "21"
+        CFBundleVersion: "22"
         LSApplicationQueriesSchemes:
           - itms-beta
         UILaunchScreen: {}
