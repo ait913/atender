@@ -21,11 +21,11 @@
 ## 技術スタック
 
 - Runtime: Node 20 LTS / pnpm 9.15.x workspace (monorepo: `apps/api`, `apps/web`, `packages/shared`)
-- Backend (`apps/api`): Hono 4.12.x + @hono/node-server 2.0.x + @hono/zod-validator + better-auth 1.6.x + Prisma 6.19.x + better-sqlite3 + Resend 4.12.x + Zod 3.23.x + dayjs
+- Backend (`apps/api`): Hono 4.12.x + @hono/node-server 2.0.x + @hono/zod-validator + better-auth 1.6.x + Prisma 6.19.x + better-sqlite3 + Zod 3.23.x + dayjs。メール送信は AIS Mail (`https://mail.aisaba.net/api/v1/send`、`src/lib/mail.ts` の fetch。SDK なし)
 - Frontend (`apps/web`): Vite 6 + React 19 + TypeScript 5.6 + TanStack Router + TanStack Query + Tailwind (web 召集時に確定)
 - Shared (`packages/shared`): Zod schemas + TypeScript 型 (型共有のみ)
 - DB: SQLite (Prisma `provider = "sqlite"`、Coolify Volume mount で `/app/data/prod.db`)
-- 認証: Magic Link + Google OAuth (better-auth + Resend 送信、cookie session 30 日、SameSite=Lax。Google はサインインのみ。Google Calendar 連携は build 21 で撤去)
+- 認証: Magic Link + Google OAuth (better-auth + AIS Mail 送信 (`Atender <no-reply@aisaba.net>`、送信失敗は 500 `MAIL_SEND_FAILED`)、cookie session 30 日、SameSite=Lax。Google はサインインのみ。Google Calendar 連携は build 21 で撤去)
 - ホスティング: Appily (Coolify + Nginx) 2 service 構成 (`atender-api` / `atender-web`)
 - iOS (`apps/ios`): SwiftUI ネイティブ。API は Web と共通 (Bearer token)。xcodegen + xcodebuild、iOS 17+
 
@@ -160,4 +160,4 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
   - atender-web: `xxg31wshj6rhjmnffju1bg5r`
 - Coolify deploy トリガー: `curl -X POST "$COOLIFY_API_BASE/deploy?uuid=<uuid>" -H "Authorization: Bearer $COOLIFY_API_TOKEN"` (**2026-10-08 から POST 必須**。GET は `This endpoint has changed to a POST request.` を返す)。進捗は `GET $COOLIFY_API_BASE/deployments/<deployment_uuid>` の `status`
 - 関連 SKILL: `appily`
-- Resend: API key は `.tmp/atender/secrets.env` (gitignore 済) 参照
+- AIS Mail: サービス `atender` (from `Atender <no-reply@aisaba.net>`、1 分 60 / 1 日 500)。トークンは `.tmp/atender/secrets.env` の `AIS_MAIL_TOKEN` (Coolify atender-api env と同値)。再発行は Mail 画面 → 設定 → サービス送信 (再発行で旧トークンは即無効 → Coolify env 更新 + 再デプロイ)。設計 = `.designs/20261030-magic-link-mail-via-ais-mail.md`
