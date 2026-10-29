@@ -111,12 +111,12 @@ describe("useTheme theme resolution", () => {
     expect(resolveTheme("auto")).toBe("light");
   });
 
-  it("initializes auto from OS dark when localStorage is empty", () => {
+  it("initializes light when localStorage is empty", () => {
     installMatchMedia(true);
 
     initTheme();
 
-    expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
+    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
   });
 
   it("initializes explicit light from localStorage", () => {
