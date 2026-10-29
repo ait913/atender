@@ -28,7 +28,8 @@ h1 { margin: 0; font-size: 116px; line-height: 1.2; font-weight: 900; letter-spa
 em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-mix(in srgb, var(--hl) 45%, transparent) 60%); padding: 0 .04em; }
 .store-badge { position: absolute; left: 120px; top: 760px; height: 96px; width: auto; }
 .phones { position: absolute; right: 80px; bottom: 0; width: 860px; height: auto; z-index: 2; filter: drop-shadow(11px 27px 42px var(--phone-shadow)); }
-.mascot { position: absolute; z-index: 3; height: auto; }
+.mascot { position: absolute; z-index: 4; height: auto; }
+.mascot-shadow { position: absolute; z-index: 3; border-radius: 50%; background: radial-gradient(ellipse at center, rgba(48, 65, 91, 0.16), rgba(48, 65, 91, 0) 70%); }
 .shape { position: absolute; z-index: 0; width: var(--size); height: var(--size); border-radius: 28%; background: var(--shape-color); opacity: calc(var(--alpha) * var(--shape-alpha-k)); }
 </style>
 </head>
@@ -41,6 +42,7 @@ em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-m
   </div>
   <img class="store-badge" src="../../apps/lp/site/img/app-store-badge-ja.svg" alt="App Store からダウンロード">
   <img class="phones" id="phones" alt="">
+  <div class="mascot-shadow" id="mascot-shadow" aria-hidden="true"></div>
   <img class="mascot" id="mascot" alt="">
 </div>
 <script>
@@ -52,7 +54,7 @@ const VARIANTS = {
     large: 'もう[出席率]で\n焦らない',
     hl: '#56D8C3',
     phones: { src: '../../apps/lp/site/img/hero-phones.webp', css: 'right:80px; width:860px' },
-    mascot: { src: '../../apps/lp/site/img/mascot-hello.webp', left: 1620, top: 370, width: 260 },
+    mascot: { src: '../../apps/lp/site/img/mascot-hello.png', left: 1615, top: 365, width: 270, foot: 0.861 },
     shapes: [[1010, 120, 64, .18], [1180, 210, 40, .24], [1700, 130, 96, .12], [1800, 250, 52, .18],
       [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1500, 60, 44, .20]]
   },
@@ -61,7 +63,7 @@ const VARIANTS = {
     large: '友達の[時間割]を\n重ねて見る',
     hl: '#FD728E',
     phones: { src: '../../apps/lp/site/img/phone-5.webp', css: 'right:210px; width:460px' },
-    mascot: { src: '../../apps/web/public/character/mascot-chat.png', left: 1482, top: 55, width: 300 },
+    mascot: { src: '../../apps/lp/site/img/mascot-chat.png', left: 1482, top: 61, width: 300, foot: 0.811 },
     shapes: [[1010, 120, 64, .18], [1180, 300, 40, .24], [1760, 560, 96, .12], [1840, 300, 52, .18],
       [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1000, 640, 44, .20]]
   }
@@ -79,6 +81,13 @@ mascotImg.src = V.mascot.src;
 mascotImg.style.left = V.mascot.left + 'px';
 mascotImg.style.top = V.mascot.top + 'px';
 mascotImg.style.width = V.mascot.width + 'px';
+// 影は CSS で描く (素材の影は除去済み)。足の接地線 (可視部の下端 = top + foot × 幅) を中心に、幅はマスコット幅の 70%、高さは 12%
+const shadow = document.getElementById('mascot-shadow');
+const sw = V.mascot.width * 0.7, sh = V.mascot.width * 0.12;
+shadow.style.width = sw + 'px';
+shadow.style.height = sh + 'px';
+shadow.style.left = (V.mascot.left + V.mascot.width / 2 - sw / 2) + 'px';
+shadow.style.top = (V.mascot.top + V.mascot.foot * V.mascot.width - sh / 2) + 'px';
 const canvas = document.getElementById('canvas');
 document.getElementById('small').textContent = SMALL;
 const title = document.getElementById('title');
