@@ -32,87 +32,143 @@
   <a class="logo" href="/"><img src="/img/wordmark-navy.png" alt="Atender" width="877" height="196"></a>
 </header>
 <main>
-  <section class="sec hero s1">
+  <section class="hero s1" aria-labelledby="hero-title">
     <span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span><span class="shape c" aria-hidden="true"></span>
-    <div class="wrap grid">
+    <div class="wrap split">
       <div class="text">
         <p class="small">出席率、把握してる？</p>
-        <h1>もう<em class="hl">出席率</em>で<br>焦らない</h1>
-        <p class="lead">Atender は、学生が自分の時間割を登録し、授業ごとの出欠をワンタッチで記録して、科目ごとの出席率を追いかけるためのアプリです。</p>
+        <h1 id="hero-title">もう<em class="hl">出席率</em>で<br>焦らない</h1>
+        <p class="lead">時間割を入れたら、あとは授業のあとにワンタップするだけ。<br>科目ごとの出席率と、あと何回休めるかがいつでも分かる。</p>
         <div class="cta">
           <a class="store-badge" href="https://apps.apple.com/jp/app/id6790604371"><img src="/img/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40"></a>
           <a class="web-link" href="https://atender.appily.run">Web 版を開く</a>
         </div>
         <p class="target">対象: 専門学校・大学の学生</p>
       </div>
-      <figure class="visual bleed hero-visual">
-        <img src="/img/hero-phones.webp" alt="Atender の学期・科目画面 (今日までの出席率 91%) とホーム画面の時間割" width="1200" height="1110">
+      <figure class="hero-visual">
+        <img class="phones" src="/img/hero-phones.webp" alt="Atender の学期・科目画面 (今日までの出席率 91%) とホーム画面の時間割" width="1200" height="1110">
+        <span class="mascot"><span class="mascot-shadow" aria-hidden="true"></span><img src="/img/mascot-hello.webp" alt="" width="400" height="400"></span>
       </figure>
     </div>
   </section>
 
-  <section class="sec feature s2">
-    <span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span><span class="shape c" aria-hidden="true"></span>
-    <div class="wrap grid">
-      <div class="text">
-        <p class="small">授業おわったら</p>
-        <h2><em class="hl">ワンタップ</em>で<br>出席完了</h2>
-        <p class="lead">ワンタッチ出欠 (出席/遅刻/欠席/公欠)</p>
+  <section class="sec pains" aria-labelledby="pains-title">
+    <div class="wrap">
+      <h2 id="pains-title" class="center">こんなこと、ない？</h2>
+      <!-- アイコン: Lucide v1.64.0 (ISC License, https://lucide.dev) -->
+      <ul class="cards">
+        <li class="card c1">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" x2="5" y1="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg></span>
+          <h3>出席率、いま何%？</h3>
+          <p>出たか休んだかは覚えてるのに、率になると急に分からない。</p>
+        </li>
+        <li class="card c2">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg></span>
+          <h3>あと何回休めるか、毎回計算してる</h3>
+          <p>欠席の上限も遅刻の数え方も、科目ごとに違ってややこしい。</p>
+        </li>
+        <li class="card c3">
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg></span>
+          <h3>時間割の入力、毎学期だるい</h3>
+          <p>同じ学科のみんなが、同じ時間割をそれぞれ打ち込んでる。</p>
+        </li>
+      </ul>
+      <p class="bridge">この 3 つを片付けたくて、Atender を作りました。</p>
+    </div>
+  </section>
+
+  <section class="sec steps-sec" aria-labelledby="steps-title">
+    <div class="wrap">
+      <p class="small center">3 ステップで始める</p>
+      <h2 id="steps-title" class="center">使い方</h2>
+      <ol class="steps">
+        <li class="step">
+          <span class="num" aria-hidden="true">1</span>
+          <h3>時間割を登録</h3>
+          <p>同じ学科の公開時間割があれば、選んで取り込むだけ。なければ自分で作れます。</p>
+        </li>
+        <li class="step">
+          <span class="num" aria-hidden="true">2</span>
+          <h3>授業が終わったらワンタップで出欠</h3>
+          <p>出席・遅刻・欠席・公欠から選ぶだけ。全部出た日は「今日は全出席」でまとめて付けられます。</p>
+        </li>
+        <li class="step">
+          <span class="num" aria-hidden="true">3</span>
+          <h3>出席率と、あと何回休めるかが分かる</h3>
+          <p>科目ごとの必要出席率・欠席上限・遅刻の換算に合わせて計算します。</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="sec features" aria-labelledby="features-title">
+    <div class="wrap">
+      <h2 id="features-title" class="center">主な機能</h2>
+      <div class="row s2">
+        <div class="text">
+          <p class="small">授業おわったら</p>
+          <h3 class="row-title"><em class="hl">ワンタップ</em>で<br>出席完了</h3>
+          <p class="lead">ホームの時間割から、終わった授業に出欠を付けるだけ。</p>
+          <ul class="points">
+            <li>出席・遅刻・欠席・公欠の 4 つから選ぶ</li>
+            <li>全部出た日は「今日は全出席」でまとめて記録</li>
+            <li>次の授業の時間と教室もホームに出る</li>
+          </ul>
+        </div>
+        <figure class="stage">
+          <img src="/img/phone-2.webp" alt="ホーム画面: 今週の時間割と「今日は全出席」ボタン" width="517" height="1104" loading="lazy">
+        </figure>
       </div>
-      <figure class="visual floating">
-        <img class="phone" src="/img/phone-2.webp" alt="ホーム画面: 今週の時間割と「今日は全出席」ボタン" width="517" height="1104">
-      </figure>
-    </div>
-  </section>
-
-  <section class="sec feature reverse s3">
-    <span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span><span class="shape c" aria-hidden="true"></span>
-    <div class="wrap grid">
-      <div class="text">
-        <p class="small">あと何回休める？</p>
-        <h2><em class="hl">科目ごと</em>に<br>すぐ分かる</h2>
-        <p class="lead">出席率の追跡 (必要出席率までの残り回数、休講・振替)</p>
+      <div class="row reverse s3">
+        <div class="text">
+          <p class="small">あと何回休める？</p>
+          <h3 class="row-title"><em class="hl">科目ごと</em>に<br>すぐ分かる</h3>
+          <p class="lead">科目ごとの出席率と、あと何回休めるかが一覧で見える。</p>
+          <ul class="points">
+            <li>必要出席率・欠席上限・遅刻の換算は科目ごとに設定できる</li>
+            <li>休講や振替も計算に入る</li>
+            <li>学期全体の出席率もひと目で分かる</li>
+          </ul>
+        </div>
+        <figure class="stage">
+          <img src="/img/phone-3.webp" alt="学期・科目画面: 科目ごとの出席率と「あと N 回休める」" width="720" height="1228" loading="lazy">
+        </figure>
       </div>
-      <figure class="visual bleed has-badge">
-        <p class="badge">欠席上限も<br>遅刻の換算も<br>科目ごとに</p>
-        <img class="phone" src="/img/phone-3.webp" alt="学期・科目画面: 科目ごとの出席率と「あと N 回休める」" width="720" height="1228">
-      </figure>
-    </div>
-  </section>
-
-  <section class="sec feature s4">
-    <span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span><span class="shape c" aria-hidden="true"></span>
-    <div class="wrap grid">
-      <div class="text">
-        <p class="small">時間割の入力、だるい？</p>
-        <h2><em class="hl">同じ学科</em>のを<br>そのまま使う</h2>
-        <p class="lead">時間割の登録 (学校と学科の公開テンプレから引き継ぎ)</p>
+      <div class="row s4">
+        <div class="text">
+          <p class="small">時間割の入力、だるい？</p>
+          <h3 class="row-title"><em class="hl">同じ学科</em>のを<br>そのまま使う</h3>
+          <p class="lead">学校と学科を選ぶと、同じ学科の人が公開した時間割が出てくる。選んで取り込めば登録は終わり。</p>
+          <ul class="points">
+            <li>自分の時間割も「みんなの時間割で公開」で同じ学科の人に渡せる</li>
+            <li>新学期は前の学期から引き継げる</li>
+          </ul>
+        </div>
+        <figure class="stage">
+          <img src="/img/phone-4.webp" alt="公開時間割の一覧: 同じ学校・学科の時間割を選んで取り込む" width="720" height="1228" loading="lazy">
+        </figure>
       </div>
-      <figure class="visual bleed has-badge">
-        <p class="badge">学校と学科を<br>選ぶだけ</p>
-        <img class="phone" src="/img/phone-4.webp" alt="公開時間割の一覧: 同じ学校・学科の時間割を選んで取り込む" width="720" height="1228">
-      </figure>
     </div>
   </section>
 
-  <section class="sec feature reverse s5">
+  <section class="band s5" aria-labelledby="friends-title">
     <span class="shape a" aria-hidden="true"></span><span class="shape b" aria-hidden="true"></span><span class="shape c" aria-hidden="true"></span>
-    <div class="wrap grid">
+    <div class="wrap split">
       <div class="text">
         <p class="small">次の空きコマ、誰いる？</p>
-        <h2>友達の<em class="hl">時間割</em>を<br>重ねて見る</h2>
-        <p class="lead">友達・ルーム (時間割の共有、授業変更の確認)</p>
+        <h2 id="friends-title">友達の<em class="hl">時間割</em>を<br>重ねて見る</h2>
+        <p class="lead">友達とルームを作ると、みんなの時間割が 1 つの表に重なる。空きコマがかぶる人もすぐ見つかるし、授業変更もルームで確認できる。</p>
       </div>
-      <figure class="visual bleed has-mascot">
-        <img class="mascot" src="/img/mascot-hello.png" alt="" width="1024" height="1024">
-        <img class="phone" src="/img/phone-5.webp" alt="ルームの時間割: 友達のコマが重なって表示される" width="720" height="1228">
+      <figure class="band-visual">
+        <span class="mascot"><span class="mascot-shadow" aria-hidden="true"></span><img src="/img/mascot-chat.webp" alt="" width="403" height="403" loading="lazy"></span>
+        <img class="phone" src="/img/phone-5.webp" alt="ルームの時間割: 友達のコマが重なって表示される" width="720" height="1228" loading="lazy">
       </figure>
     </div>
   </section>
 
-  <section class="sec list">
+  <section class="sec list" aria-labelledby="list-title">
     <div class="wrap">
-      <h2>できること</h2>
+      <h2 id="list-title" class="center">できること</h2>
       <ul class="can">
         <li>時間割の登録 (学校と学科の公開テンプレから引き継ぎ)</li>
         <li>ワンタッチ出欠 (出席/遅刻/欠席/公欠)</li>
@@ -125,22 +181,51 @@
     </div>
   </section>
 
-  <section class="sec closing">
+  <section class="sec faq-sec" aria-labelledby="faq-title">
     <div class="wrap">
+      <h2 id="faq-title" class="center">よくある質問</h2>
+      <dl class="faq">
+        <div class="qa">
+          <dt>無料で使える？</dt>
+          <dd>無料で使えます。</dd>
+        </div>
+        <div class="qa">
+          <dt>Android や PC でも使える？</dt>
+          <dd>iOS アプリは iPhone (iOS 17 以降) 向けです。Android や PC からは <a href="https://atender.appily.run">Web 版</a>を使ってください。iOS アプリと同じアカウントで使えます。</dd>
+        </div>
+        <div class="qa">
+          <dt>ログインは何でできる？</dt>
+          <dd>Apple・Google・メールアドレスの 3 つから選べます。</dd>
+        </div>
+        <div class="qa">
+          <dt>アカウントを消したい</dt>
+          <dd>iOS アプリか Web 版の「設定」→「その他」→「アカウントを削除」から消せます。データはすぐに削除され、元には戻せません。</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-title">
+    <div class="wrap">
+      <span class="mascot"><span class="mascot-shadow" aria-hidden="true"></span><img src="/img/mascot-run.webp" alt="" width="355" height="355" loading="lazy"></span>
+      <h2 id="closing-title">まずは<br>時間割を入れてみる</h2>
       <div class="cta">
-        <a class="store-badge" href="https://apps.apple.com/jp/app/id6790604371"><img src="/img/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40"></a>
+        <a class="store-badge" href="https://apps.apple.com/jp/app/id6790604371"><img src="/img/app-store-badge-ja.svg" alt="App Store からダウンロード" width="109" height="40" loading="lazy"></a>
         <a class="web-link" href="https://atender.appily.run">Web 版を開く</a>
       </div>
       <p class="target">対象: 専門学校・大学の学生</p>
     </div>
   </section>
 </main>
-<footer class="site-footer wrap">
-  <nav aria-label="法務とサポート">
-    <a href="https://atender.appily.run/privacy.html">プライバシーポリシー</a>
-    <a href="https://atender.appily.run/terms.html">利用規約</a>
-    <a href="https://atender.appily.run/support">サポート</a>
-  </nav>
+<footer class="site-footer">
+  <div class="wrap">
+    <nav aria-label="法務とサポート">
+      <a href="https://atender.appily.run/privacy.html">プライバシーポリシー</a>
+      <a href="https://atender.appily.run/terms.html">利用規約</a>
+      <a href="https://atender.appily.run/support">サポート</a>
+    </nav>
+    <p class="copy">© 2026 Atender</p>
+  </div>
 </footer>
 </body>
 </html>
