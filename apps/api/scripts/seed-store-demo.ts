@@ -98,32 +98,17 @@ const MINATO_COURSES: CourseDefinition[] = [
   },
 ];
 
+// ルームの時間割で 1 マスに 2 枚並ぶと 6.9" でも科目名が読めない (実機で確認) ので、
+// 友達の科目は みなと が空いているマスにだけ置く (重なりなし。全員空きのマスは 月4・火4・水4 の 3 つ)。
 const YUI_COURSES: CourseDefinition[] = [
-  { name: "Java演習", color: "#568CFC", meetings: [
-    { dayOfWeek: 1, startPeriodIndex: 1, periodCount: 2 },
-    { dayOfWeek: 4, startPeriodIndex: 1, periodCount: 1 },
-  ] },
-  { name: "データベース", color: "#A978FA", meetings: [
-    { dayOfWeek: 2, startPeriodIndex: 3, periodCount: 1 },
-    { dayOfWeek: 5, startPeriodIndex: 3, periodCount: 1 },
-  ] },
   { name: "CGデザイン", color: "#FC6ABF", meetings: [
-    { dayOfWeek: 3, startPeriodIndex: 2, periodCount: 1 },
+    { dayOfWeek: 3, startPeriodIndex: 3, periodCount: 1 },
   ] },
 ];
 
 const HARUTO_COURSES: CourseDefinition[] = [
-  { name: "ネットワーク", color: "#56D8C3", meetings: [
-    { dayOfWeek: 1, startPeriodIndex: 3, periodCount: 1 },
-  ] },
-  { name: "セキュリティ", color: "#12B172", meetings: [
-    { dayOfWeek: 3, startPeriodIndex: 1, periodCount: 1 },
-  ] },
-  { name: "卒業制作", color: "#56D8C3", meetings: [
-    { dayOfWeek: 4, startPeriodIndex: 3, periodCount: 2 },
-  ] },
   { name: "キャリア講座", color: "#A978FA", meetings: [
-    { dayOfWeek: 5, startPeriodIndex: 1, periodCount: 1 },
+    { dayOfWeek: 5, startPeriodIndex: 4, periodCount: 1 },
   ] },
 ];
 

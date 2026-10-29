@@ -78,7 +78,9 @@ final class StoreShotsFlow: XCTestCase {
         snap("s3-courses")
 
         // 手順6・7: 公開時間割のカードが表示されてから撮影する。
-        guard tapButton("ホーム"),
+        // スクロール後はタブバーが縮むことがあるので、先頭まで戻してからタブを押す。
+        for _ in 0..<4 { app.swipeDown() }
+        guard tapButton(app.tabBars.buttons["ホーム"].firstMatch, named: "ホーム"),
               tapButton("時間割の設定"),
               tapButton("timetable-settings-import-template") else { return }
         let template = app.descendants(matching: .any)
