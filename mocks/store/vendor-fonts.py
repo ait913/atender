@@ -3,7 +3,8 @@
 
 headless Chrome は --virtual-time-budget とネット経由の Web フォントの組み合わせで
 ハングするので (2026-10-09 実測)、フォントはファイルで持つ。
-使い方: python3 -I vendor-fonts.py zenmaru  # 指定フォントを取り込む
+使い方: python3 -I vendor-fonts.py zenmaru            # 指定フォントを mocks/store/fonts/ に取り込む
+        python3 -I vendor-fonts.py zenmaru --out DIR  # 出力先を DIR に変える (DIR/zenmaru.css と DIR/zenmaru/NNN.woff2)
 """
 import re
 import sys
@@ -24,9 +25,9 @@ def fetch(url: str) -> bytes:
         return r.read()
 
 
-def vendor(key: str, query: str) -> None:
+def vendor(key: str, query: str, root: Path) -> None:
     css = fetch(f'https://fonts.googleapis.com/css2?family={query}&display=swap').decode()
-    out_dir = ROOT / key
+    out_dir = root / key
     out_dir.mkdir(parents=True, exist_ok=True)
     n = 0
 
@@ -41,11 +42,20 @@ def vendor(key: str, query: str) -> None:
         return f'url({key}/{name})'
 
     local_css = re.sub(r'url\((https://fonts\.gstatic\.com/[^)]+)\)', repl, css)
-    (ROOT / f'{key}.css').write_text(local_css)
-    print(f'{key}: {n} files -> {ROOT / (key + ".css")}')
+    (root / f'{key}.css').write_text(local_css)
+    print(f'{key}: {n} files -> {root / (key + ".css")}')
 
 
 if __name__ == '__main__':
-    keys = sys.argv[1:] or list(FONTS)
+    args = sys.argv[1:]
+    root = ROOT
+    if '--out' in args:
+        i = args.index('--out')
+        if i + 1 >= len(args):
+            print('使い方: python3 -I vendor-fonts.py [font ...] [--out DIR]', file=sys.stderr)
+            sys.exit(2)
+        root = Path(args[i + 1]).resolve()
+        del args[i:i + 2]
+    keys = args or list(FONTS)
     for k in keys:
-        vendor(k, FONTS[k])
+        vendor(k, FONTS[k], root)

@@ -1,0 +1,10 @@
+正典は [.designs/20261030-landing-page-and-social-image.md](../../.designs/20261030-landing-page-and-social-image.md) §4・§6。
+
+atender ルートで:
+
+```sh
+python3 -I mocks/social/extract-phones.py                         # ストア画像 (assets/store/1.0.1) から端末を透過で切り出し → apps/lp/site/img/*.webp
+python3 -I mocks/store/vendor-fonts.py zenmaru --out apps/lp/site/fonts   # フォントの同梱 (初回のみ)
+bash mocks/social/render.sh                                       # SNS 画像 (1920×1080) + OG (1200×630) → assets/social/1.0.1/ と apps/lp/site/og-1200x630.png
+node mocks/social/lp-shots.mjs [baseUrl]                          # LP のスクショ + 崩れ検査
+```

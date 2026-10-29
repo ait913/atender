@@ -95,6 +95,10 @@ xcrun xcresulttool export attachments --path run.xcresult --output-path shots   
 
 正典は `.designs/20261029-store-screenshots.md` §6 (コマンド列) + §11 (申し送り)。`mocks/store/` (Bloom から移植した HTML + `render.mjs`、puppeteer-core + `/Applications/Google Chrome.app`) に、ストア用 seed `apps/api/scripts/seed-store-demo.ts` (架空の「生わさび専門学校 / 情報処理科」、平日のみ実行可) + 撮影 UITest `AtenderUITests/StoreShotsFlow.swift` (iPhone 16 Pro Max シミュレータ、status_bar 9:41) で素材を撮り、`node render.mjs` で 1320×2868 を出す。完成画像は `assets/store/<版>/slide-{1..5}.png` (現行 1.0.1)。`mocks/store/shots/` と `out/` は git 管理外。撮り直し時は `simctl uninstall` → seed → `build-for-testing` / `test-without-building` の順 (seed を作り直すと semester ID が変わり、アプリが旧 ID を覚えているため)。
 
+### LP / SNS 画像を更新する
+
+正典は `.designs/20261030-landing-page-and-social-image.md` §6 (挙動) と `mocks/social/README.md`。文言・レイアウトは `apps/lp/site/index.html` / `style.css` を直接編集。端末画像はストア画像 (`assets/store/<版>/`) から `python3 -I mocks/social/extract-phones.py` で作り直し、SNS / OG 画像は `bash mocks/social/render.sh`。ストア画像を作り直して端末の CSS 座標が変わったら extract-phones.py の定数を引き直す。デプロイは Coolify の `atender-lp` を deploy (POST)。
+
 ### TestFlight に配布 (CLI 完結・Xcode GUI 不要)
 
 有料 Developer Program (Team ID `2J3HYGP2K8`) 認証済。ASC API キーで CLI から archive → export → upload まで一気通貫。**署名周りは project.yml に焼き込み済** (`DEVELOPMENT_TEAM: 2J3HYGP2K8` / `CODE_SIGN_STYLE: Automatic`)。
@@ -155,6 +159,8 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
 
 - Web URL: https://atender.appily.run
 - API URL: https://atender-api.appily.run (health: `GET /healthz`)
+- LP URL: https://atender.aisaba.net (health: GET /healthz)
+- atender-lp: <Coolify 作成後に Leader が記入>
 - Coolify app uuid:
   - atender-api: `vrdxzvmakcxieyhfhayz5r8r`
   - atender-web: `xxg31wshj6rhjmnffju1bg5r`

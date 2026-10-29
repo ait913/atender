@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>Atender SNS 画像 (1920×1080)</title>
+<link rel="stylesheet" href="../../apps/lp/site/fonts/zenmaru.css">
+<style>
+:root {
+  --bg: #FFFFFF;
+  --glow: color-mix(in srgb, #1E96E6 18%, #FFFFFF);
+  --glow-mid: color-mix(in srgb, #1E96E6 6%, #FFFFFF);
+  --ink: #30415B;
+  --accent-600: #147FCC;
+  --phone-shadow: rgba(15, 23, 42, .28);
+  --shape-alpha-k: 2;
+  --hl: #56D8C3;
+  --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #FFFFFF; }
+body { color: var(--ink); font-family: var(--font); font-weight: 500; -webkit-font-smoothing: antialiased; }
+.canvas { width: 1920px; height: 1080px; position: relative; overflow: hidden; isolation: isolate;
+  background: radial-gradient(ellipse at 72% 82%, var(--glow) 0, var(--glow-mid) 35%, var(--bg) 67%); }
+.wordmark { position: absolute; left: 120px; top: 96px; width: 300px; height: 67px; object-fit: contain; }
+.heading { position: absolute; left: 120px; top: 300px; width: 820px; z-index: 3; }
+.small { margin: 0 0 22px; font-size: 50px; line-height: 1.4; font-weight: 700; letter-spacing: .04em; color: var(--accent-600); }
+h1 { margin: 0; font-size: 116px; line-height: 1.2; font-weight: 900; letter-spacing: .035em; color: var(--ink); white-space: pre-line; }
+em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-mix(in srgb, var(--hl) 45%, transparent) 60%); padding: 0 .04em; }
+.store-badge { position: absolute; left: 120px; top: 760px; height: 96px; width: auto; }
+.phones { position: absolute; right: 80px; bottom: 0; width: 860px; height: auto; z-index: 2; filter: drop-shadow(11px 27px 42px var(--phone-shadow)); }
+.shape { position: absolute; z-index: 0; width: var(--size); height: var(--size); border-radius: 28%; background: var(--shape-color); opacity: calc(var(--alpha) * var(--shape-alpha-k)); }
+</style>
+</head>
+<body>
+<div class="canvas" id="canvas">
+  <img class="wordmark" src="../../apps/lp/site/img/wordmark-navy.png" alt="Atender">
+  <div class="heading">
+    <p class="small" id="small"></p>
+    <h1 id="title"></h1>
+  </div>
+  <img class="store-badge" src="../../apps/lp/site/img/app-store-badge-ja.svg" alt="App Store からダウンロード">
+  <img class="phones" src="../../apps/lp/site/img/hero-phones.webp" alt="">
+</div>
+<script>
+const SMALL = '出席率、把握してる？';
+const LARGE = 'もう[出席率]で\n焦らない';
+const COLORS = ['#56D8C3', '#568CFC', '#8F7EFC', '#A978FA', '#FC6ABF', '#FD728E'];
+const SHAPES = [[1010, 120, 64, .18], [1180, 210, 40, .24], [1700, 130, 96, .12], [1840, 360, 52, .18],
+  [70, 930, 72, .14], [560, 900, 48, .22], [880, 980, 88, .10], [1500, 60, 44, .20]];
+const canvas = document.getElementById('canvas');
+document.getElementById('small').textContent = SMALL;
+const title = document.getElementById('title');
+LARGE.split(/\[|\]/).forEach((part, i) => {
+  if (i % 2) { const em = document.createElement('em'); em.className = 'hl'; em.textContent = part; title.append(em); }
+  else title.append(document.createTextNode(part));
+});
+SHAPES.forEach(([x, y, size, alpha], i) => {
+  const s = document.createElement('div');
+  s.className = 'shape';
+  s.style.left = x + 'px'; s.style.top = y + 'px';
+  s.style.setProperty('--size', size + 'px');
+  s.style.setProperty('--alpha', alpha);
+  s.style.setProperty('--shape-color', COLORS[i % 6]);
+  s.setAttribute('aria-hidden', 'true');
+  canvas.append(s);
+});
+// フォントと全画像の読み込み結果を確認してから撮影可能にする (mocks/store/index.html と同じ作法)。
+(async () => {
+  let loaded1 = [], loaded2 = [];
+  try {
+    [loaded1, loaded2] = await Promise.all([
+      document.fonts.load('900 116px "Zen Maru Gothic"', LARGE.replace(/[\[\]\n]/g, '')),
+      document.fonts.load('700 50px "Zen Maru Gothic"', SMALL)
+    ]);
+  } catch (error) { console.warn('フォントの読み込み失敗:', error); }
+  await document.fonts.ready;
+  document.documentElement.dataset.fontLoaded = String(loaded1.length > 0 && loaded2.length > 0);
+  const missing = await Promise.all(Array.from(document.images, async img => {
+    try { await img.decode(); return null; }
+    catch { return img.getAttribute('src'); }
+  }));
+  document.documentElement.dataset.missing = JSON.stringify(missing.filter(src => src !== null));
+  document.documentElement.dataset.ready = 'true';
+})();
+</script>
+</body>
+</html>
