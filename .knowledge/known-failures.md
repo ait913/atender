@@ -219,6 +219,10 @@ iOS の推移: 317 (2026-07-23) − 8 (設計 §10 が「削除して置換」�
 
 ## Web (apps/web, Vitest + RTL + MSW)
 
+### ★ 最新実測 (2026-10-29, `feature/b21-calendar-web` `3663804` + Reviewer テスト 40 本)
+
+`pnpm exec vitest run` → **7 failed files / 26 failed | 343 passed (369)**。失敗 26 件は着手前 (26 failed / 303 passed) と**名前集合が完全一致**、新規 fail 0、未分類 0 (全て下記 2026-07-29 の分類のまま: `Home` 9 / `Settings` 4 / `SignIn` 5 / `Stats` 3 / `Templates` 2 / `Verify` 2 / `Setup` 1)。以下の 2026-07-29 の数字は履歴。
+
 ### ★ 実測ベースライン (2026-07-29, commit `fcfdc4d`, Researcher / カレンダー3レーン着手時)
 
 `cd apps/web ; pnpm exec vitest run` → **Test Files 7 failed | 37 passed (44) / Tests 27 failed | 231 passed (258)**

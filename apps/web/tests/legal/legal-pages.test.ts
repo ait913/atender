@@ -57,8 +57,7 @@ describe("[B20 #L] legal pages (static content)", () => {
     const html = read("privacy");
     for (const s of [
       "Atender 運営者",
-      "iPhoneのカレンダーから読み込んだ予定",
-      "サーバーに送信して保存します",
+      "提供を終了しました",
       "IPアドレス",
       "Resend",
       "Cloudflare",

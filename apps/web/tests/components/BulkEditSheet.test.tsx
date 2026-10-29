@@ -81,54 +81,6 @@ describe("BulkEditSheet", () => {
     expect(clear).toHaveBeenCalledWith(expect.objectContaining({ dates }), expect.anything());
   });
 
-  it("[W4] adds all-day personal events for every selected date (start/end = JST 00:00 / 翌 00:00)", async () => {
-    // 実装は POST /api/personal-events をファンアウトする。msw で実リクエスト body を捕捉して検証する
-    const bodies: Array<Record<string, unknown>> = [];
-    server.use(
-      http.post("*/api/personal-events", async ({ request }) => {
-        bodies.push((await request.json()) as Record<string, unknown>);
-        return HttpResponse.json({ event: { id: `event-${bodies.length}` } }, { status: 201 });
-      }),
-    );
-    const { createEvent, createEventAsync } = renderSheet();
-
-    expect(screen.getByRole("button", { name: "選択日すべてに終日予定を追加" })).toBeDisabled();
-    fireEvent.change(screen.getByPlaceholderText(/タイトル/), { target: { value: "バイト" } });
-    fireEvent.click(screen.getByRole("button", { name: "選択日すべてに終日予定を追加" }));
-
-    // hook 経由 or 直 fetch のどちらでも body を採る
-    await waitFor(() =>
-      expect(bodies.length + createEvent.mock.calls.length + createEventAsync.mock.calls.length).toBe(3),
-    );
-    const sent =
-      bodies.length > 0
-        ? bodies
-        : [...createEvent.mock.calls, ...createEventAsync.mock.calls].map((c) => c[0] as Record<string, unknown>);
-
-    expect(sent).toHaveLength(3);
-    for (const date of dates) {
-      expect(sent).toContainEqual(
-        expect.objectContaining({
-          title: "バイト",
-          isAllDay: true,
-          start: new Date(`${date}T00:00:00.000+09:00`).toISOString(),
-          end: new Date(`${date}T00:00:00.000+09:00`).toISOString().replace(/^.*$/, () =>
-            new Date(new Date(`${date}T00:00:00.000+09:00`).getTime() + 86400000).toISOString(),
-          ),
-        }),
-      );
-    }
-    // semesterId は廃止 (T3)
-    for (const body of sent) {
-      expect(body).not.toHaveProperty("semesterId");
-      expect(body).not.toHaveProperty("date");
-      expect(body).not.toHaveProperty("startMinute");
-      // 送信 instant は UTC "Z" 形式であること (サーバ zod .datetime() は offset 付きを拒否する)
-      expect(String(body.start)).toMatch(/Z$/);
-      expect(String(body.end)).toMatch(/Z$/);
-    }
-  });
-
   it("calls onDone after a successful bulk operation", () => {
     const { onDone } = renderSheet();
 

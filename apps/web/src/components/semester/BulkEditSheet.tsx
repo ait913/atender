@@ -1,15 +1,11 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { api } from "@/api/client";
-import { jstDayStartIso, jstNextDayStartIso } from "@/lib/personalEventDays";
 import {
   useBulkClearAttendance,
   useBulkCreateTimetableSuspensions,
   useBulkMarkAttendance,
   useBulkRemoveTimetableSuspensions,
 } from "@/api/hooks";
-import type { BulkMarkAttendanceInput, PersonalEventResponse } from "@/api/hooks/types";
-import { QK } from "@/api/queryKeys";
+import type { BulkMarkAttendanceInput } from "@/api/hooks/types";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { Button, Toast } from "@/components/ui";
 
@@ -32,20 +28,17 @@ const statuses: Array<{ status: BulkStatus; label: string }> = [
 ];
 
 export function BulkEditSheet({ open, onClose, dates, semesterId, onDone }: Props) {
-  const queryClient = useQueryClient();
   const [status, setStatus] = useState<BulkStatus | null>(null);
   const [overwrite, setOverwrite] = useState(false);
   const [reason, setReason] = useState("");
-  const [eventTitle, setEventTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [eventPending, setEventPending] = useState(false);
   const bulkMark = useBulkMarkAttendance();
   const bulkClear = useBulkClearAttendance();
   const bulkCreateSuspensions = useBulkCreateTimetableSuspensions();
   const bulkRemoveSuspensions = useBulkRemoveTimetableSuspensions();
   const dateLabel = useMemo(() => formatDateList(dates), [dates]);
-  const anyPending = bulkMark.isPending || bulkClear.isPending || bulkCreateSuspensions.isPending || bulkRemoveSuspensions.isPending || eventPending;
+  const anyPending = bulkMark.isPending || bulkClear.isPending || bulkCreateSuspensions.isPending || bulkRemoveSuspensions.isPending;
 
   function showToast(message: string) {
     setToast(message);
@@ -59,33 +52,6 @@ export function BulkEditSheet({ open, onClose, dates, semesterId, onDone }: Prop
 
   function handleError(err: unknown) {
     setError(err instanceof Error ? err.message : "操作に失敗しました");
-  }
-
-  async function addPersonalEvents() {
-    const title = eventTitle.trim();
-    if (!title) return;
-    setError(null);
-    setEventPending(true);
-    const results = await Promise.allSettled(
-      dates.map((date) =>
-        api<PersonalEventResponse>("/api/personal-events", {
-          method: "POST",
-          body: { title, start: jstDayStartIso(date), end: jstNextDayStartIso(date), isAllDay: true },
-        }),
-      ),
-    );
-    setEventPending(false);
-    const successCount = results.filter((result) => result.status === "fulfilled").length;
-    const failedCount = results.length - successCount;
-    queryClient.invalidateQueries({ queryKey: ["personal-events"] });
-    queryClient.invalidateQueries({ queryKey: ["day"] });
-    for (const date of dates) queryClient.invalidateQueries({ queryKey: QK.dayDetail(date) });
-    if (failedCount === 0) {
-      finish(`${successCount}日に予定を追加しました`);
-    } else {
-      showToast(`${successCount}件 追加、${failedCount}件 失敗しました`);
-      setError("一部の予定を追加できませんでした");
-    }
   }
 
   return (
@@ -194,20 +160,6 @@ export function BulkEditSheet({ open, onClose, dates, semesterId, onDone }: Prop
               休講を解除
             </Button>
           </div>
-        </section>
-
-        <section className="space-y-3 border-t border-border-subtle pt-4">
-          <h3 className="text-sm font-bold">予定</h3>
-          <input
-            value={eventTitle}
-            onChange={(event) => setEventTitle(event.target.value)}
-            maxLength={80}
-            placeholder="タイトル"
-            className="min-h-12 w-full rounded-xl border border-border-default bg-bg-muted px-3 text-sm outline-none focus:border-accent-500"
-          />
-          <Button type="button" variant="secondary" disabled={!eventTitle.trim() || anyPending} onClick={() => void addPersonalEvents()}>
-            選択日すべてに終日予定を追加
-          </Button>
         </section>
       </BottomSheet>
       <Toast message={toast} />

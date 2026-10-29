@@ -142,92 +142,15 @@ describe("DayDetailSheet", () => {
     recurrenceSpec: null,
   } as any;
 
-  it("[W3] 繰り返し occurrence の削除は RecurrenceEditDialog を出し、選んだ scope を API に渡す", async () => {
-    const deleteMutate = vi.fn();
-    mockHooks({ ...baseDetail, occurrences: [], personalEvents: [recurringOccurrence] });
-    vi.mocked(useDeletePersonalEvent).mockReturnValue({ mutate: deleteMutate, mutateAsync: deleteMutate, isPending: false } as any);
 
-    render(<DayDetailSheet date="2026-05-13" onClose={vi.fn()} />);
-    fireEvent.click(screen.getByLabelText("削除"));
-
-    // ダイアログが出るまでは API を呼ばない
-    expect(deleteMutate).not.toHaveBeenCalled();
-    expect(await screen.findByText("この予定のみ")).toBeInTheDocument();
-    expect(screen.getByText("これ以降のすべての予定")).toBeInTheDocument();
-    expect(screen.getByText("すべての予定")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("これ以降のすべての予定"));
-    fireEvent.click(screen.getAllByRole("button", { name: "削除" }).at(-1)!);
-
-    await waitFor(() => expect(deleteMutate).toHaveBeenCalled());
-    expect(JSON.stringify(deleteMutate.mock.calls[0][0])).toContain("future");
-    expect(JSON.stringify(deleteMutate.mock.calls[0][0])).toContain("series-rec");
-    expect(JSON.stringify(deleteMutate.mock.calls[0][0])).toContain(recurringOccurrence.occurrenceDate);
-  });
-
-  it("[W3] 非繰り返しの削除はダイアログを出さず即実行する", async () => {
-    const deleteMutate = vi.fn();
-    mockHooks({ ...baseDetail, occurrences: [], personalEvents: [singleOccurrence] });
-    vi.mocked(useDeletePersonalEvent).mockReturnValue({ mutate: deleteMutate, mutateAsync: deleteMutate, isPending: false } as any);
-
-    render(<DayDetailSheet date="2026-05-13" onClose={vi.fn()} />);
-    fireEvent.click(screen.getByLabelText("削除"));
-
-    await waitFor(() => expect(deleteMutate).toHaveBeenCalled());
-    expect(screen.queryByText("これ以降のすべての予定")).not.toBeInTheDocument();
-    expect(JSON.stringify(deleteMutate.mock.calls[0][0])).toContain("series-single");
-  });
-
-  it("[W3] 繰り返し occurrence の編集は保存時に RecurrenceEditDialog を挟み、scope を API に渡す (§6.5)", async () => {
-    const updateMutate = vi.fn();
-    mockHooks({ ...baseDetail, occurrences: [], personalEvents: [recurringOccurrence] });
-    vi.mocked(useUpdatePersonalEvent).mockReturnValue({ mutate: updateMutate, mutateAsync: updateMutate, isPending: false } as any);
-
-    render(<DayDetailSheet date="2026-05-13" onClose={vi.fn()} />);
-    fireEvent.click(screen.getByLabelText("編集"));
-    fireEvent.click(screen.getAllByRole("button", { name: "保存" }).at(-1)!);
-
-    // 3 択が出るまで PATCH しない
-    expect(updateMutate).not.toHaveBeenCalled();
-    expect(await screen.findByText("この予定のみ")).toBeInTheDocument();
-    expect(screen.getByText("これ以降のすべての予定")).toBeInTheDocument();
-    expect(screen.getByText("すべての予定")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("すべての予定"));
-    fireEvent.click(screen.getAllByRole("button", { name: "保存" }).at(-1)!);
-
-    await waitFor(() => expect(updateMutate).toHaveBeenCalled());
-    // seriesId は hook 側に束ねられるため、ここで検証するのは「選んだ scope と originalDate が渡る」こと
-    const payload = JSON.stringify(updateMutate.mock.calls[0][0]);
-    expect(payload).toContain('"editScope":"all"');
-    expect(payload).toContain(recurringOccurrence.occurrenceDate);
-  });
-
-  it("[W3] 非繰り返しの編集はダイアログを出さず editScope=all で即 PATCH する", async () => {
-    const updateMutate = vi.fn();
-    mockHooks({ ...baseDetail, occurrences: [], personalEvents: [singleOccurrence] });
-    vi.mocked(useUpdatePersonalEvent).mockReturnValue({ mutate: updateMutate, mutateAsync: updateMutate, isPending: false } as any);
-
-    render(<DayDetailSheet date="2026-05-13" onClose={vi.fn()} />);
-    fireEvent.click(screen.getByLabelText("編集"));
-    fireEvent.click(screen.getAllByRole("button", { name: "保存" }).at(-1)!);
-
-    await waitFor(() => expect(updateMutate).toHaveBeenCalled());
-    expect(screen.queryByText("これ以降のすべての予定")).not.toBeInTheDocument();
-    expect(JSON.stringify(updateMutate.mock.calls[0][0])).toContain('"editScope":"all"');
-  });
-
-  it("[§7] 予定行は終日/時刻・場所・繰り返しを表示する", () => {
-    mockHooks({
-      ...baseDetail,
-      occurrences: [],
-      personalEvents: [{ ...recurringOccurrence, location: "渋谷店" }],
-    });
+  it("[AW6] 日別シートに「予定」節が無く、授業の節は従来どおり出る", () => {
+    mockHooks();
 
     render(<DayDetailSheet date="2026-05-13" onClose={vi.fn()} />);
 
-    expect(screen.getByText("繰り返し予定")).toBeInTheDocument();
-    expect(document.body.textContent).toContain("終日");
-    expect(document.body.textContent).toContain("渋谷店");
+    expect(screen.getByText(/^授業 \(1\)$/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /予定/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("予定はありません")).not.toBeInTheDocument();
   });
+
 });

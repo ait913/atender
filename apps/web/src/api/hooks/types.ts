@@ -14,16 +14,11 @@ import type {
   CourseSuspensionDto,
   CourseUpdateInput,
   CreateFriendshipInput,
-  CreateRoomEventInput,
   CreateRoomInput,
   DayDetailDto,
   DepartmentDto,
   EffectiveRuleResponse,
   FriendshipDto,
-  IcsImportCommitResult,
-  IcsImportDto,
-  IcsImportPreview,
-  IcsTitleRuleDto,
   MarkAllPresentInput,
   MarkAllPresentResponse,
   MarkAttendanceInput,
@@ -32,14 +27,7 @@ import type {
   MeetingDto,
   MeetingUpdateInput,
   OccurrenceDto,
-  PersonalEventCreateInput,
-  PersonalEventDeleteQuery,
-  PersonalEventOccurrenceDto,
-  PersonalEventSeriesDto,
-  PersonalEventUpdateInput,
-  RecurrenceSpec,
   RoomDto,
-  RoomEventDto,
   RoomMemberDto,
   RoomSummaryDto,
   RoomWeekDto,
@@ -55,7 +43,6 @@ import type {
   TemplateDto,
   TimetableSuspensionCreateInput,
   TimetableSuspensionDto,
-  UpdateRoomEventInput,
   UpdateRoomInput,
   UserDto,
   UserSearchDto,
@@ -89,8 +76,6 @@ export type CourseSuspensionsResponse = { suspensions: CourseSuspensionDto[] };
 export type CourseSuspensionResponse = { suspension: CourseSuspensionDto };
 export type TimetableSuspensionsResponse = { suspensions: TimetableSuspensionDto[] };
 export type TimetableSuspensionResponse = { suspension: TimetableSuspensionDto };
-export type PersonalEventsResponse = { events: PersonalEventOccurrenceDto[] };
-export type PersonalEventResponse = { event: PersonalEventSeriesDto };
 export type DayDetailResponse = DayDetailDto;
 export type FriendshipsResponse = { friendships: FriendshipDto[] };
 export type FriendshipResponse = { friendship: FriendshipDto };
@@ -98,12 +83,7 @@ export type UsersSearchResponse = { users: UserSearchDto[] };
 export type RoomsResponse = { rooms: RoomSummaryDto[] };
 export type RoomResponse = { room: RoomDto };
 export type RoomMembersResponse = { members: RoomMemberDto[] };
-export type RoomEventsResponse = { events: RoomEventDto[] };
-export type RoomEventResponse = { event: RoomEventDto };
 export type RoomInviteResponse = { inviteCode: string; inviteExpiresAt: string };
-export type IcsImportsResponse = { imports: IcsImportDto[] };
-export type IcsTitleRulesResponse = { rules: IcsTitleRuleDto[] };
-export type IcsTitleRuleResponse = { rule: IcsTitleRuleDto };
 
 export type {
   BulkClearAttendanceInput,
@@ -128,18 +108,7 @@ export type {
   DayDetailDto,
   CreateFriendshipInput,
   CreateRoomInput,
-  CreateRoomEventInput,
-  IcsImportCommitResult,
-  IcsImportPreview,
-  IcsTitleRuleDto,
-  PersonalEventCreateInput,
-  PersonalEventDeleteQuery,
-  PersonalEventOccurrenceDto,
-  PersonalEventSeriesDto,
-  PersonalEventUpdateInput,
-  RecurrenceSpec,
   UpdateRoomInput,
-  UpdateRoomEventInput,
   RoomWeekDto,
   SchoolSearchQuery,
   SemesterCreateInput,

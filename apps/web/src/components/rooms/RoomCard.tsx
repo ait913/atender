@@ -26,12 +26,6 @@ export function RoomCard({ room, onClick }: { room: RoomSummaryDto; onClick: () 
           {room.myRole}
         </span>
       </div>
-      {room.upcomingEvent ? (
-        <p className="relative mt-4 inline-flex items-center gap-2 rounded-full bg-bg-base/60 px-3 py-1.5 text-xs font-bold text-fg-primary backdrop-blur">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent-500 shadow-glow" />
-          {room.upcomingEvent.start.slice(5, 16).replace("T", " ")} · {room.upcomingEvent.title}
-        </p>
-      ) : null}
     </button>
   );
 }

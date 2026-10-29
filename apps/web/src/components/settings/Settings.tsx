@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { api } from "@/api/client";
 import { useMe } from "@/api/hooks";
-import { GoogleCalendarSection } from "@/components/avatar/GoogleCalendarSection";
 import { AttendanceRuleSheet } from "@/components/sheet/AttendanceRuleSheet";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
 import { SchoolDeptEditSheet } from "@/components/sheet/SchoolDeptEditSheet";
@@ -14,7 +13,7 @@ import { ProfileEditSheet } from "./ProfileEditSheet";
 import { RequiredRateSheet } from "./RequiredRateSheet";
 import { SettingsRow, SettingsSection } from "./SettingsSection";
 
-type Sheet = "profile" | "school" | "rules" | "semesters" | "google" | "requiredRate" | null;
+type Sheet = "profile" | "school" | "rules" | "semesters" | "requiredRate" | null;
 
 export function Settings() {
   const me = useMe();
@@ -100,11 +99,6 @@ export function Settings() {
         <SettingsRow label="学期管理" onClick={() => setSheet("semesters")} />
       </SettingsSection>
 
-      <SettingsSection title="カレンダー連携">
-        <SettingsRow label="Google Calendar 連携" onClick={() => setSheet("google")} />
-        <SettingsRow label="カレンダー設定 (ICS 等)" onClick={() => void navigate({ to: "/settings/calendar" })} />
-      </SettingsSection>
-
       <SettingsSection title="表示">
         <ThemeRow />
       </SettingsSection>
@@ -129,7 +123,7 @@ export function Settings() {
       <ConfirmDialog
         open={confirmDeleteOpen}
         title="アカウントを削除しますか?"
-        body="時間割・出欠・予定・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。ルームに追加した予定と公開した時間割テンプレートは、作成者を伏せて残ります。"
+        body="時間割・出欠・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。公開した時間割テンプレートは、作成者を伏せて残ります。"
         confirmLabel="削除する"
         onConfirm={() => void deleteAccount()}
         onCancel={() => setConfirmDeleteOpen(false)}
@@ -140,9 +134,6 @@ export function Settings() {
       <AttendanceRuleSheet open={sheet === "rules"} onClose={() => setSheet(null)} />
       <RequiredRateSheet open={sheet === "requiredRate"} onClose={() => setSheet(null)} />
       <SemesterListSheet open={sheet === "semesters"} onClose={() => setSheet(null)} />
-      <BottomSheet open={sheet === "google"} onClose={() => setSheet(null)} title="Google Calendar 連携">
-        <GoogleCalendarSection />
-      </BottomSheet>
     </div>
   );
 }
