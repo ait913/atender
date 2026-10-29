@@ -7,6 +7,16 @@ struct SemesterProposal: Equatable {
 }
 
 enum SemesterRollover {
+    static func initialProposal(today: String) -> SemesterProposal {
+        let year = Int(today.prefix(4)) ?? 0
+        let month = Int(today.dropFirst(5).prefix(2)) ?? 0
+        if (4...9).contains(month) {
+            return SemesterProposal(name: "\(year) 前期", startDate: "\(year)-04-01", endDate: "\(year)-09-30")
+        }
+        let startYear = month >= 10 ? year : year - 1
+        return SemesterProposal(name: "\(startYear) 後期", startDate: "\(startYear)-10-01", endDate: "\(startYear + 1)-03-31")
+    }
+
     static func latest(_ semesters: [SemesterDto]) -> SemesterDto? {
         semesters.sorted {
             if $0.startDate != $1.startDate { return $0.startDate > $1.startDate }

@@ -18,6 +18,9 @@ export const UserTimetableDto = z.object({
   meetings: z.array(MeetingDto),
   createdAt: z.string(),
   updatedAt: z.string(),
+  publishedTemplate: z.object({
+    id: z.string(), title: z.string(), isPublic: z.boolean(), updatedAt: z.string(),
+  }).nullable().optional(),
 });
 
 export const UserTimetableCreateInput = TemplateCreateInput.omit({

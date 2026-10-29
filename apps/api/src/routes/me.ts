@@ -31,6 +31,10 @@ type MeUser = {
 };
 
 async function getMeResponse(user: MeUser) {
+  const [school, department] = await Promise.all([
+    user.schoolId != null ? prisma.school.findUnique({ where: { id: user.schoolId }, select: { name: true } }) : null,
+    user.departmentId != null ? prisma.department.findUnique({ where: { id: user.departmentId }, select: { name: true } }) : null,
+  ]);
   const hasUserTimetable = user.defaultSemesterId
     ? await prisma.userTimetable.count({ where: { userId: user.id, semesterId: user.defaultSemesterId } }).then((count) => count >= 1)
     : false;
@@ -52,6 +56,8 @@ async function getMeResponse(user: MeUser) {
       defaultSemesterId: user.defaultSemesterId,
       schoolId: user.schoolId,
       departmentId: user.departmentId,
+      schoolName: school?.name ?? null,
+      departmentName: department?.name ?? null,
       requiredAttendanceRate: user.requiredAttendanceRate,
     },
     setupStatus,

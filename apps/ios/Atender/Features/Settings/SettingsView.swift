@@ -23,7 +23,10 @@ struct SettingsView: View {
                 profileCard
                 SettingsSection(title: "アカウント", rows: [
                     SettingsRowSpec(id: "settings-row-profile", label: "プロフィール編集") { activeSheet = .profile },
-                    SettingsRowSpec(id: "settings-row-school", label: "学校・学科") { activeSheet = .school },
+                    SettingsRowSpec(id: "settings-row-school", label: "学校・学科", trailingText: {
+                        let names = [user?.schoolName, user?.departmentName].compactMap { $0 }.filter { !$0.isEmpty }
+                        return names.isEmpty ? nil : names.joined(separator: " / ")
+                    }()) { activeSheet = .school },
                 ])
                 SettingsSection(title: "出席", rows: [
                     SettingsRowSpec(id: "settings-row-requiredRate", label: "必要出席率", trailingText: "\(user?.requiredAttendanceRate ?? 70)%") { activeSheet = .requiredRate },

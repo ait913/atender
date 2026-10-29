@@ -11,6 +11,8 @@ export const MeResponseDto = z.object({
     defaultSemesterId: z.string().nullable(),
     schoolId: z.string().nullable(),
     departmentId: z.string().nullable(),
+    schoolName: z.string().nullable().optional(),
+    departmentName: z.string().nullable().optional(),
     requiredAttendanceRate: z.number().int(),
   }),
   setupStatus: z.object({

@@ -20,6 +20,8 @@ struct UserDto: Codable, Equatable, Identifiable {
     let schoolId: String?
     let departmentId: String?
     let requiredAttendanceRate: Int
+    var schoolName: String? = nil
+    var departmentName: String? = nil
 }
 
 struct MeResponse: Codable, Equatable {
@@ -282,6 +284,7 @@ struct TemplateDto: Codable, Equatable, Identifiable {
     let updatedAt: String
     let schoolName: String
     let departmentName: String
+    var daysOfWeek: [Int]? = nil
 }
 
 struct TemplateSearchQuery: Equatable {
@@ -336,9 +339,21 @@ struct TemplatePublishInput: Codable, Equatable {
     var term: String?
 }
 
+struct PublishedTemplateRef: Codable, Equatable {
+    let id: String
+    let title: String
+    let isPublic: Bool
+    let updatedAt: String
+}
+
+struct TemplatePatchInput: Codable, Equatable {
+    var isPublic: Bool? = nil
+}
+
 struct TemplateCopyInput: Codable, Equatable {
     let semesterId: String
     var title: String?
+    var replaceExisting: Bool? = nil
 }
 
 struct CourseCreateInput: Codable, Equatable {
@@ -436,6 +451,7 @@ struct UserTimetableDto: Codable, Equatable, Identifiable {
     let meetings: [MeetingDto]
     let createdAt: String
     let updatedAt: String
+    var publishedTemplate: PublishedTemplateRef? = nil
 }
 
 struct UserTimetableCreateInput: Codable, Equatable {

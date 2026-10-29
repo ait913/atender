@@ -90,7 +90,7 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
     case .friendshipAdd:
         return [.friendships()]
     case .templateCopy:
-        return [.userTimetables(), .me()]
+        return [.userTimetables(), .me(), QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     }
 }
 
