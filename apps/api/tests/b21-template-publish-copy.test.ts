@@ -600,3 +600,59 @@ describe("[b21 C19] account deletion keeps the link id", () => {
     await expect(db.userTimetable.count({ where: { id: c.userTimetable.id } })).resolves.toBe(0);
   });
 });
+
+describe("[b21 C12c] copy of a template whose meeting references a period without a daySlot", () => {
+  async function setupBroken() {
+    const db = prisma();
+    const { school, department } = await createSchoolDepartment(db);
+    const author = await createTestUser(db, { email: "author-c12c@example.test" });
+    const me = await createTestUser(db, { email: "me-c12c@example.test", schoolId: school.id, departmentId: department.id });
+    const semester = await createSemester(db, me.id);
+    const cookie = await createSessionCookie(db, me.id);
+    const template = await seedTemplate(db, { authorUserId: author.id, schoolId: school.id, departmentId: department.id });
+    // daySlots を 1 限のみにし、meeting は 2 限を参照させる
+    await db.templateDaySlot.deleteMany({ where: { templateId: template.id, periodIndex: 2 } });
+    await db.templateMeeting.updateMany({ where: { templateId: template.id }, data: { startPeriodIndex: 2 } });
+    return { db, me, semester, cookie, template };
+  }
+
+  function expectDaySlotNotFound(body: unknown) {
+    const err = (body as { error?: { code?: string; details?: { reason?: string } } }).error;
+    const direct = err?.code === "DAY_SLOT_NOT_FOUND";
+    const viaReason = err?.code === "VALIDATION_ERROR" ? err?.details?.reason === "DAY_SLOT_NOT_FOUND" : false;
+    expect(direct || viaReason, JSON.stringify(err)).toBe(true);
+  }
+
+  it("[C12c-a] replaceExisting:true: 400 DAY_SLOT_NOT_FOUND, old UT / courses / attendance intact, copyCount unchanged", async () => {
+    const s = await setupBroken();
+    const existing = await createUserTimetable(s.db, s.me.id, s.semester.id, { title: "既存" });
+    const occ = await createOccurrence(s.db, { meetingId: existing.meeting.id, courseId: existing.course.id });
+    await s.db.attendanceRecord.create({ data: { occurrenceId: occ.id, userId: s.me.id, status: "PRESENT" } });
+
+    const { res, body } = await copy(s.cookie, s.template.id, { semesterId: s.semester.id, replaceExisting: true });
+
+    expect(res.status).toBe(400);
+    expectDaySlotNotFound(body);
+    await expect(s.db.userTimetable.findUniqueOrThrow({ where: { id: existing.userTimetable.id } })).resolves.toMatchObject({ title: "既存" });
+    await expect(s.db.userTimetable.count({ where: { userId: s.me.id, semesterId: s.semester.id } })).resolves.toBe(1);
+    await expect(s.db.meeting.count({ where: { userTimetableId: existing.userTimetable.id } })).resolves.toBe(1);
+    await expect(s.db.course.count({ where: { id: existing.course.id } })).resolves.toBe(1);
+    await expect(s.db.meetingOccurrence.count({ where: { id: occ.id } })).resolves.toBe(1);
+    await expect(s.db.attendanceRecord.findUniqueOrThrow({ where: { occurrenceId: occ.id } })).resolves.toMatchObject({ status: "PRESENT" });
+    await expect(s.db.timetableTemplate.findUniqueOrThrow({ where: { id: s.template.id } })).resolves.toMatchObject({ copyCount: 0 });
+  });
+
+  it("[C12c-b] no UT in the semester, plain copy: 400, no UserTimetable created, copyCount unchanged", async () => {
+    const s = await setupBroken();
+
+    const { res, body } = await copy(s.cookie, s.template.id, { semesterId: s.semester.id });
+
+    expect(res.status).toBe(400);
+    expectDaySlotNotFound(body);
+    await expect(s.db.userTimetable.count({ where: { userId: s.me.id } })).resolves.toBe(0);
+    const list = await json(await app.request("/api/user-timetables", { headers: { Cookie: s.cookie } }));
+    const items = Array.isArray(list) ? list : (list.userTimetables ?? list.items ?? []);
+    expect(items).toHaveLength(0);
+    await expect(s.db.timetableTemplate.findUniqueOrThrow({ where: { id: s.template.id } })).resolves.toMatchObject({ copyCount: 0 });
+  });
+});
