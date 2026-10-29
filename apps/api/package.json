@@ -26,7 +26,6 @@
     "better-sqlite3": "^11.7.0",
     "dayjs": "^1.11.13",
     "hono": "4.13.13",
-    "resend": "^6.12.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
