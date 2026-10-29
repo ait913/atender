@@ -13,14 +13,14 @@ final class B17BuildVersionTests: XCTestCase {
         return url
     }
 
-    /// [#B61] project.yml の CFBundleVersion が "20"、ShortVersion は "1.0" のまま
-    func testB61ProjectYmlBundleVersionIs20() throws {
+    /// [#B61] project.yml の CFBundleVersion が "21"、ShortVersion は "1.0.1"
+    func testB61ProjectYmlBundleVersionIs21() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("project.yml"), encoding: .utf8)
-        XCTAssertTrue(yml.contains("CFBundleVersion: \"20\""),
-                      "[#B61] project.yml に CFBundleVersion: \"20\" が無い")
-        XCTAssertTrue(yml.contains("CFBundleShortVersionString: \"1.0\""),
-                      "[#B61] CFBundleShortVersionString が \"1.0\" でない")
-        XCTAssertFalse(yml.contains("CFBundleVersion: \"19\""), "[#B61] 旧 build 19 の記述が残っている")
+        XCTAssertTrue(yml.contains("CFBundleVersion: \"21\""),
+                      "[#B61] project.yml に CFBundleVersion: \"21\" が無い")
+        XCTAssertTrue(yml.contains("CFBundleShortVersionString: \"1.0.1\""),
+                      "[#B61] CFBundleShortVersionString が \"1.0.1\" でない")
+        XCTAssertFalse(yml.contains("CFBundleVersion: \"20\""), "[#B61] 旧 build 20 の記述が残っている")
     }
 
     /// [#B61] 生成物 Info.plist と生成元 project.yml が一致する (片側編集の検出)
@@ -29,12 +29,12 @@ final class B17BuildVersionTests: XCTestCase {
         let data = try Data(contentsOf: plistURL)
         let parsed = try PropertyListSerialization.propertyList(from: data, format: nil)
         let plist = try XCTUnwrap(parsed as? [String: Any], "[#B61] Info.plist が dict でない")
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "20", "[#B61] Info.plist の CFBundleVersion が 20 でない")
-        XCTAssertEqual(plist["CFBundleShortVersionString"] as? String, "1.0", "[#B61] ShortVersion が 1.0 でない")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "21", "[#B61] Info.plist の CFBundleVersion が 21 でない")
+        XCTAssertEqual(plist["CFBundleShortVersionString"] as? String, "1.0.1", "[#B61] ShortVersion が 1.0.1 でない")
     }
 
-    /// [#B62] 実行中バンドルの CFBundleVersion も 19 (= 実際にビルドに乗っている)
-    func testB62RunningBundleVersionIs19() throws {
+    /// [#B62] 実行中バンドルの CFBundleVersion が読めて MIN_IOS_BUILD 以上 (= 実際にビルドに乗っている)。値そのものは pin しない
+    func testB62RunningBundleVersionIsAtLeastMinBuild() throws {
         let bundle = Bundle(for: type(of: self))
         let host = Bundle.allBundles.first { ($0.bundleIdentifier ?? "").hasSuffix("net.appily.atender") } ?? bundle
         let version = (host.infoDictionary?["CFBundleVersion"] as? String)

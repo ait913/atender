@@ -69,12 +69,12 @@ final class B20PrivacyManifestTests: XCTestCase {
         try String(contentsOf: repoRoot.appendingPathComponent(rel), encoding: .utf8)
     }
 
-    func testV1ProjectYmlIsBuild20() throws {
+    func testV1ProjectYmlIsBuild21() throws {
         let yml = try readText("apps/ios/project.yml")
-        XCTAssertTrue(yml.contains(#"CFBundleVersion: "20""#))
-        XCTAssertFalse(yml.contains(#"CFBundleVersion: "19""#))
-        XCTAssertFalse(yml.contains(#""19""#), "project.yml に \"19\" が残っていない")
-        XCTAssertTrue(yml.contains(#"CFBundleShortVersionString: "1.0""#))
+        XCTAssertTrue(yml.contains(#"CFBundleVersion: "21""#))
+        XCTAssertFalse(yml.contains(#"CFBundleVersion: "20""#))
+        XCTAssertFalse(yml.contains(#""20""#), "project.yml に \"20\" が残っていない")
+        XCTAssertTrue(yml.contains(#"CFBundleShortVersionString: "1.0.1""#))
     }
 
     func testV2MinIOSBuildStays12AndNotAboveBundleVersion() throws {
@@ -83,13 +83,13 @@ final class B20PrivacyManifestTests: XCTestCase {
         let m = try XCTUnwrap(regex.firstMatch(in: ts, range: NSRange(ts.startIndex..., in: ts)))
         let value = Int(String(ts[try XCTUnwrap(Range(m.range(at: 1), in: ts))]))
         XCTAssertEqual(value, 12, "設計 §12: MIN_IOS_BUILD は 12 据え置き")
-        XCTAssertLessThanOrEqual(try XCTUnwrap(value), 20)
+        XCTAssertLessThanOrEqual(try XCTUnwrap(value), 21)
     }
 
-    func testV3InfoPlistBuild20() throws {
+    func testV3InfoPlistBuild21() throws {
         let data = try Data(contentsOf: repoRoot.appendingPathComponent("apps/ios/Atender/Info.plist"))
         let plist = try XCTUnwrap(try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "20")
-        XCTAssertEqual(Bundle.main.infoDictionary?["CFBundleVersion"] as? String, "20")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "21")
+        XCTAssertEqual(Bundle.main.infoDictionary?["CFBundleVersion"] as? String, "21")
     }
 }

@@ -27,7 +27,7 @@ async function main() {
   // school + department (seed 済の先頭を使う。無ければ作る)
   let school = await prisma.school.findFirst({ orderBy: { name: "asc" } });
   if (!school) {
-    school = await prisma.school.create({ data: { name: "デモ専門学校", kind: "SENSHU" as any } });
+    school = await prisma.school.create({ data: { name: "デモ専門学校", kind: "VOCATIONAL_SCHOOL" } });
   }
   let department = await prisma.department.findFirst({ where: { schoolId: school.id } });
   if (!department) {
