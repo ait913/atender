@@ -7,6 +7,7 @@ struct CourseDetailModal: View {
     @State private var timetables: [UserTimetableDto] = []
     @State private var editOpen = false
     @State private var isLoading = false
+    @State private var userRate = 70
 
     var body: some View {
         ScrollView {
@@ -31,6 +32,7 @@ struct CourseDetailModal: View {
             .padding(.bottom, Space.s6)
         }
         .task { await load() }
+        .task { userRate = (try? await environment.meRepository.me())?.user.requiredAttendanceRate ?? 70 }
         .background {
             if let found = findCourse() {
                 CourseEditModal(isPresented: $editOpen, timetableId: found.timetable.id, course: found.course, stackLevel: 1) { _ in
@@ -50,6 +52,10 @@ struct CourseDetailModal: View {
                     Text(course.teacher ?? "先生未設定")
                         .font(.atenderSm)
                         .foregroundStyle(Color.textSecondary)
+                    Text("基準: \(CourseRuleLogic.summary(rule: CourseRuleValues(requiredAttendanceRate: course.requiredAttendanceRate, maxAbsences: course.maxAbsences, tardiesPerAbsence: course.tardiesPerAbsence), userRate: userRate))")
+                        .font(.atenderSm)
+                        .foregroundStyle(Color.textSecondary)
+                        .accessibilityIdentifier("course-detail-rule-summary")
                     if let note = course.note, !note.isEmpty {
                         Text(note)
                             .font(.atenderSm)

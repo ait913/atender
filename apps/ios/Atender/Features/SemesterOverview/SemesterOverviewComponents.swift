@@ -320,6 +320,7 @@ struct CourseListItem: View {
 
     var body: some View {
         let pct = SemesterOverviewDisplayLogic.pct(rate: stats.toDate.attendanceRate)
+        let requiredRate = SemesterOverviewDisplayLogic.requiredRate(stats: stats, fallback: self.requiredRate)
         let rateColor = Color.forRate(pct: pct, required: requiredRate)
         Button(action: onTap) {
             HStack(spacing: Space.s3) {
@@ -352,15 +353,8 @@ struct CourseListItem: View {
                     HStack(spacing: 0) {
                         Text("出\(stats.counts.present) 欠\(stats.counts.absent) ・ ")
                             .foregroundStyle(Color.textTertiary)
-                        Text(SemesterOverviewDisplayLogic.courseActionText(
-                            allowedAbsences: stats.allowedAbsences,
-                            remainingCount: stats.remainingCount,
-                            allowedAbsenceDays: stats.allowedAbsenceDays
-                        ))
-                        .foregroundStyle(SemesterOverviewDisplayLogic.courseActionColor(
-                            allowedAbsences: stats.allowedAbsences,
-                            remainingCount: stats.remainingCount
-                        ))
+                        Text(SemesterOverviewDisplayLogic.courseActionText(stats: stats))
+                            .foregroundStyle(SemesterOverviewDisplayLogic.courseActionColor(stats: stats))
                     }
                     .font(.atenderXs)
                 }

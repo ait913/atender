@@ -317,6 +317,30 @@ internal enum SemesterOverviewDisplayLogic {
     static func courseActionColor(allowedAbsences: Int?, remainingCount: Int) -> Color {
         actionColor(allowedAbsences: allowedAbsences, remainingCount: remainingCount)
     }
+
+    // 科目別の出席基準 (build 21)
+    static func requiredRate(stats: CourseStatsDto, fallback: Int) -> Int {
+        stats.requiredAttendanceRate ?? fallback
+    }
+
+    static func courseActionText(stats: CourseStatsDto) -> String {
+        guard let lessons = stats.allowedAbsenceLessons else {
+            return courseActionText(allowedAbsences: stats.allowedAbsences, remainingCount: stats.remainingCount, allowedAbsenceDays: stats.allowedAbsenceDays)
+        }
+        let remaining = stats.remainingLessons ?? 0
+        if lessons < 0 { return stats.limitedBy == "rate" ? "下回る見込み" : "欠席上限を超えています" }
+        if lessons >= remaining { return "残り全休OK" }
+        return "あと\(lessons)回休める"
+    }
+
+    static func courseActionColor(stats: CourseStatsDto) -> Color {
+        guard let lessons = stats.allowedAbsenceLessons else {
+            return courseActionColor(allowedAbsences: stats.allowedAbsences, remainingCount: stats.remainingCount)
+        }
+        if lessons < 0 { return .statusAbsent }
+        if lessons >= (stats.remainingLessons ?? 0) { return .accent }
+        return .textTertiary
+    }
 }
 
 struct RateProgressBar: View {

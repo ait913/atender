@@ -126,6 +126,13 @@ struct CourseStatsDto: Codable, Equatable, Identifiable {
     let allowedAbsences: Int?
     let maxDayPeriods: Int
     let allowedAbsenceDays: Int?
+    // 科目別の出席基準 (build 21)。旧 API の JSON でも decode できるよう全て Optional + 末尾
+    var requiredAttendanceRate: Int? = nil
+    var rule: CourseRuleValues? = nil
+    var remainingLessons: Int? = nil
+    var absenceLessons: Double? = nil
+    var allowedAbsenceLessons: Int? = nil
+    var limitedBy: String? = nil      // "rate" | "count"。enum にしない (未知値で decode を落とさない)
 
     struct Counts: Codable, Equatable {
         let present: Int
@@ -236,6 +243,16 @@ struct CourseDto: Codable, Equatable, Identifiable {
     let teacher: String?
     let color: String?
     let note: String?
+    var requiredAttendanceRate: Int? = nil
+    var maxAbsences: Int? = nil
+    var tardiesPerAbsence: Int? = nil
+}
+
+struct CourseRuleValues: Codable, Equatable {
+    var requiredAttendanceRate: Int?
+    var maxAbsences: Int?
+    var tardiesPerAbsence: Int?
+    static let none = CourseRuleValues(requiredAttendanceRate: nil, maxAbsences: nil, tardiesPerAbsence: nil)
 }
 
 struct MeetingDto: Codable, Equatable, Identifiable {
@@ -330,6 +347,9 @@ struct CourseCreateInput: Codable, Equatable {
     var teacher: String?
     var color: String?
     var note: String?
+    var requiredAttendanceRate: Int? = nil   // nil は送らない
+    var maxAbsences: Int? = nil
+    var tardiesPerAbsence: Int? = nil
 }
 
 struct CourseUpdateInput: Codable, Equatable {
@@ -337,6 +357,42 @@ struct CourseUpdateInput: Codable, Equatable {
     var teacher: String?
     var color: String?
     var note: String?
+    var rule: CourseRuleValues? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case name, teacher, color, note, requiredAttendanceRate, maxAbsences, tardiesPerAbsence
+    }
+
+    init(name: String? = nil, teacher: String? = nil, color: String? = nil, note: String? = nil, rule: CourseRuleValues? = nil) {
+        self.name = name
+        self.teacher = teacher
+        self.color = color
+        self.note = note
+        self.rule = rule
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+        teacher = try container.decodeIfPresent(String.self, forKey: .teacher)
+        color = try container.decodeIfPresent(String.self, forKey: .color)
+        note = try container.decodeIfPresent(String.self, forKey: .note)
+        rule = nil
+    }
+
+    // rule != nil のときだけ 3 キーをトップレベルに必ず書く (nil は JSON null)。"rule" キーは出さない
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(name, forKey: .name)
+        try container.encodeIfPresent(teacher, forKey: .teacher)
+        try container.encodeIfPresent(color, forKey: .color)
+        try container.encodeIfPresent(note, forKey: .note)
+        if let rule {
+            try container.encode(rule.requiredAttendanceRate, forKey: .requiredAttendanceRate)
+            try container.encode(rule.maxAbsences, forKey: .maxAbsences)
+            try container.encode(rule.tardiesPerAbsence, forKey: .tardiesPerAbsence)
+        }
+    }
 }
 
 struct CourseSuspensionDto: Codable, Equatable, Identifiable {
