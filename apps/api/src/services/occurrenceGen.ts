@@ -88,8 +88,10 @@ export async function generateOccurrencesForUserTimetable(args: {
   userTimetableId: string;
   fromDate?: Date;
   toDate?: Date;
+  client?: OccurrenceClient;
 }): Promise<{ created: number; skipped: number }> {
-  const timetable = await prisma.userTimetable.findUnique({
+  const { client = prisma, ...rest } = args;
+  const timetable = await client.userTimetable.findUnique({
     where: { id: args.userTimetableId },
     include: { meetings: true },
   });
@@ -97,7 +99,7 @@ export async function generateOccurrencesForUserTimetable(args: {
     throw new AppError(404, "NOT_FOUND", "UserTimetable not found");
   }
 
-  return generateOccurrencesForMeetings(prisma, { ...args, meetings: timetable.meetings });
+  return generateOccurrencesForMeetings(client, { ...rest, meetings: timetable.meetings });
 }
 
 export async function generateOccurrencesForMeeting(tx: Prisma.TransactionClient, meeting: Meeting) {
