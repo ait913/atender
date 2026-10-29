@@ -125,18 +125,6 @@ final class TimetableRepository {
         try await client.send(Endpoints.deleteMeeting(id: id))
         cache.invalidate(prefixes: [.userTimetables(), QueryKey(["today"]), QueryKey(["stats"]), .semesters()])
     }
-
-    func templates(query: TemplateSearchQuery) async throws -> [TemplateDto] {
-        let response = try await client.send(Endpoints.templates(query), as: TemplatesResponse.self)
-        cache.setData(response.templates, for: .templates())
-        return response.templates
-    }
-
-    func copyTemplate(id: String, input: TemplateCopyInput) async throws -> UserTimetableDto {
-        let response = try await client.send(Endpoints.copyTemplate(id: id, input), as: UserTimetableResponse.self)
-        cache.invalidate(prefixes: [.userTimetables(), .me()])
-        return response.userTimetable
-    }
 }
 
 @MainActor

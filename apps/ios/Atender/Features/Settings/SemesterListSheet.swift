@@ -10,6 +10,8 @@ struct SemesterListSheet: View {
     @State private var editForm = SemesterForm()
     @State private var newForm = SemesterForm()
     @State private var isPending = false
+    @State private var templateScope: TemplateScope?
+    @State private var showsTemplateBrowser = false
 
     struct SemesterForm: Equatable {
         var name = ""
@@ -20,6 +22,10 @@ struct SemesterListSheet: View {
     var body: some View {
         SheetScaffold(title: "学期管理", isPresented: $isPresented) {
             VStack(alignment: .leading, spacing: Space.s4) {
+                AtenderButton(title: "公開時間割から取り込む", variant: .secondary, isEnabled: templateScope != nil) {
+                    showsTemplateBrowser = true
+                }
+                .accessibilityIdentifier("semester-list-import-template")
                 VStack(spacing: Space.s2) {
                     ForEach(semesters) { semester in
                         semesterRow(semester)
@@ -38,6 +44,21 @@ struct SemesterListSheet: View {
                     }
                 }
                 .padding(.top, Space.s2)
+            }
+            .navigationDestination(isPresented: $showsTemplateBrowser) {
+                if let templateScope {
+                    TemplateBrowser(
+                        purpose: .importInto(initialSemesterId: defaultSemesterId, lockSemester: false),
+                        showsFoundBanner: false,
+                        initialScope: templateScope,
+                        onImported: { _ in
+                            showsTemplateBrowser = false
+                            Task { await reload() }
+                        },
+                        onSelected: { _ in },
+                        onClose: { isPresented = false }
+                    )
+                }
             }
         } footer: {
             EmptyView()
@@ -108,7 +129,15 @@ struct SemesterListSheet: View {
 
     private func reload() async {
         semesters = (try? await environment.semesterRepository.semesters(force: true)) ?? []
-        defaultSemesterId = (try? await environment.meRepository.me())?.user.defaultSemesterId
+        let me = try? await environment.meRepository.me()
+        defaultSemesterId = me?.user.defaultSemesterId
+        if let user = me?.user, let schoolId = user.schoolId, let departmentId = user.departmentId,
+           let schoolName = user.schoolName, let departmentName = user.departmentName {
+            templateScope = TemplateScope(schoolId: schoolId, departmentId: departmentId,
+                                          schoolName: schoolName, departmentName: departmentName)
+        } else {
+            templateScope = nil
+        }
     }
 
     private func startEditing(_ semester: SemesterDto) {

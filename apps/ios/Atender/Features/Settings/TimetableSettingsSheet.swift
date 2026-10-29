@@ -4,6 +4,7 @@ struct TimetableSettingsSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Binding var isPresented: Bool
     let timetable: UserTimetableDto?
+    let semesterId: String?
     var onSaved: (() -> Void)?
 
     struct SlotInput: Identifiable, Equatable {
@@ -16,19 +17,20 @@ struct TimetableSettingsSheet: View {
     }
 
     @State private var name = ""
-    @State private var publishEnabled = true
+    @State private var publishEnabled = false
     @State private var publishTitle = ""
     @State private var daysOfWeek: [Int] = [1, 2, 3, 4, 5]
     @State private var slots: [SlotInput] = []
     @State private var message: String?
     @State private var isPending = false
-    @State private var searchOpen = false
-    @State private var searchQuery = ""
-    @State private var templates: [TemplateDto] = []
+    @State private var navigationPath = NavigationPath()
+    @State private var templateScope: TemplateScope?
     @State private var confirmingDelete = false
 
+    private enum Route: Hashable { case templates }
+
     var body: some View {
-        BottomSheet(title: "時間割の設定", isPresented: $isPresented) {
+        BottomSheet(title: "時間割の設定", isPresented: $isPresented, navigationPath: $navigationPath) {
             VStack(alignment: .leading, spacing: Space.s4) {
                 if timetable == nil {
                     Text("先に学期を作成してください。")
@@ -70,40 +72,18 @@ struct TimetableSettingsSheet: View {
                 Toggle("みんなの時間割で公開", isOn: $publishEnabled)
                     .font(.atenderBase)
                     .disabled(timetable == nil)
+                if timetable?.meetings.isEmpty == true {
+                    Text("授業を 1 つ以上登録すると公開されます")
+                        .font(.atenderSm)
+                        .foregroundStyle(Color.textSecondary)
+                }
                 if publishEnabled {
                     field("公開タイトル") { TextField("公開タイトル", text: $publishTitle).textFieldStyle(.atender).disabled(timetable == nil) }
                 }
-                Button {
-                    searchOpen.toggle()
-                    if searchOpen { Task { await loadTemplates() } }
-                } label: {
-                    Label("同じ学校の公開時間割から持ってくる", systemImage: "square.and.arrow.down")
-                        .font(.atenderSm)
-                        .fontWeight(.bold)
+                AtenderButton(title: "公開時間割から取り込む", variant: .secondary) {
+                    Task { await openTemplateBrowser() }
                 }
-                .disabled(timetable == nil)
-                if searchOpen {
-                    TextField("検索", text: $searchQuery)
-                        .textFieldStyle(.atender)
-                        .onSubmit { Task { await loadTemplates() } }
-                    ForEach(templates) { template in
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(template.title).font(.atenderBase).fontWeight(.bold)
-                                Text("\(template.courses.count)科目")
-                                    .font(.atenderXs)
-                                    .foregroundStyle(Color.textTertiary)
-                            }
-                            Spacer()
-                            Button("取り込む") { Task { await copyTemplate(template) } }
-                                .font(.atenderSm)
-                                .fontWeight(.bold)
-                        }
-                        .padding(Space.s3)
-                        .background(Color.bgMuted)
-                        .clipShape(RoundedRectangle(cornerRadius: Radius.sm, style: .continuous))
-                    }
-                }
+                .accessibilityIdentifier("timetable-settings-import-template")
                 if let message {
                     Text(message)
                         .font(.atenderSm)
@@ -111,6 +91,21 @@ struct TimetableSettingsSheet: View {
                 }
                 if timetable != nil {
                     timetableDangerZone
+                }
+            }
+            .navigationDestination(for: Route.self) { _ in
+                if let templateScope {
+                    TemplateBrowser(
+                        purpose: .importInto(initialSemesterId: semesterId, lockSemester: true),
+                        showsFoundBanner: false,
+                        initialScope: templateScope,
+                        onImported: { _ in
+                            onSaved?()
+                            isPresented = false
+                        },
+                        onSelected: { _ in },
+                        onClose: { isPresented = false }
+                    )
                 }
             }
             .onAppear { initialize() }
@@ -150,9 +145,10 @@ struct TimetableSettingsSheet: View {
     }
 
     private func initialize() {
+        publishEnabled = TimetablePublishLogic.initialToggle(timetable)
         guard let timetable else { return }
         name = timetable.title
-        publishTitle = timetable.title
+        publishTitle = timetable.publishedTemplate?.title ?? timetable.title
         daysOfWeek = timetable.daysOfWeek
         slots = timetable.daySlots.sorted { $0.periodIndex < $1.periodIndex }.map {
             .init(periodIndex: $0.periodIndex, label: $0.label, startMinute: $0.startMinute, endMinute: $0.endMinute, isBreak: $0.isBreak)
@@ -184,13 +180,22 @@ struct TimetableSettingsSheet: View {
             if nextSlots != oldSlots {
                 _ = try await environment.timetableRepository.patchUserTimetable(id: timetable.id, .init(title: nil, daysOfWeek: nil, daySlots: nextSlots, courses: nil, meetings: nil))
             }
-            if publishEnabled {
-                let title = publishTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !title.isEmpty else {
-                    message = "公開タイトルを入力してください"
-                    return
+            do {
+                switch TimetablePublishLogic.action(toggle: publishEnabled, title: publishTitle.trimmingCharacters(in: .whitespacesAndNewlines), timetable: timetable) {
+                case .none:
+                    break
+                case .publish(let title):
+                    guard !title.isEmpty else {
+                        message = "公開タイトルを入力してください"
+                        return
+                    }
+                    _ = try await environment.timetableRepository.publishAsTemplate(id: timetable.id, title: title)
+                case .unpublish(let templateId):
+                    try await environment.timetableRepository.unpublishTemplate(id: templateId)
                 }
-                _ = try? await environment.timetableRepository.publishAsTemplate(id: timetable.id, title: title)
+            } catch {
+                message = "公開設定を保存できませんでした"
+                return
             }
             onSaved?()
             isPresented = false
@@ -213,17 +218,20 @@ struct TimetableSettingsSheet: View {
         }
     }
 
-    private func loadTemplates() async {
-        guard let me: MeResponse = environment.queryClient.data(for: .me(), as: MeResponse.self) else { return }
-        templates = (try? await environment.timetableRepository.templates(query: .init(schoolId: me.user.schoolId, departmentId: me.user.departmentId, q: searchQuery.isEmpty ? nil : searchQuery))) ?? []
-    }
-
-    private func copyTemplate(_ template: TemplateDto) async {
-        guard let timetable else { return }
-        _ = try? await environment.timetableRepository.copyTemplate(id: template.id, input: .init(semesterId: timetable.semesterId, title: nil))
-        message = "「\(template.title)」を取り込みました"
-        searchOpen = false
-        onSaved?()
+    private func openTemplateBrowser() async {
+        do {
+            let me = try await environment.meRepository.me()
+            guard let schoolId = me.user.schoolId, let departmentId = me.user.departmentId else {
+                message = "先に学校・学科を設定してください"
+                return
+            }
+            templateScope = TemplateScope(schoolId: schoolId, departmentId: departmentId,
+                                          schoolName: me.user.schoolName ?? "未設定",
+                                          departmentName: me.user.departmentName ?? "未設定")
+            if navigationPath.isEmpty { navigationPath.append(Route.templates) }
+        } catch {
+            message = "公開時間割を読み込めませんでした"
+        }
     }
 
     private func deleteTimetable() async {

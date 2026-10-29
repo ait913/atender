@@ -251,9 +251,11 @@ struct SelfTimetableView: View {
                 )
             }
         case .settings:
+            let timetable = model?.selected(semesterId: semesterId) ?? model?.createdTimetable(for: semesterId)
             TimetableSettingsSheet(
                 isPresented: sheetBinding,
-                timetable: model?.selected(semesterId: semesterId) ?? model?.createdTimetable(for: semesterId),
+                timetable: timetable,
+                semesterId: timetable?.semesterId ?? semesterId,
                 onSaved: { Task { await model?.reloadTimetables() } }
             )
         case nil:
