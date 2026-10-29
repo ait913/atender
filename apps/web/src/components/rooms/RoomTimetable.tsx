@@ -19,7 +19,7 @@ export function RoomTimetable({ roomId }: { roomId: string }) {
     const day = now.day();
     return now.subtract(day === 0 ? 6 : day - 1, "day").format("YYYY-MM-DD");
   }, []);
-  const week = useRoomWeek(roomId, weekStart);
+  const week = useRoomWeek(roomId, weekStart, null);
   const me = useMe();
   const timetables = useUserTimetables();
 

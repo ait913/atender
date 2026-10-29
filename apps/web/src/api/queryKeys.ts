@@ -19,5 +19,5 @@ export const QK = {
   rooms: () => ["rooms"] as const,
   room: (id: string) => ["rooms", id] as const,
   roomMembers: (id: string) => ["rooms", id, "members"] as const,
-  roomWeek: (id: string, weekStart: string) => ["rooms", id, "week", weekStart] as const,
+  roomWeek: (id: string, weekStart: string, semesterId: string) => ["rooms", id, "week", weekStart, semesterId] as const,
 } as const;

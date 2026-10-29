@@ -1,5 +1,6 @@
 export * from "./useAttendanceRules";
 export * from "./useBulkAttendance";
+export * from "./useClassTransfers";
 export * from "./useCourseSuspensions";
 export * from "./useDayDetail";
 export * from "./useFriendships";

@@ -113,8 +113,26 @@ export function useDeleteMeeting() {
 }
 
 export function usePublishTimetable(id?: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: { title: string; description?: string; year?: number; term?: string }) =>
       api<TemplateResponse>(`/api/user-timetables/${id}/publish-as-template`, { method: "POST", body }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+export function useDeleteUserTimetable() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<{ ok: true }>(`/api/user-timetables/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+      queryClient.invalidateQueries({ queryKey: ["today"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+    },
   });
 }
