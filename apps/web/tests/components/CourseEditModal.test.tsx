@@ -8,6 +8,12 @@ vi.mock("@/api/hooks/useUserTimetable", () => ({
   useUpdateCourse: vi.fn(),
 }));
 
+// 出席の基準カードが useMe (ユーザー既定の必要出席率) を読むので、QueryClient なしで描けるよう差し替える
+vi.mock("@/api/hooks/useMe", () => ({
+  useMe: () => ({ data: undefined }),
+  meQueryOptions: {},
+}));
+
 const createdCourse = {
   id: "course-created",
   name: "線形代数",
