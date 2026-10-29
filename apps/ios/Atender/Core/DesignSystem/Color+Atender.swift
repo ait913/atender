@@ -12,7 +12,6 @@ extension Color {
     static let bgMuted = Color(uiColor: .tertiarySystemGroupedBackground)
     static let bgElevated = Color(uiColor: .secondarySystemGroupedBackground)
     static let bgOverlay = Color(uiColor: .systemFill)
-    static let calendarSelectedDay = Color.bgMuted
 
     static let textPrimary = Color(uiColor: .label)
     static let textSecondary = Color(uiColor: .secondaryLabel)
@@ -57,8 +56,6 @@ extension Color {
     static let friendshipAccepted = dynamic(dark: UIColor(hex: 0x34D8A0), light: UIColor(hex: 0x12B172))
     static let friendshipBlocked = dynamic(dark: UIColor(hex: 0xFF6384), light: UIColor(hex: 0xF0435F))
 
-    static let roomEvent = dynamic(dark: UIColor(hex: 0xB98BFF), light: UIColor(hex: 0x9E5AEE))
-    static let roomAvailabilityEmpty = dynamic(dark: UIColor.hex(0x3DA9F0, 0.16), light: UIColor.hex(0x1E96E6, 0.12))
     static let eventMixTarget = dynamic(dark: UIColor.white, light: UIColor.black)
 
     // brand ring (ロゴ/キャラ由来・科目色パレット)
@@ -99,10 +96,6 @@ extension Color {
         case .blocked: return .friendshipBlocked
         case .declined, .unknown: return .statusNone
         }
-    }
-
-    static func forRoomEvent() -> Color {
-        .roomEvent
     }
 
     static func forRate(pct: Int?, required: Int) -> Color {
@@ -151,11 +144,5 @@ extension Color {
                            blue: sb * r + bb * (1 - r),
                            alpha: 1)      // ★ 常に alpha=1 (不透明)
         })
-    }
-
-    func toHexString() -> String {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
-        return String(format: "#%02X%02X%02X", Int(round(r * 255)), Int(round(g * 255)), Int(round(b * 255)))
     }
 }

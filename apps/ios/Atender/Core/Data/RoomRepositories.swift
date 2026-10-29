@@ -91,35 +91,6 @@ final class RoomRepository {
 
 @MainActor
 @Observable
-final class RoomEventRepository {
-    @ObservationIgnored private let client: APIClient
-    @ObservationIgnored private let cache: QueryClient
-
-    init(client: APIClient, cache: QueryClient) {
-        self.client = client
-        self.cache = cache
-    }
-
-    func createRoomEvent(roomId: String, _ input: CreateRoomEventInput) async throws -> RoomEventDto {
-        let response = try await client.send(Endpoints.createRoomEvent(id: roomId, input), as: RoomEventResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .roomEvent(id: roomId)))
-        return response.event
-    }
-
-    func updateRoomEvent(roomId: String, eventId: String, _ input: UpdateRoomEventInput) async throws -> RoomEventDto {
-        let response = try await client.send(Endpoints.updateRoomEvent(id: roomId, eventId: eventId, input), as: RoomEventResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .roomEvent(id: roomId)))
-        return response.event
-    }
-
-    func deleteRoomEvent(roomId: String, eventId: String, scope: String = "all", originalDate: String? = nil) async throws {
-        try await client.send(Endpoints.deleteRoomEvent(id: roomId, eventId: eventId, scope: scope, originalDate: originalDate))
-        cache.invalidate(prefixes: invalidationTargets(for: .roomEvent(id: roomId)))
-    }
-}
-
-@MainActor
-@Observable
 final class FriendshipRepository {
     @ObservationIgnored private let client: APIClient
     @ObservationIgnored private let cache: QueryClient
@@ -190,39 +161,5 @@ final class TemplateRepository {
     func publishTimetable(id: String, title: String) async throws -> TemplateDto {
         let response = try await client.send(Endpoints.publishAsTemplate(id: id, TemplatePublishInput(title: title)), as: TemplateResponse.self)
         return response.template
-    }
-}
-
-@MainActor
-@Observable
-final class IcsImportRepository {
-    @ObservationIgnored private let client: APIClient
-    @ObservationIgnored private let cache: QueryClient
-
-    init(client: APIClient, cache: QueryClient) {
-        self.client = client
-        self.cache = cache
-    }
-
-    func upload(roomId: String, fileData: Data, filename: String) async throws -> IcsUploadResponse {
-        let response = try await client.upload(path: "/api/rooms/\(roomId)/ics-imports", fileData: fileData, filename: filename, as: IcsUploadResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .icsImport(roomId: roomId)))
-        return response
-    }
-
-    func preview(roomId: String, importId: String, force: Bool = false) async throws -> IcsImportPreview {
-        let key = QueryKey(["rooms", roomId, "ics-imports", importId, "preview"])
-        if !force, !cache.isStale(key), let cached: IcsImportPreview = cache.data(for: key, as: IcsImportPreview.self) {
-            return cached
-        }
-        let response = try await client.send(Endpoints.icsImportPreview(roomId: roomId, importId: importId), as: IcsImportPreview.self)
-        cache.setData(response, for: key)
-        return response
-    }
-
-    func commit(roomId: String, importId: String) async throws -> IcsImportCommitResult {
-        let response = try await client.send(Endpoints.commitIcsImport(roomId: roomId, importId: importId), as: IcsImportCommitResult.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .icsImport(roomId: roomId)))
-        return response
     }
 }

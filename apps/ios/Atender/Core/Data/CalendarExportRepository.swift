@@ -14,15 +14,4 @@ final class CalendarExportRepository {
     func occurrenceRange(from: String, to: String, semesterId: String? = nil) async throws -> OccurrenceRangeResponse {
         try await client.send(Endpoints.occurrenceRange(from: from, to: to, semesterId: semesterId), as: OccurrenceRangeResponse.self)
     }
-
-    func legacyEkPushes() async throws -> [String] {
-        try await client.send(Endpoints.legacyEkPushes(), as: LegacyEkPushListResponse.self).externalIds
-    }
-
-    func clearLegacyEkPushes(_ externalIds: [String]) async throws -> Int {
-        try await client.send(
-            Endpoints.clearLegacyEkPushes(LegacyEkPushClearInput(externalIds: externalIds)),
-            as: LegacyEkPushClearResponse.self
-        ).clearedCount
-    }
 }

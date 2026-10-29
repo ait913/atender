@@ -14,14 +14,11 @@ final class AppEnvironment {
     let semesterRepository: SemesterRepository
     let timetableRepository: TimetableRepository
     let attendanceRepository: AttendanceRepository
-    let personalEventRepository: PersonalEventRepository
     let dayRepository: DayRepository
     let courseRepository: CourseRepository
     let roomRepository: RoomRepository
-    let roomEventRepository: RoomEventRepository
     let friendshipRepository: FriendshipRepository
     let templateRepository: TemplateRepository
-    let icsImportRepository: IcsImportRepository
     let ruleRepository: RuleRepository
     let schoolRepository: SchoolRepository
     let eventKitStore: EventKitStore
@@ -48,14 +45,11 @@ final class AppEnvironment {
         self.semesterRepository = SemesterRepository(client: self.apiClient, cache: queryClient)
         self.timetableRepository = TimetableRepository(client: self.apiClient, cache: queryClient)
         self.attendanceRepository = AttendanceRepository(client: self.apiClient, cache: queryClient, toast: self.toastCenter)
-        self.personalEventRepository = PersonalEventRepository(client: self.apiClient, cache: queryClient)
         self.dayRepository = DayRepository(client: self.apiClient, cache: queryClient)
         self.courseRepository = CourseRepository(client: self.apiClient, cache: queryClient)
         self.roomRepository = RoomRepository(client: self.apiClient, cache: queryClient)
-        self.roomEventRepository = RoomEventRepository(client: self.apiClient, cache: queryClient)
         self.friendshipRepository = FriendshipRepository(client: self.apiClient, cache: queryClient)
         self.templateRepository = TemplateRepository(client: self.apiClient, cache: queryClient)
-        self.icsImportRepository = IcsImportRepository(client: self.apiClient, cache: queryClient)
         self.ruleRepository = RuleRepository(client: self.apiClient, cache: queryClient)
         self.schoolRepository = SchoolRepository(client: self.apiClient, cache: queryClient)
         self.eventKitStore = EventKitStore()

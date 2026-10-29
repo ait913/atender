@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var accountDeletionFailed = false
 
     enum SettingsSheet: String, Identifiable {
-        case profile, school, rules, semesters, google, requiredRate, calendar
+        case profile, school, rules, semesters, requiredRate, calendar
         var id: String { rawValue }
     }
 
@@ -33,8 +33,8 @@ struct SettingsView: View {
                 SettingsSection(title: "表示") {
                     ThemeRow(selection: $themePreference)
                 }
-                SettingsSection(title: "カレンダー同期", rows: [
-                    SettingsRowSpec(id: "settings-row-calendar", label: "iPhone のカレンダー") { activeSheet = .calendar },
+                SettingsSection(title: "カレンダー", rows: [
+                    SettingsRowSpec(id: "settings-row-calendar", label: "iPhone カレンダーに書き出す", trailingText: CalendarExportRowLogic.trailingText(access: environment.calendarSyncCoordinator.status.access, exportEnabled: environment.calendarSyncCoordinator.exportEnabled)) { activeSheet = .calendar },
                 ])
                 SettingsSection(title: "その他", rows: [
                     SettingsRowSpec(id: "settings-row-privacy", label: "プライバシーポリシー") { openURL(LegalLinks.privacy) },
@@ -90,8 +90,6 @@ struct SettingsView: View {
                 AttendanceRuleSheet(isPresented: activeSheetBinding, onSaved: reloadUser)
             case .semesters:
                 SemesterListSheet(isPresented: activeSheetBinding, onChanged: reloadUser)
-            case .google:
-                EmptyView()
             case .calendar:
                 CalendarSyncSettingsSheet(isPresented: activeSheetBinding)
             }
@@ -201,7 +199,7 @@ enum SettingsLogic {
     }
 
     static let deleteAccountTitle = "アカウントを削除しますか?"
-    static let deleteAccountMessage = "時間割・出欠・予定・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。ルームに追加した予定と公開した時間割テンプレートは、作成者を伏せて残ります。"
+    static let deleteAccountMessage = "時間割・出欠・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。公開した時間割テンプレートは、作成者を伏せて残ります。"
     static let deletingAccountLabel = "アカウントを削除しています"
     static let deleteAccountFailedTitle = "アカウントを削除できませんでした"
     static let deleteAccountFailedMessage = "通信状況を確認して、もう一度お試しください。"

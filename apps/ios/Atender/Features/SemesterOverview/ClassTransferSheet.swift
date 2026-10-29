@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 授業変更 (振替) の作成シート。`DayDetailSheet` の `BottomSheet` の中身として使う
-/// (`PersonalEventEditorContent` と同じ、シート自体は持たないコンテンツ view)。
+/// シート自体は持たないコンテンツ view。
 struct ClassTransferSheet: View {
     let date: String
     let semesterId: String?

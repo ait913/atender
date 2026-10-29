@@ -1,17 +1,5 @@
 import Foundation
 
-struct EKEventSnapshot: Equatable {
-    let externalId: String
-    let calendarId: String
-    let occurrenceStart: Date
-    let lastModified: Date?
-    let start: Date
-    let end: Date
-    let isAllDay: Bool
-    let title: String
-    let location: String?
-}
-
 enum EventKitTimeMapping {
     /// yyyy-MM-dd (JST) の 00:00 に対応する絶対時刻
     static func jstDayStart(_ date: String) -> Date {

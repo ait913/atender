@@ -51,8 +51,4 @@ extension View {
     func atenderModalHeader(title: String?, onClose: @escaping () -> Void) -> some View {
         modifier(ModalHeaderModifier(title: title, showsBack: false, onBack: nil, onClose: onClose))
     }
-    /// モーダル内で push した 2 段目 (戻る + タイトル + 閉じる)
-    func atenderModalDetailHeader(title: String?, onBack: @escaping () -> Void, onClose: @escaping () -> Void) -> some View {
-        modifier(ModalHeaderModifier(title: title, showsBack: true, onBack: onBack, onClose: onClose))
-    }
 }

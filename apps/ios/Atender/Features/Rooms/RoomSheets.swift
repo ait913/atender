@@ -1,6 +1,5 @@
 import SwiftUI
 import Observation
-import UniformTypeIdentifiers
 
 @MainActor
 @Observable
@@ -9,7 +8,6 @@ final class RoomSettingsViewModel {
     let roomId: String
     private(set) var room: RoomDto?
     private(set) var members: [RoomMemberDto] = []
-    private(set) var personalCalendarShare: PersonalCalendarShareDto?
     private(set) var meId: String?
     var isOwner: Bool { members.first { $0.userId == meId }?.role == .owner }
 
@@ -22,11 +20,9 @@ final class RoomSettingsViewModel {
         async let r = env.roomRepository.room(id: roomId, force: true)
         async let m = env.roomRepository.roomMembers(id: roomId, force: true)
         async let me = env.meRepository.me()
-        async let share = env.apiClient.send(Endpoints.personalCalendarShare(roomId: roomId), as: PersonalCalendarShareResponse.self)
         room = try? await r
         members = (try? await m) ?? []
         meId = (try? await me)?.user.id
-        personalCalendarShare = (try? await share)?.share
     }
 
     func persist(name: String? = nil, description: String? = nil, showMemberTimetables: Bool? = nil) async throws {
@@ -37,26 +33,6 @@ final class RoomSettingsViewModel {
     func regenerateInvite() async throws { _ = try await env.roomRepository.regenerateInvite(id: roomId) }
     func leave() async throws { try await env.roomRepository.leaveRoom(id: roomId) }
     func delete() async throws { try await env.roomRepository.deleteRoom(id: roomId) }
-    func setPersonalCalendarShare(enabled: Bool, visibilityMode: VisibilityMode) async throws {
-        if enabled {
-            let response = try await env.apiClient.send(
-                Endpoints.setPersonalCalendarShare(roomId: roomId, SharePutInput(visibilityMode: visibilityMode)),
-                as: PersonalCalendarShareResponse.self
-            )
-            personalCalendarShare = response.share
-        } else {
-            try await env.apiClient.send(Endpoints.deletePersonalCalendarShare(roomId: roomId))
-            personalCalendarShare = nil
-        }
-    }
-
-    func patchPersonalCalendarShare(visibilityMode: VisibilityMode) async throws {
-        let response = try await env.apiClient.send(
-            Endpoints.patchPersonalCalendarShare(roomId: roomId, SharePatchInput(visibilityMode: visibilityMode, enabled: true)),
-            as: PersonalCalendarShareResponse.self
-        )
-        personalCalendarShare = response.share
-    }
 }
 
 struct RoomSettingsSheet: View {
@@ -71,10 +47,6 @@ struct RoomSettingsSheet: View {
     @State private var showMemberTimetables = true
     @State private var copyMessage: String?
     @State private var confirm: Confirm?
-    @State private var importOpen = false
-    @State private var ruleEditorOpen = false
-    @State private var shareEnabled = false
-    @State private var shareVisibility: VisibilityMode = .titleMapped
     @State private var lastSavedName = ""
     @State private var lastSavedDescription = ""
     @State private var skipDisappearPersist = false
@@ -116,8 +88,6 @@ struct RoomSettingsSheet: View {
                 }))
                 .disabled(model?.isOwner != true)
                 memberSection
-                personalCalendarShareSection
-                icsSection
                 if model?.isOwner == true { inviteSection }
             }
         } footer: {
@@ -138,13 +108,6 @@ struct RoomSettingsSheet: View {
                 lastSavedDescription = description
                 showMemberTimetables = room.showMemberTimetables
             }
-            if let share = model?.personalCalendarShare {
-                shareEnabled = share.enabled
-                shareVisibility = share.visibilityMode
-            } else {
-                shareEnabled = false
-                shareVisibility = .titleMapped
-            }
         }
         .onChange(of: focusedField) { old, new in
             guard old != nil, new == nil, model?.isOwner == true else { return }
@@ -162,14 +125,6 @@ struct RoomSettingsSheet: View {
                 Task { await performConfirm(pending) }
             }
             Button("キャンセル", role: .cancel) { confirm = nil }
-        }
-        .sheet(isPresented: $importOpen) {
-            IcsImportWizard(roomId: roomId, isPresented: $importOpen) {
-                await onChanged()
-            }
-        }
-        .sheet(isPresented: $ruleEditorOpen) {
-            IcsTitleRuleEditorSheet(isPresented: $ruleEditorOpen)
         }
     }
 
@@ -215,58 +170,6 @@ struct RoomSettingsSheet: View {
                         AtenderButton(title: "追放", variant: .ghost, size: .sm) { confirm = .removeMember(member.userId) }
                             .fixedSize()
                     }
-                }
-            }
-        }
-    }
-
-    private var icsSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Text("外部カレンダー取込").font(.atenderSm).fontWeight(.semibold).foregroundStyle(Color.textSecondary)
-            Text("ICS ファイルからルーム予定を取り込みます。").font(.atenderXs).foregroundStyle(Color.textTertiary)
-            AtenderButton(title: "取り込み画面を開く", variant: .secondary) { importOpen = true }
-        }
-    }
-
-    private var personalCalendarShareSection: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("自分のカレンダーを共有").font(.atenderSm).fontWeight(.semibold).foregroundStyle(Color.textSecondary)
-            Toggle("共有する", isOn: Binding(get: { shareEnabled }, set: { value in
-                let previous = shareEnabled
-                shareEnabled = value
-                Task {
-                    do {
-                        try await model?.setPersonalCalendarShare(enabled: value, visibilityMode: shareVisibility)
-                        await onChanged()
-                    } catch {
-                        shareEnabled = previous
-                        environment.toastCenter.show("保存できませんでした、もう一度試してください")
-                    }
-                }
-            }))
-            Picker("表示モード", selection: Binding(get: { shareVisibility }, set: { value in
-                let previous = shareVisibility
-                shareVisibility = value
-                guard shareEnabled else { return }
-                Task {
-                    do {
-                        try await model?.patchPersonalCalendarShare(visibilityMode: value)
-                        await onChanged()
-                    } catch {
-                        shareVisibility = previous
-                        environment.toastCenter.show("保存できませんでした、もう一度試してください")
-                    }
-                }
-            })) {
-                Text("そのまま").tag(VisibilityMode.normal)
-                Text("マスキング").tag(VisibilityMode.titleMapped)
-                Text("予定のみ").tag(VisibilityMode.busyOnly)
-            }
-            .pickerStyle(.segmented)
-            .disabled(!shareEnabled)
-            if shareEnabled && shareVisibility == .titleMapped {
-                AtenderButton(title: "マスクルールを編集", variant: .secondary, size: .sm) {
-                    ruleEditorOpen = true
                 }
             }
         }
@@ -374,313 +277,5 @@ struct RoomSettingsSheet: View {
             break
         }
         confirm = nil
-    }
-}
-
-struct RoomEventEditorContent: View {
-    let roomId: String
-    let defaultDate: String
-    let event: RoomEventDto?
-    let onSaved: () async -> Void
-    let onDeleted: () async -> Void
-    @Environment(AppEnvironment.self) private var environment
-    @State private var title: String
-    @State private var start: Date
-    @State private var end: Date
-    @State private var rrule: String?
-    @State private var visibility: VisibilityMode
-    @State private var isPending = false
-    @State private var confirmDelete = false
-
-    init(
-        roomId: String,
-        defaultDate: String,
-        event: RoomEventDto?,
-        onSaved: @escaping () async -> Void,
-        onDeleted: @escaping () async -> Void
-    ) {
-        self.roomId = roomId
-        self.defaultDate = defaultDate
-        self.event = event
-        self.onSaved = onSaved
-        self.onDeleted = onDeleted
-        if let event {
-            let parsedStart = Self.parseISO(event.start) ?? Date()
-            let parsedEnd = Self.parseISO(event.end) ?? Calendar.current.date(byAdding: .hour, value: 1, to: parsedStart) ?? parsedStart
-            _title = State(initialValue: event.title)
-            _start = State(initialValue: parsedStart)
-            _end = State(initialValue: parsedEnd)
-            _rrule = State(initialValue: event.recurrenceRule)
-            _visibility = State(initialValue: event.visibilityMode)
-        } else {
-            let base = CalendarRange.parse(defaultDate) ?? Date()
-            _title = State(initialValue: "")
-            _start = State(initialValue: base)
-            _end = State(initialValue: Calendar.current.date(byAdding: .hour, value: 1, to: base) ?? base)
-            _rrule = State(initialValue: nil)
-            _visibility = State(initialValue: .normal)
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s4) {
-            LabeledInput(label: "タイトル", text: $title)
-            DatePicker("開始", selection: $start, displayedComponents: [.date, .hourAndMinute])
-            DatePicker("終了", selection: $end, displayedComponents: [.date, .hourAndMinute])
-            RecurrencePicker(rrule: $rrule, start: start)
-            Picker("表示モード", selection: $visibility) {
-                Text("通常").tag(VisibilityMode.normal)
-                Text("タイトル隠す").tag(VisibilityMode.titleMapped)
-                Text("予定ありのみ").tag(VisibilityMode.busyOnly)
-            }
-            AtenderButton(title: "保存", variant: .primary, isLoading: isPending, isEnabled: !title.isEmpty && !isPending) {
-                Task { await save() }
-            }
-            if event != nil {
-                AtenderButton(title: "削除", variant: .destructive, isEnabled: !isPending) {
-                    confirmDelete = true
-                }
-            }
-        }
-        .confirmationDialog("予定を削除しますか？", isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("削除", role: .destructive) {
-                Task { await delete() }
-            }
-            Button("キャンセル", role: .cancel) {}
-        }
-    }
-
-    private func save() async {
-        isPending = true
-        defer { isPending = false }
-        do {
-            if let event {
-                _ = try await environment.roomEventRepository.updateRoomEvent(roomId: roomId, eventId: event.id, UpdateRoomEventInput(
-                    title: title,
-                    description: event.description,
-                    start: iso(start),
-                    end: iso(end),
-                    isAllDay: event.isAllDay,
-                    color: event.color,
-                    recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
-                    visibilityMode: visibility,
-                    editScope: "all",
-                    originalDate: nil
-                ))
-            } else {
-                _ = try await environment.roomEventRepository.createRoomEvent(roomId: roomId, CreateRoomEventInput(
-                    title: title,
-                    description: nil,
-                    start: iso(start),
-                    end: iso(end),
-                    isAllDay: false,
-                    color: nil,
-                    recurrence: rrule.map { .init(rrule: $0, exDates: [], rDates: []) },
-                    visibilityMode: visibility
-                ))
-            }
-            await onSaved()
-        } catch {
-            environment.toastCenter.show("保存できませんでした、もう一度試してください")
-        }
-    }
-
-    private func delete() async {
-        guard let event else { return }
-        isPending = true
-        defer { isPending = false }
-        do {
-            try await environment.roomEventRepository.deleteRoomEvent(roomId: roomId, eventId: event.id, scope: "all")
-            await onDeleted()
-        } catch {
-            environment.toastCenter.show("削除できませんでした")
-        }
-    }
-
-    private func iso(_ date: Date) -> String {
-        ISO8601DateFormatter().string(from: date)
-    }
-
-    private static func parseISO(_ value: String) -> Date? {
-        let fractional = ISO8601DateFormatter()
-        fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return fractional.date(from: value) ?? plain.date(from: value)
-    }
-}
-
-struct RecurrencePicker: View {
-    @Binding var rrule: String?
-    let start: Date
-    @State private var preset = "none"
-    private let presets = ["none", "daily", "weekly", "weekday", "monthly_bymonthday", "monthly_byday", "yearly"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            Picker("繰り返し", selection: Binding(get: { preset }, set: { value in
-                preset = value
-                rrule = RecurrencePresetLogic.presetToRRule(value, start: start)
-            })) {
-                ForEach(presets, id: \.self) { value in
-                    Text(RecurrencePresetLogic.presetLabel(value, start: start)).tag(value)
-                }
-            }
-            if rrule != nil {
-                Text(RecurrencePresetLogic.recurrenceToText(rrule, start: start))
-                    .font(.atenderXs)
-                    .foregroundStyle(Color.textSecondary)
-            }
-        }
-        .onAppear { preset = RecurrencePresetLogic.currentPreset(rrule, start: start) }
-        .onChange(of: start) { _, value in
-            preset = RecurrencePresetLogic.currentPreset(rrule, start: value)
-        }
-    }
-}
-
-struct IcsImportWizard: View {
-    let roomId: String
-    @Binding var isPresented: Bool
-    var onCommitted: (() async -> Void)? = nil
-    @Environment(AppEnvironment.self) private var environment
-    @State private var step: Step = .upload
-    @State private var importId: String?
-    @State private var preview: IcsImportPreview?
-    @State private var commitResult: IcsImportCommitResult?
-    @State private var errorText: String?
-    @State private var fileImporterOpen = false
-
-    enum Step { case upload, preview, committing, done, error }
-
-    var body: some View {
-        SheetScaffold(title: "カレンダーを取り込む", isPresented: $isPresented) {
-            content
-        } footer: {
-            footer
-        }
-        .accessibilityIdentifier("ics-wizard")
-        .fileImporter(isPresented: $fileImporterOpen, allowedContentTypes: [UTType(filenameExtension: "ics") ?? .data, UTType("text/calendar") ?? .data]) { result in
-            Task { await handleFile(result) }
-        }
-        .onChange(of: isPresented) { _, value in
-            if !value { reset() }
-        }
-    }
-
-    @ViewBuilder private var content: some View {
-        switch step {
-        case .upload:
-            Button {
-                fileImporterOpen = true
-            } label: {
-                VStack(spacing: Space.s3) {
-                    Image(systemName: "doc.badge.plus").font(.atender2xl)
-                    Text("ファイルを選択")
-                    Text(".ics, 5MB まで").font(.atenderXs).foregroundStyle(Color.textTertiary)
-                }
-                .frame(maxWidth: .infinity, minHeight: 180)
-                .overlay(RoundedRectangle(cornerRadius: Radius.md).stroke(Color.borderDefault, style: StrokeStyle(lineWidth: 1, dash: [6])))
-            }
-            .buttonStyle(.plain)
-        case .preview:
-            if let preview {
-                VStack(alignment: .leading, spacing: Space.s3) {
-                    Text("\(preview.events.count) 件のイベントが見つかりました").font(.atenderBase).fontWeight(.bold)
-                    ForEach(preview.events.prefix(10)) { item in
-                        Text("\(RoomEventTiming.format(item.start, pattern: "M/d HH:mm"))  \"\(item.rawTitle)\" → \"\(item.mappedTitle)\"")
-                            .font(.atenderXs)
-                            .foregroundStyle(Color.textSecondary)
-                    }
-                }
-            } else {
-                VStack(spacing: Space.s3) { ForEach(0..<4, id: \.self) { _ in Skeleton(width: nil, height: 36, radius: Radius.md) } }
-                    .task { await loadPreview() }
-            }
-        case .committing:
-            Skeleton(width: nil, height: 80, radius: Radius.md)
-                .task { await commit() }
-        case .done:
-            VStack(alignment: .leading, spacing: Space.s3) {
-                Text("\(commitResult?.committed ?? 0) 件取り込み、\(commitResult?.skipped ?? 0) 件スキップ")
-                    .font(.atenderBase)
-                    .fontWeight(.bold)
-                ForEach(commitResult?.errors ?? [], id: \.self) { error in
-                    Text(error).font(.atenderXs).foregroundStyle(Color.statusAbsent)
-                }
-            }
-        case .error:
-            Text(errorText ?? "取り込みに失敗しました")
-                .font(.atenderSm)
-                .foregroundStyle(Color.statusAbsent)
-        }
-    }
-
-    @ViewBuilder private var footer: some View {
-        switch step {
-        case .upload:
-            EmptyView()
-        case .preview:
-            HStack(spacing: Space.s3) {
-                AtenderButton(title: "もう一度", variant: .ghost) { step = .upload; preview = nil; importId = nil }
-                AtenderButton(title: "取り込む", variant: .primary, isEnabled: preview != nil) { step = .committing }
-            }
-        case .committing:
-            EmptyView()
-        case .done:
-            AtenderButton(title: "閉じる", variant: .primary) {
-                Task {
-                    await onCommitted?()
-                    isPresented = false
-                }
-            }
-        case .error:
-            AtenderButton(title: "戻る", variant: .primary) { step = .upload }
-        }
-    }
-
-    private func handleFile(_ result: Result<URL, Error>) async {
-        do {
-            let url = try result.get()
-            let scoped = url.startAccessingSecurityScopedResource()
-            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            let data = try Data(contentsOf: url)
-            let response = try await environment.icsImportRepository.upload(roomId: roomId, fileData: data, filename: url.lastPathComponent)
-            importId = response.import.id
-            preview = nil
-            step = .preview
-        } catch {
-            errorText = error.userFacingMessage
-            step = .error
-        }
-    }
-
-    private func loadPreview() async {
-        guard let importId else { return }
-        do {
-            preview = try await environment.icsImportRepository.preview(roomId: roomId, importId: importId, force: true)
-        } catch {
-            errorText = error.userFacingMessage
-            step = .error
-        }
-    }
-
-    private func commit() async {
-        guard let importId else { return }
-        do {
-            commitResult = try await environment.icsImportRepository.commit(roomId: roomId, importId: importId)
-            step = .done
-        } catch {
-            errorText = error.userFacingMessage
-            step = .error
-        }
-    }
-
-    private func reset() {
-        step = .upload
-        importId = nil
-        preview = nil
-        commitResult = nil
-        errorText = nil
     }
 }

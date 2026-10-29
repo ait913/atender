@@ -8,7 +8,6 @@ struct BulkEditSheet: View {
     @State private var status: AttendanceStatus?
     @State private var overwrite = false
     @State private var reason = ""
-    @State private var eventTitle = ""
     @State private var errorMessage: String?
     @State private var anyPending = false
 
@@ -22,8 +21,6 @@ struct BulkEditSheet: View {
             clearSection
             Divider()
             suspensionSection
-            Divider()
-            eventSection
             if let errorMessage {
                 Text(errorMessage).font(.atenderSm).foregroundStyle(Color.statusAbsent)
             }
@@ -81,23 +78,6 @@ struct BulkEditSheet: View {
         }
     }
 
-    private var eventSection: some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            Text("予定").font(.atenderBase.weight(.bold)).foregroundStyle(Color.textPrimary)
-            TextField("タイトル", text: $eventTitle)
-                .textFieldStyle(.atender)
-                .onChange(of: eventTitle) { _, value in eventTitle = String(value.prefix(80)) }
-            AtenderButton(
-                title: "選択日すべてに終日予定を追加",
-                variant: .secondary,
-                isLoading: anyPending,
-                isEnabled: !eventTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !anyPending
-            ) {
-                Task { await addPersonalEvents() }
-            }
-        }
-    }
-
     private func bulkMark() async {
         guard let status else { return }
         await run {
@@ -128,45 +108,6 @@ struct BulkEditSheet: View {
             let response = try await environment.dayRepository.bulkRemoveTimetableSuspensions(dates: dates)
             environment.toastCenter.show("\(response.removedCount)日 解除しました")
             onDone()
-        }
-    }
-
-    private func addPersonalEvents() async {
-        let title = eventTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        anyPending = true
-        errorMessage = nil
-        var ok = 0
-        var ng = 0
-        await withTaskGroup(of: Bool.self) { group in
-            for date in dates {
-                group.addTask {
-                    do {
-                        let dayStart = EventKitTimeMapping.jstDayStart(date)
-                        let nextDay = EventKitTimeMapping.jstDayStart(CalendarRange.addDays(date, 1))
-                        _ = try await environment.personalEventRepository.createPersonalEvent(.init(
-                            title: title,
-                            start: PersonalEventTimeMath.string(dayStart),
-                            end: PersonalEventTimeMath.string(nextDay),
-                            isAllDay: true,
-                            color: "#10b981"
-                        ))
-                        return true
-                    } catch {
-                        return false
-                    }
-                }
-            }
-            for await result in group {
-                if result { ok += 1 } else { ng += 1 }
-            }
-        }
-        anyPending = false
-        if ng == 0 {
-            environment.toastCenter.show("\(ok)日に予定を追加しました")
-            onDone()
-        } else {
-            errorMessage = "\(ok)件 追加、\(ng)件 失敗しました"
         }
     }
 

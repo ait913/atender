@@ -1,34 +1,32 @@
 import SwiftUI
 import UIKit
 
-/// カレンダー同期の設定シート (§7.1)
+/// 時間割のカレンダー書き出し設定シート
 struct CalendarSyncSettingsSheet: View {
     @Environment(AppEnvironment.self) private var environment
     @Binding var isPresented: Bool
-    @State private var calendars: [EKCalendarSnapshot] = []
     @State private var isConfirmingDisable = false
 
     private var coordinator: CalendarSyncCoordinator { environment.calendarSyncCoordinator }
 
     var body: some View {
-        SheetScaffold(title: "カレンダー同期", isPresented: $isPresented) {
+        SheetScaffold(title: "カレンダーに書き出し", isPresented: $isPresented) {
             VStack(alignment: .leading, spacing: Space.s5) {
                 accessSection
                 if coordinator.status.access == .fullAccess {
                     exportSection
                     statusSection
-                    importSection
                 }
             }
+            .accessibilityIdentifier("calendar-export-sheet")
         } footer: {
             AtenderButton(title: "閉じる", variant: .secondary) { isPresented = false }
         }
         .task {
             coordinator.refreshAccess()
-            await reloadCalendars()
         }
         .confirmationDialog(
-            "iPhone カレンダーから Atender の予定を削除します",
+            "iPhone カレンダーから Atender の授業を削除します",
             isPresented: $isConfirmingDisable,
             titleVisibility: .visible
         ) {
@@ -46,45 +44,47 @@ struct CalendarSyncSettingsSheet: View {
 
     private var accessSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            sectionTitle("権限")
             card {
-                switch coordinator.status.access {
-                case .notDetermined:
-                    AtenderButton(title: "iPhone のカレンダーと同期する", variant: .primary) {
-                        Task {
-                            await coordinator.requestFullAccess()
-                            await reloadCalendars()
-                        }
-                    }
-                case .fullAccess:
-                    Label("同期できます", systemImage: "checkmark.circle.fill")
+                VStack(alignment: .leading, spacing: Space.s2) {
+                    Text("時間割の授業を iPhone の「Atender」カレンダーに書き出します。休講・振替・公欠は自動で反映されます。")
                         .font(.atenderSm)
-                        .foregroundStyle(Color.accent500)
-                case .writeOnly:
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        Text(CalendarSyncError.accessWriteOnly.message)
-                            .font(.atenderXs)
-                            .foregroundStyle(Color.textSecondary)
-                        AtenderButton(title: "フルアクセスを要求", variant: .secondary) {
+                        .foregroundStyle(Color.textSecondary)
+                    switch coordinator.status.access {
+                    case .notDetermined:
+                        AtenderButton(title: "iPhone カレンダーに書き出す", variant: .primary) {
                             Task {
                                 await coordinator.requestFullAccess()
-                                await reloadCalendars()
                             }
                         }
-                    }
-                case .denied:
-                    VStack(alignment: .leading, spacing: Space.s2) {
-                        Text(CalendarSyncError.accessDenied.message)
+                    case .fullAccess:
+                        Label("書き出しできます", systemImage: "checkmark.circle.fill")
+                            .font(.atenderSm)
+                            .foregroundStyle(Color.accent500)
+                    case .writeOnly:
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text(CalendarSyncError.accessWriteOnly.message)
+                                .font(.atenderXs)
+                                .foregroundStyle(Color.textSecondary)
+                            AtenderButton(title: "フルアクセスを要求", variant: .secondary) {
+                                Task {
+                                    await coordinator.requestFullAccess()
+                                }
+                            }
+                        }
+                    case .denied:
+                        VStack(alignment: .leading, spacing: Space.s2) {
+                            Text(CalendarSyncError.accessDenied.message)
+                                .font(.atenderXs)
+                                .foregroundStyle(Color.textSecondary)
+                            AtenderButton(title: CalendarSyncRecovery.openSystemSettings.buttonTitle, variant: .secondary) {
+                                openSystemSettings()
+                            }
+                        }
+                    case .restricted:
+                        Text(CalendarSyncError.accessRestricted.message)
                             .font(.atenderXs)
                             .foregroundStyle(Color.textSecondary)
-                        AtenderButton(title: CalendarSyncRecovery.openSystemSettings.buttonTitle, variant: .secondary) {
-                            openSystemSettings()
-                        }
                     }
-                case .restricted:
-                    Text(CalendarSyncError.accessRestricted.message)
-                        .font(.atenderXs)
-                        .foregroundStyle(Color.textSecondary)
                 }
             }
         }
@@ -94,16 +94,10 @@ struct CalendarSyncSettingsSheet: View {
 
     private var exportSection: some View {
         VStack(alignment: .leading, spacing: Space.s2) {
-            sectionTitle("iPhone カレンダーへの書き出し")
             card {
                 VStack(alignment: .leading, spacing: Space.s2) {
-                    Toggle("Atender の予定を書き出す", isOn: exportEnabledBinding)
+                    Toggle("時間割を書き出す", isOn: exportEnabledBinding)
                         .font(.atenderSm)
-                    if coordinator.exportEnabled {
-                        Divider()
-                        Toggle("授業", isOn: exportCoursesBinding).font(.atenderSm)
-                        Toggle("自分の予定", isOn: exportPersonalBinding).font(.atenderSm)
-                    }
                 }
             }
             if coordinator.exportEnabled {
@@ -119,7 +113,6 @@ struct CalendarSyncSettingsSheet: View {
                             let summary = coordinator.status.lastSummary ?? ExportSummary()
                             environment.toastCenter.show("書き出しました（作成 \(summary.created)・更新 \(summary.updated)・削除 \(summary.deleted)）")
                         }
-                        await reloadCalendars()
                     }
                 }
             }
@@ -179,44 +172,6 @@ struct CalendarSyncSettingsSheet: View {
         return "最終書き出し \(formatter.string(from: date))"
     }
 
-    // MARK: - 読み込み
-
-    private var importSection: some View {
-        VStack(alignment: .leading, spacing: Space.s2) {
-            sectionTitle("iPhone カレンダーの読み込み")
-            card {
-                VStack(alignment: .leading, spacing: Space.s2) {
-                    if calendars.isEmpty {
-                        Text("読み込めるカレンダーがありません")
-                            .font(.atenderSm)
-                            .foregroundStyle(Color.textSecondary)
-                    } else {
-                        ForEach(calendars) { calendar in
-                            Toggle(isOn: linkedBinding(calendar.id)) {
-                                calendarLabel(calendar)
-                            }
-                        }
-                    }
-                }
-            }
-            Text("Atender カレンダーはここに出ません")
-                .font(.atenderXs)
-                .foregroundStyle(Color.textTertiary)
-        }
-    }
-
-    private func calendarLabel(_ calendar: EKCalendarSnapshot) -> some View {
-        HStack(spacing: Space.s2) {
-            Circle()
-                .fill(Color(hexString: calendar.colorHex ?? "#8b5cf6"))
-                .frame(width: 10, height: 10)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(calendar.title).font(.atenderSm).foregroundStyle(Color.textPrimary)
-                Text(calendar.sourceTitle).font(.atenderXs).foregroundStyle(Color.textTertiary)
-            }
-        }
-    }
-
     // MARK: - helpers
 
     private func sectionTitle(_ text: String) -> some View {
@@ -246,42 +201,6 @@ struct CalendarSyncSettingsSheet: View {
         )
     }
 
-    private var exportCoursesBinding: Binding<Bool> {
-        Binding(
-            get: { coordinator.exportCourses },
-            set: { value in
-                coordinator.exportCourses = value
-                Task { await coordinator.sync(trigger: .manual) }
-            }
-        )
-    }
-
-    private var exportPersonalBinding: Binding<Bool> {
-        Binding(
-            get: { coordinator.exportPersonal },
-            set: { value in
-                coordinator.exportPersonal = value
-                Task { await coordinator.sync(trigger: .manual) }
-            }
-        )
-    }
-
-    private func linkedBinding(_ id: String) -> Binding<Bool> {
-        Binding(
-            get: { coordinator.linkedCalendarIds.contains(id) },
-            set: { value in
-                var ids = coordinator.linkedCalendarIds
-                if value {
-                    ids.insert(id)
-                } else {
-                    ids.remove(id)
-                }
-                coordinator.linkedCalendarIds = ids
-                Task { await coordinator.sync(trigger: .manual) }
-            }
-        )
-    }
-
     private func recover(from recovery: CalendarSyncRecovery) {
         switch recovery {
         case .none:
@@ -289,14 +208,12 @@ struct CalendarSyncSettingsSheet: View {
         case .requestAccess:
             Task {
                 await coordinator.requestFullAccess()
-                await reloadCalendars()
             }
         case .openSystemSettings:
             openSystemSettings()
         case .retry:
             Task {
                 await coordinator.sync(trigger: .manual)
-                await reloadCalendars()
             }
         }
     }
@@ -305,9 +222,5 @@ struct CalendarSyncSettingsSheet: View {
         if let url = URL(string: UIApplication.openSettingsURLString) {
             UIApplication.shared.open(url)
         }
-    }
-
-    private func reloadCalendars() async {
-        calendars = await coordinator.availableCalendars()
     }
 }

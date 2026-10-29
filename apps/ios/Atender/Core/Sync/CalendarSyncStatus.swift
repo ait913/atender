@@ -30,7 +30,7 @@ enum CalendarSyncError: Equatable, Error, Sendable {
         case .calendarLookupTransient: return "カレンダーを読み込めませんでした"
         case .identityUnavailable: return "この端末では書き出しを続けられません（イベントの識別情報が保持されません）"
         case .applyFailed(let detail): return "iPhone カレンダーに書き込めませんでした（\(detail)）"
-        case .network(let detail): return "予定を取得できませんでした（\(detail)）"
+        case .network(let detail): return "時間割を取得できませんでした（\(detail)）"
         }
     }
 
@@ -80,28 +80,4 @@ struct CalendarSyncStatus: Equatable, Sendable {
     var lastError: CalendarSyncError? = nil
     /// 解決済みカレンダーの表示名 (title + source)
     var calendarTitle: String? = nil
-}
-
-// MARK: - カレンダー画面のバナー (§7.2)
-
-enum CalendarSyncBannerKind: Equatable {
-    case none
-    case permissionPrompt                 // 未決定 + 書き出し ON + 未 dismiss
-    case failure(CalendarSyncError)
-}
-
-enum CalendarSyncBannerLogic {
-    static func kind(status: CalendarSyncStatus, exportEnabled: Bool, promptDismissed: Bool) -> CalendarSyncBannerKind {
-        if !exportEnabled { return .none }
-        if status.access == .notDetermined {
-            return promptDismissed ? .none : .permissionPrompt
-        }
-        if status.phase == .failed, let error = status.lastError {
-            // ユーザーが明示的に断った状態を毎回蒸し返さない
-            if error == .accessDenied { return .none }
-            if error == .accessRestricted { return .none }
-            return .failure(error)
-        }
-        return .none
-    }
 }

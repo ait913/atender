@@ -124,45 +124,6 @@ actor EventKitStore {
         return summary
     }
 
-    /// 読み込み用 (Atender カレンダーは呼び出し側で除外済み)
-    func fetchSnapshots(range: DateInterval, calendarIds: Set<String>) -> [EKEventSnapshot] {
-        guard Self.currentAccess() == .fullAccess, !calendarIds.isEmpty else { return [] }
-        store.refreshSourcesIfNecessary()
-        let calendars = store.calendars(for: .event).filter { calendarIds.contains($0.calendarIdentifier) }
-        guard !calendars.isEmpty else { return [] }
-        let predicate = store.predicateForEvents(withStart: range.start, end: range.end, calendars: calendars)
-        return store.events(matching: predicate).map { event in
-            EKEventSnapshot(
-                externalId: event.calendarItemExternalIdentifier,
-                calendarId: event.calendar.calendarIdentifier,
-                occurrenceStart: event.occurrenceDate ?? event.startDate,
-                lastModified: event.lastModifiedDate,
-                start: event.startDate,
-                end: event.endDate,
-                isAllDay: event.isAllDay,
-                title: (event.title?.isEmpty ?? true) ? "予定" : event.title,
-                location: event.location
-            )
-        }
-    }
-
-    /// build 11 以前が既定カレンダーへ push したイベントの掃除
-    func removeEvents(externalIds: [String], excludingCalendarId: String?) -> Int {
-        guard Self.currentAccess() == .fullAccess, !externalIds.isEmpty else { return 0 }
-        var removed = 0
-        for externalId in externalIds {
-            let events = store.calendarItems(withExternalIdentifier: externalId).compactMap { $0 as? EKEvent }
-            for event in events {
-                if let excludingCalendarId, event.calendar?.calendarIdentifier == excludingCalendarId { continue }
-                if (try? store.remove(event, span: .thisEvent, commit: false)) != nil { removed += 1 }
-            }
-        }
-        if removed > 0 {
-            if (try? store.commit()) == nil { store.reset() }
-        }
-        return removed
-    }
-
     /// Atender カレンダー内の owned だけを全削除する (カレンダー自体は残す)
     func wipeOwned(calendarId: String, window: DateInterval) throws -> Int {
         guard let calendar = store.calendar(withIdentifier: calendarId) else { return 0 }

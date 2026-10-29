@@ -96,28 +96,9 @@ enum Endpoints {
         .init(path: "/api/timetable-suspensions/bulk-remove", method: .post, body: body)
     }
 
-    static func personalEvents(from: String, to: String) -> APIEndpoint {
-        .init(path: "/api/personal-events", method: .get, query: ["from": from, "to": to])
-    }
-    static func createPersonalEvent(_ body: PersonalEventCreateInput) -> APIEndpoint { .init(path: "/api/personal-events", method: .post, body: body) }
-    static func updatePersonalEvent(id: String, _ body: PersonalEventUpdateInput) -> APIEndpoint { .init(path: "/api/personal-events/\(id)", method: .patch, body: body) }
-    static func deletePersonalEvent(id: String, scope: String, originalDate: String?) -> APIEndpoint {
-        .init(path: "/api/personal-events/\(id)", method: .delete,
-              query: compactQuery(["scope": scope, "originalDate": originalDate]))
-    }
     static func occurrenceRange(from: String, to: String, semesterId: String? = nil) -> APIEndpoint {
         .init(path: "/api/occurrences", method: .get,
               query: compactQuery(["from": from, "to": to, "semesterId": semesterId]))
-    }
-    static func legacyEkPushes() -> APIEndpoint {
-        .init(path: "/api/personal-events/eventkit-legacy-pushes", method: .get)
-    }
-    static func clearLegacyEkPushes(_ body: LegacyEkPushClearInput) -> APIEndpoint {
-        .init(path: "/api/personal-events/eventkit-legacy-pushes/clear", method: .post, body: body)
-    }
-
-    static func eventKitSync(_ body: EventKitSyncInput) -> APIEndpoint {
-        .init(path: "/api/personal-events/eventkit-sync", method: .post, body: body)
     }
 
     static func friendships(status: String? = nil, direction: String? = nil) -> APIEndpoint {
@@ -142,42 +123,6 @@ enum Endpoints {
         .init(path: "/api/rooms/\(id)/week", method: .get,
               query: compactQuery(["weekStart": weekStart, "semesterId": semesterId]))
     }
-    static func roomEvents(id: String, from: String? = nil, to: String? = nil) -> APIEndpoint {
-        .init(path: "/api/rooms/\(id)/events", method: .get, query: compactQuery(["from": from, "to": to]))
-    }
-    static func createRoomEvent(id: String, _ body: CreateRoomEventInput) -> APIEndpoint { .init(path: "/api/rooms/\(id)/events", method: .post, body: body) }
-    static func updateRoomEvent(id: String, eventId: String, _ body: UpdateRoomEventInput) -> APIEndpoint {
-        .init(path: "/api/rooms/\(id)/events/\(eventId)", method: .patch, body: body)
-    }
-    static func deleteRoomEvent(id: String, eventId: String, scope: String = "all", originalDate: String? = nil) -> APIEndpoint {
-        .init(path: "/api/rooms/\(id)/events/\(eventId)", method: .delete, query: compactQuery(["scope": scope, "originalDate": originalDate]))
-    }
-    static func icsImports(roomId: String) -> APIEndpoint { .init(path: "/api/rooms/\(roomId)/ics-imports", method: .get) }
-    static func icsImportPreview(roomId: String, importId: String) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/ics-imports/\(importId)/preview", method: .get)
-    }
-    static func commitIcsImport(roomId: String, importId: String) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/ics-imports/\(importId)/commit", method: .post)
-    }
-    static func personalCalendarShare(roomId: String) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .get)
-    }
-    static func setPersonalCalendarShare(roomId: String, _ body: SharePutInput) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .post, body: body)
-    }
-    static func patchPersonalCalendarShare(roomId: String, _ body: SharePatchInput) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .patch, body: body)
-    }
-    static func deletePersonalCalendarShare(roomId: String) -> APIEndpoint {
-        .init(path: "/api/rooms/\(roomId)/personal-calendar-share", method: .delete)
-    }
-
-    static func icsTitleRules() -> APIEndpoint { .init(path: "/api/me/ics-title-rules", method: .get) }
-    static func createIcsTitleRule(_ body: CreateIcsTitleRuleInput) -> APIEndpoint { .init(path: "/api/me/ics-title-rules", method: .post, body: body) }
-    static func patchIcsTitleRule(id: String, _ body: PatchIcsTitleRuleInput) -> APIEndpoint {
-        .init(path: "/api/me/ics-title-rules/\(id)", method: .patch, body: body)
-    }
-    static func deleteIcsTitleRule(id: String) -> APIEndpoint { .init(path: "/api/me/ics-title-rules/\(id)", method: .delete) }
 }
 
 private func compactQuery(_ values: [String: String?]) -> [String: String] {

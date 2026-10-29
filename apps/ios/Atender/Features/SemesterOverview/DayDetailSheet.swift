@@ -1,8 +1,6 @@
 import SwiftUI
 
 enum DayDetailSheetKind: Equatable {
-    case create
-    case edit(PersonalEventOccurrenceDto)
     case transfer
 }
 
@@ -26,7 +24,6 @@ struct DayDetailSheet: View {
                     suspensionSection(detail, model)
                     classTransferSection(detail, model)
                     occurrencesSection(detail, model)
-                    personalEventsSection(detail, model)
                 }
                 if let errorMessage = model.errorMessage {
                     Text(errorMessage).font(.atenderSm).foregroundStyle(Color.statusAbsent)
@@ -61,26 +58,6 @@ struct DayDetailSheet: View {
     @ViewBuilder
     private var sheetHost: some View {
         switch activeSheet {
-        case .create:
-            BottomSheet(title: "予定を追加", isPresented: activeSheetBinding, stackLevel: 2) {
-                PersonalEventEditorContent(
-                    defaultDate: date,
-                    occurrence: nil,
-                    onSaved: { activeSheet = nil; await afterEventChanged() },
-                    onDeleted: { activeSheet = nil; await afterEventChanged() },
-                    onCancel: { activeSheet = nil }
-                )
-            }
-        case .edit(let occurrence):
-            BottomSheet(title: "予定を編集", isPresented: activeSheetBinding, stackLevel: 2) {
-                PersonalEventEditorContent(
-                    defaultDate: date,
-                    occurrence: occurrence,
-                    onSaved: { activeSheet = nil; await afterEventChanged() },
-                    onDeleted: { activeSheet = nil; await afterEventChanged() },
-                    onCancel: { activeSheet = nil }
-                )
-            }
         case .transfer:
             BottomSheet(title: "授業変更", isPresented: activeSheetBinding, stackLevel: 2) {
                 ClassTransferSheet(
@@ -191,53 +168,6 @@ struct DayDetailSheet: View {
                 }
             }
         }
-    }
-
-    private func personalEventsSection(_ detail: DayDetailDto, _ model: DayDetailViewModel) -> some View {
-        VStack(alignment: .leading, spacing: Space.s3) {
-            HStack {
-                Text("予定 (\(detail.personalEvents.count))")
-                    .font(.atenderBase.weight(.bold))
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-                AtenderButton(title: "追加", variant: .secondary, size: .sm) { activeSheet = .create }
-                    .frame(width: 80)
-            }
-            if detail.personalEvents.isEmpty {
-                Text("予定はありません").font(.atenderSm).foregroundStyle(Color.textTertiary)
-            } else {
-                ForEach(detail.personalEvents) { event in
-                    HStack(spacing: Space.s2) {
-                        Circle().fill(Color(hexString: event.color ?? "#10b981")).frame(width: 10, height: 10)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(event.title).font(.atenderSm.weight(.bold)).foregroundStyle(Color.textPrimary)
-                            Text(PersonalDaySheetFormat.occurrenceTime(event))
-                                .font(.atenderXs)
-                                .foregroundStyle(Color.textTertiary)
-                        }
-                        Spacer()
-                        iconButton("pencil") { activeSheet = .edit(event) }
-                        iconButton("trash", danger: true) { activeSheet = .edit(event) }
-                    }
-                    .padding(Space.s3)
-                    .background(Color.bgElevated)
-                    .clipShape(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: Radius.timetableCell, style: .continuous).stroke(Color.borderSubtle, lineWidth: 1))
-                }
-            }
-        }
-    }
-
-    private func iconButton(_ systemName: String, danger: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.atenderSm.weight(.bold))
-                .foregroundStyle(danger ? Color.statusAbsent : Color.textSecondary)
-                .frame(width: 32, height: 32)
-                .background(Color.bgMuted)
-                .clipShape(Circle())
-        }
-        .buttonStyle(.plain)
     }
 }
 
