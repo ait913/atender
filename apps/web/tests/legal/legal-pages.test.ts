@@ -41,7 +41,7 @@ describe("[B20 #L] legal pages (static content)", () => {
 
   it.each(PAGES)("#L3 $slug.html has mailto + footer links with aria-current only on itself", ({ slug }) => {
     const html = read(slug);
-    expect(html).toContain('href="mailto:touri.development@gmail.com"');
+    expect(html).toContain('href="mailto:support@aisaba.net"');
     const footer = html.slice(html.indexOf("<footer"), html.indexOf("</footer>"));
     const anchors = [...footer.matchAll(/<a\b([^>]*)>/g)].map((m) => m[1]);
     for (const target of ["/privacy", "/terms", "/support"]) {
