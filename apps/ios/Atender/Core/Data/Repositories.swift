@@ -88,7 +88,13 @@ final class TimetableRepository {
     func publishAsTemplate(id: String, title: String) async throws -> TemplateDto {
         let input = TemplatePublishInput(title: title, description: nil, year: nil, term: nil)
         let response = try await client.send(Endpoints.publishAsTemplate(id: id, input), as: TemplateResponse.self)
+        cache.invalidate(prefixes: invalidationTargets(for: .userTimetablePublish))
         return response.template
+    }
+
+    func unpublishTemplate(id: String) async throws {
+        try await client.send(Endpoints.patchTemplate(id: id, TemplatePatchInput(isPublic: false)))
+        cache.invalidate(prefixes: invalidationTargets(for: .userTimetablePublish))
     }
 
     func createCourse(_ input: CourseCreateInput) async throws -> CourseDto {

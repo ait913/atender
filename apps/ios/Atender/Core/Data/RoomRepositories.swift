@@ -157,9 +157,4 @@ final class TemplateRepository {
         cache.invalidate(prefixes: invalidationTargets(for: .templateCopy))
         return response.userTimetable
     }
-
-    func publishTimetable(id: String, title: String) async throws -> TemplateDto {
-        let response = try await client.send(Endpoints.publishAsTemplate(id: id, TemplatePublishInput(title: title)), as: TemplateResponse.self)
-        return response.template
-    }
 }

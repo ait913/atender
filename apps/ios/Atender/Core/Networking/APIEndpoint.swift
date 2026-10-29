@@ -48,6 +48,7 @@ enum Endpoints {
     static func templates(_ query: TemplateSearchQuery) -> APIEndpoint { .init(path: "/api/timetable-templates", method: .get, query: query.asQuery) }
     static func template(id: String) -> APIEndpoint { .init(path: "/api/timetable-templates/\(id)", method: .get) }
     static func createTemplate(_ body: TemplateCreateInput) -> APIEndpoint { .init(path: "/api/timetable-templates", method: .post, body: body) }
+    static func patchTemplate(id: String, _ body: TemplatePatchInput) -> APIEndpoint { .init(path: "/api/timetable-templates/\(id)", method: .patch, body: body) }
     static func copyTemplate(id: String, _ body: TemplateCopyInput) -> APIEndpoint { .init(path: "/api/timetable-templates/\(id)/copy", method: .post, body: body) }
 
     static func createCourse(_ body: CourseCreateInput) -> APIEndpoint { .init(path: "/api/courses", method: .post, body: body) }
