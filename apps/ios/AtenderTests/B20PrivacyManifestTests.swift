@@ -69,11 +69,11 @@ final class B20PrivacyManifestTests: XCTestCase {
         try String(contentsOf: repoRoot.appendingPathComponent(rel), encoding: .utf8)
     }
 
-    func testV1ProjectYmlIsBuild22() throws {
+    func testV1ProjectYmlIsBuild23() throws {
         let yml = try readText("apps/ios/project.yml")
-        XCTAssertTrue(yml.contains(#"CFBundleVersion: "22""#))
-        XCTAssertFalse(yml.contains(#"CFBundleVersion: "21""#))
-        XCTAssertFalse(yml.contains(#""21""#), "project.yml に \"21\" が残っていない")
+        XCTAssertTrue(yml.contains(#"CFBundleVersion: "23""#))
+        XCTAssertFalse(yml.contains(#"CFBundleVersion: "22""#))
+        XCTAssertFalse(yml.contains(#""22""#), "project.yml に \"22\" が残っていない")
         XCTAssertTrue(yml.contains(#"CFBundleShortVersionString: "1.0.1""#))
     }
 
@@ -83,13 +83,13 @@ final class B20PrivacyManifestTests: XCTestCase {
         let m = try XCTUnwrap(regex.firstMatch(in: ts, range: NSRange(ts.startIndex..., in: ts)))
         let value = Int(String(ts[try XCTUnwrap(Range(m.range(at: 1), in: ts))]))
         XCTAssertEqual(value, 12, "設計 §12: MIN_IOS_BUILD は 12 据え置き")
-        XCTAssertLessThanOrEqual(try XCTUnwrap(value), 22)
+        XCTAssertLessThanOrEqual(try XCTUnwrap(value), 23)
     }
 
-    func testV3InfoPlistBuild22() throws {
+    func testV3InfoPlistBuild23() throws {
         let data = try Data(contentsOf: repoRoot.appendingPathComponent("apps/ios/Atender/Info.plist"))
         let plist = try XCTUnwrap(try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any])
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "22")
-        XCTAssertEqual(Bundle.main.infoDictionary?["CFBundleVersion"] as? String, "22")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "23")
+        XCTAssertEqual(Bundle.main.infoDictionary?["CFBundleVersion"] as? String, "23")
     }
 }
