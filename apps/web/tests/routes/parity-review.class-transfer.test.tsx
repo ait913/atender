@@ -6,11 +6,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_URL } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
-import { course, findCalls, meeting, occ, recordCalls, stopRecording, timetable, useTimetables } from "../utils/parity-fixtures";
+import { course, findCalls, meeting, occ, recordCalls, stopRecording, timetable, useTimetables, settle } from "../utils/parity-fixtures";
 
 afterEach(() => {
   stopRecording();
-  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -95,7 +94,7 @@ describe("[D] class transfer in day detail", () => {
     const dlg = title.closest('[role="dialog"]') as HTMLElement;
     expect(dlg.querySelectorAll("p").length).toBe(0);
     await v.user.click(within(dlg).getByRole("button", { name: "キャンセル" }));
-    await new Promise((r) => setTimeout(r, 200));
+    await settle(200);
     expect(findCalls(calls, "DELETE", /class-transfers/)).toHaveLength(0);
     await v.user.click(screen.getAllByRole("button", { name: "取り消す" })[0]!);
     const dlg2 = (await screen.findByText("出欠記録 2 件も削除されます")).closest('[role="dialog"]') as HTMLElement;

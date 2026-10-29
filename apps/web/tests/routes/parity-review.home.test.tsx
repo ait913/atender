@@ -7,7 +7,7 @@ import { API_URL } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
 import {
-  findCalls, occ, recordCalls, room1, sem, stopRecording, timetable, useMe, useRooms, useSemesters, useTimetables,
+  settle, findCalls, occ, recordCalls, room1, sem, stopRecording, timetable, useMe, useRooms, useSemesters, useTimetables,
 } from "../utils/parity-fixtures";
 
 afterEach(() => {
@@ -351,7 +351,7 @@ describe("[A] attendance overlay", () => {
     todayState([]);
     await renderApp({ initialPath: "/" });
     await waitHome();
-    await new Promise((r) => setTimeout(r, 300));
+    await settle(300);
     expect(screen.queryByTestId("attendance-grabber")).toBeNull();
     expect(screen.queryByTestId("cta-expand-toggle")).toBeNull();
   });
@@ -419,7 +419,7 @@ describe("[A] attendance overlay", () => {
     await renderApp({ initialPath: "/" });
     await screen.findByText("今日は全出席 (2)");
     await drag(screen.getByTestId("attendance-grabber"), 40);
-    await new Promise((r) => setTimeout(r, 100));
+    await settle(100);
     expect(screen.queryByText("今日は全出席 (2)")).not.toBeNull();
     await drag(screen.getByTestId("attendance-grabber"), 41);
     await waitFor(() => expect(screen.queryByText("今日は全出席 (2)")).toBeNull());

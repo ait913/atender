@@ -9,7 +9,7 @@ import { API_URL } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
 import {
-  findCalls, recordCalls, sem, slotsN, stopRecording, template, timetable, useMe, useRooms, useSemesters, useTemplates, useTimetables,
+  settle, findCalls, recordCalls, sem, slotsN, stopRecording, template, timetable, useMe, useRooms, useSemesters, useTemplates, useTimetables,
 } from "../utils/parity-fixtures";
 
 const KEY = "atender.semesterRollover.dismissedSemesterId";
@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 async function expectNoDialog() {
-  await new Promise((r) => setTimeout(r, 400));
+  await settle(400);
   expect(screen.queryByText(TITLE)).toBeNull();
 }
 

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { API_URL, setupRequiredMe } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
-import { findCalls, recordCalls, room1, stopRecording, useRooms } from "../utils/parity-fixtures";
+import { findCalls, recordCalls, room1, stopRecording, useRooms, settle } from "../utils/parity-fixtures";
 
 afterEach(() => stopRecording());
 
@@ -68,7 +68,7 @@ describe("[R] routing", () => {
     await renderApp({ initialPath: "/rooms/join/abc123" });
     expect(await screen.findByText("Invite not found")).toBeInTheDocument();
     expect(screen.getByLabelText("招待リンクまたはコード")).toBeInTheDocument();
-    await new Promise((r) => setTimeout(r, 300));
+    await settle(300);
     expect(findCalls(calls, "POST", /\/api\/rooms\/join$/)).toHaveLength(1);
   });
 
@@ -77,7 +77,7 @@ describe("[R] routing", () => {
     server.use(http.get(`${API_URL}/api/me`, () => HttpResponse.json(setupRequiredMe)));
     const view = await renderApp({ initialPath: "/rooms/join/abc123" });
     await waitFor(() => expect(view.path()).toBe("/setup"));
-    await new Promise((r) => setTimeout(r, 200));
+    await settle(200);
     expect(findCalls(calls, "POST", /\/api\/rooms\/join$/)).toHaveLength(0);
   });
 

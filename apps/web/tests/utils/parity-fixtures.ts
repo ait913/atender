@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // web-parity Reviewer 用フィクスチャ。設計 doc §7 の標本から作る (実装は参照しない)。
+import { act } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { API_URL, defaultMe } from "../msw/handlers";
 import { server } from "../msw/server";
@@ -143,4 +144,11 @@ export function occ(id: string, courseName: string, periodIndex: number, startMi
     id, meetingId: `m-${id}`, courseId: `c-${id}`, courseName, teacher: null, room, color: "#2f80ed",
     date, periodIndex, periodOffset: 0, startMinute, endMinute, status,
   };
+}
+
+/** タイマー起因の state 更新が act 外で起きて console.error (= Unhandled Error) にならないよう、待ちは act 内で行う */
+export function settle(ms: number) {
+  return act(async () => {
+    await new Promise((r) => setTimeout(r, ms));
+  });
 }

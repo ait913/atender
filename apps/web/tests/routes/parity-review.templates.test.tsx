@@ -7,12 +7,10 @@ import { API_URL } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
 import {
-  course, findCalls, meeting, recordCalls, sem, stopRecording, template, timetable, useMe, useSemesters, useTemplates, useTimetables,
-} from "../utils/parity-fixtures";
+  course, findCalls, meeting, recordCalls, sem, stopRecording, template, timetable, useMe, useSemesters, useTemplates, useTimetables, settle } from "../utils/parity-fixtures";
 
 afterEach(() => {
   stopRecording();
-  vi.restoreAllMocks();
 });
 
 const S1 = sem("semester-1", "前期", "2026-04-01", "2099-03-31");
@@ -216,7 +214,7 @@ describe("[T] template browser (entry E1)", () => {
     expect(await screen.findByText("既存の時間割と出欠記録を置き換えます")).toBeInTheDocument();
     expect(screen.getByText("「前期」の時間割（2 科目）と、その出欠記録はすべて削除され、元に戻せません。")).toBeInTheDocument();
     await v.user.click(screen.getByRole("button", { name: "キャンセル" }));
-    await new Promise((r) => setTimeout(r, 200));
+    await settle(200);
     expect(copyCalls(calls)).toHaveLength(0);
     await v.user.click(screen.getByTestId("template-import-button"));
     await v.user.click(await screen.findByRole("button", { name: "置き換える" }));
@@ -266,7 +264,7 @@ describe("[T] template browser (entry E1)", () => {
     await openPreview(v);
     await v.user.click(screen.getByTestId("template-import-button"));
     expect(await screen.findByText("取り込めませんでした、もう一度試してください")).toBeInTheDocument();
-    await new Promise((r) => setTimeout(r, 300));
+    await settle(300);
     expect(copyCalls(calls)).toHaveLength(2);
   });
 

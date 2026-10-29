@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { API_URL, defaultMe, setupRequiredMe } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
-import { findCalls, recordCalls, stopRecording, template } from "../utils/parity-fixtures";
+import { findCalls, recordCalls, stopRecording, template, settle } from "../utils/parity-fixtures";
 
 afterEach(() => {
   stopRecording();
@@ -68,7 +68,7 @@ describe("[S] onboarding", () => {
     statefulMe();
     const v = await renderApp({ initialPath: "/setup" });
     const input = await screen.findByPlaceholderText("学校名で検索");
-    await new Promise((r) => setTimeout(r, 500));
+    await settle(500);
     const calls = recordCalls();
     await v.user.type(input, "東京");
     await waitFor(() => {

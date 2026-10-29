@@ -10,7 +10,6 @@ import { findCalls, recordCalls, stopRecording, template, useMe, useTemplates } 
 
 afterEach(() => {
   stopRecording();
-  vi.restoreAllMocks();
 });
 
 type View = Awaited<ReturnType<typeof renderApp>>;
@@ -122,10 +121,15 @@ describe("[ST] settings rows / legal links / theme", () => {
   const theme = () => document.documentElement.getAttribute("data-theme");
 
   it("[ST7] no stored theme -> light even when OS is dark", async () => {
+    const original = (window.matchMedia as any).getMockImplementation();
     darkOs();
-    await renderApp({ initialPath: "/settings" });
-    await screen.findByText("ライト");
-    expect(theme()).toBe("light");
+    try {
+      await renderApp({ initialPath: "/settings" });
+      await screen.findByText("ライト");
+      expect(theme()).toBe("light");
+    } finally {
+      (window.matchMedia as any).mockImplementation(original);
+    }
   });
 
   it("[ST8] choosing 自動 stores 'auto'", async () => {

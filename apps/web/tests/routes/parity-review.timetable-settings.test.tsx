@@ -7,8 +7,7 @@ import { API_URL } from "../msw/handlers";
 import { server } from "../msw/server";
 import { renderApp } from "../utils/render";
 import {
-  course, findCalls, meeting, recordCalls, stopRecording, template, timetable, useMe, useTemplates, useTimetables,
-} from "../utils/parity-fixtures";
+  course, findCalls, meeting, recordCalls, stopRecording, template, timetable, useMe, useTemplates, useTimetables } from "../utils/parity-fixtures";
 
 afterEach(() => stopRecording());
 
