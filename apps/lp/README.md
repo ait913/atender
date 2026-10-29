@@ -1,4 +1,4 @@
-正典は [.designs/20261030-landing-page-and-social-image.md](../../.designs/20261030-landing-page-and-social-image.md)。
+正典はレイアウト・文言が [.designs/20261030-landing-page-v2-layout.md](../../.designs/20261030-landing-page-v2-layout.md)、配信 (Docker / nginx / Coolify) が [.designs/20261030-landing-page-and-social-image.md](../../.designs/20261030-landing-page-and-social-image.md) §5。
 
 atender の LP (`https://atender.aisaba.net`)。静的 HTML を nginx-unprivileged で配信する。Coolify の `base_directory` は `/apps/lp`。
 

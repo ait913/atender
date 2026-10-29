@@ -97,7 +97,7 @@ xcrun xcresulttool export attachments --path run.xcresult --output-path shots   
 
 ### LP / SNS 画像を更新する
 
-正典は `.designs/20261030-landing-page-and-social-image.md` §6 (挙動) と `mocks/social/README.md`。文言・レイアウトは `apps/lp/site/index.html` / `style.css` を直接編集。端末画像はストア画像 (`assets/store/<版>/`) から `python3 -I mocks/social/extract-phones.py` で作り直し、マスコットは元画像 (`apps/web/public/character/`) の足元の地面を `python3 -I mocks/social/clean-mascot.py` で除去して `apps/lp/site/img/mascot-*.png` に出し、SNS 画像 3 枚 (`hero-1920x1080.png` / `friends-1920x1080.png` / `og-1200x630.png`、全てマスコット入り) は `bash mocks/social/render.sh` 1 回で `assets/social/<版>/` に出る (OG は `apps/lp/site/` にもコピーされる)。ストア画像を作り直して端末の CSS 座標が変わったら extract-phones.py の定数を引き直す。デプロイは Coolify の `atender-lp` を deploy (POST)。
+正典は LP のレイアウト・文言が `.designs/20261030-landing-page-v2-layout.md`、配信と SNS 画像が `.designs/20261030-landing-page-and-social-image.md` (§4〜§6) と `mocks/social/README.md`。文言・レイアウトは `apps/lp/site/index.html` / `style.css` を直接編集。端末画像はストア画像 (`assets/store/<版>/`) から `python3 -I mocks/social/extract-phones.py` で作り直し、マスコットは元画像 (`apps/web/public/character/`) の足元の地面を `python3 -I mocks/social/clean-mascot.py` で除去して `apps/lp/site/img/mascot-*.png` に出し (LP が使う hello / chat / run は `python3 -I mocks/social/mascot-webp.py` で同ディレクトリの `mascot-*.webp` に縮小)、SNS 画像 3 枚 (`hero-1920x1080.png` / `friends-1920x1080.png` / `og-1200x630.png`、全てマスコット入り) は `bash mocks/social/render.sh` 1 回で `assets/social/<版>/` に出る (OG は `apps/lp/site/` にもコピーされる)。ストア画像を作り直して端末の CSS 座標が変わったら extract-phones.py の定数を引き直す。デプロイは Coolify の `atender-lp` を deploy (POST)。
 
 ### TestFlight に配布 (CLI 完結・Xcode GUI 不要)
 
