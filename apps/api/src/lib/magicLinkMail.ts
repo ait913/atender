@@ -16,7 +16,7 @@ export function buildMagicLinkMail(url: string): { subject: string; html: string
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#F3F7FB;padding:40px 20px;">
 <tr><td align="center">
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;background:#FFFFFF;border-radius:14px;padding:36px;">
-<tr><td style="text-align:left;padding-bottom:28px;"><img src="https://atender.appily.run/wordmark-navy.png" alt="Atender" width="140" height="31" style="display:block;border:0;" /></td></tr>
+<tr><td style="text-align:left;padding-bottom:28px;"><img src="https://atender.appily.run/wordmark-mail.png" alt="Atender" width="164" height="44" style="display:block;border:0;" /></td></tr>
 <tr><td style="color:#30415B;font-size:18px;font-weight:700;padding-bottom:12px;">ログインリンクが届いています</td></tr>
 <tr><td style="color:#30415B;font-size:14px;line-height:1.7;padding-bottom:28px;">下のボタンを開くと Atender にログインできます。リンクの有効期限は <strong>15 分</strong>です。心当たりがなければそのまま閉じてください。</td></tr>
 <tr><td align="center" style="padding-bottom:28px;"><a href="${url}" style="display:inline-block;background:#1E96E6;color:#FFFFFF;text-decoration:none;font-weight:700;padding:14px 32px;border-radius:10px;font-size:15px;">ログインする</a></td></tr>
