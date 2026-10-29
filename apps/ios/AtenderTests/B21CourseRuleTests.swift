@@ -149,12 +149,12 @@ final class B21CourseRuleTests: XCTestCase {
     }
 
     func testCourseDtoDecodesWithAndWithoutRuleKeys() throws {
-        let old = Data(#"{"id":"c","userTimetableId":"u","name":"A","teacher":null,"color":"#ffffff","note":null}"#.utf8)
+        let old = Data(##"{"id":"c","userTimetableId":"u","name":"A","teacher":null,"color":"#ffffff","note":null}"##.utf8)
         let a = try JSONDecoder().decode(CourseDto.self, from: old)
         XCTAssertNil(a.requiredAttendanceRate)
         XCTAssertNil(a.maxAbsences)
         XCTAssertNil(a.tardiesPerAbsence)
-        let new = Data(#"{"id":"c","userTimetableId":"u","name":"A","teacher":null,"color":"#ffffff","note":null,"requiredAttendanceRate":80,"maxAbsences":null,"tardiesPerAbsence":3}"#.utf8)
+        let new = Data(##"{"id":"c","userTimetableId":"u","name":"A","teacher":null,"color":"#ffffff","note":null,"requiredAttendanceRate":80,"maxAbsences":null,"tardiesPerAbsence":3}"##.utf8)
         let b = try JSONDecoder().decode(CourseDto.self, from: new)
         XCTAssertEqual(b.requiredAttendanceRate, 80)
         XCTAssertNil(b.maxAbsences)

@@ -176,6 +176,14 @@ rrulestr は `DTSTART;TZID=...` 形式なら食えるが `DTSTART:...Z` 形式�
   Coolify PROD に入ると native ログインが本番で無効化される。投入値は厳密に `atender://auth` であること。
 - 関連: `Muraki/knowledge/gotcha/env-module-import-time-parse-defeats-runtime-env-swap.md`
 
+### ★ build 21 レーン B 実測 (2026-10-29, `feature/b21-course-rules`, Reviewer)
+
+`pnpm exec prisma generate ; rm -rf tests/.tmp ; pnpm exec vitest run` → **16 failed / 610 passed / 1 skipped (627)**。失敗 16 件は台帳の既知 (A1-A5, A7, A8, B1-B5, Magic Link 4) と集合一致。**未分類 0**。
+
+- `b20-account-deletion` #D9〜#D14 の 6 件: **環境依存**。生成済み Prisma Client が build 20 migration 前のまま古かった。`pnpm exec prisma generate` で解消 (2026-10-29 確認)
+- `b20-author-set-null-migration` `#M3`: **テスト陳腐化**。「b20 が最後の migration」を assert していたため新 migration (b21) で落ちた。「b20 が migration 一覧に含まれる」に緩め、b20 より後の migration を fixture 投入前に当てない (`f >= mine` を除外) 形に修正済み (レーン C でも migration が増える)
+- iOS: `Executed 743 tests, with 0 failures` (719 + Reviewer `B21CourseRuleTests` 24)
+
 ### テスト方法論の限界 (実装は正しい。in-process env 差し替えで観測不能)
 
 - `tests/auth-apple.test.ts > registers the Apple provider route when dynamic client secret env is configured` → **it.skip 化済み**。
