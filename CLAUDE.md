@@ -160,7 +160,7 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
 - Web URL: https://atender.appily.run
 - API URL: https://atender-api.appily.run (health: `GET /healthz`)
 - LP URL: https://atender.aisaba.net (health: GET /healthz)
-- atender-lp: <Coolify 作成後に Leader が記入>
+- atender-lp: `vfua50qbir3df0auz1xcduad` (destination `dst-atender-lp` = `xqcnfiaxwlem1h5qqonxsf2z`、2026-10-30 作成)
 - Coolify app uuid:
   - atender-api: `vrdxzvmakcxieyhfhayz5r8r`
   - atender-web: `xxg31wshj6rhjmnffju1bg5r`

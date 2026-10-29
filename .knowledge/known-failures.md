@@ -435,7 +435,12 @@ repository が `as:` に渡す型を一度も実行していなかったため (
 
 - **なし** (0 件)。
 
-## ★ A2 実測 (2026-10-29, chore/drop-calendar-api, Reviewer) — 2026-10-30 に main へマージ (`1309ceb`)、以後 API の既知失敗は **14** (roomEvent A3/A7 は対象ごと消滅)
+## ★ AIS Mail 移行 (2026-10-30, feature/ais-mail → main `eb50b24`) — 以後 API の既知失敗は **13**
+
+- Magic Link `[§8 #76] Resend failure makes Magic Link request return 500` は、送信失敗を `MAIL_SEND_FAILED` の 500 で返す新契約に書き換えて**緑** (既知から外す)。残る Magic Link 既知は #2 / #3 / #4 の 3 本
+- Reviewer 実測: 13 failed / 684 passed / 1 skipped (`ais-mail-review.test.ts` 63 本を含む)。失敗名は A1 / A2 / A4 / A5 / A8 + B1〜B5 + Magic Link 3 と一致、未分類 0
+
+## ★ A2 実測 (2026-10-29, chore/drop-calendar-api, Reviewer) — 2026-10-30 に main へマージ (`1309ceb`)、A2 後の API 既知失敗は 14 (roomEvent A3/A7 は対象ごと消滅)。**AIS Mail 移行後は 13 (上記)**
 
 - マージ時の Leader 再実測 (main `53d4706` 取り込み後): API 14 failed / 620 passed / 1 skipped、失敗名は下記 14 と完全一致 (未分類 0)。XCTest は版数ピン留め `B20PrivacyManifestTests` 7/7 (MIN_IOS_BUILD=21 ≤ CFBundleVersion 23)
 
