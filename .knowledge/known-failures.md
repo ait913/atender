@@ -435,7 +435,9 @@ repository が `as:` に渡す型を一度も実行していなかったため (
 
 - **なし** (0 件)。
 
-## ★ A2 実測 (2026-10-29, chore/drop-calendar-api, Reviewer)
+## ★ A2 実測 (2026-10-29, chore/drop-calendar-api, Reviewer) — 2026-10-30 に main へマージ (`1309ceb`)、以後 API の既知失敗は **14** (roomEvent A3/A7 は対象ごと消滅)
+
+- マージ時の Leader 再実測 (main `53d4706` 取り込み後): API 14 failed / 620 passed / 1 skipped、失敗名は下記 14 と完全一致 (未分類 0)。XCTest は版数ピン留め `B20PrivacyManifestTests` 7/7 (MIN_IOS_BUILD=21 ≤ CFBundleVersion 23)
 
 - API: 14 failed (既知のみ) / 618 passed / 1 skipped (a2-review.test.ts 38 本を含む、全緑。fix 前の初回実測は 15 failed = 自分の AD8 assert 誤りを含む)。失敗名は A1/A2/A4/A5/A8/B5 等の既知 14 と一致 (未分類 0)。
 - Web: 26 failed / 343 passed (既知と同数)。
