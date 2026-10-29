@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1320, initial-scale=1">
+<title>atender — App Store previews</title>
+<script>
+// 文言は設計書 §3-1 の表のとおり。\n は改行、[...] は強調。
+const COPY_SETS = {
+  a: [
+    { small: '出席率、把握してる？', large: 'もう[出席率]で\n焦らない', shot: 'shots/s1-semester.png', badge: '', hl: '#56D8C3' },
+    { small: '授業おわったら', large: '[ワンタップ]で\n出席完了', shot: '', subshot: 'shots/s2-home.png', badge: '', hl: '#568CFC' },
+    { small: 'あと何回休める？', large: '[科目ごと]に\nすぐ分かる', shot: 'shots/s3-courses.png', badge: '欠席上限も\n遅刻の換算も\n科目ごとに', hl: '#A978FA' },
+    { small: '時間割の入力、だるい？', large: '[同じ学科]のを\nそのまま使う', shot: 'shots/s4-templates.png', badge: '学校と学科を\n選ぶだけ', hl: '#FC6ABF' },
+    { small: '次の空きコマ、誰いる？', large: '友達の[時間割]を\n重ねて見る', shot: 'shots/s5-room.png', badge: '', mascot: true, hl: '#FD728E' }
+  ],
+  b: [
+    { small: '今日までの出席率', large: '出席率が\nひと目で分かる', shot: 'shots/s1-semester.png', badge: '', hl: '#56D8C3' },
+    { small: '今日の出欠は', large: 'ワンタップで\n記録できる', shot: '', subshot: 'shots/s2-home.png', badge: '', hl: '#568CFC' },
+    { small: '科目ごとの欠席上限', large: '残りの休める回数を\n自動で計算', shot: 'shots/s3-courses.png', badge: '欠席上限も\n遅刻の換算も\n科目ごとに', hl: '#A978FA' },
+    { small: '同じ学科の公開時間割', large: '取り込むだけで\n時間割が完成', shot: 'shots/s4-templates.png', badge: '学校と学科を\n選ぶだけ', hl: '#FC6ABF' },
+    { small: 'ルームで共有', large: '友達との空きコマが\nすぐ分かる', shot: 'shots/s5-room.png', badge: '', mascot: true, hl: '#FD728E' }
+  ]
+};
+const DEFAULT_COPY = 'a';
+window.COPY_SETS = COPY_SETS;
+const FONTS = {
+  zenmaru: { family: 'Zen Maru Gothic', weight: 900, query: 'Zen+Maru+Gothic:wght@500;700;900' }
+};
+const font = FONTS.zenmaru;
+const params = new URLSearchParams(location.search);
+const theme = params.get('theme') === 'dark' ? 'dark' : 'light';
+const copyKey = Object.hasOwn(COPY_SETS, params.get('copy')) ? params.get('copy') : DEFAULT_COPY;
+const COPY = COPY_SETS[copyKey];
+const requestedSlide = Number(params.get('slide') || 1);
+const slide = Number.isInteger(requestedSlide) && requestedSlide >= 1 && requestedSlide <= COPY.length ? requestedSlide : 1;
+document.documentElement.dataset.theme = theme;
+const wordmark = '../../apps/ios/Atender/Assets.xcassets/wordmark.imageset/wordmark-' + (theme === 'dark' ? 'white' : 'navy') + '.png';
+const fontLink = document.createElement('link');
+fontLink.rel = 'stylesheet';
+// フォントはローカルの CSS だけを読む。
+fontLink.href = 'fonts/zenmaru.css';
+const stylesheetReady = new Promise(resolve => {
+  fontLink.onload = () => resolve(true);
+  fontLink.onerror = () => resolve(false);
+});
+document.head.append(fontLink);
+document.documentElement.style.setProperty('--font', '"' + font.family + '"');
+document.documentElement.style.setProperty('--headline-weight', font.weight);
+</script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --glow: color-mix(in srgb, #1E96E6 18%, #FFFFFF);
+  --glow-mid: color-mix(in srgb, #1E96E6 6%, #FFFFFF);
+  --ink: #30415B;
+  --accent-600: #147FCC;
+  --badge-bg: #147FCC;
+  --badge-fg: #FFFFFF;
+  --phone-shadow: rgba(15,23,42,.28);
+  --screen-bg: #FFFFFF;
+  --shape-alpha-k: 2;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #010207;
+  --glow: #131a28;
+  --glow-mid: #060912;
+  --ink: #E6E8EE;
+  --accent-600: #3DA9F0;
+  --badge-bg: #147FCC;
+  --badge-fg: #FFFFFF;
+  --phone-shadow: rgba(0,0,0,.6);
+  --screen-bg: #0B0D14;
+  --shape-alpha-k: 1;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1320px; height: 2868px; overflow: hidden; background: var(--bg); }
+body { color: var(--ink); font-family: var(--font), sans-serif; font-weight: 500; -webkit-font-smoothing: antialiased; }
+.canvas { position: relative; width: 1320px; height: 2868px; overflow: hidden; isolation: isolate; background: radial-gradient(ellipse at 55% 82%, var(--glow) 0, var(--glow-mid) 35%, var(--bg) 67%); }
+.canvas.pair { width: 2640px; }
+.wordmark { position: absolute; width: 340px; height: 76px; left: 90px; top: 118px; object-fit: contain; }
+.heading { position: absolute; left: 90px; top: 300px; width: 1140px; z-index: 3; }
+.small { margin: 0 0 27px; font-size: 61px; line-height: 1.4; font-weight: 700; letter-spacing: .04em; color: var(--accent-600); }
+h1, h2 { margin: 0; white-space: pre-line; font-size: 123px; line-height: 1.2; font-weight: var(--headline-weight); letter-spacing: .025em; color: var(--ink); }
+.pair h1, .pair h2 { font-size: 149px; letter-spacing: .035em; }
+.pair .heading.right, .pair .wordmark.right { left: 1410px; }
+em.hl { font-style: normal; background: linear-gradient(transparent 60%, color-mix(in srgb, var(--hl) 45%, transparent) 60%); padding: 0 .04em; }
+.shape { position: absolute; width: var(--size); height: var(--size); border-radius: 28%; background: var(--shape-color); opacity: calc(var(--alpha) * var(--shape-alpha-k)); }
+.phone { position: absolute; width: var(--width); aspect-ratio: 1320 / 2868; border-radius: calc(var(--width) * .17); padding: calc(var(--width) * .024); background: linear-gradient(115deg, #eef0f5 0%, #8B90A0 5%, #282c36 16%, #050609 42%, #8B90A0 73%, #282c36 96%); box-shadow: 0 0 0 3px #050609, 0 0 0 5px #727783, 26px 67px 102px var(--phone-shadow), inset 0 0 0 4px #c9cdd655; z-index: 2; }
+.screen { position: relative; width: 100%; height: 100%; overflow: hidden; border: calc(var(--width) * .009) solid #000; border-radius: calc(var(--width) * .148); background: var(--screen-bg); }
+.screen img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.island { position: absolute; top: 1.45%; left: 50%; transform: translateX(-50%); width: 28%; height: 3.35%; border-radius: 999px; background: #000; box-shadow: 0 1px 2px #ffffff0a; }
+.island::after { content: ''; position: absolute; right: 10%; top: 34%; width: 8%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 40% 40%, #122642, #030509 65%); }
+.phone.shared { --width: 1535px; left: 414px; top: 1010px; transform: rotate(-8deg); transform-origin: 50% 0; }
+.phone.floating { --width: 501px; left: 2034px; top: 1677px; border-radius: 85px; }
+.phone.straight { --width: 1054px; left: 133px; top: 1051px; }
+.badge { position: absolute; right: 68px; top: 667px; width: 391px; height: 391px; border-radius: 50%; z-index: 4; display: flex; align-items: center; justify-content: center; padding: 52px; background: var(--badge-bg); color: var(--badge-fg); border: 2px solid #FFFFFF; box-shadow: 0 20px 67px rgba(20,127,204,.30); }
+.badge p { margin: 0; font-weight: 700; font-size: 40px; letter-spacing: .025em; line-height: 1.55; text-align: center; overflow-wrap: anywhere; line-break: strict; white-space: pre-line; }
+.mascot { position: absolute; width: 470px; right: 40px; top: 600px; z-index: 4; }
+</style>
+</head>
+<body>
+<main id="canvas" class="canvas" aria-label="atender App Store プレビュー"></main>
+<script>
+const canvas = document.getElementById('canvas');
+const paired = slide <= 2;
+canvas.style.setProperty('--hl', COPY[slide - 1].hl);
+if (paired) {
+  canvas.classList.add('pair');
+  canvas.style.transform = `translateX(-${(slide - 1) * 1320}px)`;
+}
+function make(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text) el.textContent = text;
+  return el;
+}
+function picture(src, alt) {
+  const img = document.createElement('img');
+  img.alt = alt;
+  img.src = src;
+  return img;
+}
+function heading(copy, right = false) {
+  const logo = picture(wordmark, 'atender');
+  logo.className = 'wordmark' + (right ? ' right' : '');
+  canvas.append(logo);
+  const block = make('header', 'heading' + (right ? ' right' : ''));
+  // ペア内の見出しにもそれぞれのスライドの強調色を使う。
+  block.style.setProperty('--hl', copy.hl);
+  const title = make(right ? 'h2' : 'h1');
+  copy.large.split(/\[([^\]]+)\]/).forEach((part, i) => {
+    title.append(i % 2 ? make('em', 'hl', part) : document.createTextNode(part));
+  });
+  block.append(make('p', 'small', copy.small), title);
+  canvas.append(block);
+}
+function phone(src, className, alt) {
+  const device = make('div', 'phone ' + className);
+  const screen = make('div', 'screen');
+  const island = make('div', 'island');
+  island.setAttribute('aria-hidden', 'true');
+  screen.append(picture(src, alt), island);
+  device.append(screen);
+  canvas.append(device);
+}
+// 固定座標なのでペアの切れ目も毎回同じ。乱数は使わない。
+const cells = [
+  [51, 836, 70, .14], [201, 943, 44, .24], [1097, 746, 68, .18],
+  [1200, 934, 104, .12], [86, 1590, 54, .18], [38, 2339, 94, .10],
+  [1233, 2452, 73, .19], [1359, 898, 50, .17], [2394, 650, 75, .20],
+  [2517, 810, 48, .24], [2353, 1149, 115, .10], [2553, 1385, 58, .15],
+  [1944, 1477, 54, .22], [2476, 2800, 96, .12], [1463, 2718, 78, .15]
+];
+const brandColors = ['#56D8C3', '#568CFC', '#8F7EFC', '#A978FA', '#FC6ABF', '#FD728E'];
+cells.forEach(([x,y,size,alpha], i) => {
+  if (!paired && x >= 1320) return;
+  const shape = make('div', 'shape');
+  shape.style.cssText = `left:${x}px;top:${y}px;--size:${size}px;--alpha:${alpha};--shape-color:${brandColors[i % 6]}`;
+  shape.setAttribute('aria-hidden', 'true');
+  canvas.append(shape);
+});
+if (paired) {
+  heading(COPY[0]);
+  heading(COPY[1], true);
+  phone(COPY[0].shot, 'shared', COPY[0].small + COPY[0].large);
+  phone(COPY[1].subshot, 'floating', COPY[1].large);
+} else {
+  const copy = COPY[slide - 1];
+  heading(copy);
+  phone(copy.shot, 'straight', copy.large);
+  if (copy.badge) {
+    const badge = make('aside', 'badge');
+    badge.append(make('p', '', copy.badge));
+    canvas.append(badge);
+  }
+  if (copy.mascot) {
+    const mascot = picture('../../apps/ios/Atender/Assets.xcassets/mascot-hello.imageset/mascot-hello-1024.png', 'atender マスコット');
+    mascot.className = 'mascot';
+    canvas.append(mascot);
+  }
+}
+// フォントと全画像の読み込み結果を確認してから撮影可能にする。
+(async () => {
+  const stylesheetLoaded = await stylesheetReady;
+  const sample = Object.values(COPY_SETS).flat().map(s => s.small + s.large + s.badge).join('');
+  let loaded = [];
+  if (stylesheetLoaded) {
+    try { loaded = await document.fonts.load('900 124px "Zen Maru Gothic"', sample); }
+    catch (error) { console.warn('フォントの読み込み失敗:', error); }
+  }
+  await document.fonts.ready;
+  document.documentElement.dataset.fontLoaded = String(loaded.length > 0);
+  const missing = await Promise.all(Array.from(document.images, async img => {
+    try { await img.decode(); return null; }
+    catch { return img.getAttribute('src'); }
+  }));
+  document.documentElement.dataset.missing = JSON.stringify(missing.filter(src => src !== null));
+  document.documentElement.dataset.ready = 'true';
+})();
+</script>
+</body>
+</html>

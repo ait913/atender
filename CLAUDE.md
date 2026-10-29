@@ -91,6 +91,10 @@ xcodebuild test -project Atender.xcodeproj -scheme AtenderUITests \
 xcrun xcresulttool export attachments --path run.xcresult --output-path shots   # manifest.json で名前復元
 ```
 
+### ストア画像を作り直す (App Store スクショ)
+
+正典は `.designs/20261029-store-screenshots.md` §6 (コマンド列) + §11 (申し送り)。`mocks/store/` (Bloom から移植した HTML + `render.mjs`、puppeteer-core + `/Applications/Google Chrome.app`) に、ストア用 seed `apps/api/scripts/seed-store-demo.ts` (架空の「生わさび専門学校 / 情報処理科」、平日のみ実行可) + 撮影 UITest `AtenderUITests/StoreShotsFlow.swift` (iPhone 16 Pro Max シミュレータ、status_bar 9:41) で素材を撮り、`node render.mjs` で 1320×2868 を出す。完成画像は `assets/store/<版>/slide-{1..5}.png` (現行 1.0.1)。`mocks/store/shots/` と `out/` は git 管理外。撮り直し時は `simctl uninstall` → seed → `build-for-testing` / `test-without-building` の順 (seed を作り直すと semester ID が変わり、アプリが旧 ID を覚えているため)。
+
 ### TestFlight に配布 (CLI 完結・Xcode GUI 不要)
 
 有料 Developer Program (Team ID `2J3HYGP2K8`) 認証済。ASC API キーで CLI から archive → export → upload まで一気通貫。**署名周りは project.yml に焼き込み済** (`DEVELOPMENT_TEAM: 2J3HYGP2K8` / `CODE_SIGN_STYLE: Automatic`)。
@@ -140,7 +144,7 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
   --apiKey 973AZ487M3 --apiIssuer a3955ee4-936a-4c78-b9d1-9d1c559885af
 ```
 
-- **バージョン更新: 版数の正典は `project.yml` の `info.properties` 一択** (現在 `CFBundleVersion: "21"` / `CFBundleShortVersionString: "1.0.1"`。公開済みの App Store version と同じ ShortVersion の build は上げられない (§2)。**build 21 = 配布時に記入** (Delivery UUID `（配布時に記入）`)。内容: カレンダー撤去 (iOS/Web、API は A2 で後追い) / 科目別出席基準 (`Course` に必要出席率・欠席上限・遅刻換算) / 公開時間割の提案と取り込み。migration `b21_course_attendance_rules` + `b21_template_source_link`。設計 = `.designs/20261029-build21-calendar-removal-course-rules-template-import.md`。**build 20 = 2026-10-09 配布済** (アカウント削除 + 法務ページ + SIWA 認可コード交換。詳細は git)。build 19 以前の記録は git 履歴を参照。**次ビルドは `"22"` にインクリメントする。** **backend 依存を含むビルドは出荷時に atender-api を Coolify デプロイすること**。ASC の最新 build 番号は `~/.appstoreconnect` の鍵で `GET /v1/builds?filter[app]=6790604371&sort=-version` で確認できる
+- **バージョン更新: 版数の正典は `project.yml` の `info.properties` 一択** (現在 `CFBundleVersion: "23"` / `CFBundleShortVersionString: "1.0.1"`。公開済みの App Store version と同じ ShortVersion の build は上げられない (§2)。**build 21 = 2026-10-29 配布済** (Delivery UUID `8ee9aea8-e766-4a1b-b2c1-bc07b192f067`。export は Apple PLA 承諾後に通った: `Muraki/knowledge/gotcha/apple-pla-update-blocks-cloud-signing.md`)。内容: カレンダー撤去 (iOS/Web、API は A2 で後追い) / 科目別出席基準 (`Course` に必要出席率・欠席上限・遅刻換算) / 公開時間割の提案と取り込み。migration `b21_course_attendance_rules` + `b21_template_source_link`。設計 = `.designs/20261029-build21-calendar-removal-course-rules-template-import.md`。**build 20 = 2026-10-09 配布済** (アカウント削除 + 法務ページ + SIWA 認可コード交換。詳細は git)。build 19 以前の記録は git 履歴を参照。**build 22 = 2026-10-30 配布済** (Delivery UUID `b574f69e-72c2-4967-a262-050f924e68d0`)。ホームの時間割グリッド行高を個人/ルームで統一 (÷7.5、ただし効かず)。**build 23 = 2026-10-30 配布済 (Delivery UUID `5233585a-458b-4a8a-9f29-c69509bc0dc5`)。** 時間割グリッドの行高を個人/ルームで実測一致させる (build 22 の修正は available の差で効いていなかった)。**次ビルドは `"24"` にインクリメントする。** **backend 依存を含むビルドは出荷時に atender-api を Coolify デプロイすること**。ASC の最新 build 番号は `~/.appstoreconnect` の鍵で `GET /v1/builds?filter[app]=6790604371&sort=-version` で確認できる
   - **`Atender/Info.plist` を手編集してはいけない。** XcodeGen は `info:` 指定があると Info.plist を**毎回生成し直す** ("Plists are created on disk on every generation of the project") ので、必須手順の `xcodegen generate` が手編集を**黙って巻き戻す**。Info.plist は git 管理下にあるため、xcodegen を走らせるまでは手編集が効いているように見えるのが厄介。詳細: `Muraki/knowledge/gotcha/xcodegen-info-plist-regenerated-every-run.md`
 - 互換を壊す変更を含む場合は、`project.yml` の `CFBundleVersion` を N に上げたうえで `apps/api/src/lib/clientVersion.ts` の `MIN_IOS_BUILD` を N に上げる。`MIN_IOS_BUILD > 今から配る CFBundleVersion` にすると、配った直後に全員が 426 で自滅するため、必ず `MIN_IOS_BUILD <= これから配る CFBundleVersion` を確認する。App Store 公開中の build が叩く API を消すときは、新 build が `READY_FOR_SALE` になってから消す 2 段デプロイにする (実例: build 21 の A2 = カレンダー API の削除)。
 - 暗号化コンプライアンス: `ITSAppUsesNonExemptEncryption: false` を `project.yml` の `info.properties` で宣言済 (→ 生成される Info.plist に入る) → TestFlight の輸出質問はスキップ
@@ -152,8 +156,8 @@ xcrun altool --upload-app -f build/export/Atender.ipa -t ios \
 - Web URL: https://atender.appily.run
 - API URL: https://atender-api.appily.run (health: `GET /healthz`)
 - Coolify app uuid:
-  - atender-api: `tq2lgr4eh6t80r3tkqjbpu7o`
-  - atender-web: `y1acaktqgsx66sj81qsxn5m3`
+  - atender-api: `vrdxzvmakcxieyhfhayz5r8r`
+  - atender-web: `xxg31wshj6rhjmnffju1bg5r`
 - Coolify deploy トリガー: `curl -X POST "$COOLIFY_API_BASE/deploy?uuid=<uuid>" -H "Authorization: Bearer $COOLIFY_API_TOKEN"` (**2026-10-08 から POST 必須**。GET は `This endpoint has changed to a POST request.` を返す)。進捗は `GET $COOLIFY_API_BASE/deployments/<deployment_uuid>` の `status`
 - 関連 SKILL: `appily`
 - Resend: API key は `.tmp/atender/secrets.env` (gitignore 済) 参照
