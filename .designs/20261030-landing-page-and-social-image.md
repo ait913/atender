@@ -1,5 +1,7 @@
 # atender LP (`https://atender.aisaba.net`) + SNS 用 16:9 画像
 
+> **LP のレイアウト (§3-1〜§3-7・§6 の LH・§7-2〜§7-3 の LP 部分) は .designs/20261030-landing-page-v2-layout.md が正典。** 本 doc の §2・§3-8・§4・§5・§6 の LP / SI / EX2 / ST は引き続き有効。
+
 | 版 | 日付 | 内容 |
 |---|---|---|
 | R0 | 2026-10-30 | 初版。Leader 裁定 1〜8 を受けて執筆 |
