@@ -105,7 +105,7 @@ export function SemesterCreateSheet({ open, proposal, onCreated, onClose }: Prop
           {suggestions.length > 0 ? (
             <div data-testid="semester-create-template-suggestion" className="flex items-center justify-between gap-3 rounded-md bg-bg-elevated p-4 shadow-card">
               <span>{selected ? `取り込む: ${selected.title}` : `同じ学科の時間割が ${suggestions.length} 件見つかりました`}</span>
-              {selected ? <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setSelected(null)}>解除</Button> : <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => setBrowserOpen(true)}>選ぶ</Button>}
+              {selected ? <Button type="button" variant="ghost" size="sm" className="shrink-0 whitespace-nowrap" disabled={pending} onClick={() => setSelected(null)}>解除</Button> : <Button type="button" variant="secondary" size="sm" className="shrink-0 whitespace-nowrap" disabled={pending} onClick={() => setBrowserOpen(true)}>選ぶ</Button>}
             </div>
           ) : null}
         </div>
