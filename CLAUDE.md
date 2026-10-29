@@ -91,6 +91,10 @@ xcodebuild test -project Atender.xcodeproj -scheme AtenderUITests \
 xcrun xcresulttool export attachments --path run.xcresult --output-path shots   # manifest.json で名前復元
 ```
 
+### ストア画像を作り直す (App Store スクショ)
+
+正典は `.designs/20261029-store-screenshots.md` §6 (コマンド列) + §11 (申し送り)。`mocks/store/` (Bloom から移植した HTML + `render.mjs`、puppeteer-core + `/Applications/Google Chrome.app`) に、ストア用 seed `apps/api/scripts/seed-store-demo.ts` (架空の「生わさび専門学校 / 情報処理科」、平日のみ実行可) + 撮影 UITest `AtenderUITests/StoreShotsFlow.swift` (iPhone 16 Pro Max シミュレータ、status_bar 9:41) で素材を撮り、`node render.mjs` で 1320×2868 を出す。完成画像は `assets/store/<版>/slide-{1..5}.png` (現行 1.0.1)。`mocks/store/shots/` と `out/` は git 管理外。撮り直し時は `simctl uninstall` → seed → `build-for-testing` / `test-without-building` の順 (seed を作り直すと semester ID が変わり、アプリが旧 ID を覚えているため)。
+
 ### TestFlight に配布 (CLI 完結・Xcode GUI 不要)
 
 有料 Developer Program (Team ID `2J3HYGP2K8`) 認証済。ASC API キーで CLI から archive → export → upload まで一気通貫。**署名周りは project.yml に焼き込み済** (`DEVELOPMENT_TEAM: 2J3HYGP2K8` / `CODE_SIGN_STYLE: Automatic`)。
