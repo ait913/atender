@@ -36,8 +36,8 @@ describe("[B20 #M] author SET NULL migration", () => {
     const folders = fs.readdirSync(migrationsDir).filter((n) => fs.statSync(path.join(migrationsDir, n)).isDirectory());
     const mine = folders.filter((n) => n.endsWith(MIGRATION_SUFFIX));
     expect(mine).toHaveLength(1);
-    // it must be the last migration
-    expect([...folders].sort().at(-1)).toBe(mine[0]);
+    // b20 is included in the migration list (later migrations such as b21 may follow it)
+    expect(folders).toContain(mine[0]);
 
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "b20-mig-"));
     try {
@@ -46,7 +46,7 @@ describe("[B20 #M] author SET NULL migration", () => {
       fs.copyFileSync(path.join(apiRoot, "prisma", "schema.prisma"), path.join(prismaDir, "schema.prisma"));
       fs.copyFileSync(path.join(migrationsDir, "migration_lock.toml"), path.join(prismaDir, "migrations", "migration_lock.toml"));
       for (const f of folders) {
-        if (f === mine[0]) continue;
+        if (f >= mine[0]) continue; // b20 itself and any later migration (b21+) are applied after the fixture rows exist
         fs.cpSync(path.join(migrationsDir, f), path.join(prismaDir, "migrations", f), { recursive: true });
       }
       const dbPath = path.join(tmp, "m.db");
