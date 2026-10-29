@@ -5,10 +5,9 @@ import type { HomeContext } from "./ContextChips";
 type Props = {
   context: HomeContext;
   semesterId: string | null;
-  onSemesterChange: (id: string) => void;
 };
 
-export function HomeBody({ context, semesterId, onSemesterChange }: Props) {
-  if (context.kind === "self") return <SelfTimetableView semesterId={semesterId} onSemesterChange={onSemesterChange} />;
-  return <RoomTimetable roomId={context.roomId} />;
+export function HomeBody({ context, semesterId }: Props) {
+  if (context.kind === "self") return <SelfTimetableView semesterId={semesterId} />;
+  return <RoomTimetable key={context.roomId} roomId={context.roomId} semesterId={semesterId} />;
 }

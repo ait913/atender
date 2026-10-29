@@ -23,6 +23,8 @@ export type TimetableViewProps = {
   onEventClick?: (eventId: string) => void;
   onEmptyCellClick?: (dayOfWeek: number, periodIndex: number) => void;
   height?: string;
+  todayDisplayDay?: number | null;
+  currentPeriodIndex?: number | null;
 };
 
 const DEFAULT_DAYS = [1, 2, 3, 4, 5];
@@ -35,6 +37,8 @@ export function TimetableView({
   onEventClick,
   onEmptyCellClick,
   height,
+  todayDisplayDay,
+  currentPeriodIndex,
 }: TimetableViewProps) {
   const slotByIndex = useMemo(() => new Map(daySlots.map((slot) => [slot.periodIndex, slot])), [daySlots]);
   const periodIndexes = useMemo(() => daySlots.map((s) => s.periodIndex).sort((a, b) => a - b), [daySlots]);
@@ -70,6 +74,14 @@ export function TimetableView({
   }, [coalescedEvents, days, periodIndexes]);
 
   const rowCount = periodIndexes.length;
+  const currentRow = currentPeriodIndex == null ? -1 : periodIndexes.indexOf(currentPeriodIndex);
+  const todayColumn = todayDisplayDay == null ? -1 : days.indexOf(todayDisplayDay);
+  const currentBlock = coalescedEvents.find((event) => {
+    const startRow = periodIndexes.indexOf(event.startPeriodIndex);
+    return event.dayOfWeek === todayDisplayDay && startRow >= 0 && startRow <= currentRow && currentRow < startRow + event.periodCount;
+  });
+  const ringRow = currentBlock ? periodIndexes.indexOf(currentBlock.startPeriodIndex) : currentRow;
+  const ringSpan = currentBlock ? Math.min(currentBlock.periodCount, rowCount - ringRow) : 1;
 
   return (
     <div
@@ -81,32 +93,34 @@ export function TimetableView({
         minHeight: "320px",
       }}
     >
-      {/* corner */}
+      {/* 左上の空白 */}
       <div
         className="border-b border-r border-border-subtle bg-bg-muted"
         style={{ gridColumn: "1", gridRow: "1" }}
       />
-      {/* day header */}
+      {/* 曜日の見出し */}
       {days.map((dayOfWeek, dayIndex) => (
         <div
           key={`h-${dayOfWeek}`}
-          className="border-b border-r border-border-subtle bg-bg-muted text-center text-[11px] font-semibold leading-[28px]"
-          style={{ gridColumn: `${dayIndex + 2}`, gridRow: "1" }}
+          data-today={dayOfWeek === todayDisplayDay ? "true" : undefined}
+          className={`border-b border-r border-border-subtle text-center text-[11px] leading-[28px] ${dayOfWeek === todayDisplayDay ? "font-bold text-accent-500" : "bg-bg-muted font-semibold"}`}
+          style={{ gridColumn: `${dayIndex + 2}`, gridRow: "1", background: dayOfWeek === todayDisplayDay ? "color-mix(in srgb, var(--color-accent-500) 6%, transparent)" : undefined }}
         >
           {DAY_LABELS[dayOfWeek - 1] ?? ""}
         </div>
       ))}
-      {/* rows */}
+      {/* 時限の行 */}
       {periodIndexes.map((periodIndex, periodRowIndex) => {
         const slot = slotByIndex.get(periodIndex);
         if (!slot) return null;
         return (
           <Fragment key={periodIndex}>
             <div
-              className="border-b border-r border-border-subtle bg-bg-muted"
+              data-current={periodIndex === currentPeriodIndex ? "true" : undefined}
+              className={`border-b border-r border-border-subtle ${periodIndex === currentPeriodIndex ? "bg-accent-500 text-fg-on-accent" : "bg-bg-muted"}`}
               style={{ gridColumn: "1", gridRow: `${periodRowIndex + 2}` }}
             >
-              <PeriodLabel slot={slot} />
+              <PeriodLabel slot={slot} current={periodIndex === currentPeriodIndex} />
             </div>
             {days.map((dayOfWeek, dayIndex) => {
               const key = `${dayOfWeek}:${periodIndex}`;
@@ -160,6 +174,14 @@ export function TimetableView({
           </div>
         );
       })}
+      {todayColumn >= 0 && currentRow >= 0 ? (
+        <div
+          data-testid="timetable-now-ring"
+          aria-hidden
+          className="pointer-events-none z-[2] border-2 border-accent-500"
+          style={{ gridColumn: `${todayColumn + 2}`, gridRow: `${ringRow + 2} / span ${ringSpan}` }}
+        />
+      ) : null}
     </div>
   );
 }

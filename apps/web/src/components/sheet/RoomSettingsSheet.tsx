@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { showToast } from "@/lib/toast";
 import { APP_URL } from "@/api/client";
 import { useMe, useRegenerateRoomInvite, useRemoveRoomMember, useRoom, useRoomAction, useRoomMembers, useUpdateRoom } from "@/api/hooks";
 import { memberColor } from "@/lib/memberColor";
 import { Button, ConfirmDialog, Field, Input, Textarea, Toggle } from "@/components/ui";
 import { BottomSheet } from "./BottomSheet";
 
-export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; open: boolean; onClose: () => void }) {
-  const navigate = useNavigate();
+export function RoomSettingsSheet({ roomId, open, onClose, onChanged, onRemoved }: { roomId: string; open: boolean; onClose: () => void; onChanged?: () => void; onRemoved?: () => void }) {
   const me = useMe();
   const room = useRoom(roomId);
   const members = useRoomMembers(roomId);
@@ -39,7 +38,15 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
 
   async function persist(patch: { name?: string; description?: string | null; showMemberTimetables?: boolean }) {
     if (!isOwner) return;
-    await update.mutateAsync(patch);
+    const previous = showMemberTimetables;
+    if (patch.showMemberTimetables !== undefined) setShowMemberTimetables(patch.showMemberTimetables);
+    try {
+      await update.mutateAsync(patch);
+      onChanged?.();
+    } catch {
+      if (patch.showMemberTimetables !== undefined) setShowMemberTimetables(previous);
+      showToast("保存できませんでした、もう一度試してください");
+    }
   }
 
   async function handleCopyInvite() {
@@ -48,15 +55,23 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
   }
 
   async function handleLeave() {
-    await leave.mutateAsync();
-    onClose();
-    await navigate({ to: "/rooms" });
+    try {
+      await leave.mutateAsync();
+      onClose();
+      onRemoved?.();
+    } catch {
+      showToast("退出できませんでした");
+    }
   }
 
   async function handleDelete() {
-    await del.mutateAsync();
-    onClose();
-    await navigate({ to: "/rooms" });
+    try {
+      await del.mutateAsync();
+      onClose();
+      onRemoved?.();
+    } catch {
+      showToast("削除できませんでした");
+    }
   }
 
   const pendingMember = members.data?.members.find((member) => member.userId === pendingRemove);
@@ -84,7 +99,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           }}
         />
       </Field>
-      <Field label="ルームの説明">
+      <Field label="説明">
         <Textarea
           value={description}
           disabled={!isOwner}
@@ -95,15 +110,13 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
         />
       </Field>
       <div className="space-y-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-fg-tertiary">メンバーの時間割を表示</p>
         <Toggle
           checked={showMemberTimetables}
-          disabled={!isOwner}
+          disabled={!isOwner || update.isPending}
           onChange={(next) => {
-            setShowMemberTimetables(next);
             void persist({ showMemberTimetables: next });
           }}
-          label="反映する"
+          label="メンバー時間割を表示"
         />
       </div>
       <section className="border-t border-fg-primary/8 pt-5">
@@ -120,17 +133,10 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-bold text-fg-primary">{member.name ?? member.handle ?? "No name"}</p>
-                <p className="truncate text-xs text-fg-tertiary">{member.role === "OWNER" ? "オーナー" : "メンバー"}</p>
+                <p className="truncate text-xs text-fg-tertiary">@{member.handle ?? member.userId.slice(0, 8)} · {member.role === "OWNER" ? "オーナー" : "メンバー"}</p>
               </div>
               {isOwner && member.userId !== me.data?.user.id && member.role !== "OWNER" ? (
-                <button
-                  type="button"
-                  aria-label={`${member.name ?? "メンバー"} を追放`}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-fg-primary/8 text-status-absent transition hover:bg-status-absent/20 active:scale-95"
-                  onClick={() => setPendingRemove(member.userId)}
-                >
-                  ✕
-                </button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setPendingRemove(member.userId)}>追放</Button>
               ) : null}
             </li>
           ))}
@@ -145,26 +151,35 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
           {copyMessage ? <p className="text-xs font-bold text-accent-500">{copyMessage}</p> : null}
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={() => void handleCopyInvite()}>リンクをコピー</Button>
-            <Button type="button" variant="ghost" onClick={() => regenerate.mutate()}>再発行</Button>
+            {typeof navigator.share === "function" ? (
+              <Button type="button" variant="ghost" onClick={() => {
+                void navigator.share({ url: `${APP_URL}/rooms/join/${room.data?.room.inviteCode ?? ""}` }).catch(() => {});
+              }}>共有</Button>
+            ) : null}
+            <Button type="button" variant="ghost" onClick={() => regenerate.mutate(undefined, {
+              onSuccess: () => onChanged?.(),
+              onError: () => showToast("保存できませんでした、もう一度試してください"),
+            })}>再発行</Button>
           </div>
         </section>
       ) : null}
       <ConfirmDialog
         open={pendingRemove != null}
         title="メンバーを追放しますか？"
-        body="このメンバーはルームから外され、再度招待しない限り戻れません。"
-        confirmLabel="追放する"
+        confirmLabel="追放"
         onCancel={() => setPendingRemove(null)}
         onConfirm={() => {
-          if (pendingRemove) removeMember.mutate(pendingRemove);
+          if (pendingRemove) removeMember.mutate(pendingRemove, {
+            onSuccess: () => onChanged?.(),
+            onError: () => showToast("削除できませんでした"),
+          });
           setPendingRemove(null);
         }}
       />
       <ConfirmDialog
         open={pendingLeave}
         title="ルームを退出しますか？"
-        body="退出すると、再度招待されるまでこのルームに戻れません。"
-        confirmLabel="退出する"
+        confirmLabel="退出"
         onCancel={() => setPendingLeave(false)}
         onConfirm={() => {
           setPendingLeave(false);
@@ -174,8 +189,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
       <ConfirmDialog
         open={pendingDelete}
         title="ルームを削除しますか？"
-        body="ルームは削除されます。この操作は取り消せません。"
-        confirmLabel="削除する"
+        confirmLabel="削除"
         onCancel={() => setPendingDelete(false)}
         onConfirm={() => {
           setPendingDelete(false);

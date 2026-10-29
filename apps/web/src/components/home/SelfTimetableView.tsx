@@ -1,15 +1,14 @@
-import { Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { MeetingDto, UserTimetableDto } from "@atender/shared";
 import { useCreateUserTimetable, useDeleteMeeting, useMe, useSemesters, useUserTimetables } from "@/api/hooks";
-import { HomeSemesterPicker } from "@/components/home/HomeSemesterPicker";
-import { TimetableSettingsSheet } from "@/components/sheet/TimetableSettingsSheet";
 import { displayDowToJs, jsDowToDisplay, resolveDisplayDays } from "@/components/timetable/dayConvention";
-import { getTodayDayOfWeek } from "@/components/timetable/getTodayDayOfWeek";
+import * as SchoolClock from "@/lib/SchoolClock";
+import * as TimetableGridLayout from "@/lib/TimetableGridLayout";
+import { useNow } from "@/lib/useNow";
 import { MeetingDetailSheet } from "@/components/timetable/MeetingDetailSheet";
 import { MeetingEditModal } from "@/components/timetable/MeetingEditModal";
 import { TimetableView, type TimetableEventInput } from "@/components/timetable/TimetableView";
-import { Panel, Skeleton, TimetableGridSkeleton } from "@/components/ui";
+import { Panel, TimetableGridSkeleton } from "@/components/ui";
 
 const defaultSlots = [
   { periodIndex: 1, label: "1限", startMinute: 540, endMinute: 630, isBreak: false },
@@ -23,7 +22,7 @@ function activeTimetable(timetables: UserTimetableDto[] | undefined, semesterId?
   return timetables?.find((item) => item.semesterId === semesterId) ?? null;
 }
 
-export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId: string | null; onSemesterChange: (id: string) => void }) {
+export function SelfTimetableView({ semesterId }: { semesterId: string | null }) {
   const me = useMe();
   const semesters = useSemesters();
   const timetables = useUserTimetables();
@@ -34,8 +33,8 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
   const [detailMeeting, setDetailMeeting] = useState<MeetingDto | null>(null);
   const [editMeeting, setEditMeeting] = useState<MeetingDto | null>(null);
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const today = useMemo(() => getTodayDayOfWeek(), []);
+  const now = useNow(60_000);
+  const today = displayDowToJs(SchoolClock.displayDay(now));
   const emptyTimetable = useMemo<UserTimetableDto | null>(() => {
     const fallbackSemesterId = semesterId ?? me.data?.user.defaultSemesterId ?? semesters.data?.semesters[0]?.id;
     if (!fallbackSemesterId) return null;
@@ -71,10 +70,6 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
   if (me.isLoading || semesters.isLoading || timetables.isLoading) {
     return (
       <div className="space-y-3">
-        <div className="flex min-h-9 items-center justify-between gap-2">
-          <Skeleton width="8rem" height="1.25rem" radius="9999px" />
-          <Skeleton circle height="2.25rem" />
-        </div>
         <TimetableGridSkeleton days={5} rows={5} />
       </div>
     );
@@ -83,21 +78,9 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
 
   return (
     <div className="space-y-3">
-      <HomeSemesterPicker
-        semesterId={semesterId}
-        onChange={onSemesterChange}
-        trailing={
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="時間割の設定"
-            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-fg-primary/8 text-fg-secondary transition hover:bg-fg-primary/14 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500"
-          >
-            <Settings className="h-4 w-4" strokeWidth={2.25} />
-          </button>
-        }
-      />
       <TimetableView
+        todayDisplayDay={SchoolClock.displayDay(now)}
+        currentPeriodIndex={TimetableGridLayout.currentPeriodIndex(display.daySlots, SchoolClock.nowMinute(now))}
         daySlots={display.daySlots}
         days={resolveDisplayDays(display)}
         events={display.meetings.map<TimetableEventInput>((m) => {
@@ -155,7 +138,6 @@ export function SelfTimetableView({ semesterId, onSemesterChange }: { semesterId
           meeting={editMeeting}
         />
       ) : null}
-      <TimetableSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} timetable={selected ?? createdTimetable} />
     </div>
   );
 }

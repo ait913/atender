@@ -25,7 +25,7 @@ export function RoomDetail() {
           <Settings className="h-5 w-5" strokeWidth={2.25} />
         </button>
       </div>
-      <RoomTimetable roomId={id} />
+      <RoomTimetable key={id} roomId={id} semesterId={null} />
       <RoomSettingsSheet roomId={id} open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
