@@ -9,5 +9,5 @@ test -f ../../apps/lp/site/img/hero-phones.webp || python3 -I extract-phones.py
 node render.mjs
 sips -g pixelWidth -g pixelHeight out/*.png | grep -E "png|pixel" | paste - - -
 mkdir -p ../../assets/social/1.0.1
-cp out/hero-1920x1080.png out/og-1200x630.png ../../assets/social/1.0.1/
+cp out/hero-1920x1080.png out/friends-1920x1080.png out/og-1200x630.png ../../assets/social/1.0.1/
 cp out/og-1200x630.png ../../apps/lp/site/og-1200x630.png

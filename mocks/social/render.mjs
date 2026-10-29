@@ -19,13 +19,16 @@ let failed = false;
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+  // 3 枚: hero (1 枚目の構図) / friends (ストア 5 枚目の訴求) / OG (hero の上下 36px を落として縮小)。OG は hero のみ
   // OG は同じ HTML の上下 36px を落として 1.905:1 にする (1920 × .625 = 1200、1008 × .625 = 630)
   const jobs = [
     { file: join(out, 'hero-1920x1080.png'), clip: { x: 0, y: 0, width: 1920, height: 1080 } },
     { file: join(out, 'og-1200x630.png'), clip: { x: 0, y: 36, width: 1920, height: 1008, scale: 0.625 } },
+    { file: join(out, 'friends-1920x1080.png'), clip: { x: 0, y: 0, width: 1920, height: 1080 }, query: '?variant=friends' },
   ];
   for (const job of jobs) {
-    if (!(await capture(page, url, job))) failed = true;
+    const { query = '', ...opts } = job;
+    if (!(await capture(page, url + query, opts))) failed = true;
   }
 } finally {
   await browser.close();
