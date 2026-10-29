@@ -1,12 +1,20 @@
 import type { CourseStatsDto } from "@atender/shared";
 import { AlertTriangle } from "lucide-react";
 import { rateColor } from "@/lib/attendanceRateColor";
+import * as SemesterOverviewDisplayLogic from "@/lib/SemesterOverviewDisplayLogic";
+
+const actionColors = {
+  absent: "var(--color-status-absent)",
+  accent: "var(--color-accent-500)",
+  tertiary: "var(--color-fg-tertiary)",
+};
 
 type Props = { stats: CourseStatsDto; requiredRate: number; onClick: () => void };
 
 export function CourseListItem({ stats, requiredRate, onClick }: Props) {
   const pct = stats.toDate.attendanceRate == null ? null : Math.round(stats.toDate.attendanceRate * 100);
-  const color = rateColor(pct, requiredRate);
+  const courseRequiredRate = SemesterOverviewDisplayLogic.requiredRate(stats, requiredRate);
+  const color = rateColor(pct, courseRequiredRate);
   return (
     <button
       type="button"
@@ -45,36 +53,17 @@ export function CourseListItem({ stats, requiredRate, onClick }: Props) {
           <span
             aria-hidden="true"
             className="absolute top-0 h-full w-0.5 bg-fg-tertiary"
-            style={{ left: `${requiredRate}%` }}
+            style={{ left: `${courseRequiredRate}%` }}
           />
         </div>
         <p className="text-xs tabular-nums text-fg-tertiary">
           出{stats.counts.present} 欠{stats.counts.absent}
           <span className="mx-1">・</span>
-          <span style={{ color: actionColor(stats.allowedAbsences, stats.remainingCount) }}>
-            {shortActionText(stats.allowedAbsences, stats.remainingCount, stats.allowedAbsenceDays)}
+          <span style={{ color: actionColors[SemesterOverviewDisplayLogic.courseActionTone(stats)] }}>
+            {SemesterOverviewDisplayLogic.courseActionText(stats)}
           </span>
         </p>
       </div>
     </button>
   );
-}
-
-function shortActionText(
-  allowedAbsences: number | null,
-  remainingCount: number,
-  allowedAbsenceDays: number | null,
-) {
-  if (allowedAbsences == null) return "—";
-  if (allowedAbsences < 0) return "下回る見込み";
-  if (allowedAbsences >= remainingCount) return "残り全休OK";
-  if (allowedAbsenceDays == null) return `あと${allowedAbsences}限休める`;
-  return `あと${allowedAbsences}限 (${allowedAbsenceDays}日) 休める`;
-}
-
-function actionColor(allowedAbsences: number | null, remainingCount: number) {
-  if (allowedAbsences == null) return "var(--color-fg-tertiary)";
-  if (allowedAbsences < 0) return "var(--color-status-absent)";
-  if (allowedAbsences >= remainingCount) return "var(--color-accent-500)";
-  return "var(--color-fg-tertiary)";
 }

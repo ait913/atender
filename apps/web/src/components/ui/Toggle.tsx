@@ -3,11 +3,13 @@ export function Toggle({
   disabled = false,
   onChange,
   label,
+  "data-testid": testId,
 }: {
   checked: boolean;
   disabled?: boolean;
   onChange: (next: boolean) => void;
   label: string;
+  "data-testid"?: string;
 }) {
   return (
     <label className={`inline-flex items-center gap-3 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
@@ -20,6 +22,7 @@ export function Toggle({
       </span>
       <span className="text-sm font-bold text-fg-primary">{label}</span>
       <input
+        data-testid={testId}
         type="checkbox"
         className="sr-only"
         checked={checked}
