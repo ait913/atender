@@ -107,7 +107,9 @@ struct HomeView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if context == .self { Color.clear.frame(height: 64) }
+            // 個人の出欠オーバーレイ分の高さを、ルームでも常に予約する。
+            // context で available が変わると、時間割の行高が個人とルームでずれる (build 22 の実測)。
+            Color.clear.frame(height: 64)
         }
         .overlay(alignment: .bottom) {
             if context == .self { HomeAttendanceOverlay() }
