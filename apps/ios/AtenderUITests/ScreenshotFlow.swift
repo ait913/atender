@@ -37,16 +37,6 @@ final class ScreenshotFlow: XCTestCase {
         sleep(6)
         snap("01-home-timetable")
 
-        // 表示モード: カレンダーへ
-        let calOK = tapButton("カレンダー")
-        sleep(3)
-        snap("02-home-calendar_ok=\(calOK)")
-
-        // 時間割へ戻す
-        tapButton("時間割")
-        sleep(2)
-        snap("03-home-timetable-again")
-
         // 授業タップ → 詳細シート
         let meetingOK = tapButton("プログラミング演習")
         sleep(3)

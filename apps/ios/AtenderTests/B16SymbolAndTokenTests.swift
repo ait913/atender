@@ -5,26 +5,6 @@ import XCTest
 
 final class B16SymbolAndTokenTests: XCTestCase {
 
-    func testC9CalendarSelectedDayMatchesBgMutedAndSystemDynamicColor() {
-        XCTAssertEqual(Color.calendarSelectedDay, Color.bgMuted, "[build16 #C9]")
-
-        let selected = UIColor(Color.calendarSelectedDay)
-        assertResolvedColor(selected,
-                            equals: .tertiarySystemGroupedBackground,
-                            trait: UITraitCollection(userInterfaceStyle: .light),
-                            tag: "[build16 #C9] light")
-        assertResolvedColor(selected,
-                            equals: .tertiarySystemGroupedBackground,
-                            trait: UITraitCollection(userInterfaceStyle: .dark),
-                            tag: "[build16 #C9] dark")
-
-        let light = rgba(selected.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light)))
-        let dark = rgba(selected.resolvedColor(with: UITraitCollection(userInterfaceStyle: .dark)))
-        XCTAssertNotEqual(light.red, dark.red, accuracy: 0.001, "[build16 #C9] dynamic red")
-        XCTAssertNotEqual(light.green, dark.green, accuracy: 0.001, "[build16 #C9] dynamic green")
-        XCTAssertNotEqual(light.blue, dark.blue, accuracy: 0.001, "[build16 #C9] dynamic blue")
-    }
-
     func testN9ToolbarSymbolsExist() {
         XCTAssertNotNil(UIImage(systemName: "person.badge.plus"), "[build16 #N9]")
         XCTAssertNotNil(UIImage(systemName: "plus"), "[build16 #N9]")

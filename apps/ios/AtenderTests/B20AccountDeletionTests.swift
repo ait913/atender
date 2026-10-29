@@ -273,7 +273,7 @@ final class B20AccountDeletionTests: XCTestCase {
         XCTAssertEqual(SettingsLogic.deleteAccountTitle, "アカウントを削除しますか?")
         XCTAssertEqual(
             SettingsLogic.deleteAccountMessage,
-            "時間割・出欠・予定・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。ルームに追加した予定と公開した時間割テンプレートは、作成者を伏せて残ります。"
+            "時間割・出欠・友達などのデータはすべて直ちに削除され、元に戻せません。作成したルームは他のメンバーに引き継がれます。公開した時間割テンプレートは、作成者を伏せて残ります。"
         )
         XCTAssertEqual(SettingsLogic.deletingAccountLabel, "アカウントを削除しています")
         XCTAssertEqual(SettingsLogic.deleteAccountFailedTitle, "アカウントを削除できませんでした")

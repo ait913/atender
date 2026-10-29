@@ -133,12 +133,6 @@ final class B18HomeRoomsUITests: XCTestCase {
         let timetableSettings = app.buttons["時間割の設定"].firstMatch
         XCTAssertTrue(waitAny(timetableSettings, timeout: 10), "[#R14] 自分×時間割で「時間割の設定」が出ない")
 
-        let calendarSeg = app.buttons["カレンダー"].firstMatch
-        if calendarSeg.waitForExistence(timeout: 5), calendarSeg.isHittable {
-            calendarSeg.tap()
-            XCTAssertFalse(app.buttons["時間割の設定"].waitForExistence(timeout: 5),
-                           "[#R14] 自分×カレンダーで「時間割の設定」が出ている (歯車なしのはず)")
-        }
     }
 
     // MARK: - #R15
@@ -159,24 +153,6 @@ final class B18HomeRoomsUITests: XCTestCase {
                             + app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "ルーム名")).count, 0,
                              "[#R15] 「ルーム名」の入力/表示が無い")
         closeSheetIfPresent()
-    }
-
-    // MARK: - #R16
-
-    func testR16RoomChipCalendarShowsGridAndIcsImportNoRoomDetailTabs() {
-        app.launch()
-        XCTAssertTrue(waitAny(roomChip, timeout: 15), "[#R16] 情報処理科チップが無い")
-        roomChip.tap()
-
-        let picker = app.descendants(matching: .any)["home-mode-picker"].firstMatch
-        XCTAssertTrue(waitAny(picker, timeout: 10), "[#R16] home-mode-picker が無い")
-        let calendarSeg = app.buttons["カレンダー"].firstMatch
-        if calendarSeg.waitForExistence(timeout: 5), calendarSeg.isHittable { calendarSeg.tap() }
-        sleep(2)
-
-        let ics = app.descendants(matching: .any)["room-ics-import"].firstMatch
-        XCTAssertTrue(waitAny(ics, timeout: 10), "[#R16] room-ics-import がヘッダーに無い")
-        XCTAssertFalse(app.descendants(matching: .any)["room-detail-tabs"].exists, "[#R16] room-detail-tabs がどこかに残っている")
     }
 
     // MARK: - #R17 (deep link 着地。simctl が使えない環境ではベストエフォート)

@@ -305,38 +305,23 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertTrue(empty.occurrences.isEmpty)
         XCTAssertTrue(empty.courseSuspensions.isEmpty)
         XCTAssertNil(empty.timetableSuspension)
-        XCTAssertTrue(empty.personalEvents.isEmpty)
 
         let populated = try makeDecoder().decode(DayDetailDto.self, from: try loadFixture("dayDetail"))
         XCTAssertEqual(populated.date, "2026-06-08")
         XCTAssertEqual(populated.occurrences.count, 1)
         XCTAssertEqual(populated.courseSuspensions.count, 1)
         XCTAssertNotNil(populated.timetableSuspension)
-        XCTAssertEqual(populated.personalEvents.count, 1)
-    }
-
-    func testDecodePersonalEventOccurrenceAllDay() throws {
-        let event = try makeDecoder().decode(PersonalEventOccurrenceDto.self, from: try loadFixture("personalEvent"))
-        XCTAssertEqual(event.seriesId, "personal_01")
-        XCTAssertEqual(event.id, "personal_01:2026-06-07T15:00:00.000Z")
-        XCTAssertTrue(event.isAllDay)
-        XCTAssertEqual(event.days.count, 1)
-        XCTAssertEqual(event.days[0].date, "2026-06-08")
-        XCTAssertEqual(event.days[0].startMinute, 0)
-        XCTAssertEqual(event.days[0].endMinute, 1440)
     }
 
     func testDecodeRoomSummaryAndRoomNulls() throws {
         let summary = try makeDecoder().decode(RoomSummaryDto.self, from: try loadFixture("roomSummary"))
         XCTAssertEqual(summary.id, "room_01")
         XCTAssertNil(summary.description)
-        XCTAssertNil(summary.upcomingEvent)
         XCTAssertEqual(summary.myRole, .owner)
 
         let room = try makeDecoder().decode(RoomDto.self, from: try loadFixture("room"))
         XCTAssertEqual(room.id, "room_01")
         XCTAssertNil(room.description)
-        XCTAssertNil(room.upcomingEvent)
         XCTAssertEqual(room.inviteCode, "ROOMCODE")
         XCTAssertNil(room.inviteExpiresAt)
     }
@@ -348,9 +333,6 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertEqual(week.meetings.count, 1)
         XCTAssertEqual(week.meetings[0].startMinute, 540, accuracy: 0.0001)
         XCTAssertEqual(week.meetings[0].endMinute, 630, accuracy: 0.0001)
-        XCTAssertEqual(week.roomEvents.count, 1)
-        XCTAssertEqual(week.roomEvents[0].source, .manual)
-        XCTAssertEqual(week.roomEvents[0].visibilityMode, .normal)
     }
 
     func testDecodeFriendshipStatusesAndUnknownFallback() throws {
@@ -420,13 +402,7 @@ final class DTODecodingTests: XCTestCase {
         XCTAssertEqual(try decode(RuleStrategy.self, raw: "UNKNOWN_XXX"), .unknown)
         XCTAssertEqual(try decode(SchoolKind.self, raw: "UNIVERSITY"), .university)
         XCTAssertEqual(try decode(SchoolKind.self, raw: "UNKNOWN_XXX"), .unknown)
-        XCTAssertEqual(try decode(VisibilityMode.self, raw: "BUSY_ONLY"), .busyOnly)
-        XCTAssertEqual(try decode(VisibilityMode.self, raw: "UNKNOWN_XXX"), .unknown)
         // GoogleSyncStatus は F5 (gcal 掃除) で削除済 — 対応 assert を撤去 (Reviewer)
-        XCTAssertEqual(try decode(IcsImportStatus.self, raw: "PARTIAL_ERROR"), .partialError)
-        XCTAssertEqual(try decode(IcsImportStatus.self, raw: "UNKNOWN_XXX"), .unknown)
-        XCTAssertEqual(try decode(RoomEventSource.self, raw: "ICS_URL"), .icsUrl)
-        XCTAssertEqual(try decode(RoomEventSource.self, raw: "UNKNOWN_XXX"), .unknown)
     }
 
     func testDecodeRequiredFieldMissingThrowsAndErrorResponse() throws {

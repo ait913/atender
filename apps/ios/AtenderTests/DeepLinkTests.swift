@@ -38,13 +38,4 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertNil(DeepLink.parse(URL(string: "https://atender.appily.run/unknown/path/x")!))
     }
 
-    func testIcsUploadResponseDecodes() throws {
-        let data = Data(#"{"import":{"id":"imp_1"},"parsedCount":12,"dedup":true}"#.utf8)
-
-        let response = try JSONDecoder().decode(IcsUploadResponse.self, from: data)
-
-        XCTAssertEqual(response.import.id, "imp_1")
-        XCTAssertEqual(response.parsedCount, 12)
-        XCTAssertTrue(response.dedup)
-    }
 }

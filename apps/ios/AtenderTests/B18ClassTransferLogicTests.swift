@@ -181,57 +181,6 @@ final class B18ClassTransferLogicTests: XCTestCase {
         XCTAssertEqual(ClassTransferLogic.needsDeleteConfirmation(transfer: transfer, occurrences: occs), 1, "[#U7] 記録件数")
     }
 
-    // MARK: - #U8/#U9 TransferDisplay
-
-    func testU8DisplacedKeys() {
-        let displaced = ClassTransferDisplacedDto(meetingId: "M_M1", courseId: "cM1", courseName: "M1科目", startPeriodIndex: 1, periodCount: 1)
-        let transfer = classTransferDto(id: "t1", date: "2026-09-14", kind: .moveDay, sourceDayOfWeek: 5, displaced: [displaced])
-        XCTAssertEqual(TransferDisplay.displacedKeys([transfer]), ["M_M1|2026-09-14"])
-    }
-
-    func testU9CalendarEvents() throws {
-        let f2p3 = occurrence(id: "o1", meetingId: "mF2", courseId: "cF2", courseName: "F2科目", periodIndex: 3, periodOffset: 1003, startMinute: 780, endMinute: 870, transferId: "t1")
-        let f2p4 = occurrence(id: "o2", meetingId: "mF2", courseId: "cF2", courseName: "F2科目", periodIndex: 4, periodOffset: 1004, startMinute: 880, endMinute: 970, transferId: "t1")
-        let f1p1 = occurrence(id: "o3", meetingId: "mF1", courseId: "cF1", courseName: "F1科目", periodIndex: 1, periodOffset: 1001, startMinute: 540, endMinute: 630, transferId: "t1")
-        let normal = occurrence(id: "o4", meetingId: "mM2", courseId: "cM2", courseName: "M2科目", periodIndex: 5, periodOffset: 0, startMinute: 980, endMinute: 1070, transferId: nil)
-
-        let events = TransferDisplay.calendarEvents(occurrences: [f2p3, f2p4, f1p1, normal], courses: timetableFixture().courses)
-
-        XCTAssertEqual(events.count, 2, "[#U9] transferId==nil の occurrence が混ざっている、または F1/F2 が結合されていない")
-        let f2Event = try XCTUnwrap(events.first { $0.courseId == "cF2" })
-        XCTAssertEqual(f2Event.startMinute, 780)
-        XCTAssertEqual(f2Event.endMinute, 970)
-        XCTAssertEqual(f2Event.title, "振替 F2科目")
-        XCTAssertEqual(f2Event.subtitle, "振替")
-        XCTAssertEqual(f2Event.kind, .meeting)
-    }
-
-    // MARK: - #U10 MeetingExpansion.excluding
-
-    func testU10ExpandUserTimetableExcluding() {
-        let m = meeting("mM1", courseId: "cM1", dow: 1, start: 1)
-        let events = MeetingExpansion.expandUserTimetable(
-            meetings: [m], courses: [course("cM1", name: "M1科目")],
-            daySlots: [daySlot(1)],
-            rangeStart: "2026-09-07", rangeEnd: "2026-09-21",
-            semesterStart: nil, semesterEnd: nil, statusByDate: [:],
-            excluding: ["mM1|2026-09-14"]
-        )
-        let dates = Set(events.map(\.date))
-        XCTAssertFalse(dates.contains("2026-09-14"), "[#U10] excluding が効いていない")
-        XCTAssertTrue(dates.contains("2026-09-07"), "[#U10] excluding が他の日まで消している")
-        XCTAssertTrue(dates.contains("2026-09-21"), "[#U10] excluding が他の日まで消している")
-
-        // excluding 省略時は従来と同一件数 (default 引数)
-        let withoutExcluding = MeetingExpansion.expandUserTimetable(
-            meetings: [m], courses: [course("cM1", name: "M1科目")],
-            daySlots: [daySlot(1)],
-            rangeStart: "2026-09-07", rangeEnd: "2026-09-21",
-            semesterStart: nil, semesterEnd: nil, statusByDate: [:]
-        )
-        XCTAssertEqual(withoutExcluding.count, events.count + 1, "[#U10] excluding 省略時に既存呼び出しの件数が変わっている")
-    }
-
     // MARK: - #U11 DTO decode
 
     func testU11OccurrenceDtoTransferIdOptional() throws {

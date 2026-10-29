@@ -26,7 +26,7 @@ final class CalendarSyncTriggerTests: XCTestCase {
     private func ago(_ seconds: TimeInterval) -> Date { now.addingTimeInterval(-seconds) }
 
     func testTRAReentrancyIsBlocked() {
-        let triggers: [SyncTrigger] = [.appLaunch, .foreground, .storeChanged, .permissionGranted, .calendarScreen, .dataChanged, .manual]
+        let triggers: [SyncTrigger] = [.appLaunch, .foreground, .storeChanged, .permissionGranted, .dataChanged, .manual]
         for trigger in triggers {
             XCTAssertFalse(shouldRun(trigger, isRunning: true), "[TR-A] \(trigger)")
         }
@@ -48,7 +48,6 @@ final class CalendarSyncTriggerTests: XCTestCase {
         }
         XCTAssertFalse(SyncTrigger.foreground.bypassesThrottle)
         XCTAssertFalse(SyncTrigger.storeChanged.bypassesThrottle)
-        XCTAssertFalse(SyncTrigger.calendarScreen.bypassesThrottle)
         XCTAssertFalse(SyncTrigger.dataChanged.bypassesThrottle)
     }
 
@@ -63,14 +62,15 @@ final class CalendarSyncTriggerTests: XCTestCase {
     }
 
     func testTRGIsDataChange() {
+        XCTAssertFalse(CalendarSyncTrigger.isDataChange([QueryKey(["personal-events"])]))
         let positives: [[QueryKey]] = [
-            [.personalEvents()],
+            [QueryKey(["courses"])],
             [.userTimetables()],
             [.timetableSuspensions()],
             [.semesters()],
             [.semesterOverview("s1")],
             [.courseSuspensions("c1")],
-            [QueryKey(["today"]), .personalEvents()],
+            [QueryKey(["today"]), QueryKey(["courses"])],
         ]
         for keys in positives {
             XCTAssertTrue(CalendarSyncTrigger.isDataChange(keys), "[TR-G] \(keys)")
