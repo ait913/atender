@@ -16,7 +16,7 @@ export type StoreDemoSeedResult = {
   semesterId: string;
   semesterName: string;
   roomId: string;
-  templateIds: [string, string]; // Aクラス、Bクラスの順
+  templateIds: [string, string, string]; // Aクラス、Bクラス、Cクラスの順
   today: string; // プロセスのタイムゾーンでの YYYY-MM-DD
 };
 
@@ -227,8 +227,8 @@ export async function seedStoreDemo(opts?: { now?: Date }): Promise<StoreDemoSee
     await prisma.roomMembership.create({ data: { roomId: room.id, userId, role: userId === MINATO_ID ? "OWNER" : "MEMBER" } });
   }
 
-  // 公開時間割は同じ定義から写し、Bクラスだけ火曜と木曜を入れ替える。
-  async function createTemplate(className: string, authorUserId: string, copyCount: number, swapDays: boolean) {
+  // 公開時間割は同じ定義から写し、Bクラスは火曜と木曜、Cクラスは月曜と水曜を入れ替える (一覧が端末の画面を埋める 3 件にする)。
+  async function createTemplate(className: string, authorUserId: string, copyCount: number, swap: [number, number] | null) {
     const template = await prisma.timetableTemplate.create({
       data: {
         authorUserId, schoolId: school.id, departmentId: department.id,
@@ -244,8 +244,8 @@ export async function seedStoreDemo(opts?: { now?: Date }): Promise<StoreDemoSee
         data: { templateId: template.id, name: definition.name, teacher: definition.teacher, color: definition.color },
       });
       for (const meeting of definition.meetings) {
-        const dayOfWeek = swapDays && meeting.dayOfWeek === 2 ? 4
-          : swapDays && meeting.dayOfWeek === 4 ? 2 : meeting.dayOfWeek;
+        const dayOfWeek = swap && meeting.dayOfWeek === swap[0] ? swap[1]
+          : swap && meeting.dayOfWeek === swap[1] ? swap[0] : meeting.dayOfWeek;
         await prisma.templateMeeting.create({
           data: { templateId: template.id, courseId: course.id, ...meeting, dayOfWeek },
         });
@@ -253,12 +253,13 @@ export async function seedStoreDemo(opts?: { now?: Date }): Promise<StoreDemoSee
     }
     return template.id;
   }
-  const templateAId = await createTemplate("Aクラス", YUI_ID, 18, false);
-  const templateBId = await createTemplate("Bクラス", HARUTO_ID, 9, true);
+  const templateAId = await createTemplate("Aクラス", YUI_ID, 18, null);
+  const templateBId = await createTemplate("Bクラス", HARUTO_ID, 9, [2, 4]);
+  const templateCId = await createTemplate("Cクラス", YUI_ID, 5, [1, 3]);
 
   return {
     userId: MINATO_ID, bearerToken: BEARER_TOKEN, semesterId: minato.semester.id,
-    semesterName, roomId: room.id, templateIds: [templateAId, templateBId],
+    semesterName, roomId: room.id, templateIds: [templateAId, templateBId, templateCId],
     today: today.format("YYYY-MM-DD"),
   };
 }

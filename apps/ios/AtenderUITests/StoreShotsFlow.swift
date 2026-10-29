@@ -54,6 +54,12 @@ final class StoreShotsFlow: XCTestCase {
         sleep(1)
         snap("s2-home")
 
+        // 1 枚目の「出席率」に未記録の警告帯が写らないよう、今日の授業を全出席で記録してから学期タブへ移る。
+        let markAll = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "今日は全出席"))
+            .firstMatch
+        guard tapButton(markAll, named: "今日は全出席") else { return }
+        sleep(3)
+
         // 手順3・4: 学期全体の出席率を撮影する。
         guard tapButton("学期・科目") else { return }
         guard waitForElement(app.staticTexts["今日までの出席率"].firstMatch,
@@ -79,8 +85,14 @@ final class StoreShotsFlow: XCTestCase {
 
         // 手順6・7: 公開時間割のカードが表示されてから撮影する。
         // スクロール後はタブバーが縮むことがあるので、先頭まで戻してからタブを押す。
-        for _ in 0..<4 { app.swipeDown() }
-        guard tapButton(app.tabBars.buttons["ホーム"].firstMatch, named: "ホーム"),
+        let homeTab = app.tabBars.buttons["ホーム"].firstMatch
+        var downs = 0
+        while !(homeTab.exists && homeTab.isHittable) && downs < 8 {
+            app.swipeDown()
+            sleep(1)
+            downs += 1
+        }
+        guard tapButton(homeTab, named: "ホーム"),
               tapButton("時間割の設定"),
               tapButton("timetable-settings-import-template") else { return }
         let template = app.descendants(matching: .any)
