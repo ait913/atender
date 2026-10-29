@@ -739,14 +739,14 @@ CREATE UNIQUE INDEX "TimetableTemplate_sourceUserTimetableId_key" ON "TimetableT
 
 `TemplateCopyInput` に `replaceExisting: z.boolean().optional()` (既定 false) を追加。`copyTemplateToUser` を次に置換 (既存の 404/403 判定は不変):
 
-1. tx 開始
+1. tx 開始 (`prisma.$transaction(fn, { timeout: 60_000, maxWait: 10_000 })`。手順 8 の生成は occurrence を 1 件ずつ create するので既定の 5 秒を超えうる)
 2. `existing = tx.userTimetable.findUnique({ userId_semesterId })`
 3. `existing` あり、`replaceExisting !== true` → `409 CONFLICT` (従来どおり)
 4. `existing` あり、`replaceExisting === true` → `tx.userTimetable.delete({ id: existing.id })` (daySlots・courses・meetings・occurrences・出欠記録・科目休講・時間割休講・授業変更が cascade で消える)
 5. template (`isPublic: true`) が無ければ `404 NOT_FOUND` (tx はロールバック = 4 の削除も取り消し)
 6. UT 作成: `title = input.title ?? template.title`、`sourceTemplateId = template.id`、`daysOfWeek = template.daysOfWeek ?? deriveDaysOfWeek(template.meetings)`
 7. daySlots/courses/meetings のコピー、`copyCount + 1` (不変)
-8. tx 終了 → `generateOccurrencesForUserTimetable` (不変) → `201 { userTimetable }`
+8. **同じ tx の中で** `generateOccurrencesForUserTimetable({ userTimetableId }, tx)` を実行 (関数に任意の client 引数を足す。既定は `prisma` で、他の呼び出し元は不変)。生成が throw したら tx ごとロールバック = 4 の削除・6〜7 の作成・`copyCount + 1` が全て取り消される (例: テンプレの meeting が daySlots に無い period を参照 → `400 DAY_SLOT_NOT_FOUND`。`POST /api/timetable-templates` はこの不整合を 201 で保存できるので起こりうる)。`routes/templates.ts` 側の生成呼び出しは削除。tx 終了 → `201 { userTimetable }`。`replaceExisting` 無しの新規 copy も同じ tx を通る
 9. `P2002` → `409 CONFLICT` (不変)
 
 `deriveDaysOfWeek(meetings)` = `{1,2,3,4,5} ∪ { m.dayOfWeek == 0 ? 7 : m.dayOfWeek }` を昇順 CSV。例: meeting が月・水・土 → `"1,2,3,4,5,6"`、日曜あり → `"1,2,3,4,5,7"`。
@@ -1307,6 +1307,7 @@ enum TimetablePublishLogic {
 | C10 | `copy` で UT あり・`replaceExisting` 省略 | `409 CONFLICT`、既存 UT・出欠記録は不変 |
 | C11 | `copy` で UT あり (meeting 2・出欠記録 3・科目休講 1・授業変更 1)・`replaceExisting: true` | 201。旧 UT とその occurrences・AttendanceRecord・CourseSuspension・ClassTransfer が 0 件、新 UT が template の内容で存在し occurrences が生成済み |
 | C12 | `replaceExisting: true` で template が非公開 / 存在しない | `404 NOT_FOUND`、**旧 UT と出欠記録は残る** (tx ロールバック) |
+| C12c | 公開テンプレの meeting が daySlots に無い period を参照する | `replaceExisting: true` の copy は `400 DAY_SLOT_NOT_FOUND`、旧 UserTimetable・出欠記録が残り、`copyCount` も増えない。新規 copy (対象学期に UT なし) でも UserTimetable は作られない |
 | C13 | 他人の学期への copy | `403 FORBIDDEN` (不変) |
 | C14 | `copy` の後 | `copyCount + 1` (置換でも +1) |
 | C15 | `GET /api/user-timetables` | 各 UT に `publishedTemplate` (自分が author の linked template。無ければ `null`) |
@@ -1454,7 +1455,7 @@ enum TimetablePublishLogic {
 
 1. B → C の順で main にマージ (additive migration 2 本)。A・A-Web は任意の時点でマージ
 2. R: 版数 `CFBundleVersion "21"` / `CFBundleShortVersionString "1.0.1"`・版数テスト 4 本・DESIGN.md / CLAUDE.md 置換 (§10)・`fix/ics-esm-import` の廃棄 (§0.2) を main に
-3. リリース前ゲート (Codex 2LLM 突合 + 負のコントロール)。負のコントロールの例: C12 で copy の削除を tx の外に出すと C12 が赤になる
+3. リリース前ゲート (Codex 2LLM 突合 + 負のコントロール)。負のコントロールの例: C12 で copy の削除を tx の外に出すと C12 が赤になる。C12c で occurrence 生成を tx の外 (commit 後) に戻すと C12c が赤になる (旧 UT が消え `copyCount` が増える)
 4. **atender-api をデプロイ** (`POST $COOLIFY_API_BASE/deploy?uuid=tq2lgr4eh6t80r3tkqjbpu7o`)。`entrypoint.sh` が migrate 前に `prod.db.bak-<ts>` を残す。確認: `GET /healthz`、`GET /api/me` (Leader の手元 token) に `schoolName` キー、`GET /api/version` の `minIOSBuild == 12`
 5. **atender-web をデプロイ** (`POST $COOLIFY_API_BASE/deploy?uuid=y1acaktqgsx66sj81qsxn5m3`)。確認: `/` にカレンダー切替が無い、`/settings/calendar` が `/settings` に飛ぶ、`/privacy` が §10.3.1 の文言
 6. iOS build 21 (1.0.1) を archive → export → TestFlight upload。upload が version train の理由で拒否されたら `CFBundleShortVersionString` を確認 (§2)
@@ -1550,6 +1551,7 @@ enum TimetablePublishLogic {
 | 回数だけ設定した科目にも共通率を合成に使う | 大学の「欠席 5 回まで」(15 回中 66%) が共通率 70% (4 回まで) に上書きされ、科目の規定より厳しい嘘の値が出る (T3、Touri 承認済) |
 | 「以上 / 超える」の境界を選ばせる | Touri 裁定で「上限回数まで OK」に固定。率は既存の floor 式 |
 | 件数 endpoint / `?summary=1` | 提案は 20 件の一覧をそのまま表示に使うので件数だけの取得は不要。1 件 10 KB 未満 × 20 件で十分軽い |
+| occurrence 生成を tx の外 (commit 後) に置く (本 doc の元案) | 生成が失敗すると、旧時間割と出欠記録は削除済み・`copyCount` も加算済みのまま戻らない (リリース前ゲートで Codex が指摘し再現済み。C12c)。生成を同じ tx に入れれば失敗時に何も変わらない。代償は tx が長くなることで、timeout を 60 秒に明示して吸収する |
 | 取り込みを iOS で `DELETE` → `copy` の 2 リクエストにする | copy が失敗すると時間割と出欠を失ったまま残る。サーバーの 1 tx (`replaceExisting`) なら失敗時に何も変わらない (C12) |
 | オンボーディングで「学期作成後に step 4 を足す」 | `isComplete` で Home に遷移するので到達しない (R §A4-1)。ローカルフラグで遷移を止める案も、遷移の起点が `refreshMe` に集約されていて順序で解けるので不要 |
 | Home の学期メニューに「公開時間割を探す」 | 学期の切り替えメニューに操作が混ざる。入口は時間割の設定 (E2) と学期管理 (E1) で足りる |
