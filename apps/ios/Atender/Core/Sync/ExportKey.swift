@@ -3,6 +3,7 @@ import Foundation
 /// EKEvent.url に埋める自己記述的な識別子 (§4.1)
 enum ExportKind: String, Equatable, Sendable {
     case meeting = "m"
+    /// build 20 以前が書いた個人予定を見分けて消すためだけに残す。新規には生成しない
     case personal = "p"
 }
 
@@ -14,7 +15,7 @@ enum ExportKey {
         "\(scheme)://\(ExportKind.meeting.rawValue)/\(meetingId)/\(compactDate(date))/\(firstPeriodOffset)"
     }
 
-    /// atender://p/<seriesId>/<yyyyMMdd'T'HHmmss'Z'>
+    /// build 20 以前が書いた個人予定を見分けて消すためだけに残す。新規には生成しない
     static func personal(seriesId: String, occurrenceDate: Date) -> String {
         "\(scheme)://\(ExportKind.personal.rawValue)/\(seriesId)/\(basicUtc(occurrenceDate))"
     }

@@ -183,38 +183,3 @@ final class AttendanceRepository {
         }
     }
 }
-
-@MainActor
-@Observable
-final class PersonalEventRepository {
-    @ObservationIgnored private let client: APIClient
-    @ObservationIgnored private let cache: QueryClient
-
-    init(client: APIClient, cache: QueryClient) {
-        self.client = client
-        self.cache = cache
-    }
-
-    func personalEvents(from: String, to: String) async throws -> [PersonalEventOccurrenceDto] {
-        let response = try await client.send(Endpoints.personalEvents(from: from, to: to), as: PersonalEventsResponse.self)
-        cache.setData(response.events, for: .personalEvents())
-        return response.events
-    }
-
-    func createPersonalEvent(_ input: PersonalEventCreateInput) async throws -> PersonalEventSeriesDto {
-        let response = try await client.send(Endpoints.createPersonalEvent(input), as: PersonalEventResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: nil)))
-        return response.event
-    }
-
-    func updatePersonalEvent(id: String, _ input: PersonalEventUpdateInput) async throws -> PersonalEventSeriesDto {
-        let response = try await client.send(Endpoints.updatePersonalEvent(id: id, input), as: PersonalEventResponse.self)
-        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: nil)))
-        return response.event
-    }
-
-    func deletePersonalEvent(id: String, scope: String, originalDate: String?, invalidateDate: String?) async throws {
-        try await client.send(Endpoints.deletePersonalEvent(id: id, scope: scope, originalDate: originalDate))
-        cache.invalidate(prefixes: invalidationTargets(for: .personalEvent(date: invalidateDate)))
-    }
-}

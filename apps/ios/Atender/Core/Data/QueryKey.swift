@@ -30,7 +30,6 @@ struct QueryKey: Hashable, ExpressibleByArrayLiteral {
     static func semesterOverview(_ id: String? = nil) -> QueryKey { .init(["semesters", id ?? "any", "overview"]) }
     static func courseSuspensions(_ courseId: String) -> QueryKey { .init(["courses", courseId, "suspensions"]) }
     static func timetableSuspensions() -> QueryKey { .init(["timetable-suspensions"]) }
-    static func personalEvents() -> QueryKey { .init(["personal-events"]) }
     static func rules() -> QueryKey { .init(["attendance-rules"]) }
     static func friendships() -> QueryKey { .init(["friendships"]) }
     static func friendshipsPendingCount() -> QueryKey { .init(["friendships", "pending-count"]) }
@@ -39,7 +38,4 @@ struct QueryKey: Hashable, ExpressibleByArrayLiteral {
     static func room(_ id: String) -> QueryKey { .init(["rooms", id]) }
     static func roomMembers(_ id: String) -> QueryKey { .init(["rooms", id, "members"]) }
     static func roomWeek(_ id: String) -> QueryKey { .init(["rooms", id, "week"]) }
-    static func roomEvents(_ id: String) -> QueryKey { .init(["rooms", id, "events"]) }
-    static func icsImports(_ id: String) -> QueryKey { .init(["rooms", id, "ics-imports"]) }
-    static func icsTitleRules() -> QueryKey { .init(["me", "ics-title-rules"]) }
 }

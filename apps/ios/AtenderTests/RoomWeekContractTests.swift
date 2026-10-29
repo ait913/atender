@@ -61,12 +61,9 @@ final class RoomWeekContractTests: XCTestCase {
 
         XCTAssertFalse(week.members.isEmpty, "members が読めること")
         XCTAssertFalse(week.meetings.isEmpty, "meetings が読めること")
-        XCTAssertFalse(week.roomEvents.isEmpty, "roomEvents が読めること")
         XCTAssertEqual(week.members[0].userId, "demo-user-ios")
         XCTAssertEqual(week.meetings[0].courseName, "プログラミング演習")
         XCTAssertEqual(week.meetings[0].startMinute, 540, accuracy: 0.0001)
-        XCTAssertEqual(week.roomEvents[0].title, "合同勉強会")
-        XCTAssertEqual(week.roomEvents[0].source, .manual)
     }
 
     /// 負のコントロール: `week` ラッパー付きは契約違反なので decode 失敗すべき。
@@ -109,9 +106,7 @@ final class RoomWeekContractTests: XCTestCase {
 
         XCTAssertEqual(cached.members.count, fresh.members.count, "キャッシュ経路も同じ RoomWeekDto")
         XCTAssertEqual(cached.meetings.count, fresh.meetings.count)
-        XCTAssertEqual(cached.roomEvents.count, fresh.roomEvents.count)
         XCTAssertEqual(cached.members[0].userId, fresh.members[0].userId)
-        XCTAssertEqual(cached.roomEvents[0].title, fresh.roomEvents[0].title)
     }
 
     func testRoomWeekForceRefetchesFromNetwork() async throws {

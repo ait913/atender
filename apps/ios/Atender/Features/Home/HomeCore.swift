@@ -5,11 +5,6 @@ enum HomeContext: Equatable {
     case room(roomId: String)
 }
 
-enum HomeViewMode: String, CaseIterable {
-    case timetable
-    case calendar
-}
-
 enum ContextChipItem: Equatable, Identifiable {
     case selfChip(label: String)
     case room(roomId: String, roomName: String)
@@ -50,7 +45,6 @@ struct HomeView: View {
     @Environment(AppEnvironment.self) private var environment
     @Environment(\.scenePhase) private var scenePhase
     @State private var context: HomeContext = .self
-    @State private var mode: HomeViewMode = .timetable
     @State private var semesterId: String?
     @State private var didApplyDefaultSemester = false
     @State private var rooms: [RoomSummaryDto] = []
@@ -70,11 +64,9 @@ struct HomeView: View {
                 onAddRoom: handleAddRoom
             )
             .padding(.horizontal, -Space.pagePxMobile)
-            CalendarModePicker(selection: $mode)
             GeometryReader { proxy in
                 HomeBody(
                     context: context,
-                    mode: mode,
                     semesterId: $semesterId,
                     showTimetableSettings: $showTimetableSettings,
                     available: proxy.size.height
@@ -92,7 +84,7 @@ struct HomeView: View {
                 SemesterMenu(semesters: semesters, semesterId: $semesterId)
             }
             .atenderPlainToolbarBackground()
-            if context == .self && mode == .timetable {
+            if context == .self {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showTimetableSettings = true
@@ -372,24 +364,18 @@ struct ContextChips: View {
 
 struct HomeBody: View {
     let context: HomeContext
-    let mode: HomeViewMode
     @Binding var semesterId: String?
     @Binding var showTimetableSettings: Bool
     let available: CGFloat
 
     var body: some View {
-        switch (context, mode) {
-        case (.self, .timetable):
+        switch context {
+        case .self:
             SelfTimetableView(semesterId: $semesterId, showSettings: $showTimetableSettings, available: available)
-        case (.self, .calendar):
-            PersonalCalendar(semesterId: semesterId, available: available)
-        case (.room(let roomId), .timetable):
+        case .room(let roomId):
             // ★ .id が無いと roomId が変わっても structural identity が同じままで
             //   @State (week / viewModel) が持ち越され、別ルームの画面に前ルームのデータが残る。
             RoomTimetable(roomId: roomId, semesterId: semesterId, available: available)
-                .id(roomId)
-        case (.room(let roomId), .calendar):
-            RoomCalendar(roomId: roomId, semesterId: semesterId, available: available)
                 .id(roomId)
         }
     }

@@ -89,45 +89,6 @@ enum SchoolKind: String, UnknownFallbackRawRepresentable {
     case unknown
 }
 
-enum VisibilityMode: String, UnknownFallbackRawRepresentable {
-    case normal = "NORMAL"
-    case titleMapped = "TITLE_MAPPED"
-    case busyOnly = "BUSY_ONLY"
-    case unknown
-}
-
-enum RoomEventSource: String, UnknownFallbackRawRepresentable {
-    case manual = "MANUAL"
-    case icsFile = "ICS_FILE"
-    case icsUrl = "ICS_URL"
-    case googleOauth = "GOOGLE_OAUTH"
-    case personal = "PERSONAL"
-    case unknown
-}
-
-enum IcsSource: String, UnknownFallbackRawRepresentable {
-    case icsFile = "ICS_FILE"
-    case icsUrl = "ICS_URL"
-    case googleOauth = "GOOGLE_OAUTH"
-    case unknown
-}
-
-enum IcsImportStatus: String, UnknownFallbackRawRepresentable {
-    case pending = "PENDING"
-    case parsed = "PARSED"
-    case success = "SUCCESS"
-    case partialError = "PARTIAL_ERROR"
-    case failed = "FAILED"
-    case unknown
-}
-
-enum IcsMatchType: String, UnknownFallbackRawRepresentable {
-    case equals = "EQUALS"
-    case contains = "CONTAINS"
-    case regex = "REGEX"
-    case unknown
-}
-
 enum ClassTransferKind: String, UnknownFallbackRawRepresentable {
     case moveDay = "MOVE_DAY"
     case single  = "SINGLE"

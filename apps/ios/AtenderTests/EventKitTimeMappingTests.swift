@@ -45,45 +45,4 @@ final class EventKitTimeMappingTests: XCTestCase {
         XCTAssertLessThan(dangerous, toExclusive, "[§5.6] 危険窓が範囲内")
     }
 
-    func testEKEventSnapshotCarriesOccurrenceWithoutDaySplitting() {
-        // §5.6: 複数日 EK イベントは分解しない (1 occurrence = 1 行)
-        let snapshot = EKEventSnapshot(
-            externalId: "ek-multi",
-            calendarId: "cal-a",
-            occurrenceStart: instant("2026-07-22T15:00:00.000Z"),
-            lastModified: nil,
-            start: instant("2026-07-22T15:00:00.000Z"),
-            end: instant("2026-07-25T15:00:00.000Z"),
-            isAllDay: true,
-            title: "旅行",
-            location: nil
-        )
-
-        let uploads = EventKitReconciler.uploads(from: [snapshot])
-
-        XCTAssertEqual(uploads.count, 1, "[§5.6] 3 日ぶんに分解しない")
-        XCTAssertEqual(uploads[0].start, "2026-07-22T15:00:00.000Z", "[§5.6]")
-        XCTAssertEqual(uploads[0].end, "2026-07-25T15:00:00.000Z", "[§5.6] 排他 end をそのまま渡す")
-        XCTAssertEqual(uploads[0].ekOccurrenceStart, "2026-07-22T15:00:00.000Z", "[§5.6] 鍵は (externalId, occurrenceStart)")
-    }
-
-    func testUploadsKeepsSameExternalIdWithDifferentOccurrences() {
-        // §9 K11: 同じ ekExternalId で occurrenceStart が違う 2 件は別行
-        let base = { (occ: String) in
-            EKEventSnapshot(externalId: "ek-same", calendarId: "cal-a",
-                            occurrenceStart: self.instant(occ), lastModified: nil,
-                            start: self.instant(occ), end: self.instant(occ).addingTimeInterval(3600),
-                            isAllDay: false, title: "定例", location: nil)
-        }
-
-        let uploads = EventKitReconciler.uploads(from: [
-            base("2026-07-23T00:00:00.000Z"),
-            base("2026-07-30T00:00:00.000Z"),
-        ])
-
-        XCTAssertEqual(uploads.count, 2, "[#K11]")
-        XCTAssertEqual(Set(uploads.map(\.ekExternalId)), ["ek-same"], "[#K11]")
-        XCTAssertEqual(uploads.map(\.ekOccurrenceStart),
-                       ["2026-07-23T00:00:00.000Z", "2026-07-30T00:00:00.000Z"], "[#K11]")
-    }
 }

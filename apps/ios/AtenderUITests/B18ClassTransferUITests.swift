@@ -164,30 +164,6 @@ final class B18ClassTransferUITests: XCTestCase {
         closeSheetIfPresent()
     }
 
-    // MARK: - #U18 (個人カレンダーへの反映)
-
-    func testU18PersonalCalendarShowsTransferChipWithPrefix() throws {
-        app.launch()
-        guard openDayDetailSheet() else {
-            throw XCTSkip("[#U18] day-detail-sheet を開けない (環境依存)")
-        }
-        guard attemptAddSingleTransfer() else {
-            throw XCTSkip("[#U18] 前提の SINGLE 追加フローを自動操作できなかった (README 参照)")
-        }
-        closeSheetIfPresent()
-
-        guard openTab("ホーム") else {
-            throw XCTSkip("[#U18] ホームタブに戻れない")
-        }
-        sleep(2)
-        let calendarSeg = app.buttons["カレンダー"].firstMatch
-        if calendarSeg.waitForExistence(timeout: 10), calendarSeg.isHittable { calendarSeg.tap() }
-        sleep(2)
-
-        let transferChip = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "振替 ")).firstMatch
-        XCTAssertTrue(transferChip.waitForExistence(timeout: 15), "[#U18] 個人カレンダーに「振替 」で始まる chip が無い")
-    }
-
     // MARK: - #U19 (学期カレンダーの振替バッジ)
 
     func testU19SemesterCalendarShowsTransferBadge() throws {

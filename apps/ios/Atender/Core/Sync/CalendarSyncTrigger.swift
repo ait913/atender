@@ -1,7 +1,7 @@
 import Foundation
 
 enum SyncTrigger: Equatable, Sendable {
-    case appLaunch, foreground, storeChanged, permissionGranted, calendarScreen, dataChanged, manual
+    case appLaunch, foreground, storeChanged, permissionGranted, dataChanged, manual
 
     var bypassesThrottle: Bool { self == .appLaunch || self == .permissionGranted || self == .manual }
 }
@@ -41,7 +41,6 @@ enum CalendarSyncTrigger {
 
     /// 書き出しの再実行が要る QueryKey の前方一致集合
     static let watchedPrefixes: [QueryKey] = [
-        QueryKey(["personal-events"]),
         QueryKey(["user-timetables"]),
         QueryKey(["timetable-suspensions"]),
         QueryKey(["semesters"]),

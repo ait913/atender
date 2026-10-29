@@ -309,28 +309,4 @@ final class VersionGateTests: XCTestCase {
         XCTAssertNotEqual(authStore.state, .signedOut)
     }
 
-    func test_I11_uploadIntercepts426() async throws {
-        // 設計 §6.5 — upload(...) 経路
-        let versionStore = VersionStore(session: StubURLProtocol.makeSession(), currentBuild: 6)
-        let (client, authStore, _) = try makeClient(token: "tok", versionStore: versionStore)
-        respond(
-            status: 426,
-            body: #"{"error":{"code":"CLIENT_UPGRADE_REQUIRED","message":"upgrade"}}"#.data(using: .utf8)!
-        )
-
-        do {
-            _ = try await client.upload(
-                path: "/api/ics/import",
-                fileData: Data("BEGIN:VCALENDAR".utf8),
-                filename: "a.ics",
-                as: TestResponse.self
-            )
-            XCTFail("upload(...) must throw APIError.upgradeRequired on 426")
-        } catch let error as APIError {
-            XCTAssertEqual(error, .upgradeRequired)
-        }
-
-        XCTAssertEqual(versionStore.state, .blocked(minBuild: nil))
-        XCTAssertNotEqual(authStore.state, .signedOut)
-    }
 }

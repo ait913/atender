@@ -79,22 +79,6 @@ enum TimetableCoalesce {
     }
 }
 
-enum CalendarEventKind: Equatable { case meeting, personal, roomEvent }
-
-struct CalendarEvent: Equatable, Identifiable {
-    let kind: CalendarEventKind
-    let id: String
-    let date: String
-    let title: String
-    let startMinute: Int
-    let endMinute: Int
-    let color: String
-    let subtitle: String
-    let courseId: String?
-    var ownerId: String? = nil
-    var source: RoomEventSource? = nil
-}
-
 enum MemberColor {
     private static let palette = ["#12B172", "#56D8C3", "#568CFC", "#A978FA", "#FC6ABF", "#FD728E"]
 
@@ -108,95 +92,10 @@ enum MemberColor {
     }
 }
 
-enum MeetingExpansion {
-    static func expandUserTimetable(
-        meetings: [MeetingDto],
-        courses: [CourseDto],
-        daySlots: [DaySlotDto],
-        rangeStart: String,
-        rangeEnd: String,
-        semesterStart: String?,
-        semesterEnd: String?,
-        statusByDate: [String: AttendanceDayStatus],
-        excluding: Set<String> = []
-    ) -> [CalendarEvent] {
-        let courseMap = Dictionary(uniqueKeysWithValues: courses.map { ($0.id, $0) })
-        let slotMap = Dictionary(uniqueKeysWithValues: daySlots.map { ($0.periodIndex, $0) })
-        var events: [CalendarEvent] = []
-        var cursor = rangeStart
-        while cursor <= rangeEnd {
-            defer { cursor = CalendarRange.addDays(cursor, 1) }
-            if let semesterStart, cursor < semesterStart { continue }
-            if let semesterEnd, cursor > semesterEnd { continue }
-            if statusByDate[cursor] == .noClass { continue }
-            guard let date = CalendarRange.parse(cursor) else { continue }
-            let jsDay = CalendarRange.utcCalendar.component(.weekday, from: date) - 1
-            for meeting in meetings where meeting.dayOfWeek == jsDay {
-                guard !excluding.contains("\(meeting.id)|\(cursor)") else { continue }
-                guard let course = courseMap[meeting.courseId],
-                      let startSlot = slotMap[meeting.startPeriodIndex]
-                else { continue }
-                let endSlot = slotMap[meeting.startPeriodIndex + meeting.periodCount - 1] ?? startSlot
-                events.append(CalendarEvent(
-                    kind: .meeting,
-                    id: "m:\(meeting.courseId):\(cursor):\(startSlot.startMinute)",
-                    date: cursor,
-                    title: course.name,
-                    startMinute: startSlot.startMinute,
-                    endMinute: endSlot.endMinute,
-                    color: course.color ?? MemberColor.memberColor(meeting.courseId),
-                    subtitle: "自分",
-                    courseId: meeting.courseId
-                ))
-            }
-        }
-        return events.sorted {
-            if $0.date != $1.date { return $0.date < $1.date }
-            return $0.startMinute < $1.startMinute
-        }
-    }
-
-    static func eventsByDate(_ events: [CalendarEvent]) -> [String: [CalendarEvent]] {
-        Dictionary(grouping: events, by: \.date)
-    }
-}
-
-enum CalendarViewMode: String, CaseIterable {
-    case day, week, month
-}
-
 enum DateFormatPattern {
     case monthDay
     case yearMonthDay
     case yearMonth
-}
-
-enum PersonalEventDisplay {
-    /// occurrence を days ごとに 1 CalendarEvent へ割る。日付演算はしない (days をそのまま使う)
-    static func calendarEvents(occurrences: [PersonalEventOccurrenceDto]) -> [CalendarEvent] {
-        occurrences.flatMap { occurrence in
-            occurrence.days.map { day in
-                CalendarEvent(
-                    kind: .personal,
-                    id: "e:\(occurrence.seriesId):\(occurrence.occurrenceDate):\(day.date)",
-                    date: day.date,
-                    title: occurrence.title,
-                    startMinute: day.startMinute,
-                    endMinute: day.endMinute,
-                    color: occurrence.color ?? "#8b5cf6",
-                    subtitle: "自分",
-                    courseId: nil
-                )
-            }
-        }
-    }
-}
-
-enum PersonalCalendarLogic {
-    /// anchor を date に移すと表示月が変わるか (= 再取得が要るか)
-    static func monthChanged(anchor: String, date: String) -> Bool {
-        CalendarRange.monthFirst(anchor) != CalendarRange.monthFirst(date)
-    }
 }
 
 enum CalendarRange {
@@ -224,17 +123,6 @@ enum CalendarRange {
         let day = utcCalendar.component(.weekday, from: parsed) - 1
         let offset = day == 0 ? -6 : -(day - 1)
         return yyyyMMdd(utcCalendar.date(byAdding: .day, value: offset, to: parsed) ?? parsed)
-    }
-
-    static func monthGridRange(anchorMonthFirst: String) -> (start: String, end: String) {
-        let start = mondayOf(monthFirst(anchorMonthFirst))
-        return (start, addDays(start, 41))
-    }
-
-    static func weekStartsFor(_ mode: CalendarViewMode, anchor: String) -> [String] {
-        if mode == .day || mode == .week { return [mondayOf(anchor)] }
-        let first = mondayOf(monthFirst(anchor))
-        return (0..<6).map { addDays(first, $0 * 7) }
     }
 
     static func addDays(_ date: String, _ n: Int) -> String {
@@ -267,84 +155,6 @@ enum CalendarRange {
         case .yearMonth: formatter.dateFormat = "yyyy年 M月"
         }
         return formatter.string(from: parsed)
-    }
-}
-
-enum CalendarLane {
-    struct Laned: Equatable {
-        var event: CalendarEvent
-        var lane: Int
-        var laneCount: Int
-    }
-
-    static func assignLanes(_ events: [CalendarEvent]) -> [Laned] {
-        let sorted = events
-            .filter { $0.endMinute > $0.startMinute }
-            .sorted { $0.startMinute == $1.startMinute ? $0.endMinute < $1.endMinute : $0.startMinute < $1.startMinute }
-
-        var clusters: [[CalendarEvent]] = []
-        var cluster: [CalendarEvent] = []
-        var clusterEnd = Int.min
-        for event in sorted {
-            if event.startMinute >= clusterEnd {
-                if !cluster.isEmpty { clusters.append(cluster) }
-                cluster = [event]
-                clusterEnd = event.endMinute
-            } else {
-                cluster.append(event)
-                clusterEnd = max(clusterEnd, event.endMinute)
-            }
-        }
-        if !cluster.isEmpty { clusters.append(cluster) }
-
-        var out: [Laned] = []
-        for current in clusters {
-            var lanes: [Int] = []
-            var assigned: [String: Int] = [:]
-            for event in current {
-                var placed = -1
-                for index in lanes.indices where lanes[index] <= event.startMinute {
-                    placed = index
-                    break
-                }
-                if placed == -1 {
-                    placed = lanes.count
-                    lanes.append(event.endMinute)
-                } else {
-                    lanes[placed] = event.endMinute
-                }
-                assigned[event.id] = placed
-            }
-            for event in current {
-                out.append(.init(event: event, lane: assigned[event.id] ?? 0, laneCount: lanes.count))
-            }
-        }
-        return out
-    }
-}
-
-enum CalendarEventDisplay {
-    static func eventColor(_ e: CalendarEvent) -> String { e.color }
-    static func eventTitle(_ e: CalendarEvent) -> String { e.title }
-
-    static func dayStatusColor(_ s: AttendanceDayStatus) -> Color {
-        switch s {
-        case .allPresent: return .statusPresent
-        case .hasAbsent: return .statusAbsent
-        case .hasTardy: return .statusTardy
-        case .allSuspended: return .statusCancelled
-        case .partialUnrecorded, .noClass, .unknown: return .statusNone
-        }
-    }
-
-    static func dayStatusLabel(_ s: AttendanceDayStatus) -> String {
-        switch s {
-        case .allPresent: return "出席"
-        case .hasAbsent: return "欠席あり"
-        case .hasTardy: return "遅刻・早退あり"
-        case .allSuspended: return "休講"
-        case .partialUnrecorded, .noClass, .unknown: return "未記録あり"
-        }
     }
 }
 

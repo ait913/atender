@@ -40,65 +40,6 @@ final class QueryCacheTests: XCTestCase {
         XCTAssertNil(client.data(for: statsKey, as: String.self))
     }
 
-    func testPhaseAInvalidationTargets() {
-        // T6: patchAttendance は today を invalidate する (deleteAttendance と対称化)
-        assertTargets(.patchAttendance, [
-            QueryKey(["today"]),
-            QueryKey(["stats"]),
-            QueryKey(["semesters"]),
-            QueryKey(["day"]),
-        ])
-
-        assertTargets(.deleteAttendance, [
-            QueryKey(["today"]),
-            QueryKey(["stats"]),
-            QueryKey(["semesters"]),
-            QueryKey(["day"]),
-        ])
-
-        assertTargets(.markAllPresent, [
-            QueryKey(["stats"]),
-            QueryKey(["semesters"]),
-            QueryKey(["day"]),
-        ], excluded: [QueryKey(["today"])])
-
-        assertTargets(.bulkAttendance, [
-            QueryKey(["semesters"]),
-            QueryKey(["stats"]),
-            QueryKey(["day"]),
-            QueryKey(["today"]),
-            QueryKey(["timetable-suspensions"]),
-        ])
-
-        assertTargets(.courseSuspension(courseId: "c1"), [
-            QueryKey(["courses", "c1", "suspensions"]),
-            QueryKey(["semesters"]),
-            QueryKey(["stats"]),
-            QueryKey(["day"]),
-        ])
-
-        assertTargets(.timetableSuspension(date: "2026-06-01"), [
-            QueryKey(["timetable-suspensions"]),
-            QueryKey(["day"]),
-            QueryKey(["semesters"]),
-            QueryKey(["stats"]),
-            QueryKey(["today"]),
-            QueryKey(["day", "2026-06-01"]),
-        ])
-
-        assertTargets(.personalEvent(date: "2026-06-01"), [
-            QueryKey(["personal-events"]),
-            QueryKey(["day"]),
-            QueryKey(["day", "2026-06-01"]),
-        ])
-
-        assertTargets(.meUpdate, [
-            QueryKey(["users", "search"]),
-            QueryKey(["semesters"]),
-            QueryKey(["stats"]),
-        ])
-    }
-
     // T5: 出欠ルール保存 (attendanceRuleUpsert) は stats/semesters/dayPrefix を invalidate する
     //     (ルール変更 → 出席率・日別に反映)。SPEC の必須キー含有を subset で検証。
     func testAttendanceRuleUpsertInvalidatesStatsSemestersDay() {

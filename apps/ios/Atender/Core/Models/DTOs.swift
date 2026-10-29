@@ -509,140 +509,6 @@ struct BulkTimetableSuspensionRemoveResponse: Codable, Equatable {
     let removedCount: Int
 }
 
-struct RecurrenceEndDto: Codable, Equatable {
-    let kind: String            // "never" | "until" | "count"
-    var date: String? = nil     // kind == "until"
-    var count: Int? = nil       // kind == "count"
-}
-
-struct RecurrenceSpecDto: Codable, Equatable {
-    var freq: String            // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
-    var interval: Int
-    var byDay: [String]         // "MO".."SU"
-    var monthlyMode: String?    // "BYMONTHDAY" | "BYDAY" | nil
-    var end: RecurrenceEndDto
-}
-
-struct OccurrenceDayDto: Codable, Equatable {
-    let date: String
-    let startMinute: Int
-    let endMinute: Int
-}
-
-struct PersonalEventSeriesDto: Codable, Equatable, Identifiable {
-    let id: String
-    let title: String
-    let start: String
-    let end: String
-    let isAllDay: Bool
-    let location: String?
-    let note: String?
-    let color: String?
-    let recurrenceRule: String?
-    let recurrenceSpec: RecurrenceSpecDto?
-    let exDates: [String]
-    let rDates: [String]
-    let source: String
-    let ekExternalId: String?
-    let ekCalendarId: String?
-    let createdAt: String
-    let updatedAt: String
-}
-
-struct PersonalEventOccurrenceDto: Codable, Equatable, Identifiable {
-    let seriesId: String
-    let occurrenceDate: String
-    let start: String
-    let end: String
-    let days: [OccurrenceDayDto]
-    let isAllDay: Bool
-    let title: String
-    let location: String?
-    let note: String?
-    let color: String?
-    let isRecurringOccurrence: Bool
-    let recurrenceRule: String?
-    let recurrenceSpec: RecurrenceSpecDto?
-    let overrideId: String?
-    let source: String
-    let ekExternalId: String?
-    let ekCalendarId: String?
-    let createdAt: String
-    let updatedAt: String
-
-    // wire に id は無い。Identifiable は計算プロパティで満たす
-    var id: String { "\(seriesId):\(occurrenceDate)" }
-    private enum CodingKeys: String, CodingKey {
-        case seriesId, occurrenceDate, start, end, days, isAllDay, title, location, note, color
-        case isRecurringOccurrence, recurrenceRule, recurrenceSpec, overrideId, source
-        case ekExternalId, ekCalendarId, createdAt, updatedAt
-    }
-}
-
-struct PersonalEventRecurrenceInput: Codable, Equatable {
-    var spec: RecurrenceSpecDto? = nil
-    var rrule: String? = nil
-    var exDates: [String] = []
-    var rDates: [String] = []
-}
-
-struct PersonalEventCreateInput: Codable, Equatable {
-    let title: String
-    let start: String
-    let end: String
-    var isAllDay: Bool = false
-    var location: String? = nil
-    var note: String? = nil
-    var color: String? = nil
-    var recurrence: PersonalEventRecurrenceInput? = nil
-    var source: String? = nil
-    var ekExternalId: String? = nil
-    var ekCalendarId: String? = nil
-    var ekLastModified: String? = nil
-}
-
-struct PersonalEventUpdateInput: Codable, Equatable {
-    var title: String? = nil
-    var start: String? = nil
-    var end: String? = nil
-    var isAllDay: Bool? = nil
-    var location: String? = nil
-    var note: String? = nil
-    var color: String? = nil
-    var recurrence: PersonalEventRecurrenceInput? = nil
-    var clearRecurrence: Bool = false
-    var editScope: String = "all"          // "single" | "future" | "all"
-    var originalDate: String? = nil
-    var ekExternalId: String? = nil
-    var ekCalendarId: String? = nil
-}
-
-struct EventKitSyncEvent: Codable, Equatable {
-    let ekExternalId: String
-    let ekCalendarId: String
-    let ekOccurrenceStart: String
-    let ekLastModified: String?
-    let start: String
-    let end: String
-    let isAllDay: Bool
-    let title: String
-    let location: String?
-}
-
-struct EventKitSyncInput: Codable, Equatable {
-    struct Range: Codable, Equatable {
-        let from: String
-        let to: String
-    }
-
-    let range: Range
-    let events: [EventKitSyncEvent]
-}
-
-struct EventKitSyncResponse: Codable, Equatable {
-    let mirrors: [PersonalEventSeriesDto]
-}
-
 // MARK: - 書き出し (.designs/20260729-eventkit-dedicated-calendar-export.md §6.6)
 
 struct OccurrenceRangeResponse: Codable, Equatable {
@@ -655,24 +521,11 @@ struct OccurrenceRangeResponse: Codable, Equatable {
     var transfers: [ClassTransferDto]? = nil
 }
 
-struct LegacyEkPushListResponse: Codable, Equatable {
-    let externalIds: [String]
-}
-
-struct LegacyEkPushClearInput: Codable, Equatable {
-    let externalIds: [String]
-}
-
-struct LegacyEkPushClearResponse: Codable, Equatable {
-    let clearedCount: Int
-}
-
 struct DayDetailDto: Codable, Equatable {
     let date: String
     let occurrences: [OccurrenceDto]
     let courseSuspensions: [CourseSuspensionDto]
     let timetableSuspension: TimetableSuspensionDto?
-    let personalEvents: [PersonalEventOccurrenceDto]
     var transfers: [ClassTransferDto]? = nil
 }
 
@@ -713,14 +566,7 @@ struct RoomSummaryDto: Codable, Equatable, Identifiable {
     let showMemberTimetables: Bool
     let memberCount: Int
     let myRole: RoomRole
-    let upcomingEvent: UpcomingEvent?
     let createdAt: String
-
-    struct UpcomingEvent: Codable, Equatable {
-        let id: String
-        let title: String
-        let start: String
-    }
 }
 
 struct RoomDto: Codable, Equatable, Identifiable {
@@ -730,7 +576,6 @@ struct RoomDto: Codable, Equatable, Identifiable {
     let showMemberTimetables: Bool
     let memberCount: Int
     let myRole: RoomRole
-    let upcomingEvent: RoomSummaryDto.UpcomingEvent?
     let createdAt: String
     let inviteCode: String
     let inviteExpiresAt: String?
@@ -746,37 +591,12 @@ struct RoomMemberDto: Codable, Equatable, Identifiable {
     let joinedAt: String
 }
 
-struct RoomEventDto: Codable, Equatable, Identifiable {
-    let id: String
-    let seriesId: String
-    let roomId: String
-    let authorId: String
-    let title: String
-    let rawTitle: String?
-    let description: String?
-    let start: String
-    let end: String
-    let isAllDay: Bool
-    let color: String?
-    let source: RoomEventSource
-    let visibilityMode: VisibilityMode
-    let isRecurringOccurrence: Bool
-    let recurrenceRule: String?
-    let occurrenceDate: String
-    let overrideId: String?
-    let googleSyncId: String?
-    let googleEventId: String?
-    let googleRecurringEventId: String?
-    let createdAt: String
-}
-
 struct RoomWeekDto: Codable, Equatable {
     let weekStart: String
     let weekEnd: String
     let members: [Member]
     let meetings: [Meeting]
     let recurringMeetings: [RecurringMeeting]
-    let roomEvents: [RoomEventDto]
 
     struct Member: Codable, Equatable, Identifiable {
         var id: String { userId }
@@ -814,15 +634,13 @@ struct RoomWeekDto: Codable, Equatable {
         weekEnd: String,
         members: [Member],
         meetings: [Meeting],
-        recurringMeetings: [RecurringMeeting] = [],
-        roomEvents: [RoomEventDto]
+        recurringMeetings: [RecurringMeeting] = []
     ) {
         self.weekStart = weekStart
         self.weekEnd = weekEnd
         self.members = members
         self.meetings = meetings
         self.recurringMeetings = recurringMeetings
-        self.roomEvents = roomEvents
     }
 
     init(from decoder: Decoder) throws {
@@ -832,7 +650,6 @@ struct RoomWeekDto: Codable, Equatable {
         members = try container.decode([Member].self, forKey: .members)
         meetings = try container.decode([Meeting].self, forKey: .meetings)
         recurringMeetings = try container.decodeIfPresent([RecurringMeeting].self, forKey: .recurringMeetings) ?? []
-        roomEvents = try container.decode([RoomEventDto].self, forKey: .roomEvents)
     }
 }
 
@@ -846,55 +663,6 @@ struct UpdateRoomInput: Codable, Equatable {
     var name: String?
     var description: String?
     var showMemberTimetables: Bool?
-}
-
-struct CreateRoomEventInput: Codable, Equatable {
-    let title: String
-    var description: String?
-    let start: String
-    let end: String
-    var isAllDay: Bool = false
-    var color: String?
-    var recurrence: Recurrence?
-    var visibilityMode: VisibilityMode = .normal
-
-    struct Recurrence: Codable, Equatable {
-        let rrule: String
-        var exDates: [String] = []
-        var rDates: [String] = []
-    }
-}
-
-struct UpdateRoomEventInput: Codable, Equatable {
-    var title: String?
-    var description: String?
-    var start: String?
-    var end: String?
-    var isAllDay: Bool?
-    var color: String?
-    var recurrence: CreateRoomEventInput.Recurrence?
-    var visibilityMode: VisibilityMode?
-    var editScope: String = "all"
-    var originalDate: String?
-}
-
-struct PersonalCalendarShareDto: Codable, Equatable, Identifiable {
-    let id: String
-    let roomId: String
-    let userId: String
-    let visibilityMode: VisibilityMode
-    let enabled: Bool
-    let createdAt: String
-    let updatedAt: String
-}
-
-struct SharePutInput: Codable, Equatable {
-    var visibilityMode: VisibilityMode
-}
-
-struct SharePatchInput: Codable, Equatable {
-    var visibilityMode: VisibilityMode?
-    var enabled: Bool?
 }
 
 struct SchoolDto: Codable, Equatable, Identifiable {
@@ -972,71 +740,6 @@ struct EffectiveRuleResponse: Codable, Equatable {
     }
 }
 
-struct IcsImportDto: Codable, Equatable, Identifiable {
-    let id: String
-    let filename: String?
-    let source: IcsSource
-    let status: IcsImportStatus
-    let parsedEventCount: Int
-    let committedEventCount: Int
-    let skippedEventCount: Int
-    let errorMessage: String?
-    let committedAt: String?
-    let createdAt: String
-}
-
-struct IcsImportPreviewItem: Codable, Equatable, Identifiable {
-    var id: String { uid }
-    let uid: String
-    let rawTitle: String
-    let mappedTitle: String
-    let visibilityMode: VisibilityMode
-    let ruleId: String?
-    let start: String
-    let end: String
-    let isRecurring: Bool
-    let rrule: String?
-}
-
-struct IcsImportPreview: Codable, Equatable {
-    let importId: String
-    let events: [IcsImportPreviewItem]
-}
-
-struct IcsImportCommitResult: Codable, Equatable {
-    let committed: Int
-    let skipped: Int
-    let errors: [String]
-}
-
-struct IcsTitleRuleDto: Codable, Equatable, Identifiable {
-    let id: String
-    let matchType: IcsMatchType
-    let pattern: String
-    let replaceWith: String?
-    let visibilityMode: VisibilityMode
-    let priority: Int
-    let isDefault: Bool
-    let createdAt: String
-    let updatedAt: String
-}
-
-struct CreateIcsTitleRuleInput: Codable, Equatable {
-    var matchType: IcsMatchType
-    var pattern: String
-    var replaceWith: String?
-    var visibilityMode: VisibilityMode?
-    var priority: Int?
-}
-
-struct PatchIcsTitleRuleInput: Codable, Equatable {
-    var matchType: IcsMatchType?
-    var pattern: String?
-    var replaceWith: String?
-    var visibilityMode: VisibilityMode?
-    var priority: Int?
-}
-
 struct UserTimetableListResponse: Codable, Equatable {
     let userTimetables: [UserTimetableDto]
 }
@@ -1106,14 +809,6 @@ struct TimetableSuspensionResponse: Codable, Equatable {
     let suspension: TimetableSuspensionDto
 }
 
-struct PersonalEventsResponse: Codable, Equatable {
-    let events: [PersonalEventOccurrenceDto]
-}
-
-struct PersonalEventResponse: Codable, Equatable {
-    let event: PersonalEventSeriesDto
-}
-
 struct FriendshipsResponse: Codable, Equatable {
     let friendships: [FriendshipDto]
 }
@@ -1138,43 +833,9 @@ struct RoomMembersResponse: Codable, Equatable {
     let members: [RoomMemberDto]
 }
 
-struct RoomEventsResponse: Codable, Equatable {
-    let events: [RoomEventDto]
-}
-
-struct RoomEventResponse: Codable, Equatable {
-    let event: RoomEventDto
-}
-
-struct PersonalCalendarShareResponse: Codable, Equatable {
-    let share: PersonalCalendarShareDto?
-}
-
 struct RoomInviteResponse: Codable, Equatable {
     let inviteCode: String
     let inviteExpiresAt: String
-}
-
-struct IcsImportsResponse: Codable, Equatable {
-    let imports: [IcsImportDto]
-}
-
-struct IcsUploadResponse: Codable, Equatable {
-    struct ImportRef: Codable, Equatable {
-        let id: String
-    }
-
-    let `import`: ImportRef
-    let parsedCount: Int
-    let dedup: Bool
-}
-
-struct IcsTitleRulesResponse: Codable, Equatable {
-    let rules: [IcsTitleRuleDto]
-}
-
-struct IcsTitleRuleResponse: Codable, Equatable {
-    let rule: IcsTitleRuleDto
 }
 
 struct VersionResponse: Codable, Equatable {

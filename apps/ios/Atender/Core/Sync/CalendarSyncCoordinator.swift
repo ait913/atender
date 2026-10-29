@@ -2,13 +2,11 @@ import Foundation
 import Observation
 import UIKit
 
-/// 書き出し/読み込みの唯一のオーケストレータ (§6.5)
+/// 時間割の書き出しの唯一のオーケストレータ
 @MainActor
 @Observable
 final class CalendarSyncCoordinator {
     @ObservationIgnored private let store: EventKitStore
-    @ObservationIgnored private let client: APIClient
-    @ObservationIgnored private let cache: QueryClient
     @ObservationIgnored private let calendarRepository: CalendarExportRepository
 
     private(set) var status = CalendarSyncStatus()
@@ -28,40 +26,13 @@ final class CalendarSyncCoordinator {
         set { UserDefaults.standard.set(newValue, forKey: Keys.exportEnabled) }
     }
 
-    var exportCourses: Bool {
-        get { UserDefaults.standard.object(forKey: Keys.exportCourses) == nil ? true : UserDefaults.standard.bool(forKey: Keys.exportCourses) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.exportCourses) }
-    }
-
-    var exportPersonal: Bool {
-        get { UserDefaults.standard.object(forKey: Keys.exportPersonal) == nil ? true : UserDefaults.standard.bool(forKey: Keys.exportPersonal) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.exportPersonal) }
-    }
-
-    var linkedCalendarIds: Set<String> {
-        get { Set(UserDefaults.standard.stringArray(forKey: Keys.linkedCalendarIds) ?? []) }
-        set { UserDefaults.standard.set(Array(newValue), forKey: Keys.linkedCalendarIds) }
-    }
-
-    var promptDismissed: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.promptDismissed) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.promptDismissed) }
-    }
-
     private var atenderCalendarId: String? {
         get { UserDefaults.standard.string(forKey: Keys.atenderCalendarId) }
         set { UserDefaults.standard.set(newValue, forKey: Keys.atenderCalendarId) }
     }
 
-    private var legacyPushCleanupDone: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.legacyPushCleanupDone) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.legacyPushCleanupDone) }
-    }
-
     init(store: EventKitStore, client: APIClient, cache: QueryClient, calendarRepository: CalendarExportRepository) {
         self.store = store
-        self.client = client
-        self.cache = cache
         self.calendarRepository = calendarRepository
         // 廃止キーの掃除 (冪等)
         UserDefaults.standard.removeObject(forKey: Keys.legacyWriteTargetCalendarId)
@@ -84,24 +55,6 @@ final class CalendarSyncCoordinator {
         if next == .fullAccess {
             await sync(trigger: .permissionGranted)
         }
-    }
-
-    /// ★ Atender カレンダーを除いた一覧 (§3 の除外 1 層目)
-    func availableCalendars() async -> [EKCalendarSnapshot] {
-        guard EventKitStore.currentAccess() == .fullAccess else { return [] }
-        let snapshot = await store.snapshot()
-        var excluded = Set<String>()
-        if let atenderCalendarId { excluded.insert(atenderCalendarId) }
-        if case .use(let id) = AtenderCalendarResolver.resolve(
-            storedId: atenderCalendarId,
-            calendars: snapshot.calendars,
-            sources: snapshot.sources,
-            defaultCalendarSourceId: snapshot.defaultCalendarSourceId,
-            allowCreate: false
-        ) {
-            excluded.insert(id)
-        }
-        return snapshot.calendars.filter { !excluded.contains($0.id) && $0.title != AtenderCalendarSpec.title }
     }
 
     // MARK: - 同期 (唯一の入口)
@@ -138,7 +91,7 @@ final class CalendarSyncCoordinator {
         let window = ExportWindow.around(today: SchoolClock.todayString())
         let interval = dateInterval(from: window.from, to: window.to)
 
-        // 6. カレンダー解決
+        // 3. カレンダー解決
         let snapshot = await store.snapshot()
         var calendarId: String?
         switch AtenderCalendarResolver.resolve(
@@ -175,65 +128,56 @@ final class CalendarSyncCoordinator {
             status.phase = .failed
         }
 
-        // 7. legacy 掃除 (一度きり)
-        if let calendarId, !legacyPushCleanupDone {
-            await cleanUpLegacyPushes(excludingCalendarId: calendarId)
+        // 4. build 21 の移行 (権限と書き出し先が揃ってから実施)
+        if let calendarId, !UserDefaults.standard.bool(forKey: Keys.b21Migrated) {
+            let defaults = UserDefaults.standard
+            let oldCoursesKey = "atender.eventkit.exportCourses"
+            let current = exportEnabled
+            let next = CalendarSyncMigration.exportEnabledAfterMigration(
+                current: current,
+                exportCoursesRaw: defaults.object(forKey: oldCoursesKey) as? Bool
+            )
+            let today = SchoolClock.todayString()
+            let migrationInterval = dateInterval(from: CalendarRange.addDays(today, -730), to: CalendarRange.addDays(today, 730))
+            do {
+                if !next && current {
+                    exportEnabled = false
+                    _ = try await store.wipeOwned(calendarId: calendarId, window: migrationInterval)
+                } else {
+                    let existing = await store.fetchExported(calendarId: calendarId, window: migrationInterval)
+                    let plan = CalendarExportPlanner.plan(desired: [], existing: existing, prunableKinds: [.personal])
+                    _ = try await store.apply(plan, calendarId: calendarId)
+                }
+                lastSelfWriteAt = .now
+                for key in CalendarSyncMigration.obsoleteKeys {
+                    defaults.removeObject(forKey: key)
+                }
+                defaults.set(true, forKey: Keys.b21Migrated)
+            } catch {
+                // 全削除に失敗した場合も、次回は同じ分岐で再試行する。
+                exportEnabled = current
+                status.lastError = .applyFailed(error.localizedDescription)
+                status.phase = .failed
+                return
+            }
         }
 
-        // 8. 読み込み (Atender カレンダーは構造的に除外)
-        let importIds = linkedCalendarIds.subtracting(atenderCalendarId.map { [$0] } ?? [])
-        if !importIds.isEmpty {
+        // 5. 時間割の書き出し
+        if exportEnabled, let calendarId {
+            let desired: [ExportItem]
+            let prunableKinds: Set<ExportKind>
             do {
-                let snapshots = await store.fetchSnapshots(range: interval, calendarIds: importIds)
-                let input = EventKitSyncInput(
-                    range: .init(from: window.from, to: window.to),
-                    events: EventKitReconciler.uploads(from: snapshots)
+                let range = try await calendarRepository.occurrenceRange(from: window.from, to: window.to)
+                desired = CourseExportMapping.items(
+                    occurrences: range.occurrences,
+                    courseSuspensions: range.courseSuspensions,
+                    timetableSuspensions: range.timetableSuspensions
                 )
-                _ = try await client.send(Endpoints.eventKitSync(input), as: EventKitSyncResponse.self)
+                prunableKinds = range.hasActiveTimetable ? [.meeting, .personal] : [.personal]
             } catch {
                 status.lastError = .network(error.userFacingMessage)
                 status.phase = .failed
-            }
-        }
-
-        // 9. 書き出し
-        if exportEnabled, let calendarId {
-            var desired: [ExportItem] = []
-            var prunableKinds = Set<ExportKind>()
-
-            if exportCourses {
-                do {
-                    let range = try await calendarRepository.occurrenceRange(from: window.from, to: window.to)
-                    desired += CourseExportMapping.items(
-                        occurrences: range.occurrences,
-                        courseSuspensions: range.courseSuspensions,
-                        timetableSuspensions: range.timetableSuspensions
-                    )
-                    if range.hasActiveTimetable { prunableKinds.insert(.meeting) }
-                } catch {
-                    status.lastError = .network(error.userFacingMessage)
-                    status.phase = .failed
-                    return
-                }
-            } else {
-                prunableKinds.insert(.meeting)
-            }
-
-            if exportPersonal {
-                do {
-                    let response = try await client.send(
-                        Endpoints.personalEvents(from: window.from, to: window.to),
-                        as: PersonalEventsResponse.self
-                    )
-                    desired += PersonalExportMapping.items(occurrences: response.events)
-                    prunableKinds.insert(.personal)
-                } catch {
-                    status.lastError = .network(error.userFacingMessage)
-                    status.phase = .failed
-                    return
-                }
-            } else {
-                prunableKinds.insert(.personal)
+                return
             }
 
             let existing = await store.fetchExported(calendarId: calendarId, window: interval)
@@ -268,9 +212,6 @@ final class CalendarSyncCoordinator {
             status.lastSuccessAt = .now
             status.lastError = nil
         }
-
-        // 11. 読み込みで新しいミラーが入りうる (isRunning 中なので TR-6 は再帰しない)
-        cache.invalidate(prefixes: [.personalEvents()])
     }
 
     func setExportEnabled(_ value: Bool) async {
@@ -334,21 +275,6 @@ final class CalendarSyncCoordinator {
         }
     }
 
-    private func cleanUpLegacyPushes(excludingCalendarId: String) async {
-        do {
-            let externalIds = try await calendarRepository.legacyEkPushes()
-            if externalIds.isEmpty {
-                legacyPushCleanupDone = true
-                return
-            }
-            _ = await store.removeEvents(externalIds: externalIds, excludingCalendarId: excludingCalendarId)
-            _ = try await calendarRepository.clearLegacyEkPushes(externalIds)
-            legacyPushCleanupDone = true
-        } catch {
-            // フラグを立てず次回に再試行 (冪等)
-        }
-    }
-
     private func dateInterval(from: String, to: String) -> DateInterval {
         let start = EventKitTimeMapping.jstDayStart(from)
         let end = EventKitTimeMapping.jstDayStart(CalendarRange.addDays(to, 1))
@@ -356,13 +282,9 @@ final class CalendarSyncCoordinator {
     }
 
     private enum Keys {
+        static let b21Migrated = "atender.eventkit.b21Migrated"
         static let exportEnabled = "atender.eventkit.exportEnabled"
-        static let exportCourses = "atender.eventkit.exportCourses"
-        static let exportPersonal = "atender.eventkit.exportPersonal"
         static let atenderCalendarId = "atender.eventkit.atenderCalendarId"
-        static let linkedCalendarIds = "atender.eventkit.linkedCalendarIds"
-        static let promptDismissed = "atender.eventkit.promptDismissed"
-        static let legacyPushCleanupDone = "atender.eventkit.legacyPushCleanupDone"
         static let legacyWriteTargetCalendarId = "atender.eventkit.writeTargetCalendarId"
     }
 }

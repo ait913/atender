@@ -17,9 +17,6 @@ enum AttendanceDayVisual {
         let iconColor: Color
         let tintColor: Color
         let tintFraction: Double
-
-        /// ホーム個人カレンダーのドット色 (§4.5)
-        var dotColor: Color { kind == .unrecorded ? .statusNone : iconColor }
     }
 
     struct DayVisual: Equatable {

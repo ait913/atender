@@ -10,7 +10,6 @@ enum Mutation: Equatable {
     case timetableSuspension(date: String?)
     case classTransfer(date: String?)
     case bulkTimetableSuspension
-    case personalEvent(date: String?)
     case deleteCourse
     case userTimetableCreate
     case userTimetableEdit
@@ -29,8 +28,6 @@ enum Mutation: Equatable {
     case roomLeave(id: String)
     case roomDelete(id: String)
     case roomMemberRemove(id: String)
-    case roomEvent(id: String)
-    case icsImport(roomId: String)
     case friendshipAction
     case friendshipAdd
     case templateCopy
@@ -56,8 +53,6 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return compactKeys([.dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"]), .timetableSuspensions(), date.map { .dayDetail($0) }])
     case .bulkTimetableSuspension:
         return [.timetableSuspensions(), .dayPrefix(), .semesters(), QueryKey(["stats"]), QueryKey(["today"])]
-    case .personalEvent(let date):
-        return compactKeys([.personalEvents(), .dayPrefix(), date.map { .dayDetail($0) }])
     case .deleteCourse:
         return [.userTimetables(), QueryKey(["today"]), QueryKey(["stats"]), .semesters(), .dayPrefix()]
     case .userTimetableCreate:
@@ -90,10 +85,6 @@ func invalidationTargets(for mutation: Mutation) -> [QueryKey] {
         return [.rooms(), .room(id)]
     case .roomMemberRemove(let id):
         return [.rooms(), .roomMembers(id), .room(id)]
-    case .roomEvent(let id):
-        return [.roomEvents(id), .roomWeek(id)]
-    case .icsImport(let roomId):
-        return [.roomWeek(roomId), .icsImports(roomId)]
     case .friendshipAction:
         return [.friendships(), .usersSearch()]
     case .friendshipAdd:
