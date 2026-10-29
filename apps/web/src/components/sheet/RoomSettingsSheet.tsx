@@ -174,7 +174,7 @@ export function RoomSettingsSheet({ roomId, open, onClose }: { roomId: string; o
       <ConfirmDialog
         open={pendingDelete}
         title="ルームを削除しますか？"
-        body="ルームと予定は削除されます。この操作は取り消せません。"
+        body="ルームは削除されます。この操作は取り消せません。"
         confirmLabel="削除する"
         onCancel={() => setPendingDelete(false)}
         onConfirm={() => {
