@@ -1,6 +1,6 @@
 // LP のスクショ + 崩れ検査 (横スクロール・画像読み込み・フォント・hero バッジの位置)。
 // 使い方: node lp-shots.mjs [baseUrl=http://127.0.0.1:18080/]
-// 出力: <repo>/.tmp/lp-shots/<幅>.png (.tmp/ は .gitignore 済み)。正典: .designs/20261030-landing-page-and-social-image.md §7-2
+// 出力: <repo>/.tmp/lp-shots/<幅>.png (.tmp/ は .gitignore 済み)。正典: .designs/20261030-landing-page-v2-layout.md §10
 import { mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +19,12 @@ try {
     await page.setViewport({ width, height: 800, deviceScaleFactor: 2 });
     await page.goto(baseUrl, { waitUntil: 'networkidle0' });
     await page.evaluate(() => document.fonts.ready);
+    // loading="lazy" の画像を全部読ませる (v2 で Hero 以外を lazy にした。スクロールしないと complete が false のまま)
+    await page.evaluate(async () => {
+      for (let y = 0; y < document.documentElement.scrollHeight; y += 400) { window.scrollTo(0, y); await new Promise(r => setTimeout(r, 50)); }
+      window.scrollTo(0, 0);
+      await Promise.all(Array.from(document.images).map(i => i.decode().catch(() => {})));
+    });
     const r = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
