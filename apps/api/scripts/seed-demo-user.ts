@@ -84,9 +84,16 @@ async function main() {
     { name: "ネットワーク基礎", teacher: "鈴木先生", color: "#F59E0B", meetings: [{ dayOfWeek: 5, startPeriodIndex: 2, periodCount: 1 }] },
     { name: "英語", teacher: null, color: "#EF4444", meetings: [{ dayOfWeek: 1, startPeriodIndex: 4, periodCount: 1 }] },
   ];
-  for (const cd of courseDefs) {
+  for (const [courseIndex, cd] of courseDefs.entries()) {
     const course = await prisma.course.create({
-      data: { userTimetableId: timetable.id, name: cd.name, teacher: cd.teacher, color: cd.color },
+      data: {
+        userTimetableId: timetable.id,
+        name: cd.name,
+        teacher: cd.teacher,
+        color: cd.color,
+        // 先頭科目だけ出席基準 (欠席 4 回まで・遅刻 3 回で欠席 1 回)
+        ...(courseIndex === 0 ? { maxAbsences: 4, tardiesPerAbsence: 3 } : {}),
+      },
     });
     for (const m of cd.meetings) {
       await prisma.meeting.create({

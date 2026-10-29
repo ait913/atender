@@ -363,6 +363,10 @@ model Course {
   teacher         String?
   color           String?
   note            String?
+  // 科目別の出席基準 (全て null = 未設定、共通ルールに従う)
+  requiredAttendanceRate Int? // 科目の必要出席率 (1–100 %)
+  maxAbsences            Int? // 欠席上限 (授業回)。0–99
+  tardiesPerAbsence      Int? // 遅刻・早退 N 回で欠席 1 回 (1–10)
 
   meetings    Meeting[]
   occurrences MeetingOccurrence[] // 経由参照、検索インデックス用

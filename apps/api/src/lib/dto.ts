@@ -45,12 +45,17 @@ export function daySlotDto(slot: DaySlot | { periodIndex: number; label: string;
 }
 
 export function courseDto(course: Course | { id: string; name: string; teacher: string | null; color: string | null; note: string | null }) {
+  // TemplateCourse 行には出席基準の列が無い → null
+  const rule = course as Partial<Course>;
   return {
     id: course.id,
     name: course.name,
     teacher: course.teacher,
     color: course.color,
     note: course.note,
+    requiredAttendanceRate: rule.requiredAttendanceRate ?? null,
+    maxAbsences: rule.maxAbsences ?? null,
+    tardiesPerAbsence: rule.tardiesPerAbsence ?? null,
   };
 }
 

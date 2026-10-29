@@ -14,6 +14,9 @@ export const CourseDto = z.object({
   teacher: z.string().max(50).nullable(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable(),
   note: z.string().max(500).nullable(),
+  requiredAttendanceRate: z.number().int().nullable().optional(),
+  maxAbsences: z.number().int().nullable().optional(),
+  tardiesPerAbsence: z.number().int().nullable().optional(),
 });
 
 export const MeetingDto = z.object({

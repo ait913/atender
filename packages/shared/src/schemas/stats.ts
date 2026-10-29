@@ -29,6 +29,18 @@ export const CourseStatsDto = z.object({
   allowedAbsences: z.number().int().nullable(),
   maxDayPeriods: z.number().int(),
   allowedAbsenceDays: z.number().int().nullable(),
+  requiredAttendanceRate: z.number().int().optional(),
+  rule: z
+    .object({
+      requiredAttendanceRate: z.number().int().nullable(),
+      maxAbsences: z.number().int().nullable(),
+      tardiesPerAbsence: z.number().int().nullable(),
+    })
+    .optional(),
+  remainingLessons: z.number().int().optional(),
+  absenceLessons: z.number().nullable().optional(),
+  allowedAbsenceLessons: z.number().int().nullable().optional(),
+  limitedBy: z.enum(["rate", "count"]).nullable().optional(),
 });
 
 export const StatsResponse = z.object({
