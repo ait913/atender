@@ -8,7 +8,6 @@ import { decodeCursor, encodeCursor } from "../lib/cursor";
 import { templateDto, userTimetableDto } from "../lib/dto";
 import { sessionMiddleware } from "../middleware/session";
 import { copyTemplateToUser } from "../services/templateCopy";
-import { generateOccurrencesForUserTimetable } from "../services/occurrenceGen";
 
 const IdParam = z.object({ id: z.string() });
 const TemplatePatchInput = TemplateCreateInput.partial();
@@ -113,7 +112,6 @@ export function registerTemplateRoutes(app: Hono) {
     if (!semester) throw new AppError(404, "NOT_FOUND", "Semester not found");
     if (semester.userId !== user.id) throw new AppError(403, "FORBIDDEN", "Forbidden");
     const copied = await copyTemplateToUser({ templateId: c.req.valid("param").id, userId: user.id, semesterId: input.semesterId, title: input.title, replaceExisting: input.replaceExisting });
-    await generateOccurrencesForUserTimetable({ userTimetableId: copied.id });
     const full = await prisma.userTimetable.findUniqueOrThrow({ where: { id: copied.id }, include: { daySlots: true, courses: true, meetings: true } });
     return c.json({ userTimetable: userTimetableDto(full) }, 201);
   });

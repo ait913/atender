@@ -2,6 +2,7 @@ import type { UserTimetable } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { AppError } from "../lib/appError";
+import { generateOccurrencesForUserTimetable } from "./occurrenceGen";
 
 function deriveDaysOfWeek(meetings: { dayOfWeek: number }[]): string {
   return [...new Set([1, 2, 3, 4, 5, ...meetings.map((meeting) => meeting.dayOfWeek === 0 ? 7 : meeting.dayOfWeek)])].sort((a, b) => a - b).join(",");
@@ -91,8 +92,11 @@ export async function copyTemplateToUser(args: {
         data: { copyCount: { increment: 1 } },
       });
 
+      // 生成失敗 (DAY_SLOT_NOT_FOUND 等) で旧時間割の削除・copyCount 加算ごと rollback する
+      await generateOccurrencesForUserTimetable({ userTimetableId: timetable.id, client: tx });
+
       return timetable;
-    });
+    }, { timeout: 60_000, maxWait: 10_000 });
   } catch (error) {
     if (error instanceof AppError) throw error;
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
