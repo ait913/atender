@@ -189,7 +189,7 @@ struct SchoolDepartmentPickerView: View {
                 }
             }
             if model.allowsCreate {
-                AtenderButton(title: "＋ 学科を追加", isLoading: model.busy, isEnabled: !model.departmentQuery.isEmpty && !model.busy) {
+                AtenderButton(title: "＋ 学科を追加", variant: .secondary, isLoading: model.busy, isEnabled: !model.departmentQuery.isEmpty && !model.busy) {
                     Task { await model.addDepartment() }
                 }
             }
