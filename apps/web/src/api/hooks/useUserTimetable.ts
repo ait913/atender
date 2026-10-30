@@ -64,8 +64,9 @@ export function usePatchUserTimetable(id?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: UserTimetablePatchInput) => api<UserTimetableResponse>(`/api/user-timetables/${id}`, { method: "PATCH", body }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QK.userTimetables() });
+    // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: QK.userTimetables() });
       queryClient.invalidateQueries({ queryKey: ["today"] });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
@@ -117,8 +118,9 @@ export function usePublishTimetable(id?: string) {
   return useMutation({
     mutationFn: (body: { title: string; description?: string; year?: number; term?: string }) =>
       api<TemplateResponse>(`/api/user-timetables/${id}/publish-as-template`, { method: "POST", body }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+    // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
@@ -133,6 +135,7 @@ export function useDeleteUserTimetable() {
       queryClient.invalidateQueries({ queryKey: ["today"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      queryClient.invalidateQueries({ queryKey: QK.rooms() });
     },
   });
 }
