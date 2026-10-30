@@ -28,35 +28,42 @@ export function ContextChips({ items, selected, onChange, onAddRoom }: Props) {
     if (!menuOpen) return;
     // 開いたら最初の項目にフォーカス
     menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    // 外側クリックは閉じるだけ (フォーカスはクリックした先に任せる)
     function onPointerDown(event: PointerEvent) {
       if (menuRef.current?.contains(event.target as Node) || triggerRef.current?.contains(event.target as Node)) return;
-      closeMenu();
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeMenu();
-        return;
-      }
-      if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Home" && event.key !== "End") return;
-      const entries = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
-      if (entries.length === 0) return;
-      event.preventDefault();
-      const index = entries.indexOf(document.activeElement as HTMLElement);
-      const next =
-        event.key === "Home" ? 0
-        : event.key === "End" ? entries.length - 1
-        : event.key === "ArrowDown" ? (index + 1) % entries.length
-        : (index <= 0 ? entries.length - 1 : index - 1);
-      entries[next]?.focus();
+      setMenuOpen(false);
     }
     document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
+    return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [menuOpen]);
+
+  // キー操作は Menu のコンテナ内だけで処理する
+  function onMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Home" && event.key !== "End") return;
+    const entries = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+    if (entries.length === 0) return;
+    event.preventDefault();
+    const index = entries.indexOf(document.activeElement as HTMLElement);
+    const next =
+      event.key === "Home" ? 0
+      : event.key === "End" ? entries.length - 1
+      : event.key === "ArrowDown" ? (index + 1) % entries.length
+      : (index <= 0 ? entries.length - 1 : index - 1);
+    entries[next]?.focus();
+  }
+
+  // フォーカスが Menu の外へ出たら閉じる (Tab で先へ進む人の邪魔をしないよう「+」へは戻さない)
+  function onMenuBlur(event: React.FocusEvent<HTMLDivElement>) {
+    const next = event.relatedTarget as Node | null;
+    if (next && (menuRef.current?.contains(next) || triggerRef.current?.contains(next))) return;
+    setMenuOpen(false);
+  }
+
   return (
     <div className="relative">
       <div className="-mx-3 overflow-x-auto overscroll-x-contain px-3 py-1" data-testid="context-chips">
@@ -101,7 +108,7 @@ export function ContextChips({ items, selected, onChange, onAddRoom }: Props) {
         </ul>
       </div>
       {menuOpen ? (
-        <div ref={menuRef} role="menu" className="absolute right-0 top-full z-50 min-w-44 rounded-2xl bg-bg-elevated p-1.5 shadow-card">
+        <div ref={menuRef} role="menu" onKeyDown={onMenuKeyDown} onBlur={onMenuBlur} className="absolute right-0 top-full z-50 min-w-44 rounded-2xl bg-bg-elevated p-1.5 shadow-card">
           {(["create", "join"] as const).map((action) => (
             <button key={action} type="button" role="menuitem"
               className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-bold text-fg-primary transition hover:bg-fg-primary/8 active:scale-[0.98]"
