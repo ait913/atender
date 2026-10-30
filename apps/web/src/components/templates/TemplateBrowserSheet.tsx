@@ -70,6 +70,26 @@ export function TemplateBrowserSheet({ open, purpose, showsFoundBanner, initialS
     setTargetSemesterId(s.data?.semesters.length ? targetSemesterId ?? (latest.current.purpose.kind === "importInto" ? latest.current.purpose.initialSemesterId : null) ?? latest.current.defaultSemesterId ?? s.data.semesters[0]!.id : null);
   }
 
+  // 取込ボタンの押下時に時間割を取り直し、最新の「空 / 既存あり」で判定する (置換の誤判定を避ける)
+  async function startImport(template: TemplateDto, target: string) {
+    if (busy.current) return;
+    busy.current = true;
+    setPending(true);
+    let fresh: UserTimetableDto[] | null = null;
+    try {
+      const refreshed = await timetables.refetch();
+      if (!refreshed.isError && refreshed.data) fresh = refreshed.data.userTimetables;
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+    if (!fresh) {
+      showToast("取り込めませんでした、もう一度試してください");
+      return;
+    }
+    decideImport(template, target, fresh);
+  }
+
   function decideImport(template: TemplateDto, target: string, existing: UserTimetableDto[], retried = false) {
     const decision = TemplateImportLogic.decide(existing.find((t) => t.semesterId === target) ?? null);
     if (decision.kind === "confirmReplace") {
@@ -136,7 +156,7 @@ export function TemplateBrowserSheet({ open, purpose, showsFoundBanner, initialS
               ))}
             </div>
             {purpose.kind === "select" ? <Button type="button" variant="primary" onClick={() => onSelected?.(preview)}>この時間割を使う</Button> : <>
-              <Button type="button" variant="primary" data-testid="template-import-button" disabled={!ready || !targetSemesterId || pending || confirmation !== null} onClick={() => { if (targetSemesterId) decideImport(preview, targetSemesterId, timetables.data?.userTimetables ?? []); }}>この学期に取り込む</Button>
+              <Button type="button" variant="primary" data-testid="template-import-button" disabled={!ready || !targetSemesterId || pending || confirmation !== null} onClick={() => { if (targetSemesterId) void startImport(preview, targetSemesterId); }}>この学期に取り込む</Button>
               {ready && !targetSemesterId ? <p>先に学期を作成してください</p> : null}
             </>}
           </div>
