@@ -38,11 +38,14 @@ export function TemplateBrowserSheet({ open, purpose, showsFoundBanner, initialS
   const [loadError, setLoadError] = useState(false);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
+  // 取込の世代。シートが閉じる / 開き直されると進めて、待っていた取込を無効にする
+  const importGen = useRef(0);
   const [confirmation, setConfirmation] = useState<{ template: TemplateDto; target: string; name: string; decision: TemplateImportLogic.TemplateImportDecision; retried: boolean } | null>(null);
   const latest = useRef({ purpose, initialScope, defaultSemesterId: me.data?.user.defaultSemesterId });
   latest.current = { purpose, initialScope, defaultSemesterId: me.data?.user.defaultSemesterId };
 
   useEffect(() => {
+    importGen.current += 1;
     if (!open) return;
     setScope(latest.current.initialScope);
     setScreen("list");
@@ -75,6 +78,7 @@ export function TemplateBrowserSheet({ open, purpose, showsFoundBanner, initialS
     if (busy.current) return;
     busy.current = true;
     setPending(true);
+    const gen = importGen.current;
     let fresh: UserTimetableDto[] | null = null;
     try {
       const refreshed = await timetables.refetch();
@@ -83,6 +87,8 @@ export function TemplateBrowserSheet({ open, purpose, showsFoundBanner, initialS
       busy.current = false;
       setPending(false);
     }
+    // 待っている間に閉じられた / 開き直された場合は何もしない
+    if (gen !== importGen.current) return;
     if (!fresh) {
       showToast("取り込めませんでした、もう一度試してください");
       return;
