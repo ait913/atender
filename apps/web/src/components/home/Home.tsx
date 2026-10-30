@@ -28,12 +28,14 @@ export function Home() {
   const [rolloverTarget, setRolloverTarget] = useState<SemesterDto | null>(null);
   const [proposal, setProposal] = useState<SemesterRollover.SemesterProposal | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const evaluated = useRef(false);
 
   const evaluateRollover = useCallback(() => {
-    if (!mounted || !semesters.isSuccess || createOpen || joinSheet || settingsOpen || proposal || rolloverTarget) return;
+    if (!mounted || !semesters.isSuccess || createOpen || joinSheet || settingsOpen || pickerOpen || editOpen || proposal || rolloverTarget) return;
     setRolloverTarget(SemesterRollover.promptTarget(semesters.data.semesters, SchoolClock.todayString(), SemesterRollover.readDismissed()));
-  }, [mounted, semesters.isSuccess, semesters.data, createOpen, joinSheet, settingsOpen, proposal, rolloverTarget]);
+  }, [mounted, semesters.isSuccess, semesters.data, createOpen, joinSheet, settingsOpen, pickerOpen, editOpen, proposal, rolloverTarget]);
 
   useEffect(() => {
     if (!mounted || !semesters.isSuccess || evaluated.current) return;
@@ -78,6 +80,7 @@ export function Home() {
       <HomeSemesterPicker
         semesterId={semesterId}
         onChange={setSemesterId}
+        onOpenChange={setPickerOpen}
         trailing={
           <button
             type="button"
@@ -90,7 +93,7 @@ export function Home() {
           </button>
         }
       />
-      <HomeBody context={context} semesterId={semesterId} settingsOpen={settingsOpen} onCloseSettings={() => setSettingsOpen(false)} />
+      <HomeBody context={context} semesterId={semesterId} settingsOpen={settingsOpen} onCloseSettings={() => setSettingsOpen(false)} onModalOpenChange={setEditOpen} />
       <ConfirmDialog
         open={rolloverTarget !== null}
         title="前回の学期が終了しました"

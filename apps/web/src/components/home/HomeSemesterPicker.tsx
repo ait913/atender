@@ -1,15 +1,17 @@
 import { ChevronDown } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSemesters } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
 
-type Props = { semesterId: string | null; onChange: (id: string) => void; trailing?: ReactNode };
+type Props = { semesterId: string | null; onChange: (id: string) => void; trailing?: ReactNode; onOpenChange?: (open: boolean) => void };
 
-export function HomeSemesterPicker({ semesterId, onChange, trailing }: Props) {
+export function HomeSemesterPicker({ semesterId, onChange, trailing, onOpenChange }: Props) {
   const semesters = useSemesters();
   const current = semesters.data?.semesters.find((semester) => semester.id === semesterId) ?? semesters.data?.semesters[0];
   const [open, setOpen] = useState(false);
+  // 学期選択シートが開いている間は Home の学期終了提案を抑止させる
+  useEffect(() => { onOpenChange?.(open); }, [open, onOpenChange]);
   return (
     <>
       <div className="flex min-h-9 items-center justify-between gap-2">

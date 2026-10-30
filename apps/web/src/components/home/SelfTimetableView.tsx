@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { MeetingDto, UserTimetableDto } from "@atender/shared";
 import { useCreateUserTimetable, useDeleteMeeting, useMe, useSemesters, useUserTimetables } from "@/api/hooks";
 import { displayDowToJs, jsDowToDisplay, resolveDisplayDays } from "@/components/timetable/dayConvention";
@@ -17,7 +17,7 @@ function activeTimetable(timetables: UserTimetableDto[] | undefined, semesterId?
   return timetables?.find((item) => item.semesterId === semesterId) ?? null;
 }
 
-export function SelfTimetableView({ semesterId, settingsOpen = false, onCloseSettings = () => {} }: { semesterId: string | null; settingsOpen?: boolean; onCloseSettings?: () => void }) {
+export function SelfTimetableView({ semesterId, settingsOpen = false, onCloseSettings = () => {}, onModalOpenChange }: { semesterId: string | null; settingsOpen?: boolean; onCloseSettings?: () => void; onModalOpenChange?: (open: boolean) => void }) {
   const me = useMe();
   const semesters = useSemesters();
   const timetables = useUserTimetables();
@@ -29,6 +29,9 @@ export function SelfTimetableView({ semesterId, settingsOpen = false, onCloseSet
   const [detailMeeting, setDetailMeeting] = useState<MeetingDto | null>(null);
   const [editMeeting, setEditMeeting] = useState<MeetingDto | null>(null);
   const [createdTimetable, setCreatedTimetable] = useState<UserTimetableDto | null>(null);
+  // 授業の追加・詳細・編集シートが開いている間は Home の学期終了提案を抑止させる
+  const modalOpen = sheet != null || detailMeeting != null || editMeeting != null;
+  useEffect(() => { onModalOpenChange?.(modalOpen); }, [modalOpen, onModalOpenChange]);
   const now = useNow(60_000);
   const today = displayDowToJs(SchoolClock.displayDay(now));
   const emptyTimetable = useMemo<UserTimetableDto | null>(() => {

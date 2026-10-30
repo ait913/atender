@@ -7,9 +7,10 @@ type Props = {
   semesterId: string | null;
   settingsOpen?: boolean;
   onCloseSettings?: () => void;
+  onModalOpenChange?: (open: boolean) => void;
 };
 
-export function HomeBody({ context, semesterId, settingsOpen, onCloseSettings }: Props) {
-  if (context.kind === "self") return <SelfTimetableView semesterId={semesterId} settingsOpen={settingsOpen} onCloseSettings={onCloseSettings} />;
+export function HomeBody({ context, semesterId, settingsOpen, onCloseSettings, onModalOpenChange }: Props) {
+  if (context.kind === "self") return <SelfTimetableView semesterId={semesterId} settingsOpen={settingsOpen} onCloseSettings={onCloseSettings} onModalOpenChange={onModalOpenChange} />;
   return <RoomTimetable key={context.roomId} roomId={context.roomId} semesterId={semesterId} />;
 }
