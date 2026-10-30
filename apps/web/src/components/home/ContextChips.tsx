@@ -18,14 +18,37 @@ export function ContextChips({ items, selected, onChange, onAddRoom }: Props) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
+  // 閉じたら「+」ボタンへフォーカスを戻す
+  function closeMenu() {
+    setMenuOpen(false);
+    triggerRef.current?.focus();
+  }
+
   useEffect(() => {
     if (!menuOpen) return;
+    // 開いたら最初の項目にフォーカス
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     function onPointerDown(event: PointerEvent) {
       if (menuRef.current?.contains(event.target as Node) || triggerRef.current?.contains(event.target as Node)) return;
-      setMenuOpen(false);
+      closeMenu();
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMenu();
+        return;
+      }
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Home" && event.key !== "End") return;
+      const entries = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+      if (entries.length === 0) return;
+      event.preventDefault();
+      const index = entries.indexOf(document.activeElement as HTMLElement);
+      const next =
+        event.key === "Home" ? 0
+        : event.key === "End" ? entries.length - 1
+        : event.key === "ArrowDown" ? (index + 1) % entries.length
+        : (index <= 0 ? entries.length - 1 : index - 1);
+      entries[next]?.focus();
     }
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -82,7 +105,7 @@ export function ContextChips({ items, selected, onChange, onAddRoom }: Props) {
           {(["create", "join"] as const).map((action) => (
             <button key={action} type="button" role="menuitem"
               className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-bold text-fg-primary transition hover:bg-fg-primary/8 active:scale-[0.98]"
-              onClick={() => { setMenuOpen(false); onAddRoom(action); }}
+              onClick={() => { closeMenu(); onAddRoom(action); }}
             >{action === "create" ? "ルームを作成" : "リンクで参加"}</button>
           ))}
         </div>
