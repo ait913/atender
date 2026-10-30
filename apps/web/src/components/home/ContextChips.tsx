@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Plus, User, Users } from "lucide-react";
 
 export type HomeContext = { kind: "self" } | { kind: "room"; roomId: string };
@@ -9,47 +10,113 @@ type Props = {
   items: readonly ContextChipItem[];
   selected: HomeContext;
   onChange: (next: HomeContext) => void;
-  onAddRoom: () => void;
+  onAddRoom: (action: "create" | "join") => void;
 };
 
 export function ContextChips({ items, selected, onChange, onAddRoom }: Props) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // 閉じたら「+」ボタンへフォーカスを戻す
+  function closeMenu() {
+    setMenuOpen(false);
+    triggerRef.current?.focus();
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    // 開いたら最初の項目にフォーカス
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    // 外側クリックは閉じるだけ (フォーカスはクリックした先に任せる)
+    function onPointerDown(event: PointerEvent) {
+      if (menuRef.current?.contains(event.target as Node) || triggerRef.current?.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [menuOpen]);
+
+  // キー操作は Menu のコンテナ内だけで処理する
+  function onMenuKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Home" && event.key !== "End") return;
+    const entries = Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+    if (entries.length === 0) return;
+    event.preventDefault();
+    const index = entries.indexOf(document.activeElement as HTMLElement);
+    const next =
+      event.key === "Home" ? 0
+      : event.key === "End" ? entries.length - 1
+      : event.key === "ArrowDown" ? (index + 1) % entries.length
+      : (index <= 0 ? entries.length - 1 : index - 1);
+    entries[next]?.focus();
+  }
+
+  // フォーカスが Menu の外へ出たら閉じる (Tab で先へ進む人の邪魔をしないよう「+」へは戻さない)
+  function onMenuBlur(event: React.FocusEvent<HTMLDivElement>) {
+    const next = event.relatedTarget as Node | null;
+    if (next && (menuRef.current?.contains(next) || triggerRef.current?.contains(next))) return;
+    setMenuOpen(false);
+  }
+
   return (
-    <div className="-mx-3 overflow-x-auto overscroll-x-contain px-3 py-1" data-testid="context-chips">
-      <ul className="flex w-max gap-2">
-        {items.map((item) => {
-          const active =
-            (item.kind === "self" && selected.kind === "self") ||
-            (item.kind === "room" && selected.kind === "room" && selected.roomId === item.roomId);
-          const label = item.kind === "self" ? item.label : item.roomName;
-          return (
-            <li key={item.kind === "self" ? "self" : item.roomId}>
-              <button
-                type="button"
-                onClick={() => onChange(item.kind === "self" ? { kind: "self" } : { kind: "room", roomId: item.roomId })}
-                aria-pressed={active}
-                className={`flex h-10 items-center rounded-full border px-4 text-sm font-bold transition active:scale-[0.97] ${
-                  active
-                    ? "border-accent-500 bg-accent-500/15 text-accent-500 shadow-glow-soft"
-                    : "border-border-subtle bg-bg-elevated text-fg-secondary hover:bg-fg-primary/6"
-                }`}
-              >
-                {item.kind === "self" ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                <span className="ml-2 max-w-[14ch] truncate">{label}</span>
-              </button>
-            </li>
-          );
-        })}
-        <li>
-          <button
-            type="button"
-            onClick={onAddRoom}
-            aria-label="ルームを追加"
-            className="grid h-10 w-10 place-items-center rounded-full border border-border-subtle bg-bg-elevated text-fg-tertiary hover:bg-fg-primary/6"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </li>
-      </ul>
+    <div className="relative">
+      <div className="-mx-3 overflow-x-auto overscroll-x-contain px-3 py-1" data-testid="context-chips">
+        <ul className="flex w-max gap-2">
+          {items.map((item) => {
+            const active =
+              (item.kind === "self" && selected.kind === "self") ||
+              (item.kind === "room" && selected.kind === "room" && selected.roomId === item.roomId);
+            const label = item.kind === "self" ? item.label : item.roomName;
+            return (
+              <li key={item.kind === "self" ? "self" : item.roomId}>
+                <button
+                  type="button"
+                  onClick={() => onChange(item.kind === "self" ? { kind: "self" } : { kind: "room", roomId: item.roomId })}
+                  aria-pressed={active}
+                  className={`flex h-10 items-center rounded-full border px-4 text-sm font-bold transition active:scale-[0.97] ${
+                    active
+                      ? "border-accent-500 bg-accent-500/15 text-accent-500 shadow-glow-soft"
+                      : "border-border-subtle bg-bg-elevated text-fg-secondary hover:bg-fg-primary/6"
+                  }`}
+                >
+                  {item.kind === "self" ? <User className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                  <span className="ml-2 max-w-[14ch] truncate">{label}</span>
+                </button>
+              </li>
+            );
+          })}
+          <li>
+            <button
+              type="button"
+              ref={triggerRef}
+              onClick={() => setMenuOpen((value) => !value)}
+              data-testid="rooms-add"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="ルームを追加"
+              className="grid h-10 w-10 place-items-center rounded-full border border-border-subtle bg-bg-elevated text-fg-tertiary hover:bg-fg-primary/6"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </li>
+        </ul>
+      </div>
+      {menuOpen ? (
+        <div ref={menuRef} role="menu" onKeyDown={onMenuKeyDown} onBlur={onMenuBlur} className="absolute right-0 top-full z-50 min-w-44 rounded-2xl bg-bg-elevated p-1.5 shadow-card">
+          {(["create", "join"] as const).map((action) => (
+            <button key={action} type="button" role="menuitem"
+              className="flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-bold text-fg-primary transition hover:bg-fg-primary/8 active:scale-[0.98]"
+              onClick={() => { closeMenu(); onAddRoom(action); }}
+            >{action === "create" ? "ルームを作成" : "リンクで参加"}</button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

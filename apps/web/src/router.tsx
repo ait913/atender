@@ -4,16 +4,13 @@ import { ApiError } from "@/api/client";
 import { meQueryOptions } from "@/api/hooks";
 import { AddFriendByInviteCode } from "@/components/friends/AddFriendByInviteCode";
 import { Friends } from "@/components/friends/Friends";
-import { JoinRoom } from "@/components/rooms/JoinRoom";
-import { RoomDetail } from "@/components/rooms/RoomDetail";
-import { Rooms } from "@/components/rooms/Rooms";
+import * as pendingRoomJoin from "@/lib/pendingRoomJoin";
 import { RootLayout } from "@/routes/_root";
 import { Home } from "@/routes/Home";
 import { Setup } from "@/routes/Setup";
 import { Settings } from "@/routes/Settings";
 import { SignIn } from "@/routes/SignIn";
 import { SemesterOverview } from "@/routes/SemesterOverview";
-import { Templates } from "@/routes/Templates";
 import { Verify } from "@/routes/Verify";
 
 type RouterContext = { queryClient: QueryClient };
@@ -64,12 +61,20 @@ const settingsGoogleIntegrationRoute = createRoute({ getParentRoute: () => rootR
 
 const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Home });
 const timetableRedirect = createRoute({ getParentRoute: () => rootRoute, path: "/timetable", beforeLoad: () => { throw redirect({ to: "/" }); } });
-const templatesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/templates", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Templates });
+const templatesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/templates", beforeLoad: () => { throw redirect({ to: "/" }); } });
 const statsRedirect = createRoute({ getParentRoute: () => rootRoute, path: "/stats", beforeLoad: () => { throw redirect({ to: "/semester" }); } });
 const semesterRoute = createRoute({ getParentRoute: () => rootRoute, path: "/semester", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: SemesterOverview });
-const roomsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Rooms });
-const roomDetailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms/$id", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: RoomDetail });
-const roomJoinRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms/join/$inviteCode", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: JoinRoom });
+const roomsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms", beforeLoad: () => { throw redirect({ to: "/" }); } });
+const roomDetailRoute = createRoute({ getParentRoute: () => rootRoute, path: "/rooms/$id", beforeLoad: () => { throw redirect({ to: "/" }); } });
+const roomJoinRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/rooms/join/$inviteCode",
+  beforeLoad: async ({ context, params }) => {
+    pendingRoomJoin.set(params.inviteCode);
+    await requireCompleteSetup(context.queryClient);
+    throw redirect({ to: "/" });
+  },
+});
 const friendsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/friends", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: Friends });
 const friendAddRoute = createRoute({ getParentRoute: () => rootRoute, path: "/friends/add/$inviteCode", beforeLoad: ({ context }) => requireCompleteSetup(context.queryClient), component: AddFriendByInviteCode });
 

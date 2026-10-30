@@ -1,6 +1,7 @@
 # Atender — iOS 視覚言語 (DESIGN.md)
 
 > **この文書の地位**: atender iOS ネイティブ版の**視覚言語の正典**。今後の全 UI 設計 (P3 以降) はこれを参照する。
+> 機能仕様 (画面遷移・文言) の正典は iOS 実装。本書は iOS の視覚言語の正典で、Web は自身の styles.css で同じ仕様を描く (2026-10-30)。
 > Muraki/CLAUDE.md 規約「PJ の DESIGN.md があればそちらが正典 (PJ 層 > 汎用層)」に基づき、汎用チェックリスト (`Muraki/knowledge/pattern/ui-ux-design-perspectives.md`) より本書が優先する。汎用層は「正しい (HIG 準拠)」を担保し、本書は「良い (Web と同等の品質)」を担保する。
 >
 > **これは視覚言語の定義であり、個別画面の実装フェーズ設計 (`.designs/*.md`) ではない。** 機能の増減・IA 変更・プロダクト判断はしない。矛盾があれば §9 で Leader に報告する。
@@ -323,7 +324,7 @@ P3 の Developer が本書だけで全不満を説明できることを確認す
 
 ## 参照
 
-- Web 正典: `apps/web/src/styles.css`、`components/timetable/{TimetableView,EmptyCell}.tsx`、`components/event-tile/EventTile.tsx`、`components/rooms/calendar/CalendarMonth.tsx`、`components/home/{SelfTimetableView,PersonalCalendar}.tsx`
+- Web の視覚の出所: `apps/web/src/styles.css`、`components/timetable/{TimetableView,EmptyCell}.tsx`、`components/event-tile/EventTile.tsx`、`components/home/SelfTimetableView.tsx`
 - iOS トークン: `apps/ios/Atender/Core/DesignSystem/{Radius,Shadow,Space,Typography,Color+Atender,Glass}.swift`
 - 汎用層: `Muraki/knowledge/pattern/ui-ux-design-perspectives.md`
 - 既存設計: `.designs/20260717-ios-ui-revamp.md`

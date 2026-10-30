@@ -244,29 +244,8 @@ describe("[B21 AW1] Home (/)", () => {
   });
 });
 
-describe("[B21 AW2] /rooms/:id", () => {
-  it("「カレンダー」タブが無く、ルーム時間割 (week) と設定ボタンが出る", async () => {
-    await renderApp({ initialPath: "/rooms/room-1" });
-    expect(await screen.findByRole("button", { name: "ルームの設定" })).toBeInTheDocument();
-    await waitFor(() => expect(requested.some((r) => r.startsWith("GET /api/rooms/room-1/week"))).toBe(true));
-    await waitFor(() => expect(document.querySelector("main")?.textContent ?? "").toMatch(/月.*火.*水.*木.*金/), {
-      timeout: 4000,
-    });
-    expect(document.querySelector("main")?.textContent ?? "").toContain("数学I");
-    expectNoCalendarModeSwitch();
-    expect(screen.queryByRole("tab")).not.toBeInTheDocument();
-    expect(screen.queryByText(/カレンダー/)).not.toBeInTheDocument();
-  });
-
-  it("/rooms の一覧カードに upcomingEvent (予定) を出さない", async () => {
-    await renderApp({ initialPath: "/rooms" });
-    expect(await screen.findByText(/情報科学1年/)).toBeInTheDocument();
-    expect(screen.queryByText(/新歓コンパの予定/)).not.toBeInTheDocument();
-  });
-});
-
 describe("[B21 AW3] ルーム設定シート", () => {
-  it("ICS / Google / カレンダー取り込み設定が無く、「メンバーの時間割を表示」トグルが PATCH を飛ばす", async () => {
+  it("ICS / Google / カレンダー取り込み設定が無く、「メンバー時間割を表示」トグルが PATCH を飛ばす", async () => {
     const patches: unknown[] = [];
     server.use(
       http.patch(`${API_URL}/api/rooms/room-1`, async ({ request }) => {
@@ -276,11 +255,12 @@ describe("[B21 AW3] ルーム設定シート", () => {
         });
       }),
     );
-    const { user } = await renderApp({ initialPath: "/rooms/room-1" });
+    const { user } = await renderApp({ initialPath: "/" });
+    await user.click(await screen.findByRole("button", { name: "情報科学1年" }));
     await user.click(await screen.findByRole("button", { name: "ルームの設定" }));
 
     const dialog = await screen.findByRole("dialog");
-    expect(await within(dialog).findByText(/メンバーの時間割を表示/)).toBeInTheDocument();
+    expect(await within(dialog).findByText(/メンバー時間割を表示/)).toBeInTheDocument();
     expect(within(dialog).queryByText(/メンバーの時間割をカレンダーに反映/)).not.toBeInTheDocument();
     for (const re of [/ICS/i, /Google/i, /カレンダー取り込み設定/, /外部カレンダー/, /個人カレンダー/, /カレンダー/]) {
       expect(within(dialog).queryByText(re), String(re)).not.toBeInTheDocument();
@@ -289,8 +269,8 @@ describe("[B21 AW3] ルーム設定シート", () => {
 
     const toggle =
       within(dialog).queryByRole("switch") ??
-      within(dialog).queryByRole("checkbox", { name: /メンバーの時間割/ }) ??
-      within(dialog).getByRole("button", { name: /メンバーの時間割を表示/ });
+      within(dialog).queryByRole("checkbox", { name: /メンバー時間割を表示/ }) ??
+      within(dialog).getByRole("button", { name: /メンバー時間割を表示/ });
     await user.click(toggle);
     await waitFor(() => expect(patches).toContainEqual({ showMemberTimetables: false }));
   });
@@ -377,7 +357,7 @@ describe("[B21 AW9] Google サインインは残す", () => {
 });
 
 describe("[B21 AW8] 全画面巡回で撤去済みエンドポイントを呼ばない", () => {
-  it.each(["/", "/rooms", "/rooms/room-1", "/settings", "/semester", "/friends", "/templates"])("%s", async (p) => {
+  it.each(["/", "/settings", "/semester", "/friends"])("%s", async (p) => {
     server.use(http.get(`${API_URL}/api/friendships`, () => HttpResponse.json({ friends: [], incoming: [], outgoing: [] })));
     await renderApp({ initialPath: p });
     await act(async () => {
@@ -389,21 +369,6 @@ describe("[B21 AW8] 全画面巡回で撤去済みエンドポイントを呼ば
 });
 
 describe("[B21 残存画面] 撤去の巻き添えで壊れていない", () => {
-  it("/templates (共有テンプレ) が描画される", async () => {
-    await renderApp({ initialPath: "/templates" });
-    expect(await screen.findByText("みんなの時間割")).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "コピー" })).toBeInTheDocument();
-  });
-
-  it("/rooms (ルーム一覧) と /friends が描画される", async () => {
-    await renderApp({ initialPath: "/rooms" });
-    expect(await screen.findByText(/情報科学1年/)).toBeInTheDocument();
-    cleanup();
-    server.use(http.get(`${API_URL}/api/friendships`, () => HttpResponse.json({ friends: [], incoming: [], outgoing: [] })));
-    await renderApp({ initialPath: "/friends" });
-    expect(await screen.findByText("友達を追加")).toBeInTheDocument();
-  });
-
   it("/semester の出欠カレンダー (月表示) と科目一覧が残る", async () => {
     await renderApp({ initialPath: "/semester" });
     expect(await screen.findByText("科目一覧", undefined, { timeout: 6000 })).toBeInTheDocument();

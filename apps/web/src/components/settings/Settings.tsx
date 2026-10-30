@@ -21,6 +21,7 @@ export function Settings() {
   const queryClient = useQueryClient();
   const [sheet, setSheet] = useState<Sheet>(null);
   const user = me.data?.user;
+  const schoolDepartmentName = [user?.schoolName, user?.departmentName].filter(Boolean).join(" / ");
 
   const [signOutError, setSignOutError] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -86,7 +87,11 @@ export function Settings() {
 
       <SettingsSection title="アカウント">
         <SettingsRow label="プロフィール編集" onClick={() => setSheet("profile")} />
-        <SettingsRow label="学校・学科" onClick={() => setSheet("school")} />
+        <SettingsRow
+          label="学校・学科"
+          trailing={schoolDepartmentName ? <span className="text-sm font-bold text-fg-tertiary">{schoolDepartmentName}</span> : undefined}
+          onClick={() => setSheet("school")}
+        />
       </SettingsSection>
 
       <SettingsSection title="出席">
@@ -104,6 +109,9 @@ export function Settings() {
       </SettingsSection>
 
       <SettingsSection title="その他">
+        <SettingsRow label="プライバシーポリシー" onClick={() => window.open("/privacy", "_blank", "noopener,noreferrer")} />
+        <SettingsRow label="利用規約" onClick={() => window.open("/terms", "_blank", "noopener,noreferrer")} />
+        <SettingsRow label="サポート" onClick={() => window.open("/support", "_blank", "noopener,noreferrer")} />
         <SettingsRow label="ログアウト" danger onClick={() => void signOut()} />
         {signOutError ? (
           <p className="px-3 pb-2 text-sm text-status-absent">ログアウトできませんでした。通信状況を確認してもう一度お試しください</p>

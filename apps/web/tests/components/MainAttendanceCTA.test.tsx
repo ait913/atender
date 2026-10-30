@@ -47,8 +47,11 @@ function renderCTA(
   return render(
     <MainAttendanceCTA
       occurrences={occurrences as never}
-      expanded={false}
-      onToggle={vi.fn()}
+      tileOpen={true}
+      onTileOpenChange={vi.fn()}
+      detailOpen={false}
+      onToggleDetail={vi.fn()}
+      state={{ kind: "finished", last: occurrences[occurrences.length - 1] as never }}
       onMarkAll={vi.fn()}
       onChangeStatus={vi.fn()}
       {...props}
@@ -81,21 +84,21 @@ describe("MainAttendanceCTA layout", () => {
   });
 
   it("shows ChevronUp on the collapsed individual-edit toggle", () => {
-    renderCTA({ expanded: false });
-    const toggle = screen.getByRole("button", { name: "個別修正を開く" });
+    renderCTA({ detailOpen: false });
+    const toggle = screen.getByRole("button", { name: "各コマの出欠を開く" });
 
     expect(toggle.querySelector(".lucide-chevron-up")).toBeInTheDocument();
   });
 
   it("shows ChevronDown on the expanded individual-edit toggle", () => {
-    renderCTA({ expanded: true });
-    const toggle = screen.getByRole("button", { name: "個別修正を閉じる" });
+    renderCTA({ detailOpen: true });
+    const toggle = screen.getByRole("button", { name: "各コマの出欠を閉じる" });
 
     expect(toggle.querySelector(".lucide-chevron-down")).toBeInTheDocument();
   });
 
   it("renders the expanded panel before the CTA buttons", () => {
-    renderCTA({ expanded: true });
+    renderCTA({ detailOpen: true });
     const panelContent = screen.getByText("授業1");
     const mainButton = screen.getByRole("button", { name: "今日は全出席 (3)" });
 

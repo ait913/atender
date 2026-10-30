@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AttendanceStatus, CourseSuspensionDto, OccurrenceDto } from "@atender/shared";
 import {
   useCreateCourseSuspension,
@@ -9,11 +9,14 @@ import {
   useDeleteAttendance,
   useDeleteCourseSuspension,
   useDeleteTimetableSuspension,
+  useDeleteClassTransfer,
   useBulkMarkAttendance,
   usePatchAttendance,
 } from "@/api/hooks";
 import { BottomSheet } from "@/components/sheet/BottomSheet";
-import { Button, Input, ListSkeleton, statusLongLabels } from "@/components/ui";
+import { Button, ConfirmDialog, Input, ListSkeleton, statusLongLabels } from "@/components/ui";
+import * as ClassTransferLogic from "@/lib/ClassTransferLogic";
+import { ClassTransferSheet } from "./ClassTransferSheet";
 
 type Props = {
   date: string | null;
@@ -37,6 +40,15 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
   const createTimetableSuspension = useCreateTimetableSuspension(date);
   const deleteTimetableSuspension = useDeleteTimetableSuspension(date);
   const [reason, setReason] = useState("");
+  const deleteTransfer = useDeleteClassTransfer();
+  const [transferDate, setTransferDate] = useState<string | null>(null);
+  const [transferConfirmation, setTransferConfirmation] = useState<{ id: string; date: string; count: number } | null>(null);
+  const resetDeleteTransfer = deleteTransfer.reset;
+  useEffect(() => {
+    setTransferDate(null);
+    setTransferConfirmation(null);
+    resetDeleteTransfer();
+  }, [date, resetDeleteTransfer]);
   const data = detail.data;
   const title = date ? dayjs(date).format("YYYY年M月D日 (ddd)") : "";
   const timetableSuspension = data?.timetableSuspension ?? null;
@@ -53,6 +65,11 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
   async function handleUnsuspend() {
     if (!timetableSuspension) return;
     await deleteTimetableSuspension.mutateAsync(timetableSuspension.id);
+  }
+
+  function removeTransfer(id: string) {
+    setTransferConfirmation(null);
+    deleteTransfer.mutate(id);
   }
 
   return (
@@ -98,6 +115,21 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
             )}
           </section>
 
+          <section className="space-y-2 rounded-2xl bg-bg-muted/50 p-4">
+            <h3 className="text-sm font-bold text-fg-secondary">授業変更</h3>
+            {(data.transfers ?? []).map((transfer) => (
+              <div key={transfer.id} className="flex items-center justify-between gap-3">
+                <p className="text-sm">{ClassTransferLogic.summary(transfer, data.occurrences.filter((occurrence) => occurrence.transferId === transfer.id))}</p>
+                <Button type="button" variant="ghost" size="sm" disabled={deleteTransfer.isPending} onClick={() => {
+                  const count = ClassTransferLogic.needsDeleteConfirmation(transfer, data.occurrences);
+                  if (count > 0) setTransferConfirmation({ id: transfer.id, date: data.date, count });
+                  else removeTransfer(transfer.id);
+                }}>取り消す</Button>
+              </div>
+            ))}
+            <Button type="button" variant="secondary" size="sm" onClick={() => setTransferDate(data.date)}>授業変更</Button>
+          </section>
+
           <section>
             <h3 className="mb-2 text-sm font-bold">授業 ({data.occurrences.length})</h3>
             <div className="space-y-2">
@@ -121,6 +153,26 @@ export function DayDetailSheet({ date, semesterId, onClose }: Props) {
         </>
       ) : null}
       {detail.error ? <p className="rounded-2xl bg-status-absent/15 px-3 py-2 text-xs font-bold text-status-absent">{detail.error.message}</p> : null}
+      {deleteTransfer.error ? <p className="text-sm text-status-absent">{deleteTransfer.error.message}</p> : null}
+      {date && data && transferDate === date ? (
+        <ClassTransferSheet
+          open
+          date={date}
+          semesterId={semesterId ?? null}
+          existingOccurrences={data.occurrences}
+          targetIsSuspended={timetableSuspension != null}
+          onClose={() => setTransferDate(null)}
+          onSaved={() => setTransferDate(null)}
+        />
+      ) : null}
+      <ConfirmDialog
+        open={transferConfirmation != null && transferConfirmation.date === date}
+        stackLevel={2}
+        title={`出欠記録 ${transferConfirmation?.count ?? 0} 件も削除されます`}
+        confirmLabel="取り消す"
+        onCancel={() => setTransferConfirmation(null)}
+        onConfirm={() => { if (transferConfirmation && !deleteTransfer.isPending) removeTransfer(transferConfirmation.id); }}
+      />
     </BottomSheet>
   );
 }

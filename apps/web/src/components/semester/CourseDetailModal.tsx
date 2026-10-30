@@ -5,6 +5,7 @@ import { Button, FullScreenModal, Panel } from "@/components/ui";
 import { CourseEditModal } from "./CourseEditModal";
 import { CourseOccurrenceHistory } from "./CourseOccurrenceHistory";
 import { CourseSuspensionSection } from "./CourseSuspensionSection";
+import * as CourseRuleLogic from "@/lib/CourseRuleLogic";
 import { DangerZone } from "./DangerZone";
 
 type Props = { courseId: string | null; onClose: () => void };
@@ -27,7 +28,7 @@ function CourseDetailBody({ courseId, onClose }: { courseId: string; onClose: ()
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <CourseEditSection course={found.course} timetable={found.timetable} />
+      <CourseEditSection course={found.course} timetable={found.timetable} userRate={me.data?.user.requiredAttendanceRate ?? 70} />
       <CourseSuspensionSection courseId={courseId} />
       <CourseOccurrenceHistory courseId={courseId} semesterId={semesterId} />
       <DangerZone courseId={courseId} onDeleted={onClose} />
@@ -35,7 +36,7 @@ function CourseDetailBody({ courseId, onClose }: { courseId: string; onClose: ()
   );
 }
 
-function CourseEditSection({ course, timetable }: { course: CourseDto; timetable: UserTimetableDto }) {
+function CourseEditSection({ course, timetable, userRate }: { course: CourseDto; timetable: UserTimetableDto; userRate: number }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -44,6 +45,13 @@ function CourseEditSection({ course, timetable }: { course: CourseDto; timetable
         <div className="min-w-0">
           <h3 className="text-base font-bold">{course.name}</h3>
           <p className="mt-1 text-sm text-fg-secondary">{course.teacher ?? "先生未設定"}</p>
+          <p className="mt-1 text-sm text-fg-secondary" data-testid="course-detail-rule-summary">
+            基準: {CourseRuleLogic.summary({
+              requiredAttendanceRate: course.requiredAttendanceRate ?? null,
+              maxAbsences: course.maxAbsences ?? null,
+              tardiesPerAbsence: course.tardiesPerAbsence ?? null,
+            }, userRate)}
+          </p>
           {course.note ? <p className="mt-3 whitespace-pre-wrap text-sm text-fg-secondary">{course.note}</p> : null}
         </div>
         <Button type="button" variant="primary" onClick={() => setOpen(true)}>編集</Button>

@@ -1,10 +1,11 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import type { ReactNode } from "react";
 
 export function BottomSheet({
   open,
   onClose,
+  onBack,
   title,
   children,
   footer,
@@ -12,13 +13,14 @@ export function BottomSheet({
 }: {
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   title?: string;
   children: ReactNode;
   footer?: ReactNode;
-  stackLevel?: 1 | 2;
+  stackLevel?: 1 | 2 | 3;
 }) {
-  const overlayZ = stackLevel === 2 ? "z-[1120]" : "z-[1100]";
-  const contentZ = stackLevel === 2 ? "z-[1130]" : "z-[1110]";
+  const overlayZ = stackLevel === 3 ? "z-[1140]" : stackLevel === 2 ? "z-[1120]" : "z-[1100]";
+  const contentZ = stackLevel === 3 ? "z-[1150]" : stackLevel === 2 ? "z-[1130]" : "z-[1110]";
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <Dialog.Portal>
@@ -41,7 +43,19 @@ export function BottomSheet({
             <span className="h-1 w-9 rounded-full bg-fg-primary/20" />
           </div>
           <div className="flex min-h-14 flex-shrink-0 items-center justify-between gap-3 px-5 pt-2 pb-3 md:pt-5">
-            <Dialog.Title className="text-lg font-bold tracking-tight">{title}</Dialog.Title>
+            <div className="flex min-w-0 items-center gap-3">
+              {onBack ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-bg-muted text-fg-secondary transition hover:bg-fg-primary/10 active:scale-95"
+                  aria-label="戻る"
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+              ) : null}
+              <Dialog.Title className="text-lg font-bold tracking-tight">{title}</Dialog.Title>
+            </div>
             <Dialog.Close asChild>
               <button
                 type="button"

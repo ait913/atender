@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { ATTENDANCE_STATUS, type AttendanceStatus, type OccurrenceDto } from "@atender/shared";
+import { HomeAttendance, NowNextText, type TodayState } from "@/lib/TodayTimeline";
 import { useIsKeyboardOpen } from "@/lib/useIsKeyboardOpen";
 import { Button, statusLabels, statusLongLabels } from "@/components/ui";
 
@@ -10,8 +11,11 @@ const BULK_STATUSES: BulkAttendanceStatus[] = ["ABSENT", "EXCUSED", "TARDY", "EA
 
 type Props = {
   occurrences: OccurrenceDto[];
-  expanded: boolean;
-  onToggle: () => void;
+  tileOpen: boolean;
+  onTileOpenChange: (open: boolean) => void;
+  detailOpen: boolean;
+  onToggleDetail: () => void;
+  state: TodayState;
   onMarkAll: (status: BulkAttendanceStatus) => void;
   onChangeStatus: (id: string, status: AttendanceStatus) => void;
   pending?: boolean;
@@ -21,7 +25,13 @@ export function MainAttendanceCTA(props: Props) {
   const keyboardOpen = useIsKeyboardOpen();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const dragStart = useRef<{ id: number; x: number; y: number } | null>(null);
+  const suppressClick = useRef(false);
   const unrecorded = props.occurrences.filter((occurrence) => occurrence.status == null).length;
+
+  useEffect(() => {
+    if (!props.tileOpen) setMenuOpen(false);
+  }, [props.tileOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -40,13 +50,77 @@ export function MainAttendanceCTA(props: Props) {
     };
   }, [menuOpen]);
 
-  if (keyboardOpen) return null;
+  if (keyboardOpen || !HomeAttendance.isActive(props.occurrences)) return null;
 
   return (
     <section className="fixed inset-x-0 bottom-[var(--tab-bar-height)] z-40 border-t border-fg-primary/8 bg-bg-base/85 py-2 backdrop-blur-xl md:bottom-0 md:left-60">
       <div className="mx-auto w-full max-w-[920px] space-y-2 px-3 md:px-6">
-        {props.expanded ? <ExpandedPanel {...props} /> : null}
-        <CTAButtons {...props} menuOpen={menuOpen} setMenuOpen={setMenuOpen} menuRef={menuRef} unrecorded={unrecorded} />
+        <button
+          type="button"
+          role="button"
+          aria-label="出欠の開閉"
+          aria-expanded={props.tileOpen}
+          data-testid="attendance-grabber"
+          className="flex h-9 w-full touch-none items-center justify-center"
+          onClick={(event) => {
+            if (suppressClick.current && event.detail !== 0) {
+              suppressClick.current = false;
+              return;
+            }
+            suppressClick.current = false;
+            props.onTileOpenChange(!props.tileOpen);
+          }}
+          onPointerDown={(event) => {
+            dragStart.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+            suppressClick.current = false;
+            event.currentTarget.setPointerCapture?.(event.pointerId);
+          }}
+          onPointerUp={(event) => {
+            const start = dragStart.current;
+            if (!start || start.id !== event.pointerId) return;
+            dragStart.current = null;
+            const dx = event.clientX - start.x;
+            const dy = event.clientY - start.y;
+            // 閾値以下のドラッグもクリックとして扱わず、開閉状態を保つ。
+            suppressClick.current = dx !== 0 || dy !== 0;
+            if (props.tileOpen && HomeAttendance.shouldCollapse(dy, dx)) {
+              props.onTileOpenChange(false);
+            } else if (!props.tileOpen && HomeAttendance.shouldExpand(dy, dx)) {
+              props.onTileOpenChange(true);
+            }
+          }}
+          onPointerCancel={() => {
+            dragStart.current = null;
+            suppressClick.current = true;
+          }}
+        >
+          <span className="h-[5px] w-[42px] rounded-full bg-fg-primary/20" />
+        </button>
+        {props.detailOpen ? <ExpandedPanel {...props} /> : null}
+        {props.tileOpen ? (
+          <div className="space-y-2">
+            {props.state.kind !== "noClass" && NowNextText.statusLabel(props.state) != null ? (
+              <p className="text-xs text-fg-tertiary">
+                {NowNextText.statusLabel(props.state)}{NowNextText.detail(props.state) ? ` · ${NowNextText.detail(props.state)}` : ""}
+              </p>
+            ) : null}
+            <div className="flex items-center gap-3">
+              <p className="min-w-0 flex-1 line-clamp-2 text-sm font-bold">{NowNextText.title(props.state)}</p>
+              <CTAButtons {...props} menuOpen={menuOpen} setMenuOpen={setMenuOpen} menuRef={menuRef} unrecorded={unrecorded} />
+            </div>
+            <button
+              type="button"
+              className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-fg-primary/8 text-sm font-bold text-fg-primary transition hover:bg-fg-primary/14 active:scale-95"
+              onClick={props.onToggleDetail}
+              aria-label={props.detailOpen ? "各コマの出欠を閉じる" : "各コマの出欠を開く"}
+              aria-expanded={props.detailOpen}
+              data-testid="cta-expand-toggle"
+            >
+              各コマの出欠
+              {props.detailOpen ? <ChevronDown className="h-5 w-5" strokeWidth={2.5} /> : <ChevronUp className="h-5 w-5" strokeWidth={2.5} />}
+            </button>
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -90,8 +164,6 @@ function ExpandedPanel({ occurrences, onChangeStatus }: Props) {
 }
 
 function CTAButtons({
-  expanded,
-  onToggle,
   onMarkAll,
   pending,
   menuOpen,
@@ -156,15 +228,6 @@ function CTAButtons({
           <ChevronsUpDown className="h-4 w-4" strokeWidth={2.5} />
         </button>
       </div>
-      <button
-        type="button"
-        className="grid h-12 w-12 place-items-center rounded-full bg-fg-primary/8 text-fg-primary transition hover:bg-fg-primary/14 active:scale-95"
-        onClick={onToggle}
-        aria-label={expanded ? "個別修正を閉じる" : "個別修正を開く"}
-        aria-expanded={expanded}
-      >
-        {expanded ? <ChevronDown className="h-5 w-5" strokeWidth={2.5} /> : <ChevronUp className="h-5 w-5" strokeWidth={2.5} />}
-      </button>
     </div>
   );
 }

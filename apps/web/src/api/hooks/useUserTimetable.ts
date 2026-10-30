@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { QK } from "@/api/queryKeys";
+import { refreshOrThrow } from "@/api/refreshFailed";
 import type { CourseCreateInput, CourseResponse, CourseUpdateInput, MeetingBulkCreateInput, MeetingResponse, MeetingUpdateInput, TemplateResponse, UserTimetableCreateInput, UserTimetablePatchInput, UserTimetableResponse, UserTimetablesResponse } from "./types";
 
 export function useUserTimetables() {
@@ -64,8 +65,9 @@ export function usePatchUserTimetable(id?: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: UserTimetablePatchInput) => api<UserTimetableResponse>(`/api/user-timetables/${id}`, { method: "PATCH", body }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QK.userTimetables() });
+    // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
+    onSuccess: async () => {
+      await refreshOrThrow(queryClient, QK.userTimetables());
       queryClient.invalidateQueries({ queryKey: ["today"] });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
@@ -113,8 +115,28 @@ export function useDeleteMeeting() {
 }
 
 export function usePublishTimetable(id?: string) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: { title: string; description?: string; year?: number; term?: string }) =>
       api<TemplateResponse>(`/api/user-timetables/${id}/publish-as-template`, { method: "POST", body }),
+    // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
+    onSuccess: async () => {
+      await refreshOrThrow(queryClient, ["user-timetables"]);
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+    },
+  });
+}
+
+export function useDeleteUserTimetable() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<{ ok: true }>(`/api/user-timetables/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+      queryClient.invalidateQueries({ queryKey: ["today"] });
+      queryClient.invalidateQueries({ queryKey: ["stats"] });
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      queryClient.invalidateQueries({ queryKey: QK.rooms() });
+    },
   });
 }

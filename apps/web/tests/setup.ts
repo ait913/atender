@@ -2,12 +2,42 @@ import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 import { server } from "./msw/server";
 
+if (
+  typeof window.localStorage?.getItem !== "function" ||
+  typeof globalThis.localStorage?.getItem !== "function"
+) {
+  const values = new Map<string, string>();
+  const storage: Storage = {
+    getItem(key) {
+      return values.get(String(key)) ?? null;
+    },
+    setItem(key, value) {
+      values.set(String(key), String(value));
+    },
+    removeItem(key) {
+      values.delete(String(key));
+    },
+    clear() {
+      values.clear();
+    },
+    key(index) {
+      return [...values.keys()][index] ?? null;
+    },
+    get length() {
+      return values.size;
+    },
+  };
+  Object.defineProperty(window, "localStorage", { configurable: true, value: storage });
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
+}
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: "error" });
 });
 
 afterEach(() => {
   server.resetHandlers();
+  localStorage.clear();
   vi.clearAllMocks();
   vi.useRealTimers();
 });

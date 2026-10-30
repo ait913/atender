@@ -6,10 +6,10 @@ const STORAGE_KEY = "theme";
 const MQ = "(prefers-color-scheme: dark)";
 
 export function readStored(): Theme {
-  if (typeof window === "undefined") return "auto";
+  if (typeof window === "undefined") return "light";
   const v = window.localStorage.getItem(STORAGE_KEY);
-  if (v === "light" || v === "dark") return v;
-  return "auto";
+  if (v === "auto" || v === "light" || v === "dark") return v;
+  return "light";
 }
 
 export function resolveTheme(theme: Theme): "light" | "dark" {
@@ -43,8 +43,7 @@ export function useTheme() {
   const setTheme = (next: Theme) => {
     setThemeState(next);
     if (typeof window === "undefined") return;
-    if (next === "auto") window.localStorage.removeItem(STORAGE_KEY);
-    else window.localStorage.setItem(STORAGE_KEY, next);
+    window.localStorage.setItem(STORAGE_KEY, next);
   };
 
   return { theme, setTheme };

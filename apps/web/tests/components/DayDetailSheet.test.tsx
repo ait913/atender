@@ -21,6 +21,9 @@ import {
 } from "@/api/hooks";
 
 vi.mock("@/api/hooks", () => ({
+  // 授業変更 (web-parity §5.7) の hook。既存テストの対象外なので何もしない mutation を返す
+  useDeleteClassTransfer: () => ({ mutate: () => {}, reset: () => {}, isPending: false }),
+  useCreateClassTransfer: () => ({ mutate: () => {}, reset: () => {}, mutateAsync: async () => ({}), isPending: false }),
   useDayDetail: vi.fn(),
   usePatchAttendance: vi.fn(),
   useDeleteAttendance: vi.fn(),

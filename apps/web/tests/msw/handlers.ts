@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { addDays } from "../../src/lib/CalendarDate";
 
 export const API_URL = "http://localhost:3000";
 
@@ -19,6 +20,11 @@ export const defaultMe = {
     defaultSemesterId: "semester-1",
     schoolId: "school-1",
     departmentId: "department-1",
+    schoolName: "テスト大学",
+    departmentName: "情報科学科",
+    requiredAttendanceRate: 70,
+    handle: "tanaka",
+    inviteCode: "invite-1",
   },
   setupStatus: {
     hasSchool: true,
@@ -75,7 +81,154 @@ export function occurrence(
   };
 }
 
+const timestamp = "2026-05-13T00:00:00.000Z";
+const defaultSemester = {
+  id: "semester-1",
+  name: "前期",
+  startDate: "2026-04-01",
+  endDate: "2099-03-31",
+};
+const defaultTimetable = {
+  id: "ut-new",
+  userId: "user-1",
+  semesterId: "semester-1",
+  title: "時間割",
+  sourceTemplateId: null,
+  daysOfWeek: [1, 2, 3, 4, 5],
+  daySlots: [],
+  courses: [],
+  meetings: [],
+  createdAt: timestamp,
+  updatedAt: timestamp,
+};
+const defaultRoom = {
+  id: "room-1",
+  name: "テストルーム",
+  description: null,
+  showMemberTimetables: true,
+  memberCount: 1,
+  myRole: "OWNER",
+  createdAt: timestamp,
+  inviteCode: "room-invite-1",
+  inviteExpiresAt: null,
+};
+
 export const handlers = [
+  http.get(`${API_URL}/api/rooms`, () => HttpResponse.json({ rooms: [] })),
+
+  http.get(`${API_URL}/api/user-timetables`, () => HttpResponse.json({ userTimetables: [] })),
+
+  http.post(`${API_URL}/api/user-timetables`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      userTimetable: {
+        ...defaultTimetable,
+        semesterId: body.semesterId,
+        title: body.title,
+        daysOfWeek: body.daysOfWeek ?? [1, 2, 3, 4, 5],
+        daySlots: body.daySlots,
+      },
+    }, { status: 201 });
+  }),
+
+  http.patch(`${API_URL}/api/user-timetables/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({ userTimetable: { ...defaultTimetable, ...body, id: params.id } });
+  }),
+
+  http.delete(`${API_URL}/api/user-timetables/:id`, () => HttpResponse.json({ ok: true })),
+
+  http.patch(`${API_URL}/api/timetable-templates/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as { isPublic: boolean };
+    return HttpResponse.json({ template: { id: params.id, isPublic: body.isPublic } });
+  }),
+
+  http.get(`${API_URL}/api/semesters/:id/overview`, ({ params }) => HttpResponse.json({
+    semesterId: params.id,
+    semesterName: defaultSemester.name,
+    startDate: defaultSemester.startDate,
+    endDate: defaultSemester.endDate,
+    today: "2026-05-13",
+    requiredAttendanceRate: 70,
+    overall: {
+      effectiveNumerator: 0,
+      effectiveDenominator: 0,
+      attendanceRate: null,
+      toDate: { effectiveNumerator: 0, effectiveDenominator: 0, attendanceRate: null },
+      unrecordedCount: 0,
+      remainingCount: 0,
+      allowedAbsences: null,
+    },
+    courses: [],
+    days: [],
+  })),
+
+  http.get(`${API_URL}/api/day/:date`, ({ params }) => HttpResponse.json({
+    date: params.date,
+    occurrences: [],
+    courseSuspensions: [],
+    timetableSuspension: null,
+    transfers: [],
+  })),
+
+  http.post(`${API_URL}/api/class-transfers`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      transfer: {
+        id: "transfer-new",
+        userTimetableId: "ut-new",
+        date: body.date,
+        kind: body.kind,
+        sourceDayOfWeek: body.sourceDayOfWeek ?? null,
+        sourceDate: body.sourceDate ?? null,
+        note: body.note ?? null,
+        occurrenceIds: [],
+        displaced: [],
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      },
+    }, { status: 201 });
+  }),
+
+  http.delete(`${API_URL}/api/class-transfers/:id`, () => HttpResponse.json({
+    removedOccurrences: 0,
+    removedAttendanceRecords: 0,
+    restoredOccurrences: 0,
+  })),
+
+  http.get(`${API_URL}/api/rooms/:id`, ({ params }) =>
+    HttpResponse.json({ room: { ...defaultRoom, id: params.id } }),
+  ),
+
+  http.get(`${API_URL}/api/rooms/:id/members`, () => HttpResponse.json({ members: [] })),
+
+  http.get(`${API_URL}/api/rooms/:id/week`, ({ request }) => {
+    const weekStart = new URL(request.url).searchParams.get("weekStart") ?? "2026-05-11";
+    return HttpResponse.json({
+      weekStart,
+      weekEnd: addDays(weekStart, 6),
+      members: [],
+      meetings: [],
+      recurringMeetings: [],
+    });
+  }),
+
+  http.post(`${API_URL}/api/rooms`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({ room: { ...defaultRoom, ...body } }, { status: 201 });
+  }),
+
+  http.post(`${API_URL}/api/rooms/join`, () => HttpResponse.json({ room: defaultRoom })),
+
+  http.get(`${API_URL}/api/friendships`, () => HttpResponse.json({ friends: [], incoming: [], outgoing: [] })),
+
+  http.delete(`${API_URL}/api/semesters/:id`, () => HttpResponse.json({ ok: true })),
+
+  http.patch(`${API_URL}/api/semesters/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({ semester: { ...defaultSemester, ...body, id: params.id } });
+  }),
+
   http.get(`${API_URL}/api/me`, () => HttpResponse.json(defaultMe)),
 
   http.patch(`${API_URL}/api/me`, async ({ request }) => {
@@ -177,7 +330,7 @@ export const handlers = [
           id: "semester-1",
           name: "前期",
           startDate: "2026-04-01",
-          endDate: "2026-09-30",
+          endDate: "2099-03-31",
         },
       ],
     }),
