@@ -4,6 +4,7 @@ import { useDeleteUserTimetable, useMe, usePatchUserTimetable, usePublishTimetab
 import { DayChips } from "@/components/timetable/DayChips";
 import { Button, ConfirmDialog, Field, Input, Toggle } from "@/components/ui";
 import { BottomSheet } from "./BottomSheet";
+import { RefreshFailedError } from "@/api/refreshFailed";
 import { TemplateBrowserSheet } from "@/components/templates/TemplateBrowserSheet";
 import * as TimetablePublishLogic from "@/lib/TimetablePublishLogic";
 import { showToast } from "@/lib/toast";
@@ -108,8 +109,9 @@ export function TimetableSettingsSheet({
         if (trimmedName.length > 0 && trimmedName !== timetable.title) await patch.mutateAsync({ title: trimmedName });
         if (JSON.stringify([...daysOfWeek].sort((a, b) => a - b)) !== JSON.stringify([...timetable.daysOfWeek].sort((a, b) => a - b))) await patch.mutateAsync({ daysOfWeek });
         if (JSON.stringify(slots) !== JSON.stringify(timetable.daySlots)) await patch.mutateAsync({ daySlots: slots });
-      } catch {
-        setMessage("保存できませんでした");
+      } catch (error) {
+        // 書き込みは成功したが再取得に失敗: 閉じずにユーザーへ知らせる
+        setMessage(error instanceof RefreshFailedError ? "保存しました。最新の状態を取得できなかったので、閉じてから開き直してください" : "保存できませんでした");
         return;
       }
       const action = TimetablePublishLogic.action(publishEnabled, trimmedPublishTitle, timetable);
@@ -123,8 +125,8 @@ export function TimetableSettingsSheet({
         } else if (action.kind === "unpublish") {
           await unpublish.mutateAsync(action.templateId);
         }
-      } catch {
-        setMessage("公開設定を保存できませんでした");
+      } catch (error) {
+        setMessage(error instanceof RefreshFailedError ? "保存しました。最新の状態を取得できなかったので、閉じてから開き直してください" : "公開設定を保存できませんでした");
         return;
       }
       onSaved?.();

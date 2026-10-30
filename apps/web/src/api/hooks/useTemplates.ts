@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { QK } from "@/api/queryKeys";
+import { refreshOrThrow } from "@/api/refreshFailed";
 import type { TemplateCopyInput, TemplateCreateInput, TemplateResponse, TemplatesResponse, UserTimetableResponse } from "./types";
 
 export function useTemplates(query: { schoolId?: string | null; departmentId?: string | null; q?: string; limit?: number }, options: { enabled?: boolean; staleTime?: number } = {}) {
@@ -44,7 +45,7 @@ export function useUnpublishTemplate() {
       api<TemplateResponse>(`/api/timetable-templates/${id}`, { method: "PATCH", body: { isPublic: false } }),
     // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+      await refreshOrThrow(queryClient, ["user-timetables"]);
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });

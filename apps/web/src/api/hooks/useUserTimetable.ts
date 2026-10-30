@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { QK } from "@/api/queryKeys";
+import { refreshOrThrow } from "@/api/refreshFailed";
 import type { CourseCreateInput, CourseResponse, CourseUpdateInput, MeetingBulkCreateInput, MeetingResponse, MeetingUpdateInput, TemplateResponse, UserTimetableCreateInput, UserTimetablePatchInput, UserTimetableResponse, UserTimetablesResponse } from "./types";
 
 export function useUserTimetables() {
@@ -66,7 +67,7 @@ export function usePatchUserTimetable(id?: string) {
     mutationFn: (body: UserTimetablePatchInput) => api<UserTimetableResponse>(`/api/user-timetables/${id}`, { method: "PATCH", body }),
     // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: QK.userTimetables() });
+      await refreshOrThrow(queryClient, QK.userTimetables());
       queryClient.invalidateQueries({ queryKey: ["today"] });
       queryClient.invalidateQueries({ queryKey: ["semesters"] });
     },
@@ -120,7 +121,7 @@ export function usePublishTimetable(id?: string) {
       api<TemplateResponse>(`/api/user-timetables/${id}/publish-as-template`, { method: "POST", body }),
     // 再取得の完了まで待つ (シートを閉じた直後に開き直しても古い時間割で初期化されない)
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["user-timetables"] });
+      await refreshOrThrow(queryClient, ["user-timetables"]);
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
