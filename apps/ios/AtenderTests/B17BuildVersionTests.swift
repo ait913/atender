@@ -13,13 +13,13 @@ final class B17BuildVersionTests: XCTestCase {
         return url
     }
 
-    /// [#B61] project.yml の CFBundleVersion が "23"、ShortVersion は "1.0.1"
-    func testB61ProjectYmlBundleVersionIs23() throws {
+    /// [#B61] project.yml の CFBundleVersion が "24"、ShortVersion は "1.0.2"
+    func testB61ProjectYmlBundleVersionIs24() throws {
         let yml = try String(contentsOf: repoRoot().appendingPathComponent("project.yml"), encoding: .utf8)
-        XCTAssertTrue(yml.contains("CFBundleVersion: \"23\""),
-                      "[#B61] project.yml に CFBundleVersion: \"23\" が無い")
-        XCTAssertTrue(yml.contains("CFBundleShortVersionString: \"1.0.1\""),
-                      "[#B61] CFBundleShortVersionString が \"1.0.1\" でない")
+        XCTAssertTrue(yml.contains("CFBundleVersion: \"24\""),
+                      "[#B61] project.yml に CFBundleVersion: \"24\" が無い")
+        XCTAssertTrue(yml.contains("CFBundleShortVersionString: \"1.0.2\""),
+                      "[#B61] CFBundleShortVersionString が \"1.0.2\" でない")
         XCTAssertFalse(yml.contains("CFBundleVersion: \"22\""), "[#B61] 旧 build 22 の記述が残っている")
     }
 
@@ -29,8 +29,8 @@ final class B17BuildVersionTests: XCTestCase {
         let data = try Data(contentsOf: plistURL)
         let parsed = try PropertyListSerialization.propertyList(from: data, format: nil)
         let plist = try XCTUnwrap(parsed as? [String: Any], "[#B61] Info.plist が dict でない")
-        XCTAssertEqual(plist["CFBundleVersion"] as? String, "23", "[#B61] Info.plist の CFBundleVersion が 23 でない")
-        XCTAssertEqual(plist["CFBundleShortVersionString"] as? String, "1.0.1", "[#B61] ShortVersion が 1.0.1 でない")
+        XCTAssertEqual(plist["CFBundleVersion"] as? String, "24", "[#B61] Info.plist の CFBundleVersion が 24 でない")
+        XCTAssertEqual(plist["CFBundleShortVersionString"] as? String, "1.0.2", "[#B61] ShortVersion が 1.0.2 でない")
     }
 
     /// [#B62] 実行中バンドルの CFBundleVersion が読めて MIN_IOS_BUILD 以上 (= 実際にビルドに乗っている)。値そのものは pin しない

@@ -177,6 +177,8 @@ struct SemesterListSheet: View {
             try await environment.semesterRepository.deleteSemester(id: id)
             await onChanged()
             await reload()
+        } catch APIError.api(status: 409, code: _, message: _) {
+            environment.toastCenter.show("時間割があるため削除できません。先に時間割を削除してください")
         } catch APIError.http(status: 409) {
             environment.toastCenter.show("時間割があるため削除できません。先に時間割を削除してください")
         } catch {
